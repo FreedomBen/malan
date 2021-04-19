@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  postgres:
+    image: 'postgres:12.6-alpine'
+    volumes:
+      - 'pgdata:/var/lib/postgresql/data'      # Use a docker volume for the database files
+     #- './pgdata:/var/lib/postgresql/data:Z'  # to keep the volume in your local dir
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+
+  malan:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      DB_INIT: 'Yes'
+      DB_USERNAME: 'postgres'
+      DB_PASSWORD: 'postgres'
+      DB_HOSTNAME: 'postgres'
+    depends_on:
+      - 'postgres'
+
+volumes:
+  pgdata:
+

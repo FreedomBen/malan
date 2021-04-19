@@ -64,4 +64,4 @@ COPY --chown=docker:docker test /app/test
 
 RUN mix compile
 
-CMD PORT=4000 mix phx.server
+CMD PORT=4000 ./scripts/start-in-docker.sh
