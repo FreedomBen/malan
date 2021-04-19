@@ -23,7 +23,7 @@ root = User.registration_changeset(%User{}, %{
   sex: "male",
   birthday: ~U[1983-06-13 01:09:08.105179Z]
 })
-Malan.Repo.insert!(root)
+Malan.Repo.insert!(root, on_conflict: :nothing, conflict_target: :username)
 
 #ben = User.registration_changeset(%User{}, %{
 #  username: "ben",
@@ -35,7 +35,7 @@ Malan.Repo.insert!(root)
 #  sex: "male",
 #  birthday: ~U[1983-06-13 01:09:08.105179Z]
 #})
-#Malan.Repo.insert!(ben)
+#Malan.Repo.insert!(ben, on_conflict: :nothing, conflict_target: :username)
 #
 #van = User.registration_changeset(%User{}, %{
 #  username: "van",
@@ -48,4 +48,5 @@ Malan.Repo.insert!(root)
 #  birthday: ~U[1986-06-13 01:19:08.105179Z]
 #})
 #Malan.Repo.insert!(van)
+Malan.Repo.insert!(van, on_conflict: :nothing, conflict_target: :username)
 
