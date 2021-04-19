@@ -1,0 +1,625 @@
+defmodule Malan.Accounts do
+  @moduledoc """
+  The Accounts context.
+  """
+
+  import Ecto.Query, warn: false
+  alias Malan.Repo
+
+  alias Malan.Accounts.User
+  alias Malan.Utils
+
+  @doc """
+  Returns the list of users.
+
+  ## Examples
+
+      iex> list_users()
+      [%User{}, ...]
+
+  """
+  def list_users do
+    Repo.all(User)
+  end
+
+  def get_user(id) do
+    Repo.one(from(u in User, where: u.id == ^id and is_nil(u.deleted_at)))
+  end
+
+  @doc """
+  Gets a single user.
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+
+  ## Examples
+
+      iex> get_user!(123)
+      %User{}
+
+      iex> get_user!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_user!(id) do
+    query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at))
+    user = Repo.one(query)
+    if is_nil(user) do
+      raise Ecto.NoResultsError, queryable: query
+    else
+      user
+    end
+  end
+
+  def get_user_by(params) do
+    Repo.get_by(User, params)
+  end
+
+  #def get_user_by(username: username) do
+  #  Repo.one(
+  #    from u in User,
+  #    where: u.username == ^username
+  #  )
+  #end
+
+
+  @doc """
+  Creates a user.
+
+  ## Examples
+
+      iex> register_user(%{field: value})
+      {:ok, %User{}}
+
+      iex> register_user(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def register_user(attrs \\ %{}) do
+    %User{}
+    |> User.registration_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  #@doc """
+  #Updates a user.
+
+  ### Examples
+
+  #    iex> update_user(user, %{field: new_value})
+  #    {:ok, %User{}}
+
+  #    iex> update_user(user, %{field: bad_value})
+  #    {:error, %Ecto.Changeset{}}
+
+  #"""
+  #def update_user(%User{password: nil} = user, attrs) do
+  #  update_usr(user, attrs)
+  #end
+    #do: update_usr(user, attrs)
+
+  @doc """
+  Updates a user's password.  If password is being changed, all non-permanent
+  session tokens are revoked immediately
+
+  ## Examples
+
+      iex> update_user(user, %{field: new_value})
+      {:ok, %User{}}
+
+      iex> update_user(user, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_user(%User{} = user, %{"password" => _password} = attrs) do
+    with {:ok, user}         <- update_usr(user, attrs),
+         {:ok, _num_revoked} <- revoke_active_sessions(user),
+     do: {:ok, user}
+  end
+
+  @doc """
+  Updates a user.
+
+  ## Examples
+
+      iex> update_user(user, %{field: new_value})
+      {:ok, %User{}}
+
+      iex> update_user(user, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_user(%User{} = user, attrs),
+    do: update_usr(user, attrs)
+
+  # "private utility for the update_user funcs.  Use a public update_user()"
+  defp update_usr(user, attrs) do
+    user
+    |> User.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc ""
+  def admin_update_user(user, attrs) do
+    user
+    |> User.admin_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a user.
+
+  ## Examples
+
+      iex> delete_user(user)
+      {:ok, %User{}}
+
+      iex> delete_user(user)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_user(%User{} = user) do
+    #Repo.delete(user)
+    user
+    |> User.delete_changeset()
+    |> Repo.update()
+  end
+
+  alias Malan.Accounts.Session
+
+  @doc """
+  Returns the list of sessions.
+
+  ## Examples
+
+      iex> list_sessions(user)
+      [%Session{}, ...]
+
+  """
+  def list_sessions(%User{id: user_id}), do: list_sessions(user_id)
+
+  @doc """
+  Returns the list of sessions.
+
+  ## Examples
+
+      iex> list_sessions(user_id)
+      [%Session{}, ...]
+
+  """
+  def list_sessions(user_id) do
+    Repo.all(from(s in Session, where: s.user_id == ^user_id))
+  end
+
+  @doc """
+  Returns the list of sessions.
+
+  ## Examples
+
+      iex> list_sessions()
+      [%Session{}, ...]
+
+  """
+  def list_sessions do
+    Repo.all(Session)
+  end
+
+  @doc """
+  Returns the list of all user sessions.  Requires being an admin.
+
+  ## Examples
+
+      iex> list_all_sessions()
+      [%Session{}, ...]
+
+  """
+  def list_user_sessions(user_id) do
+    Repo.all(
+      from s in Session,
+      where: s.user_id == ^user_id
+    )
+  end
+
+  @doc """
+  Gets a single session.
+
+  Raises `Ecto.NoResultsError` if the Session does not exist.
+
+  ## Examples
+
+      iex> get_session!(123)
+      %Session{}
+
+      iex> get_session!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_session!(id), do: Repo.get!(Session, id)
+
+  @doc """
+  Looks up user_id and password_hash in the DB based on given username
+
+  Returns [user_id, password_hash] if username is found, otherwise nil.
+
+  username has unique index on it so should never have more than one result
+  """
+  def get_user_id_pass_hash_by_username(username) do
+    Repo.one(
+      from u in User,
+      select: {u.id, u.password_hash},
+      where: u.username == ^username
+    )
+  end
+
+  @doc """
+  Checks that the given_pass is correct for user with id user_id.
+
+  Returns {:ok, user_id} if given_pass is correct.  Otherwise {:error, :unauthorized}
+  """
+  def verify_pass(user_id, given_pass, password_hash) do
+    cond do
+      Utils.Crypto.verify_password(given_pass, password_hash) -> {:ok, user_id}
+      true -> {:error, :unauthorized}
+    end
+  end
+
+  @doc "Pretend to be checking the password so timing attacks don't work"
+  def fake_pass_verify() do
+    Utils.Crypto.fake_verify_password()
+    {:error, :not_a_user}
+  end
+
+  @doc """
+  Checks that the given_pass is correct for username.
+
+  Returns {:ok, user_id} if given_pass is correct, or
+          {:error, :unauthorized}
+          {:error, :not_a_user}
+  """
+  def authenticate_by_username_pass(username, given_pass) do
+    case get_user_id_pass_hash_by_username(username) do
+      {user_id, password_hash} -> verify_pass(user_id, given_pass, password_hash)
+      nil -> fake_pass_verify()
+    end
+  end
+
+  @doc """
+  Retrieves user roles from the DB for user_id.
+
+  Returns list of roles:  e.g. ["admin", "moderator"]
+  """
+  def get_user_roles(user_id) do
+    Repo.one(
+      from u in User,
+      select: [u.roles],
+      where: u.id == ^user_id
+    ) |> List.first()
+  end
+
+  @doc """
+  Retrieves user roles from the DB and extracts into a tuple of:
+
+  {:ok, ["admin", "moderator"]
+  """
+  def list_user_roles(user_id), do: {:ok, get_user_roles(user_id)}
+
+  def user_has_role?(roles, role) when is_list(roles) do
+    {:ok, role, Enum.member?(roles, role)}
+  end
+
+  def user_has_role?(user_id, role) do
+    user_has_role?(get_user_roles(user_id), role)
+  end
+
+  def user_is_admin?(roles) when is_list(roles) do
+    {:ok, "admin", admin} = user_has_role?(roles, "admin")
+    {:ok, admin}
+  end
+
+  def user_is_admin?(user_id) do
+    {:ok, "admin", admin} = user_has_role?(user_id, "admin")
+    {:ok, admin}
+  end
+
+  def user_is_moderator?(roles) when is_list(roles) do
+    {:ok, "moderator", moderator} = user_has_role?(roles, "moderator")
+    {:ok, moderator}
+  end
+
+  def user_is_moderator?(user_id) do
+    {:ok, "moderator", moderator} = user_has_role?(user_id, "moderator")
+    {:ok, moderator}
+  end
+
+  def user_add_role(role, user_id) do
+    user = get_user!(user_id)
+    cond do
+      Enum.member?(user.roles, role) ->
+        {:ok, user}
+
+      true ->
+        user
+        |> User.admin_changeset(%{roles: user.roles ++ [role]})
+        |> Repo.update()
+    end
+  end
+
+  def user_tos(accept_tos, user_id) do
+    # TODO don't retrieve the entire user.
+    # Just generate update sql that replaces only the part we want to replace
+    get_user!(user_id)
+    |> update_user(%{accept_tos: accept_tos})
+  end
+
+  @doc "Accepts the Terms of Service for the user.  Returns {:ok, user}"
+  def user_accept_tos(user_id), do: user_tos(true, user_id)
+
+  @doc "Rejects the Terms of Service for the user.  Returns {:ok, user}"
+  def user_reject_tos(user_id), do: user_tos(false, user_id)
+
+  def user_set_privacy_policy(accept_privacy_policy, user_id) do
+    # TODO don't retrieve the entire user.
+    # Just generate update sql that replaces only the part we want to replace
+    get_user!(user_id)
+    |> update_user(%{accept_privacy_policy: accept_privacy_policy})
+  end
+
+  def user_accept_privacy_policy(user_id),
+    do: user_set_privacy_policy(true, user_id)
+  def user_reject_privacy_policy(user_id),
+    do: user_set_privacy_policy(false, user_id)
+
+  def new_session(attrs) do
+    %Session{}
+    |> Session.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def new_session(user_id, attrs) do
+    attrs
+    |> Map.put(:user_id, user_id)
+    |> new_session()
+  end
+
+  @doc """
+  Create a new session for specified `username` if `pass` is correct.
+
+  `ip_addr` will be recorded in the DB if this attempt is successful
+
+  Returns {:ok, %Session{}} on success
+      If unauthorized you'll get back {:error, :unauthorized}
+      If user is not found, you'll get back {:error, :not_found}
+  """
+  def create_session(username, pass, attrs) do
+    # TODO: Record failed attempts somewhere.  At least logs
+    case authenticate_by_username_pass(username, pass) do
+      {:ok, user_id} -> new_session(user_id, attrs)
+      {:error, :unauthorized} -> {:error, :unauthorized}
+      {:error, :not_a_user} -> {:error, :not_a_user}
+    end
+  end
+
+  @doc """
+  Deletes a session.
+
+  ## Examples
+
+      iex> delete_session(session)
+      {:ok, %Session{}}
+
+      iex> delete_session(session)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_session(%Session{} = session) do
+    session
+    |> Session.revoke_changeset(%{revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)})
+    |> Repo.update()
+  end
+
+  def get_session_by(params) do
+    Repo.get_by(Session, params)
+  end
+
+  @doc """
+  Looks up user_id, expires_at, revoked_at, roles in the DB based
+  on given api_token_hash.  Roles are included because this query
+  is run on every single API call and we also need to roles each
+  time.  It's less clean to combine them, but a lot more efficient.
+
+  Returns [user_id, expires_at, revoked_at, roles] if token is
+  found, otherwise nil.
+
+  username has unique index on it so should never have more than
+  one result
+
+  Returns %{user_id: s.user_id,
+            expires_at: s.expires_at,
+            revoked_at: s.revoked_at,
+            roles: u.roles,
+            latest_tos_accept_ver: u.latest_tos_accept_ver,
+            latest_pp_accept_ver: u.latest_pp_accept_ver
+          }
+  """
+  def get_session_expires_revoked_by_token(api_token_hash) do
+    Repo.one(
+      from s in Session,
+      join: u in User,
+      on: s.user_id == u.id,
+      select: %{user_id: s.user_id,
+        expires_at: s.expires_at,
+        revoked_at: s.revoked_at,
+        roles: u.roles,
+        latest_tos_accept_ver: u.latest_tos_accept_ver,
+        latest_pp_accept_ver: u.latest_pp_accept_ver
+      },
+      where: s.api_token_hash == ^api_token_hash
+    )
+  end
+
+  def session_valid?(nil) do
+    {:error, :not_found}
+  end
+
+  @doc """
+  Checks the validity of the specified session (looking at
+  expiration and revocation).
+
+  Returns
+
+    {:ok, user_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+    {:error, :revoked}
+    {:error, :expired}
+  """
+  def session_valid?(%{
+    user_id: user_id,
+    expires_at: expires_at,
+    revoked_at: revoked_at,
+    roles: roles,
+    latest_tos_accept_ver: latest_tos_accept_ver,
+    latest_pp_accept_ver: latest_pp_accept_ver
+  }) do
+    cond do
+      !!revoked_at -> {:error, :revoked}
+      DateTime.compare(expires_at, DateTime.utc_now) == :lt -> {:error, :expired}
+      true -> {:ok, user_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+    end
+  end
+
+  def session_valid?(user_id, expires_at, revoked_at, roles) do
+    session_valid?([user_id, expires_at, revoked_at, roles])
+  end
+
+  def session_revoked?(revoked_at), do: !!revoked_at
+  def session_expired?(expires_at),
+    do: DateTime.compare(expires_at, DateTime.utc_now) == :lt
+  def session_valid_bool?(expires_at, revoked_at),
+    do: !session_revoked?(revoked_at) && !session_expired?(expires_at)
+
+  @doc """
+  Returns {:ok, user_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+  if API token is valid.  Otherwise returns {:err, :revoked}
+
+  If the session's :revoked_at is nil and :expires_at is in the future,
+  the session is valid.  Otherwise the session is invalid
+
+  ## Examples
+
+    assert {:ok, user_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver} = validate_session(api_token)
+    assert {:error, :revoked} = validate_session(api_token)
+    assert {:error, :expired} = validate_session(api_token)
+    assert {:error, :not_found} = validate_session(api_token)
+  """
+  def validate_session(api_token) do
+    api_token
+    |> Utils.Crypto.hash_api_token()
+    |> get_session_expires_revoked_by_token()
+    |> session_valid?()
+  end
+
+  def revoke_active_sessions(%User{id: user_id}),
+    do: revoke_active_sessions(user_id)
+
+  def revoke_active_sessions(user_id) do
+    {num_revoked, nil} = Repo.update_all(
+      from(s in Session, where: s.user_id == ^user_id),
+      set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
+    )
+    {:ok, num_revoked}
+  end
+
+  alias Malan.Accounts.Team
+
+  @doc """
+  Returns the list of teams.
+
+  ## Examples
+
+      iex> list_teams()
+      [%Team{}, ...]
+
+  """
+  def list_teams do
+    Repo.all(Team)
+  end
+
+  @doc """
+  Gets a single team.
+
+  Raises `Ecto.NoResultsError` if the Team does not exist.
+
+  ## Examples
+
+      iex> get_team!(123)
+      %Team{}
+
+      iex> get_team!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_team!(id), do: Repo.get!(Team, id)
+
+  @doc """
+  Creates a team.
+
+  ## Examples
+
+      iex> create_team(%{field: value})
+      {:ok, %Team{}}
+
+      iex> create_team(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_team(attrs \\ %{}) do
+    %Team{}
+    |> Team.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a team.
+
+  ## Examples
+
+      iex> update_team(team, %{field: new_value})
+      {:ok, %Team{}}
+
+      iex> update_team(team, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_team(%Team{} = team, attrs) do
+    team
+    |> Team.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a team.
+
+  ## Examples
+
+      iex> delete_team(team)
+      {:ok, %Team{}}
+
+      iex> delete_team(team)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_team(%Team{} = team) do
+    Repo.delete(team)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking team changes.
+
+  ## Examples
+
+      iex> change_team(team)
+      %Ecto.Changeset{data: %Team{}}
+
+  """
+  def change_team(%Team{} = team, attrs \\ %{}) do
+    Team.changeset(team, attrs)
+  end
+end

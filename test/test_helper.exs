@@ -1,0 +1,5 @@
+#ExUnit.configure(timeout: 600_000)
+#ExUnit.configure(timeout: :infinity)
+#ExUnit.start(exclude: [:skip], timeout: 6_000_000)
+ExUnit.start(exclude: [:skip], timeout: :infinity)
+Ecto.Adapters.SQL.Sandbox.mode(Malan.Repo, :manual)

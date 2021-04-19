@@ -1,0 +1,27 @@
+defmodule MalanWeb.SessionView do
+  use MalanWeb, :view
+  alias Malan.Accounts
+  alias MalanWeb.SessionView
+
+  def render("index.json", %{sessions: sessions}) do
+    %{data: render_many(sessions, SessionView, "session.json")}
+  end
+
+  def render("show.json", %{session: session}) do
+    %{data: render_one(session, SessionView, "session.json")}
+  end
+
+  def render("session.json", %{session: session}) do
+    %{id: session.id,
+      user_id: session.user_id,
+      api_token: session.api_token,
+      expires_at: session.expires_at,
+      authenticated_at: session.authenticated_at,
+      revoked_at: session.revoked_at,
+      ip_address: session.ip_address,
+      location: session.location,
+      is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at)}
+      |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
+      |> Enum.into(%{})
+  end
+end
