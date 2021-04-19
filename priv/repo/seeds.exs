@@ -25,27 +25,27 @@ root = User.registration_changeset(%User{}, %{
 })
 Malan.Repo.insert!(root)
 
-ben = User.registration_changeset(%User{}, %{
-  username: "ben",
-  first_name: "Ben",
-  last_name: "Johnson",
-  password: "password10",
-  email: "ben@example.com",
-  roles: ["moderator", "user"],
-  sex: "male",
-  birthday: ~U[1983-06-13 01:09:08.105179Z]
-})
-Malan.Repo.insert!(ben)
-
-van = User.registration_changeset(%User{}, %{
-  username: "van",
-  first_name: "Van",
-  last_name: "Johnson",
-  password: "password10",
-  email: "vanessa@example.com",
-  roles: ["user"],
-  sex: "female",
-  birthday: ~U[1986-06-13 01:19:08.105179Z]
-})
-Malan.Repo.insert!(van)
+#ben = User.registration_changeset(%User{}, %{
+#  username: "ben",
+#  first_name: "Ben",
+#  last_name: "Johnson",
+#  password: "password10",
+#  email: "ben@example.com",
+#  roles: ["moderator", "user"],
+#  sex: "male",
+#  birthday: ~U[1983-06-13 01:09:08.105179Z]
+#})
+#Malan.Repo.insert!(ben)
+#
+#van = User.registration_changeset(%User{}, %{
+#  username: "van",
+#  first_name: "Van",
+#  last_name: "Johnson",
+#  password: "password10",
+#  email: "vanessa@example.com",
+#  roles: ["user"],
+#  sex: "female",
+#  birthday: ~U[1986-06-13 01:19:08.105179Z]
+#})
+#Malan.Repo.insert!(van)
 
