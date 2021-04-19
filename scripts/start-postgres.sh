@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-IMG='postgres:11.7-alpine'
+#IMG='postgres:11.7-alpine'
+IMG='postgres:12.6-alpine'
 NAME='malan_postgres'
 
 MAX_CONNECTIONS=200

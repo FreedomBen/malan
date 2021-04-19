@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-sudo podman build -t freedomben/malan .
+sudo podman build -t docker.io/freedomben/malan:latest .
