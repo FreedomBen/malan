@@ -18,6 +18,7 @@ services:
       DB_USERNAME: 'postgres'
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
+      BIND_ADDR: '0.0.0.0'
     depends_on:
       - 'postgres'
 

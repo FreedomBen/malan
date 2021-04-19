@@ -13,7 +13,7 @@ config :malan,
 
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: System.get_env("BIND_ADDR") || "127.0.0.1"],
   secret_key_base: "FC5AU8NzrLTUTK3z70VVpDMKMYA9t3i4ptS94tW+N9+zZk0SdF26Dia44OEVkHWX",
   render_errors: [view: MalanWeb.ErrorView, accepts: ~w(json), layout: false],
   pubsub_server: Malan.PubSub,
