@@ -2,10 +2,10 @@ use Mix.Config
 
 # Configure your database
 config :malan, Malan.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: System.get_env("DB_USERNAME") || "postgres",
+  password: System.get_env("DB_PASSWORD") || "postgres",
+  hostname: System.get_env("DB_HOSTNAME") || "127.0.0.1",
   database: "malan_dev",
-  hostname: "127.0.0.1",
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
