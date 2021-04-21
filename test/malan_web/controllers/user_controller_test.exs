@@ -398,6 +398,28 @@ defmodule MalanWeb.UserControllerTest do
   #  %{user: user}
   #end
 
+  describe "whoami" do
+    setup [:create_regular_user_with_session]
+
+    test "Retrieves user ID and roles based on API token", %{conn: conn, user: %User{id: user_id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :whoami))
+      #jr = json_response(conn, 200)["data"]
+      assert %{
+               "user_id" => ^user_id,
+               "user_roles" => ["user"],
+               "expires_at" => _expires_at,
+               "privacy_policy" => nil,
+               "terms_of_service" => nil
+             } = json_response(conn, 200)["data"]
+    end
+
+    test "requires being authenticated to access", %{conn: conn, user: %User{} = _user} do
+      conn = put(conn, Routes.user_path(conn, :whoami))
+      assert conn.status == 403
+    end
+  end
+
   defp create_regular_user_with_session(_) do
     {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
     %{user: user, session: session}

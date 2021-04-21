@@ -165,15 +165,15 @@ defmodule Malan.AuthController do
     end
   end
 
-  defp parse_authorization(conn), do:
-    Enum.find(conn.req_headers, fn ({k, _v}) -> k == "authorization" end)
-
-  defp retrieve_token(conn) do
+  def retrieve_token(conn) do
     case parse_authorization(conn) do
       {"authorization", auth_string} -> extract_token(auth_string)
       _                              -> {:error, :no_token}
     end
   end
+
+  defp parse_authorization(conn), do:
+    Enum.find(conn.req_headers, fn ({k, _v}) -> k == "authorization" end)
 
   defp extract_token(auth_string) do
     case String.split(auth_string, " ") do

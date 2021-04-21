@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+api_token="$(curl \
+               --request POST \
+               --header "Accept: application/json" \
+               --header "Content-Type: application/json" \
+               --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
+               http://localhost:4000/api/sessions/ \
+              | jq -r .data.api_token)"
+
+curl \
+  --request GET \
+  --header "Accept: application/json" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer ${api_token}" \
+  --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
+  http://localhost:4000/api/users/whoami
+  

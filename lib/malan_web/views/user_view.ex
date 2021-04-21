@@ -45,4 +45,15 @@ defmodule MalanWeb.UserView do
       |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
       |> Enum.into(%{})
   end
+
+  def render("whoami.json", %{user_id: user_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do
+    %{data:
+      %{user_id: user_id,
+        user_roles: user_roles,
+        expires_at: expires_at,
+        terms_of_service: tos,
+        privacy_policy: pp,
+      }
+    }
+  end
 end

@@ -58,6 +58,7 @@ defmodule MalanWeb.Router do
 
     post "/users", UserController, :create
     post "/sessions", SessionController, :create
+    get "/users/whoami", UserController, :whoami
   end
 
   scope "/api", MalanWeb do

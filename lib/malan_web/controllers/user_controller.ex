@@ -3,10 +3,11 @@ defmodule MalanWeb.UserController do
 
   alias Malan.Accounts
   alias Malan.Accounts.User
+  alias Malan.AuthController
 
   action_fallback MalanWeb.FallbackController
 
-  plug :is_self_or_admin when action not in [:index, :create]
+  plug :is_self_or_admin when action not in [:index, :create, :whoami]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -64,6 +65,28 @@ defmodule MalanWeb.UserController do
     end
   end
 
+  def whoami(conn, _params) do
+    case conn_to_session_info(conn) do
+      {:ok, user_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, user_roles, expires_at, tos, pp)
+      # {:error, :revoked}
+      # {:error, :expired}
+      # {:error, :not_found}
+      {:error, _} -> send_resp(conn, :not_found, "")
+    end
+  end
+
+  defp render_whoami(conn, user_id, user_roles, expires_at, tos, pp) do
+    render(
+      conn,
+      "whoami.json",
+      user_id: user_id,
+      user_roles: user_roles,
+      expires_at: expires_at,
+      tos: tos,
+      pp: pp
+    )
+  end
+
   defp render_user(conn, user) do
     if is_nil(user) do
       conn
@@ -93,5 +116,13 @@ defmodule MalanWeb.UserController do
 
   defp is_self?(conn) do
     conn.assigns.authed_user_id == conn.params["id"]
+  end
+
+  defp conn_to_session_info(conn) do
+    with {:ok, api_token} <- retrieve_token(conn),
+         {:ok, user_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token)
+    do
+      {:ok, user_id, user_roles, expires_at, tos, pp}
+    end
   end
 end

@@ -426,13 +426,13 @@ defmodule Malan.Accounts do
   is run on every single API call and we also need to roles each
   time.  It's less clean to combine them, but a lot more efficient.
 
-  Returns [user_id, expires_at, revoked_at, roles] if token is
-  found, otherwise nil.
+  Returns Map if token is found, otherwise nil.
 
   username has unique index on it so should never have more than
   one result
 
-  Returns %{user_id: s.user_id,
+  Returns %{
+            user_id: s.user_id,
             expires_at: s.expires_at,
             revoked_at: s.revoked_at,
             roles: u.roles,
