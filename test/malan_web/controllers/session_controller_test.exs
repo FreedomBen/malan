@@ -235,6 +235,58 @@ defmodule MalanWeb.SessionControllerTest do
     end
   end
 
+  describe "is valid role" do
+    test "requires authentication" do
+      #TODO
+
+    end
+
+    test "works", %{conn: conn} do
+      #TODO
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, conn, _ru, _rs} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = delete(conn, Routes.user_session_role_path(conn, :is_valid_role, user.id, session))
+      assert conn.status == 401
+
+    end
+
+    test "responds whether role and session are currently valid for user", %{conn: conn} do
+      # Require authentication
+      #TODO
+      conn = get(conn, Routes.user_session_path(conn, :index, "some id"))
+      assert conn.status == 403
+
+      users = Helpers.Accounts.regular_users_session_conn(build_conn(), 3)
+      {:ok, conn, ru1, rs1} = List.first(users)
+
+      conn = get(conn, Routes.user_session_path(conn, :index, ru1.id))
+      jr = json_response(conn, 200)["data"]
+      assert length(jr) == 1
+      assert jr == [session_to_retval_map(rs1)]
+    end
+
+    test "can be called by admin non-owner" do
+      #TODO
+      users = Helpers.Accounts.regular_users_session_conn(build_conn(), 3)
+      {:ok, _cr, ru1, rs1} = List.first(users)
+      {:ok, ca, _au1, _as1} = Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      ca = get(ca, Routes.user_session_path(ca, :index, ru1.id))
+      jr = json_response(ca, 200)["data"]
+      assert length(jr) == 1
+      assert jr == [session_to_retval_map(rs1)]
+    end
+
+    test "can't be called by non-admin non-owner" do
+      users = Helpers.Accounts.regular_users_session_conn(build_conn(), 3)
+      {:ok, _c1, ru1, _rs1} = Enum.at(users, 0)
+      {:ok, c2, _ru2, _rs2} = Enum.at(users, 1)
+
+      c2 = get(c2, Routes.user_session_role_path(c2, :is_valid_role, ru1.id))
+      assert c2.status == 401
+    end
+  end
+
   #describe "show/valid session" do
   #  test "shows session valid when valid", %{conn: conn} do
   #    {:ok, conn, user, session} = Helpers.Accounts.regular_user_session_conn(conn)

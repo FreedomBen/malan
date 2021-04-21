@@ -54,6 +54,12 @@ defmodule MalanWeb.SessionController do
     end
   end
 
+  def is_valid_role(conn, %{"role" => role}) do
+    # TODO
+    conn
+    |> json(%{is_valid: true})
+  end
+
   defp get_ip_addr(conn) do
     conn.remote_ip
     |> :inet_parse.ntoa()

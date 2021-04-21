@@ -85,9 +85,11 @@ defmodule MalanWeb.Router do
   scope "/api", MalanWeb do
     pipe_through :owner_api
 
-    #resources "/users", UserController, only: [] do
-    #  get "/objects", ObjectController, :user_index
-    #end
+    resources "/users", UserController, only: [] do
+      resources "/sessions", SessionController, only: [] do
+        get "/roles/:role", SessionController, :is_valid_role, as: :role
+      end
+    end
   end
 
   scope "/api/moderator", MalanWeb do
