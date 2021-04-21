@@ -81,7 +81,7 @@ defmodule MalanWeb.UserControllerTest do
     test "renders user when data is valid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
-      assert %{"id" => id, "username" => username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
       assert is_nil(password) == false
 
       # This uses the returned password above to authenticate
@@ -91,7 +91,7 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :show, id))
       jr = json_response(conn, 200)["data"]
       assert %{
-               "id" => id,
+               "id" => ^id,
                "email" => "some@email.com",
                "email_verified" => nil,
                "preferences" => %{"theme" => "light"},
@@ -118,7 +118,7 @@ defmodule MalanWeb.UserControllerTest do
       password = "initialpassword"
       conn = post(conn, Routes.user_path(conn, :create), user: Map.put(@create_attrs, :password, password))
       # password should be included after creation
-      assert %{"id" => id, "username" => username, "password" => ^password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => ^password} = user = json_response(conn, 201)["data"]
 
       # This uses the returned password above to authenticate
       {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
@@ -128,7 +128,7 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 200
       jr = json_response(conn, 200)["data"]
       assert %{
-               "id" => id,
+               "id" => ^id,
                "email" => "some@email.com",
                "email_verified" => nil,
                "preferences" => %{"theme" => "light"},
@@ -162,7 +162,7 @@ defmodule MalanWeb.UserControllerTest do
       }
       check_response = fn (conn) ->
         assert %{
-          "id" => id,
+          "id" => ^id,
           "email" => email,
           "username" => username,
           "email_verified" => nil,
@@ -260,7 +260,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), as.api_token)
       conn = get(conn, Routes.user_path(conn, :show, user))
-      assert %{"id" => id} = json_response(conn, 200)["data"]
+      assert %{"id" => _id} = json_response(conn, 200)["data"]
     end
 
     test "Allows specifying gender, sex, race, ethnicity", %{conn: conn, user: %User{} = user} do
