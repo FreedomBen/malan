@@ -32,6 +32,8 @@ spec:
         - containerPort: 4000
           protocol: TCP
         env:
+        - name: DB_INIT
+          value: 'Yes'
         - name: BIND_ADDR
           value: '0.0.0.0'
         - name: DB_USERNAME
@@ -48,7 +50,7 @@ spec:
           protocol: TCP
         env:
         - name: POSTGRES_USER
-          value: '0.0.0.0'
+          value: 'postgres'
         - name: POSTGRES_PASSWORD
           value: 'postgres'
 
