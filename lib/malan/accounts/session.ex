@@ -49,11 +49,6 @@ defmodule Malan.Accounts.Session do
     |> validate_required([:revoked_at, :api_token_hash, :expires_at, :authenticated_at, :ip_address])
   end
 
-  defp hash_api_token(api_token) do
-    :crypto.hash(:sha256, api_token)
-    |> Base.encode64()
-  end
-
   defp gen_api_token(), do: Utils.Crypto.strong_random_string(65)
 
   defp gen_api_token(changeset) do
@@ -64,7 +59,7 @@ defmodule Malan.Accounts.Session do
     api_token = gen_api_token()
     changeset
     |> put_change(:api_token, api_token)
-    |> put_change(:api_token_hash, hash_api_token(api_token))
+    |> put_change(:api_token_hash, Utils.Crypto.hash_api_token(api_token))
   end
 
   defp put_authenticated_at(changeset) do
