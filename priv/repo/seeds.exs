@@ -48,5 +48,5 @@ Malan.Repo.insert!(root, on_conflict: :nothing, conflict_target: :username)
 #  birthday: ~U[1986-06-13 01:19:08.105179Z]
 #})
 #Malan.Repo.insert!(van)
-Malan.Repo.insert!(van, on_conflict: :nothing, conflict_target: :username)
+#Malan.Repo.insert!(van, on_conflict: :nothing, conflict_target: :username)
 

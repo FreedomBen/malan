@@ -24,6 +24,7 @@ RUN apt-get update \
     build-essential \
     python \
     jq \
+    ncat \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
  && update-ca-certificates
