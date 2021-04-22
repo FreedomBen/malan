@@ -65,8 +65,8 @@ defmodule Malan.UserSchemaTest do
              |> Enum.any?(fn (x) -> x =~ ~r/should be at most/ end)
     end
 
-    test "#validate_username only alphanumeric characters 1" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "abcdefg h"}, [:username])
+    test "#validate_username only valid email prefix characters 1" do
+      changeset = Ecto.Changeset.cast(%User{}, %{username: "abcdefg(h"}, [:username])
                   |> User.validate_username()
 
       assert changeset.valid? == false
@@ -74,13 +74,20 @@ defmodule Malan.UserSchemaTest do
              |> Enum.any?(fn (x) -> x =~ ~r/has invalid format/ end)
     end
 
-    test "#validate_username only alphanumeric characters 2" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "abc#defgh"}, [:username])
+    test "#validate_username only valid email prefix characters 2" do
+      changeset = Ecto.Changeset.cast(%User{}, %{username: "abc)defgh"}, [:username])
                   |> User.validate_username()
 
       assert changeset.valid? == false
       assert errors_on(changeset).username
              |> Enum.any?(fn (x) -> x =~ ~r/has invalid format/ end)
+    end
+
+    test "#validate_username allows email addresses" do
+      changeset = Ecto.Changeset.cast(%User{}, %{username: "hello-_=_+*&^world@example.com"}, [:username])
+                  |> User.validate_username()
+
+      assert changeset.valid? == true
     end
 
     test "#validate_email correct emails 1" do

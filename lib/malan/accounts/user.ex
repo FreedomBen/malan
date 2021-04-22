@@ -123,16 +123,16 @@ defmodule Malan.Accounts.User do
   defp validate_username(changeset) do
     changeset
     |> unique_constraint(:username)
-    |> validate_format(:username, ~r/^[A-Za-z0-9]{3,50}$/)
-    |> validate_length(:username, min: 3, max: 50)
+    |> validate_length(:username, min: 3, max: 89)
+    |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
   end
 
   defp validate_email(changeset) do
     changeset
     |> unique_constraint(:email)
-    |> validate_format(:email, ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,63}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/)
-    |> validate_not_format(:email, ~r/@.*@/)
     |> validate_length(:email, min: 6, max: 100)
+    |> validate_format(:email, ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/)
+    |> validate_not_format(:email, ~r/@.*@/)
   end
 
   defp validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
