@@ -38,9 +38,8 @@ RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen \
  && locale-gen \
  && dpkg-reconfigure locales
 
-# Set environment to production
-#ENV MIX_ENV prod
-#ENV DATABASE_URL localhost:5432
+# Set environment to development
+ENV MIX_ENV dev
 
 # Copy over source code
 RUN mkdir /app \

@@ -39,7 +39,6 @@ RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen \
 
 # Set environment to production
 ENV MIX_ENV prod
-#ENV DATABASE_URL localhost:5432
 
 # Copy over source code
 RUN mkdir /app \
