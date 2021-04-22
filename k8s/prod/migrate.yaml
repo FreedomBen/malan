@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: malan
+spec:
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: malan-migration
+  name: malan-migration
+  namespace: malan
+spec:
+  ttlSecondsAfterFinished: 86400 # 24 hours
+  template:
+    spec:
+      containers:
+      - name: malan-migration
+        image: docker.io/freedomben/malan:latest
+        command: ["mix",  "ecto.create.migrate"]
+      restartPolicy: Never
+      parallelism: 1
+      completions: 1
+  backoffLimit: 4
