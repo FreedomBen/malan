@@ -31,30 +31,44 @@ spec:
         ports:
         - containerPort: 4000
           protocol: TCP
-        env:
-        - name: BIND_ADDR
-          value: '0.0.0.0'
-        - name: DB_USERNAME
-          value: 'postgres'
-        - name: DB_PASSWORD
-          value: 'postgres'
-        - name: DB_HOSTNAME
-          value: 'localhost'
-        - name: DB_DATABASE
-          value: 'malan_prod'
-        - name: DATABASE_URL
-          value: "ecto://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOSTNAME}/${DB_DATABASE}"
-      - image: docker.io/postgres:12.6-alpine
-        name: postgres
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5432
-          protocol: TCP
-        env:
-        - name: POSTGRES_USER
-          value: '0.0.0.0'
-        - name: POSTGRES_PASSWORD
-          value: 'postgres'
+        readinessProbe:
+          httpGet:
+            path: /health_check/readiness
+            port: 4000
+          initialDelaySeconds: 5
+          periodSeconds: 2
+        envFrom:
+          - configMapRef:
+              name: malan-config
+          - secretRef:
+              name: malan-secrets
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: malan
+  name: malan-config
+  namespace: malan
+data:
+  BIND_ADDR: '0.0.0.0'
+  DB_HOSTNAME: 'postgres'
+  DB_DATABASE: 'malan_prod'
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: malan
+  name: malan-secrets
+  namespace: malan
+type: Opaque
+stringData:
+  DB_USERNAME: postgres
+  DB_PASSWORD: postgres
+  DATABASE_URL: "ecto://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOSTNAME}/${DB_DATABASE}"
 
 ---
 apiVersion: v1
