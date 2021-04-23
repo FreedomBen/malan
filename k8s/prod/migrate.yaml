@@ -21,6 +21,11 @@ spec:
       - name: malan-migration
         image: docker.io/freedomben/malan:latest
         command: ["mix",  "ecto.create.migrate"]
+        envFrom:
+          - configMapRef:
+              name: malan-config
+          - secretRef:
+              name: malan-secrets
       restartPolicy: Never
       parallelism: 1
       completions: 1
