@@ -36,6 +36,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
+        # If the password changed, send email
         render(conn, "show.json", user: user)
       end
     end

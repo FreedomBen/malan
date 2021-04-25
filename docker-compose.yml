@@ -9,6 +9,12 @@ services:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
 
+  mail:
+    image: 'schickling/mailcatcher'
+    ports:
+      - '1025:1025'  # For SMTP
+      - '1080:1080'  # For the web interface
+
   malan:
     build: .
     ports:
@@ -19,8 +25,13 @@ services:
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
       BIND_ADDR: '0.0.0.0'
+      SMTP_ENDPOINT: 'localhost'
+      SMTP_PORT: '1025'
+      SMTP_USERNAME: ''
+      SMTP_PASSWORD: ''
     depends_on:
       - 'postgres'
+      - 'mail'
 
 volumes:
   pgdata:

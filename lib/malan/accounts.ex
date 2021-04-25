@@ -527,6 +527,11 @@ defmodule Malan.Accounts do
     {:ok, num_revoked}
   end
 
+  def send_password_reset_email() do
+    Email.password_reset()
+    |> Mailer.deliver_now()
+  end
+
   alias Malan.Accounts.Team
 
   @doc """
