@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: malan
+  name: malan-dev
 spec:
 
 ---
@@ -12,7 +12,7 @@ metadata:
   labels:
     app: malan
   name: malan
-  namespace: malan
+  namespace: malan-dev
 spec:
   replicas: 1
   selector:
@@ -22,7 +22,7 @@ spec:
     metadata:
       labels:
         app: malan
-      namespace: malan
+      namespace: malan-dev
     spec:
       containers:
       - image: docker.io/freedomben/malan:latest
@@ -61,7 +61,7 @@ spec:
 #  labels:
 #    app: malan
 #  name: malan
-#  namespace: malan
+#  namespace: malan-dev
 #spec:
 #  type: NodePort
 #  selector:
@@ -80,7 +80,7 @@ metadata:
   labels:
     app: malan
   name: malan
-  namespace: malan
+  namespace: malan-dev
   annotations:
     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
     service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large

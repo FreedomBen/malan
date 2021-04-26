@@ -6,6 +6,19 @@ metadata:
 spec:
 
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: malan
+  name: malan-config
+  namespace: malan
+data:
+  BIND_ADDR: '0.0.0.0'
+  DB_HOSTNAME: 'postgres'
+  DB_DATABASE: 'malan_prod'
+
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -14,19 +27,19 @@ metadata:
   name: malan-migration
   namespace: malan
 spec:
-  ttlSecondsAfterFinished: 86400 # 24 hours
   template:
     spec:
+      restartPolicy: Never
       containers:
       - name: malan-migration
-        image: docker.io/freedomben/malan:latest
-        command: ["mix",  "ecto.create.migrate"]
+        image: docker.io/freedomben/malan-prod:latest
+        command: ["mix", "ecto.create.migrate"]
         envFrom:
           - configMapRef:
               name: malan-config
           - secretRef:
               name: malan-secrets
-      restartPolicy: Never
-      parallelism: 1
-      completions: 1
-  backoffLimit: 4
+  ttlSecondsAfterFinished: 86400 # 24 hours
+  parallelism: 1
+  completions: 1
+  backoffLimit: 2

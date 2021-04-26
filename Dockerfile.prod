@@ -1,5 +1,10 @@
 FROM elixir:1.11
 
+# These are required to be in place for mix compile to run,
+# but the real values will be injected via Secret at runtime
+ARG DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
+ARG SECRET_KEY_BASE=124
+
 ENV USER_HOME /home/docker
 
 RUN addgroup --gid 1000 docker \
