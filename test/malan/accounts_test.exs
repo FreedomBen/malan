@@ -26,17 +26,18 @@ defmodule Malan.AccountsTest do
     alias Malan.Accounts.User
 
     test "list_users/0 returns all users" do
-      user = %{user_fixture() | password: nil}
+      user = %{user_fixture() | password: nil, custom_attrs: %{}}
       # password should be nil coming from database since that's a virtual field
       users = Accounts.list_users()
       assert is_list(users)
-      assert(length(users) == 1 || length(user) == 3) # flakey based on seeds.exs adding 2
+      assert Enum.member?((1..3), length(users))
+      #assert(length(users) == 1 || length(users) == 3) # flakey based on seeds.exs adding 2
       assert Enum.any?(users, fn (u) -> user == u end)
     end
 
     test "get_user!/1 returns the user with given id" do
       user = user_fixture()
-      assert Accounts.get_user!(user.id) == %{user | password: nil, tos_accept_events: []}
+      assert Accounts.get_user!(user.id) == %{user | password: nil, tos_accept_events: [], custom_attrs: %{}}
     end
 
     test "register_user/1 with valid data creates a user, email unverified and ToS not accepted" do
@@ -55,6 +56,7 @@ defmodule Malan.AccountsTest do
       assert us.preferences == user.preferences
       assert us.roles == user.roles
       assert us.tos_accept_events == []
+      assert us.custom_attrs == %{}
       assert us.username == user.username
     end
 
@@ -139,7 +141,7 @@ defmodule Malan.AccountsTest do
       assert user.password == "some updated password"
       assert %{theme: "light", id: _} = user.preferences
       assert %{
-        user | password: nil, sex: nil, sex_enum: 2, gender: nil, gender_enum: 50
+        user | password: nil, sex: nil, sex_enum: 2, gender: nil, gender_enum: 50, custom_attrs: %{}
       } == Accounts.get_user!(user.id)
       assert user.sex == "other"
     end
@@ -154,7 +156,7 @@ defmodule Malan.AccountsTest do
       })
       assert user.email == "user1@email.com"
       assert user.username == "someusername1"
-      assert %{uf | password: nil, tos_accept_events: []} == Accounts.get_user!(user.id)
+      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
     end
 
     test "update_user/2 disallows settings ToS or Email verify" do
@@ -166,7 +168,7 @@ defmodule Malan.AccountsTest do
       })
       assert user.email_verified == nil
       assert user.tos_accept_events == []
-      assert %{uf | password: nil, tos_accept_events: []} == Accounts.get_user!(user.id)
+      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid data returns error changeset" do
@@ -175,7 +177,7 @@ defmodule Malan.AccountsTest do
       assert changeset.valid? == false
       assert errors_on(changeset).password
              |> Enum.any?(fn (x) -> x =~ ~r/can.t.be.blank/ end)
-      assert %{user | password: nil, tos_accept_events: []} == Accounts.get_user!(user.id)
+      assert %{user | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid sex returns error changeset" do
@@ -184,7 +186,7 @@ defmodule Malan.AccountsTest do
       assert changeset.valid? == false
       assert errors_on(changeset).sex
              |> Enum.any?(fn (x) -> x =~ ~r/sex.is.invalid/ end)
-      assert %{user | gender: nil, password: nil, tos_accept_events: []} == Accounts.get_user!(user.id)
+      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid gender returns error changeset" do
@@ -193,7 +195,7 @@ defmodule Malan.AccountsTest do
       assert changeset.valid? == false
       assert errors_on(changeset).gender
              |> Enum.any?(fn (x) -> x =~ ~r/gender.is.invalid/ end)
-      assert %{user | gender: nil, password: nil, tos_accept_events: []} == Accounts.get_user!(user.id)
+      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
     end
 
     #test "update_user/2 can be used to accept the ToS" do
@@ -342,8 +344,8 @@ defmodule Malan.AccountsTest do
 
     test "get_user/1 and get_user!/1 work and delete_user/1 deletes the user" do
       user = user_fixture()
-      assert %{user | password: nil} == Accounts.get_user(user.id)
-      assert %{user | password: nil} == Accounts.get_user!(user.id)
+      assert %{user | password: nil, custom_attrs: %{}} == Accounts.get_user(user.id)
+      assert %{user | password: nil, custom_attrs: %{}} == Accounts.get_user!(user.id)
       assert {:ok, %User{}} = Accounts.delete_user(user)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
       assert is_nil(Accounts.get_user(user.id))
@@ -393,6 +395,14 @@ defmodule Malan.AccountsTest do
 
       assert errors_on(changeset).email
              |> Enum.any?(fn (x) -> x =~ ~r/has already been taken/ end)
+    end
+
+    test "Can set arbitrary JSON on a user" do
+      custom_attrs = %{"some_val" => "some_val", "second" => %{"third" => "third"}}
+      uf = user_fixture()
+      assert {:ok, %User{} = user} = Accounts.update_user(uf, %{custom_attrs: custom_attrs})
+      assert %{"some_val" => "some_val", "second" => %{"third" => "third"}} = user.custom_attrs
+      assert %{user | password: nil} == Accounts.get_user!(user.id)
     end
   end
 
