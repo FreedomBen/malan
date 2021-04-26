@@ -15,7 +15,8 @@ defmodule MalanWeb.UserControllerTest do
     #roles: [],
     username: "someusername",
     first_name: "Some",
-    last_name: "cool User"
+    last_name: "cool User",
+    custom_attrs: %{"hereiam" => "rockyou", "likea" => "hurricane", "year" => 1986}
   }
   @invalid_attrs %{
     email: nil,
@@ -103,7 +104,12 @@ defmodule MalanWeb.UserControllerTest do
                "tos_accepted" => false,
                "privacy_policy_accepted" => false,
                "username" => "someusername",
-               "nick_name" => ""
+               "nick_name" => "",
+               "custom_attrs" => %{
+                 "hereiam" => "rockyou",
+                 "likea" => "hurricane",
+                 "year" => 1986,
+               }
              } = jr
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
@@ -158,7 +164,12 @@ defmodule MalanWeb.UserControllerTest do
         preferences: %{theme: "dark"},
         sex: "male",
         birthday: ~U[1986-06-13 01:09:08.105179Z],
-        roles: ["admin", "user"]  # Shouldn't make it through
+        roles: ["admin", "user"],  # Shouldn't make it through
+        custom_attrs: %{
+          "hereiam" => "rockyou",
+          "likea" => "hurricane",
+          "year" => 1986,
+        }
       }
       check_response = fn (conn) ->
         assert %{
@@ -185,7 +196,12 @@ defmodule MalanWeb.UserControllerTest do
             "privacy_policy_version" => 1,
             "timestamp" => pptimestamp
           }],
-          "nick_name" => "Eddie van Halen"
+          "nick_name" => "Eddie van Halen",
+          "custom_attrs" => %{
+            "hereiam" => "rockyou",
+            "likea" => "hurricane",
+            "year" => 1986,
+          }
         } = json_response(conn, 200)["data"]
         for ts <- [pptimestamp, tostimestamp] do
           assert {:ok, ts, 0} = DateTime.from_iso8601(ts)

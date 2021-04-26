@@ -31,6 +31,7 @@ defmodule Malan.Accounts.User do
     field :ethnicity_enum, :integer        # nil means not specified
     field :sex_enum, :integer              # nil means not specified
     field :gender_enum, :integer           # nil means not specified
+    field :custom_attrs, :map              # Free form JSON for dependent services to use
 
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
@@ -62,7 +63,7 @@ defmodule Malan.Accounts.User do
   @doc false
   def registration_changeset(user, params) do
     user
-    |> cast(params, [:username, :email, :password, :first_name, :last_name, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight])
+    |> cast(params, [:username, :email, :password, :first_name, :last_name, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :custom_attrs])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
     |> put_change(:preferences, %{theme: "light"})
@@ -72,7 +73,7 @@ defmodule Malan.Accounts.User do
   @doc false
   def update_changeset(user, params) do
     user
-    |> cast(params, [:password, :accept_tos, :accept_privacy_policy, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height])
+    |> cast(params, [:password, :accept_tos, :accept_privacy_policy, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
     |> put_accept_tos()
     |> put_accept_privacy_policy()
@@ -84,7 +85,7 @@ defmodule Malan.Accounts.User do
     # Note that admins are NOT allowed to accept ToS or Privacy Policy
     # on behalf of users
     user
-    |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height])
+    |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
     |> put_reset_pass()
     |> validate_common()

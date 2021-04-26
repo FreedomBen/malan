@@ -41,7 +41,8 @@ defmodule MalanWeb.UserView do
       tos_accept_events: render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
       privacy_policy_accept_events: render_many(user.privacy_policy_accept_events, PrivacyPolicyAcceptEventView, "privacy_policy_accept_event.json"),
       roles: user.roles,
-      preferences: render_one(user.preferences, PreferencesView, "preferences.json")}
+      preferences: render_one(user.preferences, PreferencesView, "preferences.json"),
+      custom_attrs: user.custom_attrs}
       |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
       |> Enum.into(%{})
   end
