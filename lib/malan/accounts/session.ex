@@ -37,7 +37,7 @@ defmodule Malan.Accounts.Session do
     session
     |> cast(attrs, [:user_id, :never_expires, :expires_in_seconds, :ip_address, :location])
     |> put_api_token()
-    |> set_expiration_time(1, :weeks)
+    |> set_expiration_time()
     |> put_authenticated_at()
     |> validate_required([:api_token_hash, :expires_at, :authenticated_at, :ip_address])
   end
@@ -102,5 +102,10 @@ defmodule Malan.Accounts.Session do
 
   defp set_expiration_time(changeset, num_weeks, :weeks) do
     set_expiration_time(changeset, num_weeks * 7, :days)
+  end
+
+  defp set_expiration_time(changeset) do
+    num_secs = Application.get_env(:malan, Malan.Accounts.Session)[:default_token_expiration_secs]
+    set_expiration_time(changeset, num_secs, :seconds)
   end
 end
