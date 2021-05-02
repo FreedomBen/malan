@@ -7,7 +7,7 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :is_self_or_admin when action not in [:index, :create, :whoami]
+  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -22,6 +22,8 @@ defmodule MalanWeb.UserController do
       |> render("show.json", user: user)
     end
   end
+
+  def me(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
   def show(conn, %{"id" => id}) do
     user = Accounts.get_user(id)
