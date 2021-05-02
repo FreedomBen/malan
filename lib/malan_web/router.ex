@@ -69,6 +69,8 @@ defmodule MalanWeb.Router do
   scope "/api", MalanWeb do
     pipe_through :authed_api_no_tos_pp
 
+    get "/users/me", UserController, :me
+
     # is_self_or_admin in UserController will prevent non-owners from accessing
     resources "/users", UserController, only: [:show, :update, :delete]
   end
