@@ -12,7 +12,7 @@ config :malan,
   generators: [binary_id: true]
 
 config :malan, Malan.Accounts.Session,
-  default_token_expiration_secs: System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") |> String.to_integer() || 604_800 # One week
+  default_token_expiration_secs: System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") || "604800" |> String.to_integer() # One week
 
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
