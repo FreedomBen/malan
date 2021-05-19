@@ -51,20 +51,6 @@ data:
 
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  labels:
-    app: malan
-  name: malan-secrets
-  namespace: malan
-type: Opaque
-stringData:
-  DB_USERNAME: postgres
-  DB_PASSWORD: postgres
-  DATABASE_URL: "ecto://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOSTNAME}/${DB_DATABASE}"
-
----
-apiVersion: v1
 kind: Service
 metadata:
   labels:
