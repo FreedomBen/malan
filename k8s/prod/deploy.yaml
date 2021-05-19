@@ -32,7 +32,7 @@ spec:
           periodSeconds: 2
         envFrom:
           - configMapRef:
-              name: malan-config
+              name: malan-web-config
           - secretRef:
               name: malan-secrets
 
@@ -42,12 +42,10 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
-  name: malan-config
+  name: malan-web-config
   namespace: malan
 data:
   BIND_ADDR: '0.0.0.0'
-  DB_HOSTNAME: 'postgres'
-  DB_DATABASE: 'malan_prod'
 
 ---
 apiVersion: v1

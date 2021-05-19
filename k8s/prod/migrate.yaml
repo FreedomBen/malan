@@ -11,12 +11,10 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
-  name: malan-config
+  name: malan-migration-config
   namespace: malan
 data:
-  BIND_ADDR: '0.0.0.0'
-  DB_HOSTNAME: 'postgres'
-  DB_DATABASE: 'malan_prod'
+  BIND_ADDR: '127.0.0.1'
 
 ---
 apiVersion: batch/v1
@@ -36,7 +34,7 @@ spec:
         command: ["mix", "ecto.create.migrate"]
         envFrom:
           - configMapRef:
-              name: malan-config
+              name: malan-migration-config
           - secretRef:
               name: malan-secrets
   ttlSecondsAfterFinished: 86400 # 24 hours
