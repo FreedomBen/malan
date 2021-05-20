@@ -15,6 +15,7 @@ metadata:
   namespace: malan
 data:
   BIND_ADDR: '127.0.0.1'
+  DB_POOL_SIZE: '5'
 
 ---
 apiVersion: batch/v1
