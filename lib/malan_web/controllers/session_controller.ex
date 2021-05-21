@@ -26,8 +26,8 @@ defmodule MalanWeb.SessionController do
     render(conn, "index.json", sessions: sessions)
   end
 
-  def create(conn, %{"session" => %{"username" => username, "password" => password}}) do
-    with {:ok, %Session{} = session} <- Accounts.create_session(username, password, put_ip_addr(%{}, conn)) do
+  def create(conn, %{"session" => %{"username" => username, "password" => password} = session_opts}) do
+    with {:ok, %Session{} = session} <- Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
       conn
       |> put_status(:created)
       |> render("show.json", session: session)
@@ -62,6 +62,6 @@ defmodule MalanWeb.SessionController do
 
   defp put_ip_addr(session_params, conn) do
     session_params
-    |> Map.put(:ip_address, get_ip_addr(conn))
+    |> Map.put("ip_address", get_ip_addr(conn))
   end
 end

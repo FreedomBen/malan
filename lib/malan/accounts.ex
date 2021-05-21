@@ -376,7 +376,7 @@ defmodule Malan.Accounts do
 
   def new_session(user_id, attrs) do
     attrs
-    |> Map.put(:user_id, user_id)
+    |> Map.put("user_id", user_id)
     |> new_session()
   end
 

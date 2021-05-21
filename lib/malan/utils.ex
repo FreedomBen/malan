@@ -71,6 +71,13 @@ defmodule Malan.Utils.DateTime do
     |> adjust_cur_time_trunc(:seconds)
   end
 
+  # New implementation, needs testing
+  #def distant_future(),
+    #do: adjust_cur_time(200, :years)
+
+  def adjust_cur_time(num_years, :years),
+    do: adjust_cur_time(round(num_years * 52.5), :weeks)
+
   def adjust_cur_time(num_weeks, :weeks),
     do: adjust_cur_time(num_weeks * 7, :days)
 
