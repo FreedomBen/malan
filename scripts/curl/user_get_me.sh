@@ -6,16 +6,7 @@ api_token="$(curl \
                --header "Content-Type: application/json" \
                --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
                http://localhost:4000/api/sessions/ \
-              | jq -r '.data.api_token')"
-
-user_id="$(curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/me \
-  | jq -r '.data.id')"
-  
+              | jq -r .data.api_token)"
 
 curl \
   --request GET \
@@ -23,4 +14,4 @@ curl \
   --header "Content-Type: application/json" \
   --header "Authorization: Bearer ${api_token}" \
   http://localhost:4000/api/users/me
-
+  
