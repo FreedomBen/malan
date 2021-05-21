@@ -167,57 +167,39 @@ defmodule Malan.Accounts do
   alias Malan.Accounts.Session
 
   @doc """
-  Returns the list of sessions.
+  Returns the list of sessions.  Can pass a user_id as first arg to get all session for user
 
   ## Examples
 
       iex> list_sessions(user)
       [%Session{}, ...]
-
-  """
-  def list_sessions(%User{id: user_id}), do: list_sessions(user_id)
-
-  @doc """
-  Returns the list of sessions.
-
-  ## Examples
-
       iex> list_sessions(user_id)
       [%Session{}, ...]
-
-  """
-  def list_sessions(user_id) do
-    Repo.all(from(s in Session, where: s.user_id == ^user_id))
-  end
-
-  @doc """
-  Returns the list of sessions.
-
-  ## Examples
-
       iex> list_sessions()
       [%Session{}, ...]
 
   """
-  def list_sessions do
-    Repo.all(Session)
+  def list_sessions(%User{id: user_id}), do: list_sessions(user_id)
+
+  def list_sessions(user_id) do
+    Repo.all(
+      from s in Session,
+      where: s.user_id == ^user_id
+    )
   end
+
+  def list_sessions, do: Repo.all(Session)
 
   @doc """
   Returns the list of all user sessions.  Requires being an admin.
 
   ## Examples
 
-      iex> list_all_sessions()
+      iex> list_user_sessions()
       [%Session{}, ...]
 
   """
-  def list_user_sessions(user_id) do
-    Repo.all(
-      from s in Session,
-      where: s.user_id == ^user_id
-    )
-  end
+  def list_user_sessions(user_id), do: list_sessions(user_id)
 
   @doc """
   Gets a single session.

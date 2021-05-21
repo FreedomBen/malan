@@ -167,7 +167,7 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
       conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
