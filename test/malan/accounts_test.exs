@@ -76,7 +76,7 @@ defmodule Malan.AccountsTest do
       assert user.sex_enum == 1
 
       user2 = Map.put(@user2_attrs, :sex, "incorrect")
-      assert {:error, %Ecto.Changeset{} = cs} = Accounts.register_user(user2)
+      assert {:error, %Ecto.Changeset{}} = Accounts.register_user(user2)
 
       user2 = Map.put(@user2_attrs, :sex, "male")
       assert {:ok, %User{} = user} = Accounts.register_user(user2)
@@ -93,7 +93,7 @@ defmodule Malan.AccountsTest do
       assert user.ethnicity_enum == 0
 
       user2 = Map.put(@user2_attrs, :ethnicity, "incorrect")
-      assert {:error, %Ecto.Changeset{} = cs} = Accounts.register_user(user2)
+      assert {:error, %Ecto.Changeset{}} = Accounts.register_user(user2)
 
       user2 = Map.put(@user2_attrs, :ethnicity, "not hispanic or latinx")
       assert {:ok, %User{} = user} = Accounts.register_user(user2)
@@ -415,7 +415,7 @@ defmodule Malan.AccountsTest do
       {:ok, session} = Accounts.create_session(
         user.username,
         user.password,
-        Map.merge(%{ip_address: "192.168.2.200"}, session_attrs)
+        Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
       )
 
       session
@@ -433,7 +433,7 @@ defmodule Malan.AccountsTest do
 
     test "create_session/1 with valid data creates a session" do
       user = user_fixture()
-      assert {:ok, %Session{} = session} = Accounts.create_session(user.username, user.password, %{ip_address: "192.168.2.200"})
+      assert {:ok, %Session{} = session} = Accounts.create_session(user.username, user.password, %{"ip_address" => "192.168.2.200"})
       # API token should be included after creation, but not after that
       assert session.api_token =~ ~r/[A-Za-z0-9]{10}/
       assert TestUtils.DateTime.within_last?(session.authenticated_at, 5, :seconds) == true
@@ -448,7 +448,7 @@ defmodule Malan.AccountsTest do
       assert {:ok, %Session{} = session} = Accounts.create_session(
         user.username,
         user.password,
-        %{never_expires: true, ip_address: "192.168.2.200"}
+        %{"never_expires" => true, "ip_address" => "192.168.2.200"}
       )
       assert DateTime.diff(session.expires_at, DateTime.utc_now) > 5_000_000_000
       assert {:ok, _, _, _, _, _} = Accounts.validate_session(session.api_token)
@@ -459,7 +459,7 @@ defmodule Malan.AccountsTest do
       assert {:ok, %Session{} = session} = Accounts.create_session(
         user.username,
         user.password,
-        %{expires_in_seconds: -120, ip_address: "192.168.2.200"}
+        %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
       )
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
@@ -471,7 +471,7 @@ defmodule Malan.AccountsTest do
       assert {:ok, %Session{} = session} = Accounts.create_session(
         user.username,
         user.password,
-        %{never_expires: false, expires_in_seconds: -120, ip_address: "192.168.2.200"}
+        %{"never_expires" => false, "expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
       )
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
@@ -481,7 +481,7 @@ defmodule Malan.AccountsTest do
     test "create_session/1 doesn't allow specifying user ID" do
       user1 = user_fixture(%{username: "username1"})
       user2 = user_fixture(%{username: "username2", email: "username2@example.com"})
-      assert {:ok, session} = Accounts.create_session(user1.username, user1.password, %{user_id: user2.id, ip_address: "192.168.2.200"})
+      assert {:ok, session} = Accounts.create_session(user1.username, user1.password, %{"user_id" => user2.id, "ip_address" => "192.168.2.200"})
       assert user2.id != user1.id
       assert session.user_id == user1.id
     end
@@ -530,13 +530,13 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_session/1 return an error when the session is revoked even when token expires infinitely" do
-      session = session_fixture(%{username: "randomusername2"}, %{never_expires: false})
+      session = session_fixture(%{username: "randomusername2"}, %{"never_expires" => false})
       assert {:ok, %Session{}} = Accounts.delete_session(session)
       assert {:error, :revoked} = Accounts.validate_session(session.api_token)
     end
 
     test "validate_session/1 return an error when the session is expired" do
-      session = session_fixture(%{username: "randomusername3"}, %{expires_in_seconds: -5})
+      session = session_fixture(%{username: "randomusername3"}, %{"expires_in_seconds" => -5})
       assert {:error, :expired} = Accounts.validate_session(session.api_token)
     end
 
@@ -597,8 +597,8 @@ defmodule Malan.AccountsTest do
         {:ok, session} = Helpers.Accounts.create_session(user)
         session
       end)
-      {:ok, forever_session} = Helpers.Accounts.create_session(user, %{never_expires: true})
-      assert {:ok, user_id, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
+      {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
+      assert {:ok, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
       assert DateTime.compare(
         Utils.DateTime.adjust_cur_time(36500, :days), exp
       ) == :lt
