@@ -57,24 +57,24 @@ defmodule MalanWeb.UserControllerTest do
       end)
     end
 
-    #test "requires being an admin to access (unauthenticated)", %{conn: conn} do
-    #  conn = get(conn, Routes.user_path(conn, :index))
-    #  assert conn.status == 403
-    #end
+    test "requires being an admin to access (unauthenticated)", %{conn: conn} do
+      conn = get(conn, Routes.user_path(conn, :index))
+      assert conn.status == 403
+    end
 
-    #test "requires being an admin to access (as regular user)", %{conn: conn} do
-    #  {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, rs.api_token)
-    #  conn = get(conn, Routes.user_path(conn, :index))
-    #  assert conn.status == 401
-    #end
+    test "requires being an admin to access (as regular user)", %{conn: conn} do
+      {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, rs.api_token)
+      conn = get(conn, Routes.user_path(conn, :index))
+      assert conn.status == 401
+    end
 
-    #test "requires being an admin to access (as moderator)", %{conn: conn} do
-    #  {:ok, _au, as} = Helpers.Accounts.moderator_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, as.api_token)
-    #  conn = get(conn, Routes.user_path(conn, :index))
-    #  assert conn.status == 401
-    #end
+    test "requires being an admin to access (as moderator)", %{conn: conn} do
+      {:ok, _au, as} = Helpers.Accounts.moderator_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = get(conn, Routes.user_path(conn, :index))
+      assert conn.status == 401
+    end
   end
 
   describe "create user and get user details with returned password" do
@@ -320,99 +320,94 @@ defmodule MalanWeb.UserControllerTest do
     #end
   end
 
-  #describe "admin update user" do
-  #  setup [:create_regular_user_with_session]
+  describe "admin update user" do
+    setup [:create_regular_user_with_session]
 
-  #  test "allows updating roles, password, preferences, nickname, and accepting ToS and privacy policy", %{conn: conn, user: %User{id: id} = user, session: session} do
-  #    # admin user cannot accept ToS or PP on behalf of user
-  #    # so these changes should not be applied
-  #    update_params = %{
-  #      email: "brandnew@address.com",
-  #      username: "brandnewusername",
-  #      first_name: "Brand",
-  #      last_name: "New",
-  #      nick_name: "Eddie v Dawg",
-  #      accept_tos: true,              # rejected
-  #      accept_privacy_policy: true,   # rejected
-  #      preferences: %{theme: "dark"}, # rejected
-  #      roles: ["admin", "user"],
-  #      sex: "female",
-  #      gender: "Trans*Woman",
-  #      race: ["Asian", "white"],
-  #      ethnicity: "Hispanic or Latinx",
-  #    }
-  #    check_response = fn (conn) ->
-  #      assert %{
-  #        "id" => id,
-  #        "email" => "brandnew@address.com",
-  #        "username" => "brandnewusername",
-  #        "email_verified" => nil,
-  #        "preferences" => %{"theme" => "dark"},
-  #        "roles" => ["admin", "user"],
-  #        "tos_accept_events" => [],
-  #        "privacy_policy_accept_events" => [],
-  #        "nick_name" => "Eddie v Dawg",
-  #        "sex" => "Female",
-  #        "gender" => "Trans*Woman",
-  #        "race" => ["Asian", "White"],
-  #      } = json_response(conn, 200)["data"]
-  #    end
+    test "allows updating roles, password, preferences, nickname, and accepting ToS and privacy policy", %{conn: conn, user: %User{id: id} = user, session: session} do
+      # admin user cannot accept ToS or PP on behalf of user
+      # so these changes should not be applied
+      update_params = %{
+        email: "brandnew@address.com",
+        username: "brandnewusername",
+        first_name: "Brand",
+        last_name: "New",
+        nick_name: "Eddie v Dawg",
+        accept_tos: true,              # rejected
+        accept_privacy_policy: true,   # rejected
+        preferences: %{theme: "dark"}, # rejected
+        roles: ["admin", "user"],
+        sex: "female",
+        gender: "Trans*Woman",
+        race: ["Asian", "white"],
+        ethnicity: "Hispanic or Latinx",
+      }
+      check_response = fn (conn) ->
+        assert %{
+          "id" => _id,
+          "email" => "brandnew@address.com",
+          "username" => "brandnewusername",
+          "email_verified" => nil,
+          "preferences" => %{"theme" => "dark"},
+          "roles" => ["admin", "user"],
+          "tos_accept_events" => [],
+          "privacy_policy_accept_events" => [],
+          "nick_name" => "Eddie v Dawg",
+          "sex" => "Female",
+          "gender" => "Trans*Woman",
+          "race" => ["Asian", "White"],
+        } = json_response(conn, 200)["data"]
+      end
 
-  #    conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
 
-  #    conn = get(conn, Routes.user_path(conn, :show, id))
-  #    assert %{
-  #      "nick_name" => "reggy",
-  #      "tos_accept_events" => [],
-  #      "privacy_policy_accept_events" => []
-  #    } = json_response(conn, 200)["data"]
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{
+        "nick_name" => "reggy",
+        "tos_accept_events" => [],
+        "privacy_policy_accept_events" => []
+      } = json_response(conn, 200)["data"]
 
-  #    # regular user can't call admin_update
-  #    conn = put(conn, Routes.user_path(conn, :admin_update, user), user: update_params)
-  #    assert conn.status == 401
+      # regular user can't call admin_update
+      conn = put(conn, Routes.user_path(conn, :admin_update, user), user: update_params)
+      assert conn.status == 401
 
-  #    {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
-  #    conn = put(conn, Routes.user_path(conn, :admin_update, user), user: update_params)
+      {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = put(conn, Routes.user_path(conn, :admin_update, user), user: update_params)
 
-  #    assert %{"id" => ^id} = json_response(conn, 200)["data"]
-  #    check_response.(conn)
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      check_response.(conn)
 
-  #    conn = get(conn, Routes.user_path(conn, :show, id))
-  #    check_response.(conn)
-  #  end
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      check_response.(conn)
+    end
 
-  #  test "allows removing roles", %{conn: conn, user: %User{}, session: _session} do
-  #    [{:ok, conn, _au1, _as1}, {:ok, _conn, au2, _as2}] =
-  #      Helpers.Accounts.admin_users_session_conn(conn, 2)
-  #    #{:ok, _au1, as1} = Helpers.Accounts.admin_user_with_session()
-  #    #{:ok, au2, _as2} = Helpers.Accounts.admin_user_with_session(%{email: "au2@mail.com", username: "au2"})
-  #    #conn = Helpers.Accounts.put_token(conn, as1.api_token)
-  #    conn = get(conn, Routes.user_path(conn, :show, au2.id))
-  #    assert %{"roles" => ["admin", "user"]} = json_response(conn, 200)["data"]
-  #    conn = put(conn, Routes.user_path(conn, :admin_update, au2.id), user: %{roles: ["user"]})
-  #    assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
-  #    conn = get(conn, Routes.user_path(conn, :show, au2.id))
-  #    assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
-  #  end
-  #end
+    test "allows removing roles", %{conn: conn, user: %User{}, session: _session} do
+      [{:ok, conn, _au1, _as1}, {:ok, _conn, au2, _as2}] =
+        Helpers.Accounts.admin_users_session_conn(conn, 2)
+      #{:ok, _au1, as1} = Helpers.Accounts.admin_user_with_session()
+      #{:ok, au2, _as2} = Helpers.Accounts.admin_user_with_session(%{email: "au2@mail.com", username: "au2"})
+      #conn = Helpers.Accounts.put_token(conn, as1.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, au2.id))
+      assert %{"roles" => ["admin", "user"]} = json_response(conn, 200)["data"]
+      conn = put(conn, Routes.user_path(conn, :admin_update, au2.id), user: %{roles: ["user"]})
+      assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
+      conn = get(conn, Routes.user_path(conn, :show, au2.id))
+      assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
+    end
+  end
 
-  #describe "delete user" do
-  #  setup [:create_regular_user_with_session]
+  describe "delete user" do
+    setup [:create_regular_user_with_session]
 
-  #  test "marks user as deleted", %{conn: conn, user: user, session: session} do
-  #    conn = Helpers.Accounts.put_token(conn, session.api_token)
-  #    conn = delete(conn, Routes.user_path(conn, :delete, user))
-  #    assert response(conn, 204)
+    test "marks user as deleted", %{conn: conn, user: user, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = delete(conn, Routes.user_path(conn, :delete, user))
+      assert response(conn, 204)
 
-  #    conn = get(conn, Routes.user_path(conn, :show, user))
-  #    assert conn.status == 404
-  #  end
-  #end
-
-  #defp create_regular_user(_) do
-  #  {:ok, user} = Helpers.Accounts.regular_user()
-  #  %{user: user}
-  #end
+      conn = get(conn, Routes.user_path(conn, :show, user))
+      assert conn.status == 404
+    end
+  end
 
   describe "me" do
     setup [:create_regular_user_with_session]
@@ -454,6 +449,11 @@ defmodule MalanWeb.UserControllerTest do
       conn = put(conn, Routes.user_path(conn, :whoami))
       assert conn.status == 403
     end
+  end
+
+  defp create_regular_user(_) do
+    {:ok, user} = Helpers.Accounts.regular_user()
+    %{user: user}
   end
 
   defp create_regular_user_with_session(_) do
