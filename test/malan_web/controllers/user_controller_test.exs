@@ -312,12 +312,12 @@ defmodule MalanWeb.UserControllerTest do
       } = json_response(conn, 200)["data"]
     end
 
-    #test "requires being an admin to access (as regular user)", %{conn: conn} do
-    #  {:ok, ru, rs} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, rs.api_token)
-    #  conn = get(conn, Routes.user_path(conn, :index))
-    #  assert conn.status == 401
-    #end
+    test "requires being an admin to access (as regular user)", %{conn: conn} do
+      {:ok, ru, rs} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, rs.api_token)
+      conn = get(conn, Routes.user_path(conn, :index))
+      assert conn.status == 401
+    end
   end
 
   describe "admin update user" do
