@@ -427,7 +427,9 @@ defmodule Malan.Accounts do
       from s in Session,
       join: u in User,
       on: s.user_id == u.id,
-      select: %{user_id: s.user_id,
+      select: %{
+        user_id: s.user_id,
+        session_id: s.id,
         expires_at: s.expires_at,
         revoked_at: s.revoked_at,
         roles: u.roles,
@@ -454,6 +456,7 @@ defmodule Malan.Accounts do
   """
   def session_valid?(%{
     user_id: user_id,
+    session_id: session_id,
     expires_at: expires_at,
     revoked_at: revoked_at,
     roles: roles,
@@ -463,12 +466,12 @@ defmodule Malan.Accounts do
     cond do
       !!revoked_at -> {:error, :revoked}
       DateTime.compare(expires_at, DateTime.utc_now) == :lt -> {:error, :expired}
-      true -> {:ok, user_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+      true -> {:ok, user_id, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     end
   end
 
-  def session_valid?(user_id, expires_at, revoked_at, roles) do
-    session_valid?([user_id, expires_at, revoked_at, roles])
+  def session_valid?(user_id, session_id, expires_at, revoked_at, roles) do
+    session_valid?([user_id, session_id, expires_at, revoked_at, roles])
   end
 
   def session_revoked?(revoked_at), do: !!revoked_at
@@ -486,7 +489,7 @@ defmodule Malan.Accounts do
 
   ## Examples
 
-    assert {:ok, user_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver} = validate_session(api_token)
+    assert {:ok, user_id, session_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver} = validate_session(api_token)
     assert {:error, :revoked} = validate_session(api_token)
     assert {:error, :expired} = validate_session(api_token)
     assert {:error, :not_found} = validate_session(api_token)

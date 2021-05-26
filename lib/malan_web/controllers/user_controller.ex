@@ -69,7 +69,7 @@ defmodule MalanWeb.UserController do
 
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
-      {:ok, user_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, user_roles, expires_at, tos, pp)
+      {:ok, user_id, session_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
       # {:error, :revoked}
       # {:error, :expired}
       # {:error, :not_found}
@@ -77,11 +77,12 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  defp render_whoami(conn, user_id, user_roles, expires_at, tos, pp) do
+  defp render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp) do
     render(
       conn,
       "whoami.json",
       user_id: user_id,
+      session_id: session_id,
       user_roles: user_roles,
       expires_at: expires_at,
       tos: tos,
@@ -122,9 +123,9 @@ defmodule MalanWeb.UserController do
 
   defp conn_to_session_info(conn) do
     with {:ok, api_token} <- retrieve_token(conn),
-         {:ok, user_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token)
+         {:ok, user_id, session_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token)
     do
-      {:ok, user_id, user_roles, expires_at, tos, pp}
+      {:ok, user_id, session_id, user_roles, expires_at, tos, pp}
     end
   end
 end

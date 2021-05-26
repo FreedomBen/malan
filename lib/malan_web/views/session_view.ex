@@ -24,4 +24,12 @@ defmodule MalanWeb.SessionView do
       |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
       |> Enum.into(%{})
   end
+
+  def render("delete_all.json", %{num_revoked: num_revoked}) do
+    %{data: %{
+      status: true,
+      num_revoked: num_revoked,
+      message: "Successfully revoked #{num_revoked} session"
+    }}
+  end
 end

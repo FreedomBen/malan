@@ -54,6 +54,14 @@ defmodule MalanWeb.SessionController do
     end
   end
 
+  def delete_current(conn, %{}), do: delete(conn, %{"id" => conn.assigns.authed_session_id})
+
+  def delete_all(conn, %{"user_id" => user_id}) do
+    with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
+      render(conn, "delete_all.json", num_revoked: num_revoked)
+    end
+  end
+
   defp get_ip_addr(conn) do
     conn.remote_ip
     |> :inet_parse.ntoa()

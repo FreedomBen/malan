@@ -16,6 +16,7 @@ defmodule MalanWeb.AuthControllerTest do
   def conn_assigns_for_invalid_token(auth_error) do
   %{
     authed_user_id: nil,
+    authed_session_id: nil,
     authed_user_is_admin: false,
     authed_user_accepted_pp: false,
     authed_user_accepted_tos: false,

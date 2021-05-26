@@ -451,7 +451,7 @@ defmodule Malan.AccountsTest do
         %{"never_expires" => true, "ip_address" => "192.168.2.200"}
       )
       assert DateTime.diff(session.expires_at, DateTime.utc_now) > 5_000_000_000
-      assert {:ok, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
     end
 
     test "create_session/1 with expires_in_seconds expires at specified time" do
@@ -515,8 +515,9 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/1 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{username: "randomusername1"})
-      assert {:ok, user_id, roles, exp, tos, pp} = Accounts.validate_session(session.api_token)
+      assert {:ok, user_id, session_id, roles, exp, tos, pp} = Accounts.validate_session(session.api_token)
       assert user_id == session.user_id
+      assert session_id == session.id
       assert roles == ["user"]
       assert TestUtils.DateTime.first_after_second_within?(Utils.DateTime.adjust_cur_time(1, :weeks), exp, 3, :seconds)
       assert is_nil(tos)
@@ -598,13 +599,13 @@ defmodule Malan.AccountsTest do
         session
       end)
       {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
-      assert {:ok, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
+      assert {:ok, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
       assert DateTime.compare(
         Utils.DateTime.adjust_cur_time(36500, :days), exp
       ) == :lt
 
       Enum.each(sessions, fn (s) ->
-        assert {:ok, user_id, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, user_id, _, _, _, _, _} = Accounts.validate_session(s.api_token)
         assert user_id == user.id
       end)
 

@@ -47,9 +47,10 @@ defmodule MalanWeb.UserView do
       |> Enum.into(%{})
   end
 
-  def render("whoami.json", %{user_id: user_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do
+  def render("whoami.json", %{user_id: user_id, session_id: session_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do
     %{data:
       %{user_id: user_id,
+        session_id: session_id,
         user_roles: user_roles,
         expires_at: expires_at,
         terms_of_service: tos,

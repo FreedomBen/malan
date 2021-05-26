@@ -2,6 +2,7 @@ defmodule MalanWeb.SessionControllerTest do
   use MalanWeb.ConnCase, async: true
 
   alias Malan.Utils
+  alias Malan.Accounts
 
   alias Malan.Test.Helpers
   alias Malan.Test.Utils, as: TestUtils
@@ -318,6 +319,85 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       {:ok, conn, _ru, _rs} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
+      assert conn.status == 401
+    end
+  end
+
+  describe "delete current session" do
+    test "deletes current user session", %{conn: conn} do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      conn = delete(conn, Routes.session_path(conn, :delete_current))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      conn = delete(conn, Routes.session_path(conn, :delete_current))
+      assert %{
+        "revoked_at" => revoked_at,
+        "is_valid" => false,
+      } = json_response(conn, 200)["data"]
+      {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert {:error, :revoked} = Accounts.validate_session(session.api_token)
+    end
+  end
+
+  describe "delete all user sessions" do
+    test "deletes all user sessions", %{conn: conn} do
+      {:ok, user, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, s2} = Helpers.Accounts.create_session(user)
+      {:ok, s3} = Helpers.Accounts.create_session(user)
+      {:ok, s4} = Helpers.Accounts.create_session(user)
+
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      for s <- [s1, s2, s3, s4] do
+        assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+      end
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+      assert %{
+        "message" => _message,
+        "num_revoked" => 4,
+        "status" => true,
+      } = json_response(conn, 200)["data"]
+      for s <- [s1, s2, s3, s4] do
+         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+      end
+    end
+
+    test "can be called by admin non-owner", %{conn: conn} do
+      {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
+
+      {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, s2} = Helpers.Accounts.create_session(ru)
+      {:ok, s3} = Helpers.Accounts.create_session(ru)
+      {:ok, s4} = Helpers.Accounts.create_session(ru)
+
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      for s <- [s1, s2, s3, s4] do
+        assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+      end
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
+      assert %{
+        "message" => _message,
+        "num_revoked" => 4,
+        "status" => true,
+      } = json_response(conn, 200)["data"]
+      for s <- [s1, s2, s3, s4] do
+         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+      end
+    end
+
+    test "can't be called by non-admin non-owner", %{conn: conn} do
+      {:ok, ru, rs} = Helpers.Accounts.regular_user_with_session()
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), rs.api_token)
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
       assert conn.status == 401
     end
   end
