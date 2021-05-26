@@ -409,6 +409,7 @@ defmodule MalanWeb.UserControllerTest do
     end
   end
 
+  # Deprecated in favor of "current"
   describe "me" do
     setup [:create_regular_user_with_session]
 
@@ -424,7 +425,27 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "requires being authenticated to access", %{conn: conn, user: %User{} = _user} do
-      conn = put(conn, Routes.user_path(conn, :whoami))
+      conn = put(conn, Routes.user_path(conn, :me))
+      assert conn.status == 403
+    end
+  end
+
+  describe "current" do
+    setup [:create_regular_user_with_session]
+
+    test "Retrieves all user info based on API token", %{conn: conn, user: %User{id: user_id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :current))
+      assert %{
+               "id" => ^user_id,
+               "roles" => ["user"],
+               "username" => _username,
+               "nick_name" => _nick_name,
+             } = json_response(conn, 200)["data"]
+    end
+
+    test "requires being authenticated to access", %{conn: conn, user: %User{} = _user} do
+      conn = put(conn, Routes.user_path(conn, :current))
       assert conn.status == 403
     end
   end

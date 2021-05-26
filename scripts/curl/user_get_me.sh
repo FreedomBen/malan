@@ -13,5 +13,5 @@ curl \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
   --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/me
+  http://localhost:4000/api/users/current
   

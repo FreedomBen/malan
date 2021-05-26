@@ -7,7 +7,7 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me]
+  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me, :current]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -23,7 +23,9 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  def me(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
+  # Deprecated in favor of "current'
+  def me(conn, _params),      do: show(conn, %{"id" => conn.assigns.authed_user_id})
+  def current(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
   def show(conn, %{"id" => id}) do
     user = Accounts.get_user(id)
