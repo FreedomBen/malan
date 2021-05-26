@@ -74,8 +74,9 @@ defmodule MalanWeb.Router do
     # is_self_or_admin in UserController will prevent non-owners from accessing
     resources "/users", UserController, only: [:show, :update, :delete]
 
-    # Delete the current session (the one belonging to the api_token in use)
+    # Get or Delete the current session (the one belonging to the api_token in use)
     # Not piped through "owner" because no User ID is passed and it will only delete the current session
+    get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
   end
 

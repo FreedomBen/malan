@@ -46,6 +46,8 @@ defmodule MalanWeb.SessionController do
     render(conn, "show.json", session: session)
   end
 
+  def show_current(conn, %{}), do: show(conn, %{"id" => conn.assigns.authed_session_id})
+
   def delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
 

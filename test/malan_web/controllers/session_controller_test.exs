@@ -119,6 +119,36 @@ defmodule MalanWeb.SessionControllerTest do
     end
   end
 
+  describe "get current session" do
+    test "gets the current user session", %{conn: conn} do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      user_id = user.id
+      session_id = session.id
+      conn = get(conn, Routes.session_path(conn, :show_current))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      conn = get(conn, Routes.session_path(conn, :show_current))
+      jr = json_response(conn, 200)["data"]
+      assert %{
+               "id" => ^session_id,
+               "user_id" => ^user_id,
+               "authenticated_at" => authenticated_at,
+               "expires_at" => expires_at,
+               "ip_address" => "192.168.2.200",
+               "location" => nil,
+               "revoked_at" => nil,
+               "is_valid" => true,
+             } = jr
+      assert false == Map.has_key?(jr, "api_token")
+      {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second))
+    end
+  end
+
   describe "create session" do
     test "renders session when data is valid", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
