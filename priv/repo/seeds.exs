@@ -10,7 +10,7 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-#alias Malan.Accounts
+alias Malan.Accounts
 alias Malan.Accounts.User
 
 root = User.registration_changeset(%User{}, %{
@@ -24,6 +24,10 @@ root = User.registration_changeset(%User{}, %{
   birthday: ~U[1983-06-13 01:09:08.105179Z]
 })
 Malan.Repo.insert!(root, on_conflict: :nothing, conflict_target: :username)
+
+# Promote root user to admin (currently the role gets stripped on create.  See #7)
+Accounts.get_user_by(username: "root")
+|> Accounts.admin_update_user(%{roles: ["admin", "user"]})
 
 #ben = User.registration_changeset(%User{}, %{
 #  username: "ben",

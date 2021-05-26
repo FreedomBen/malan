@@ -49,8 +49,8 @@ defmodule MalanWeb.Router do
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :is_admin          # Ensures user is admin
-    plug :has_accepted_tos  # Ensures latest ToS have been accepted
-    plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    #plug :has_accepted_tos  # Ensures latest ToS have been accepted
+    #plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
   end
 
   scope "/health_check", MalanWeb, log: false do

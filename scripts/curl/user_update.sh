@@ -6,7 +6,7 @@ NEW_PASSWORD="Password1000"
 NEW_LAST_NAME="Super"
 NEW_FIRST_NAME="User"
 
-NEW_ROLES='["user","admin"]'
+NEW_ROLES='["admin","user"]'
 
 # First get a token for the bootstrapped super user
 api_token="$(curl \
@@ -17,6 +17,14 @@ api_token="$(curl \
                http://localhost:4000/api/sessions/ \
               | jq -r '.data.api_token')"
 
+
+curl \
+  --request GET \
+  --header "Accept: application/json" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer ${api_token}" \
+  http://localhost:4000/api/users/me
+  
 
 # Now create the new user
 user_id="$(curl \
@@ -29,13 +37,13 @@ user_id="$(curl \
   | jq -r '.data.id')"
 
 # Get the user's ID
-#if [ "${user_id}" = 'null' ]; then
-#  # creating the user failed.  It probably already exists
-#fi
+if [ "${user_id}" = 'null' ]; then
+  echo creating the user failed.  It probably already exists
+  exit 1
+fi
 
-user_id='f5763dde-b922-4b92-b8aa-789734ae00cb'
-
-echo "user_id is: ${user_id}"
+#echo "api_token is: ${api_token}"
+#echo "user_id is: ${user_id}"
 
 # Now update the user
 curl \
@@ -44,6 +52,14 @@ curl \
   --header "Content-Type: application/json" \
   --header "Authorization: Bearer ${api_token}" \
   --data "{\"user\":{\"roles\":${NEW_ROLES}}}" \
+  http://localhost:4000/api/admin/users/${user_id}
+  #http://localhost:4000/api/users/${user_id}
+
+# Get the user to make sure it took hold
+curl \
+  --request GET \
+  --header "Accept: application/json" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer ${api_token}" \
   http://localhost:4000/api/users/${user_id}
-  #http://localhost:4000/api/admin/users/${user_id}
 
