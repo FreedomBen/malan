@@ -5,7 +5,7 @@ metadata:
   labels:
     app: malan
   name: malan
-  namespace: malan
+  namespace: malan-prod
 spec:
   replicas: 3
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         app: malan
-      namespace: malan
+      namespace: malan-prod
     spec:
       containers:
       - image: docker.io/freedomben/malan-prod:latest
@@ -43,10 +43,13 @@ metadata:
   labels:
     app: malan
   name: malan-web-config
-  namespace: malan
+  namespace: malan-prod
 data:
   BIND_ADDR: '0.0.0.0'
   DB_POOL_SIZE: '5'
+
+# Service annotations for Digital Ocean
+# https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/
 
 ---
 apiVersion: v1
@@ -55,7 +58,7 @@ metadata:
   labels:
     app: malan
   name: malan
-  namespace: malan
+  namespace: malan-prod
   annotations:
     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
     service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
