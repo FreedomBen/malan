@@ -190,6 +190,19 @@ defmodule Malan.Accounts do
 
   def list_sessions, do: Repo.all(Session)
 
+  #def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
+
+  #def list_active_session(user_id) do
+  #  Repo.all(
+
+  #    from s in Session,
+  #    where: s.user_id == ^user_id and s.kjll
+
+  #    from(s in Session, where: s.user_id == ^user_id),
+  #    set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
+  #  )
+  #end
+
   @doc """
   Returns the list of all user sessions.  Requires being an admin.
 
