@@ -25,7 +25,7 @@ spec:
       namespace: malan-dev
     spec:
       containers:
-      - image: docker.io/freedomben/malan:latest
+      - image: docker.io/freedomben/malan-dev:latest
         name: malan
         imagePullPolicy: Always
         ports:

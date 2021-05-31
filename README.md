@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: 'postgres'
 
   malan:
-    image: 'docker.io/freedomben/malan:latest'
+    image: 'docker.io/freedomben/malan-dev:latest'
     ports:
       - "4000:4000"
     environment:

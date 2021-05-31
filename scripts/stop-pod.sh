@@ -8,7 +8,7 @@ PODNAME='malan_pod'
 #PG_IMG='postgres:12.6-alpine'
 PG_NAME='malan_postgres'
 
-#BODYHACK_IMG='freedomben/malan'
+#BODYHACK_IMG='freedomben/malan-dev'
 BODYHACK_NAME='malan'
 
 #MAX_CONNECTIONS=200
