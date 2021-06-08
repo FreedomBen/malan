@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: malan-debug
+  name: malan-debug-pod
+  namespace: malan
+  #namespace: malan-dev
+spec:
+  containers:
+    - image: docker.io/freedomben/malan-prod:latest
+      name: malan-debug-pod
+      imagePullPolicy: Always
+      command: ["sleep", "30000"]
+      envFrom:
+      - configMapRef:
+          name: malan-web-config
+      - secretRef:
+          name: malan-secrets
