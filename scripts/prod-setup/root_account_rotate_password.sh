@@ -43,7 +43,7 @@ api_token="$(curl -s \
                --request POST \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
-               --data '{"session":{"username":"root","password":"password10"}}' \
+               --data "{\"session\":{\"username\":\"${MALAN_ROOT_USERNAME}\",\"password\":\"${MALAN_OLD_ROOT_PW}\"}}" \
                "${MALAN_PROTOCOL}://${MALAN_HOSTNAME}/api/sessions/" \
               | jq -r '.data.api_token')"
 
