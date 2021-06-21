@@ -430,6 +430,50 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
       assert conn.status == 401
     end
+
+    test "Does not change previously closed sessions", %{conn: conn} do
+      {:ok, user, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, s2} = Helpers.Accounts.create_session(user)
+      {:ok, s3} = Helpers.Accounts.create_session(user)
+      {:ok, s4} = Helpers.Accounts.create_session(user)
+
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+      assert conn.status == 403
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      for s <- [s1, s2, s3, s4] do
+        assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+      end
+
+      {:ok, %Accounts.Session{revoked_at: s3_revoked_at}} = Accounts.revoke_session(s3)
+      {:ok, %Accounts.Session{revoked_at: s4_revoked_at}} = Accounts.revoke_session(s4)
+      assert TestUtils.DateTime.within_last?(s3_revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(s4_revoked_at, 2, :seconds) == true
+
+      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s1.api_token)
+      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s2.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(s3.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(s4.api_token)
+
+      conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+      assert %{
+        "message" => _message,
+        "num_revoked" => 2,
+        "status" => true,
+      } = json_response(conn, 200)["data"]
+
+      assert {:error, :revoked} = Accounts.validate_session(s1.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(s2.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(s3.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(s4.api_token)
+
+      # Verify that revoked_at is same for s1 and s2 and not matching s3 and s4
+      assert %Accounts.Session{revoked_at:  s1_revoked_at} = Accounts.get_session!(s1.id)
+      assert %Accounts.Session{revoked_at:  s2_revoked_at} = Accounts.get_session!(s2.id)
+      assert %Accounts.Session{revoked_at: ^s3_revoked_at} = Accounts.get_session!(s3.id)
+      assert %Accounts.Session{revoked_at: ^s4_revoked_at} = Accounts.get_session!(s4.id)
+
+      require IEx; IEx.pry
+    end
   end
 
   #describe "show/valid session" do
