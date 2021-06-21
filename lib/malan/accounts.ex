@@ -868,12 +868,14 @@ defmodule Malan.Accounts do
   def revoke_active_sessions(user_id) do
     {num_revoked, nil} =
       Repo.update_all(
-        from(s in Session, where: s.user_id == ^user_id),
+        from(s in Session, where: s.user_id == ^user_id and is_nil(s.revoked_at)),
         set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
       )
 
     {:ok, num_revoked}
   end
+
+  def revoke_session(%Session{} = session), do: delete_session(%Session{} = session)
 
   alias Malan.Accounts.Team
 
