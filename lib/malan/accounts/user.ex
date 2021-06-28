@@ -139,7 +139,7 @@ defmodule Malan.Accounts.User do
   defp validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
     changeset
     |> validate_required([:password])
-    |> validate_length(:password, min: 10, max: 100)
+    |> validate_length(:password, min: 6, max: 100)
     |> put_pass_hash()
   end
 
