@@ -463,7 +463,7 @@ defmodule Malan.Accounts do
 
   Returns
 
-    {:ok, user_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+    {:ok, user_id, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     {:error, :revoked}
     {:error, :expired}
   """

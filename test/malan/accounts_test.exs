@@ -421,6 +421,19 @@ defmodule Malan.AccountsTest do
       session
     end
 
+    def session_valid_fixture(args \\ %{}) do
+      %{
+        user_id: "user_id",
+        session_id: "session_id",
+        expires_at: Utils.DateTime.adjust_cur_time(7, :days),
+        revoked_at: nil,
+        roles: ["user"],
+        latest_tos_accept_ver: "1",
+        latest_pp_accept_ver: "2",
+      }
+      |> Map.merge(args)
+    end
+
     test "list_sessions/0 returns all sessions" do
       session = %{session_fixture() | api_token: nil}
       assert Accounts.list_sessions() == [session]
@@ -622,6 +635,46 @@ defmodule Malan.AccountsTest do
       Accounts.user_add_role("admin", user.id)
       assert {:ok, true} = Accounts.user_is_admin?(user.id)
     end
+
+    test "session_valid?/1 with nil returns error not found" do
+      assert {:error, :not_found} = Accounts.session_valid?(nil)
+    end
+
+    test "session_valid?/1 with map revoked tokens always shows revoked" do
+      assert {:error, :revoked} = Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now}))
+      assert {:error, :revoked} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.adjust_cur_time(-2, :hours), revoked_at: DateTime.utc_now}))
+    end
+
+    test "session_valid?/1 returns expected structure when valid" do
+      args = %{
+        user_id: user_id,
+        session_id: session_id,
+        expires_at: expires_at,
+        revoked_at: revoked_at,
+        roles: roles,
+        latest_tos_accept_ver: latest_tos_accept_ver,
+        latest_pp_accept_ver: latest_pp_accept_ver,
+      } = %{
+        user_id: "123",
+        session_id: "abc",
+        expires_at: Utils.DateTime.adjust_cur_time(2, :days),
+        revoked_at: nil,
+        roles: ["user"],
+        latest_tos_accept_ver: "12",
+        latest_pp_accept_ver: "13",
+      }
+
+      assert {:ok, ^user_id, ^session_id, ^roles, ^expires_at, ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
+    end
+
+    test "session_valid?/1 with map expired but not revoked is expired" do
+      assert {:error, :expired} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.adjust_cur_time(-2, :hours), revoked_at: nil}))
+    end
+
+    test "session_valid?/1 with forever token is valid" do
+      assert {:ok, _, _, _, _, _, _} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.distant_future, revoked_at: nil}))
+    end
+
   end
 
   #describe "teams" do
