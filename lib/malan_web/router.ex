@@ -53,7 +53,7 @@ defmodule MalanWeb.Router do
     #plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
   end
 
-  scope "/health_check", MalanWeb, log: false do
+  scope "/health_check", MalanWeb, log: Application.get_env(:logger, :console)[:log_health_check] do
     get "/liveness", HealthCheckController, :liveness
     get "/readiness", HealthCheckController, :readiness
   end
