@@ -116,6 +116,11 @@ defmodule Malan.Accounts do
      do: {:ok, user}
   end
 
+  def update_user_password(user_id, password) do
+    get_user(user_id)
+    |> update_user(%{"password" => password})
+  end
+
   @doc """
   Updates a user.
 

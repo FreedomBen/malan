@@ -146,6 +146,13 @@ defmodule Malan.AccountsTest do
       assert user.sex == "other"
     end
 
+    test "update_user_password/2 with valid data updates the user's password" do
+      %User{id: user_id} = user_fixture()
+      assert {:ok, %User{} = user} = Accounts.update_user_password(user_id, "some updated password")
+      assert user.password == "some updated password"
+      assert %{ user | password: nil } == Accounts.get_user!(user_id)
+    end
+
     test "update_user/2 disallows setting mutable fields" do
       # attempt to change and then do a get from the db to
       # verify no changes
@@ -650,7 +657,7 @@ defmodule Malan.AccountsTest do
         user_id: user_id,
         session_id: session_id,
         expires_at: expires_at,
-        revoked_at: revoked_at,
+        revoked_at: _revoked_at,
         roles: roles,
         latest_tos_accept_ver: latest_tos_accept_ver,
         latest_pp_accept_ver: latest_pp_accept_ver,
