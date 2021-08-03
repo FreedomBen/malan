@@ -58,4 +58,10 @@ defmodule MalanWeb.UserView do
       }
     }
   end
+
+  def render("password_reset.json", %{password_reset_token: password_reset_token}) do
+    %{data:
+      %{password_reset_token: password_reset_token}
+    }
+  end
 end

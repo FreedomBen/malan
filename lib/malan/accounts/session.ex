@@ -59,7 +59,7 @@ defmodule Malan.Accounts.Session do
     api_token = gen_api_token()
     changeset
     |> put_change(:api_token, api_token)
-    |> put_change(:api_token_hash, Utils.Crypto.hash_api_token(api_token))
+    |> put_change(:api_token_hash, Utils.Crypto.hash_token(api_token))
   end
 
   defp put_authenticated_at(changeset) do

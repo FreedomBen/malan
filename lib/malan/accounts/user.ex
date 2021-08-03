@@ -32,6 +32,8 @@ defmodule Malan.Accounts.User do
     field :sex_enum, :integer              # nil means not specified
     field :gender_enum, :integer           # nil means not specified
     field :custom_attrs, :map              # Free form JSON for dependent services to use
+    field :password_reset_token, :string, virtual: true
+    field :password_reset_token_hash, :string
 
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
@@ -96,6 +98,20 @@ defmodule Malan.Accounts.User do
     # In the future once out of beta, anonymize the data instead of marking it deleted
     user
     |> cast(%{deleted_at: Utils.DateTime.utc_now_trunc()}, [:deleted_at])
+  end
+
+  @doc false
+  def password_reset_create_changeset(user) do
+    user
+    |> change()
+    |> put_password_reset_token()
+  end
+
+  @doc false
+  def password_reset_clear_changeset(user) do
+    user
+    |> change()
+    |> clear_password_reset_token()
   end
 
   @doc false
@@ -355,5 +371,22 @@ defmodule Malan.Accounts.User do
       Map.has_key?(changeset.changes, :password) -> changeset
       true -> put_random_pass(changeset)
     end
+  end
+
+  defp gen_reset_token(), do: Utils.Crypto.strong_random_string(65)
+
+  defp put_password_reset_token(changeset) do
+    reset_token = gen_reset_token()
+    changeset
+    |> put_change(:password_reset_token, reset_token)
+    |> put_change(:password_reset_token_hash, Utils.Crypto.hash_token(reset_token))
+  end
+
+  defp clear_password_reset_token(changeset) do
+    changeset
+    |> put_change(:password_reset_token, nil)
+    |> put_change(:password_reset_token_hash, nil)
+    #|> put_change(:password_reset_token, "")
+    #|> put_change(:password_reset_token_hash, "")
   end
 end
