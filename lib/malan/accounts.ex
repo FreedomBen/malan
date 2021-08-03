@@ -116,9 +116,61 @@ defmodule Malan.Accounts do
      do: {:ok, user}
   end
 
+  def update_user_password(%User{} = user, password),
+    do: update_user(user, %{"password" => password})
+
   def update_user_password(user_id, password) do
     get_user(user_id)
-    |> update_user(%{"password" => password})
+    |> update_user_password(password)
+  end
+
+  @doc """
+  Checks if the provided password reset token in valid.  If it is, returns {:ok}.
+
+  If not returns {:error, :missing_password_reset_token} if the user does not have a valid reset token issued or {:error, :invalid_password_reset_token} if the password reset token is incorrect
+  """
+  def validate_password_reset_token(user, password_reset_token) do
+    cond do
+      Utils.nil_or_empty?(user.password_reset_token_hash) -> {:error, :missing_password_reset_token}
+      user.password_reset_token_hash == Utils.Crypto.hash_token(password_reset_token) -> {:ok}
+      # TODO:  Add clause to check for expiration
+      true -> {:error, :invalid_password_reset_token}
+    end
+  end
+
+  @doc """
+  Clears password reset token for user.
+
+  Returns {:ok, %User{}} on success
+  """
+  def clear_password_reset_token(%User{} = user) do
+    user
+    |> User.password_reset_clear_changeset()
+    |> Repo.update()
+  end
+
+  def clear_password_reset_token(user_id) do
+    get_user(user_id)
+    |> clear_password_reset_token()
+  end
+
+  @doc """
+    Returns: 
+
+      {:ok, %User{}}
+      {:error, :missing_password_reset_token}
+      {:error, :invalid_password_reset_token}
+  """
+  def reset_password_with_token(id, token, new_password) do
+    orig_user = get_user(id)
+    with {:ok}                 <- validate_password_reset_token(orig_user, token),
+         {:ok, %User{}}        <- clear_password_reset_token(orig_user),
+         {:ok, %User{} = user} <- update_user_password(orig_user, new_password)
+    do
+      {:ok, user}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -140,6 +192,17 @@ defmodule Malan.Accounts do
   defp update_usr(user, attrs) do
     user
     |> User.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Generates a password reset token that can then be used to reset the user's password.
+
+  Returns {:ok, %User{}} on success
+  """
+  def generate_password_reset(%User{} = user) do
+    user
+    |> User.password_reset_create_changeset()
     |> Repo.update()
   end
 
@@ -514,7 +577,7 @@ defmodule Malan.Accounts do
   """
   def validate_session(api_token) do
     api_token
-    |> Utils.Crypto.hash_api_token()
+    |> Utils.Crypto.hash_token()
     |> get_session_expires_revoked_by_token()
     |> session_valid?()
   end

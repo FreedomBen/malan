@@ -3,6 +3,15 @@ defmodule Malan.UtilsTest do
 
   use ExUnit.Case, async: true
 
+  describe "main" do
+    test "nil_or_empty?/1" do
+      assert true == Utils.nil_or_empty?(nil)
+      assert true == Utils.nil_or_empty?("")
+      assert false == Utils.nil_or_empty?("abcd")
+      assert false == Utils.nil_or_empty?(42)
+    end
+  end
+
   describe "Crypto" do
     test "#strong_random_string" do
       str = Utils.Crypto.strong_random_string(12)

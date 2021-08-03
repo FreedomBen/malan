@@ -20,6 +20,17 @@ defmodule Malan.Utils do
     Map.from_struct(struct)
     |> Map.delete(:__meta__)
   end
+
+  #def nil_or_empty?(nil), do: true
+  #def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
+
+  @doc """
+  Checks if the passwed item is nil or empty string.  The param will be passed to to_string()
+  and then trimmed and checked for empty string
+  """
+  def nil_or_empty?(str_or_nil) do
+    "" == str_or_nil |> to_string() |> String.trim()
+  end
 end
 
 defmodule Malan.Utils.Enum do
@@ -55,7 +66,7 @@ defmodule Malan.Utils.Crypto do
     Pbkdf2.no_user_verify()
   end
 
-  def hash_api_token(api_token) do
+  def hash_token(api_token) do
     :crypto.hash(:sha256, api_token)
     |> Base.encode64()
   end

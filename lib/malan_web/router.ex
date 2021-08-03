@@ -112,6 +112,7 @@ defmodule MalanWeb.Router do
     #end
   end
 
+  #scope "/api/admin", MalanWeb, as: :admin do
   scope "/api/admin", MalanWeb do
     pipe_through :admin_api
 
@@ -120,5 +121,12 @@ defmodule MalanWeb.Router do
 
     get "/sessions", SessionController, :admin_index
     delete "/sessions/:id", SessionController, :admin_delete
+
+    # These password reset endpoints are currently restricted to admins,
+    # but once Malan can send the reset token via email and also serve the landing
+    # page, these can be moved to unauthenticated so that users can reset their
+    # own passwords
+    post "/users/:id/reset_password", UserController, :admin_reset_password
+    put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token
   end
 end

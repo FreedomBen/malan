@@ -411,6 +411,62 @@ defmodule Malan.AccountsTest do
       assert %{"some_val" => "some_val", "second" => %{"third" => "third"}} = user.custom_attrs
       assert %{user | password: nil} == Accounts.get_user!(user.id)
     end
+
+    test "update_user_password/2 updates the user's password" do
+      new_password = "sodabubbles"
+      %User{id: user_id} = uf = user_fixture()
+      {:ok, user} = Accounts.update_user_password(uf.id, new_password)
+      assert user.password != uf.password
+      assert user.password == new_password
+      assert %{ user | password: nil } == Accounts.get_user!(user_id)
+    end
+
+    test "generate_password_reset/1 adds a reset token to the database" do
+      uf = user_fixture()
+      user = Accounts.get_user(uf.id)
+      assert is_nil(uf.password_reset_token)
+      assert is_nil(uf.password_reset_token_hash)
+      {:ok, updated} = Accounts.generate_password_reset(user)
+      assert %{ updated | password_reset_token: nil, password_reset_token_hash: nil } == user
+      assert updated.password_reset_token
+      assert updated.password_reset_token_hash
+      uuser = Accounts.get_user(updated.id)
+      assert is_nil(uuser.password_reset_token) # should be blank now
+      assert uuser.password_reset_token_hash
+    end
+
+    test "validate_password_reset_token/2 logic test: returns properly with no token" do
+      uf = user_fixture() # this won't have a password reset token yet
+      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, "")
+      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, nil)
+      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, "abcde")
+    end
+
+    test "validate_password_reset_token/2 logic test: returns properly incorrect token" do
+      uf = user_fixture()
+           |> Map.merge(%{password_reset_token: "ohai", password_reset_token_hash: "hellow"})
+      assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "helloworld")
+      assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "42")
+    end
+
+    test "validate_password_reset_token/2 logic test: returns properly with valid token" do
+      uf = user_fixture()
+      {:ok, user} = Accounts.generate_password_reset(uf)
+      assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
+    end
+
+    test "clear_password_reset_token/1 clears old password reset token" do
+      uf = user_fixture()
+      {:ok, user} = Accounts.generate_password_reset(uf)
+      assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
+      assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
+      # We know token is valid, now lets clear it
+      assert {:ok, cleared_user} = Accounts.clear_password_reset_token(user)
+      assert is_nil(cleared_user.password_reset_token)
+      assert is_nil(cleared_user.password_reset_token_hash)
+      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, user.password_reset_token)
+      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, cleared_user.password_reset_token)
+    end
   end
 
   describe "sessions" do

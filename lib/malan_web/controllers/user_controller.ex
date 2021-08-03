@@ -7,7 +7,7 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me, :current]
+  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me, :current, :admin_reset_password, :admin_reset_password_token]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -69,6 +69,42 @@ defmodule MalanWeb.UserController do
     end
   end
 
+  def admin_reset_password(conn, %{"id" => id}) do
+    user = Accounts.get_user(id)
+
+    if is_nil(user) do
+      render_user(conn, user)
+    else
+      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
+        render_password_reset(conn, user)
+      end
+    end
+  end
+
+  def admin_reset_password_token(conn, %{"id" => id, "token" => token, "new_password" => new_password}) do
+    user = Accounts.get_user(id)
+
+    if is_nil(user) do
+      render_user(conn, user)
+    else
+      with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(id, token, new_password)
+      do
+        conn
+        |> put_status(200)
+        |> json(%{ok: true})
+      else
+        {:error, :missing_password_reset_token} ->
+          conn
+          |> put_status(401)
+          |> json(%{ok: false, err: :missing_password_reset_token, msg: "No password reset token has been issued"})
+        {:error, :invalid_password_reset_token} ->
+          conn
+          |> put_status(401)
+          |> json(%{ok: false, err: :invalid_password_reset_token, msg: "Password reset token in invalid"})
+        end
+      end
+  end
+
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
       {:ok, user_id, session_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
@@ -101,6 +137,14 @@ defmodule MalanWeb.UserController do
     else
       render(conn, "show.json", user: user)
     end
+  end
+
+  defp render_password_reset(conn, user) do
+    render(
+      conn,
+      "password_reset.json",
+      password_reset_token: user.password_reset_token
+    )
   end
 
   defp is_self_or_admin(conn, _opts) do
