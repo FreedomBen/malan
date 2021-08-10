@@ -131,7 +131,16 @@ defmodule Malan.Utils.DateTime do
   def adjust_time(time, num_minutes, :minutes),
     do: adjust_time(time, num_minutes * 60, :seconds)
 
-  def adjust_time(time, num_seconds, :seconds), do:
-    DateTime.add(time, num_seconds, :second)
+  def adjust_time(time, num_seconds, :seconds),
+    do: DateTime.add(time, num_seconds, :second)
+
+  def expired?(expires_at, current_time),
+    do: DateTime.compare(expires_at, current_time) != :gt
+
+  def expired?(nil),
+    do: raise ArgumentError, message: "expires_at time must not be nil!"
+
+  def expired?(expires_at),
+    do: expired?(expires_at, DateTime.utc_now)
 
 end

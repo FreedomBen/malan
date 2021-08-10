@@ -101,8 +101,12 @@ defmodule MalanWeb.UserController do
           conn
           |> put_status(401)
           |> json(%{ok: false, err: :invalid_password_reset_token, msg: "Password reset token in invalid"})
-        end
+        {:error, :expired_password_reset_token} ->
+          conn
+          |> put_status(401)
+          |> json(%{ok: false, err: :expired_password_reset_token, msg: "Password reset token is expired"})
       end
+    end
   end
 
   def whoami(conn, _params) do
@@ -143,7 +147,8 @@ defmodule MalanWeb.UserController do
     render(
       conn,
       "password_reset.json",
-      password_reset_token: user.password_reset_token
+      password_reset_token: user.password_reset_token,
+      password_reset_token_expires_at: user.password_reset_token_expires_at
     )
   end
 
