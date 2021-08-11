@@ -47,15 +47,16 @@ defmodule MalanWeb.SessionControllerTest do
       conn = get(conn, Routes.session_path(conn, :admin_index))
       assert conn.status == 401
       
+      # When ToS and Privay Policy are required, uncomment the below
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 461
-      # Accept ToS
-      {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
-      conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 462
-      # Accept Privacy Policy
-      {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
+      #conn = get(conn, Routes.session_path(conn, :admin_index))
+      #assert conn.status == 461
+      ## Accept ToS
+      #{:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
+      #conn = get(conn, Routes.session_path(conn, :admin_index))
+      #assert conn.status == 462
+      ## Accept Privacy Policy
+      #{:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
       conn = get(conn, Routes.session_path(conn, :admin_index))
       jr = json_response(conn, 200)["data"]
       assert length(jr) == 4
