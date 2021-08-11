@@ -148,11 +148,12 @@ defmodule Malan.UserSchemaTest do
       )
     end
 
-    test "#validate_password invalid 1" do
+    test "#validate_password invalid 1 because too short" do
       validate_property(
         &User.validate_password/1,
         :password,
-        "password1",
+        #"password1",
+        "pass",
         false,
         "Should be at least"
       )
