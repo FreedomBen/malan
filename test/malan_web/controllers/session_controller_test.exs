@@ -38,7 +38,7 @@ defmodule MalanWeb.SessionControllerTest do
     test "lists all sessions if user is an admin", %{conn: conn} do
       users = Helpers.Accounts.regular_users_with_session(3)
       {:ok, _ru1, rs1} = List.first(users)
-      {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
 
       conn = get(conn, Routes.session_path(conn, :admin_index))
       assert conn.status == 403
@@ -356,7 +356,7 @@ defmodule MalanWeb.SessionControllerTest do
 
   describe "delete current session" do
     test "deletes current user session", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, _user, session} = Helpers.Accounts.regular_user_with_session()
       conn = delete(conn, Routes.session_path(conn, :delete_current))
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
@@ -397,7 +397,7 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
-      {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
       {:ok, s2} = Helpers.Accounts.create_session(ru)
@@ -422,7 +422,7 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "can't be called by non-admin non-owner", %{conn: conn} do
-      {:ok, ru, rs} = Helpers.Accounts.regular_user_with_session()
+      {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
       {:ok, user} = Helpers.Accounts.regular_user()
 
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))

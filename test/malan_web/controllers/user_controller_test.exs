@@ -314,7 +314,7 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "requires being an admin to access (as regular user)", %{conn: conn} do
-      {:ok, ru, rs} = Helpers.Accounts.regular_user_with_session()
+      {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
       conn = Helpers.Accounts.put_token(conn, rs.api_token)
       conn = get(conn, Routes.user_path(conn, :index))
       assert conn.status == 401
@@ -477,7 +477,7 @@ defmodule MalanWeb.UserControllerTest do
     setup [:create_regular_user_with_session]
 
     test "works", %{conn: conn, user: %User{id: user_id}, session: _session} do
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
       #conn = post(conn, Routes.user_path(conn, user_id, :admin_reset_password), %{})
@@ -506,11 +506,11 @@ defmodule MalanWeb.UserControllerTest do
 
     test "works", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
@@ -531,11 +531,11 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now login with new password to make sure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "Rejects when no password reset token is issued", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+    test "Rejects when no password reset token is issued", %{conn: conn, user: %User{id: user_id}, session: _session} do
+      {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, "abcde"), new_password: "everythingturnstostone")
@@ -544,7 +544,7 @@ defmodule MalanWeb.UserControllerTest do
 
     test "Rejects when token is wrong", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
@@ -569,11 +569,11 @@ defmodule MalanWeb.UserControllerTest do
 
     test "can't reuse a token", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
@@ -594,7 +594,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now login with new password to make sure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Try to use the reset token again
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
@@ -604,11 +604,11 @@ defmodule MalanWeb.UserControllerTest do
 
     test "can't use a reset token after a new one has been created", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
@@ -635,7 +635,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now login with the old password to make sure it still works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Now try to change password with token 2 and make sure it succeeds
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
@@ -649,12 +649,12 @@ defmodule MalanWeb.UserControllerTest do
 
       # Try to login with new password and ensure it works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
     test "can't use token after expiration", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
-      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
@@ -678,7 +678,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now login with the old password to make sure it still works
       conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
-      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
     test "requires auth to access", %{conn: conn, user: %User{} = user, session: _session} do
