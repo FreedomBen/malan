@@ -11,6 +11,9 @@ config :malan,
   ecto_repos: [Malan.Repo],
   generators: [binary_id: true]
 
+config :malan, Malan.Accounts.User,
+  default_password_reset_token_expiration_secs: System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") || "86400" |> String.to_integer() # 24 hours
+
 config :malan, Malan.Accounts.Session,
   default_token_expiration_secs: System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") || "604800" |> String.to_integer() # One week
 

@@ -34,6 +34,7 @@ defmodule Malan.Accounts.User do
     field :custom_attrs, :map              # Free form JSON for dependent services to use
     field :password_reset_token, :string, virtual: true
     field :password_reset_token_hash, :string
+    field :password_reset_token_expires_at, :utc_datetime
 
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
@@ -105,6 +106,7 @@ defmodule Malan.Accounts.User do
     user
     |> change()
     |> put_password_reset_token()
+    |> put_password_reset_token_expires_at()
   end
 
   @doc false
@@ -112,6 +114,7 @@ defmodule Malan.Accounts.User do
     user
     |> change()
     |> clear_password_reset_token()
+    |> clear_password_reset_token_expires_at()
   end
 
   @doc false
@@ -386,7 +389,20 @@ defmodule Malan.Accounts.User do
     changeset
     |> put_change(:password_reset_token, nil)
     |> put_change(:password_reset_token_hash, nil)
-    #|> put_change(:password_reset_token, "")
-    #|> put_change(:password_reset_token_hash, "")
+  end
+
+  defp put_password_reset_token_expires_at(changeset) do
+    changeset
+    |> put_change(:password_reset_token_expires_at, get_password_reset_token_expiration_time())
+  end
+
+  defp clear_password_reset_token_expires_at(changeset) do
+    changeset
+    |> put_change(:password_reset_token_expires_at, nil)
+  end
+
+  defp get_password_reset_token_expiration_time do
+    Application.get_env(:malan, Malan.Accounts.User)[:default_password_reset_token_expiration_secs]
+    |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
   end
 end

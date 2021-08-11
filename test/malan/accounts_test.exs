@@ -421,18 +421,21 @@ defmodule Malan.AccountsTest do
       assert %{ user | password: nil } == Accounts.get_user!(user_id)
     end
 
-    test "generate_password_reset/1 adds a reset token to the database" do
+    test "generate_password_reset/1 adds a reset token to the database and an expiration" do
       uf = user_fixture()
       user = Accounts.get_user(uf.id)
       assert is_nil(uf.password_reset_token)
       assert is_nil(uf.password_reset_token_hash)
+      assert is_nil(uf.password_reset_token_expires_at)
       {:ok, updated} = Accounts.generate_password_reset(user)
-      assert %{ updated | password_reset_token: nil, password_reset_token_hash: nil } == user
+      assert %{ updated | password_reset_token: nil, password_reset_token_hash: nil, password_reset_token_expires_at: nil } == user
       assert updated.password_reset_token
       assert updated.password_reset_token_hash
+      assert updated.password_reset_token_expires_at
       uuser = Accounts.get_user(updated.id)
       assert is_nil(uuser.password_reset_token) # should be blank now
       assert uuser.password_reset_token_hash
+      assert uuser.password_reset_token_expires_at
     end
 
     test "validate_password_reset_token/2 logic test: returns properly with no token" do
@@ -444,13 +447,28 @@ defmodule Malan.AccountsTest do
 
     test "validate_password_reset_token/2 logic test: returns properly incorrect token" do
       uf = user_fixture()
-           |> Map.merge(%{password_reset_token: "ohai", password_reset_token_hash: "hellow"})
+           |> Map.merge(%{
+             password_reset_token: "ohai",
+             password_reset_token_hash: "hellow",
+             password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(1, :minutes)
+           })
       assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "helloworld")
       assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "42")
     end
 
     test "validate_password_reset_token/2 logic test: returns properly with valid token" do
       uf = user_fixture()
+      {:ok, user} = Accounts.generate_password_reset(uf)
+      assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
+    end
+
+    test "validate_password_reset_token/2 logic test: returns expired when expired" do
+      uf = user_fixture()
+           |> Map.merge(%{
+             password_reset_token: "ohai",
+             password_reset_token_hash: "hellow",
+             password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(-1, :minutes)
+           })
       {:ok, user} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
     end
