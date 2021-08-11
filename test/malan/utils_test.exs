@@ -1,5 +1,6 @@
 defmodule Malan.UtilsTest do
   alias Malan.Utils
+  alias Malan.Test
 
   use ExUnit.Case, async: true
 
@@ -35,6 +36,20 @@ defmodule Malan.UtilsTest do
     # This exercises all of the adjust_time funcs since they call each other
       start_dt = DateTime.utc_now
       assert DateTime.add(start_dt, 2 * 7 * 24 * 60 * 60, :second) == Utils.DateTime.adjust_time(start_dt, 2, :weeks)
+    end
+
+    test "expired?" do
+      cur_time = DateTime.utc_now
+
+      assert_raise(ArgumentError, ~r/expires_at.*must.not.be.nil/, fn -> Utils.DateTime.expired?(nil) end)
+
+      assert false == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time( 1, :minutes))
+      assert true  == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time(-1, :minutes))
+      assert true  == Utils.DateTime.expired?(cur_time) # exact same time shows as expired
+
+      assert true  == Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time( 1, :minutes))
+      assert false == Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time(-1, :minutes))
+      assert true  == Utils.DateTime.expired?(cur_time, cur_time)
     end
   end
 

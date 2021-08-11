@@ -3,6 +3,7 @@ defmodule MalanWeb.UserControllerTest do
 
   alias Malan.Accounts.User
   alias Malan.Utils
+  alias Malan.Repo
 
   alias Malan.Test.Helpers
   alias Malan.Test.Utils, as: TestUtils
@@ -651,8 +652,33 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
     end
 
-    test "can't use token after expiration" do
-      # TODO
+    test "can't use token after expiration", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+
+      # Set the expiration time into the past so the token is expired
+      Ecto.Changeset.change(user, %{password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)})
+      |> Repo.update()
+
+      # Now try to change password with the token and make sure it fails
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token), new_password: new_password)
+      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      # Try to login with new password and ensure it doesn't work
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Now login with the old password to make sure it still works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
     end
 
     test "requires auth to access", %{conn: conn, user: %User{} = user, session: _session} do

@@ -127,13 +127,15 @@ defmodule Malan.Accounts do
   @doc """
   Checks if the provided password reset token in valid.  If it is, returns {:ok}.
 
-  If not returns {:error, :missing_password_reset_token} if the user does not have a valid reset token issued or {:error, :invalid_password_reset_token} if the password reset token is incorrect
+  If not returns {:error, :missing_password_reset_token} if the user does not have a valid reset token issued or {:error, :invalid_password_reset_token} if the password reset token is incorrect.
+
+  Returns {:error, :expired_password_reset_token} if token is expired
   """
   def validate_password_reset_token(user, password_reset_token) do
     cond do
       Utils.nil_or_empty?(user.password_reset_token_hash) -> {:error, :missing_password_reset_token}
+      Utils.DateTime.expired?(user.password_reset_token_expires_at) -> {:error, :expired_password_reset_token}
       user.password_reset_token_hash == Utils.Crypto.hash_token(password_reset_token) -> {:ok}
-      # TODO:  Add clause to check for expiration
       true -> {:error, :invalid_password_reset_token}
     end
   end
