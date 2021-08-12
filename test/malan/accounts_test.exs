@@ -820,4 +820,67 @@ defmodule Malan.AccountsTest do
   #    assert %Ecto.Changeset{} = Accounts.change_team(team)
   #  end
   #end
+
+  describe "phone_numbers" do
+    alias Malan.Accounts.PhoneNumber
+
+    @valid_attrs %{number: "some number", primary: true, verified: "2010-04-17T14:00:00Z"}
+    @update_attrs %{number: "some updated number", primary: false, verified: "2011-05-18T15:01:01Z"}
+    @invalid_attrs %{number: nil, primary: nil, verified: nil}
+
+    def phone_number_fixture(attrs \\ %{}) do
+      {:ok, phone_number} =
+        attrs
+        |> Enum.into(@valid_attrs)
+        |> Accounts.create_phone_number()
+
+      phone_number
+    end
+
+    test "list_phone_numbers/0 returns all phone_numbers" do
+      phone_number = phone_number_fixture()
+      assert Accounts.list_phone_numbers() == [phone_number]
+    end
+
+    test "get_phone_number!/1 returns the phone_number with given id" do
+      phone_number = phone_number_fixture()
+      assert Accounts.get_phone_number!(phone_number.id) == phone_number
+    end
+
+    test "create_phone_number/1 with valid data creates a phone_number" do
+      assert {:ok, %PhoneNumber{} = phone_number} = Accounts.create_phone_number(@valid_attrs)
+      assert phone_number.number == "some number"
+      assert phone_number.primary == true
+      assert phone_number.verified == DateTime.from_naive!(~N[2010-04-17T14:00:00Z], "Etc/UTC")
+    end
+
+    test "create_phone_number/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_phone_number(@invalid_attrs)
+    end
+
+    test "update_phone_number/2 with valid data updates the phone_number" do
+      phone_number = phone_number_fixture()
+      assert {:ok, %PhoneNumber{} = phone_number} = Accounts.update_phone_number(phone_number, @update_attrs)
+      assert phone_number.number == "some updated number"
+      assert phone_number.primary == false
+      assert phone_number.verified == DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC")
+    end
+
+    test "update_phone_number/2 with invalid data returns error changeset" do
+      phone_number = phone_number_fixture()
+      assert {:error, %Ecto.Changeset{}} = Accounts.update_phone_number(phone_number, @invalid_attrs)
+      assert phone_number == Accounts.get_phone_number!(phone_number.id)
+    end
+
+    test "delete_phone_number/1 deletes the phone_number" do
+      phone_number = phone_number_fixture()
+      assert {:ok, %PhoneNumber{}} = Accounts.delete_phone_number(phone_number)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_phone_number!(phone_number.id) end
+    end
+
+    test "change_phone_number/1 returns a phone_number changeset" do
+      phone_number = phone_number_fixture()
+      assert %Ecto.Changeset{} = Accounts.change_phone_number(phone_number)
+    end
+  end
 end
