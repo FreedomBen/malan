@@ -42,8 +42,8 @@ if [ "${user_id}" = 'null' ]; then
   exit 1
 fi
 
-#echo "api_token is: ${api_token}"
-#echo "user_id is: ${user_id}"
+echo "api_token is: ${api_token}"
+echo "user_id is: ${user_id}"
 
 # Now update the user
 curl \

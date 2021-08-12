@@ -50,6 +50,65 @@ defmodule Malan.Accounts do
     end
   end
 
+  @doc """
+  Gets a single user with their associations (like phone numbers and addresses)
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+
+  ## Examples
+
+      iex> get_user_full(123)
+      %User{}
+
+      iex> get_user_full(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_user_full(id) do
+    #Repo.one(from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses]))
+
+    # Pipe version
+    User
+    |> where([u], u.id == ^id)
+    |> where([u], is_nil(u.deleted_at))
+    |> preload([:phone_numbers])
+    #|> preload([:phone_numbers, :addresses])
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a single user with their associations (like phone numbers and addresses)
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+
+  ## Examples
+
+      iex> get_user_full!(123)
+      %User{}
+
+      iex> get_user_full!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_user_full!(id) do
+    #query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses])
+
+    # Pipe version
+    query = User
+            |> where([u], u.id == ^id)
+            |> where([u], is_nil(u.deleted_at))
+            |> preload([:phone_numbers])
+            #|> preload([:phone_numbers, :addresses])
+
+    user = Repo.one(query)
+
+    if is_nil(user) do
+      raise Ecto.NoResultsError, queryable: query
+    else
+      user
+    end
+  end
+
   defp get_user_by_id_or_username_query(id_or_username) do
     cond do
       id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
@@ -737,5 +796,97 @@ defmodule Malan.Accounts do
   """
   def change_team(%Team{} = team, attrs \\ %{}) do
     Team.changeset(team, attrs)
+  end
+
+  alias Malan.Accounts.PhoneNumber
+
+  @doc """
+  Returns the list of phone_numbers.
+
+  ## Examples
+
+      iex> list_phone_numbers()
+      [%PhoneNumber{}, ...]
+
+  """
+  def list_phone_numbers do
+    Repo.all(PhoneNumber)
+  end
+
+  @doc """
+  Gets a single phone_number.
+
+  Raises `Ecto.NoResultsError` if the Phone number does not exist.
+
+  ## Examples
+
+      iex> get_phone_number!(123)
+      %PhoneNumber{}
+
+      iex> get_phone_number!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_phone_number!(id), do: Repo.get!(PhoneNumber, id)
+
+  @doc """
+  Creates a phone_number.
+
+  ## Examples
+
+      iex> create_phone_number(user_id, %{field: value})
+      {:ok, %PhoneNumber{}}
+
+      iex> create_phone_number(user_id, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_phone_number(user_id, attrs \\ %{}) do
+    %PhoneNumber{}
+    |> PhoneNumber.create_changeset(Map.merge(attrs, %{"user_id" => user_id}))
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a phone_number.
+
+  ## Examples
+
+      iex> update_phone_number(phone_number, %{field: new_value})
+      {:ok, %PhoneNumber{}}
+
+      iex> update_phone_number(phone_number, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_phone_number(%PhoneNumber{} = phone_number, attrs) do
+    phone_number
+    |> PhoneNumber.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a phone_number.
+
+  ## Examples
+
+      iex> delete_phone_number(phone_number)
+      {:ok, %PhoneNumber{}}
+
+      iex> delete_phone_number(phone_number)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_phone_number(%PhoneNumber{} = phone_number) do
+    Repo.delete(phone_number)
+  end
+
+  defp verified_at(true), do: Utils.DateTime.utc_now_trunc()
+  defp verified_at(false), do: nil
+
+  def verify_phone_number(%PhoneNumber{} = phone_number, verified \\ true) do
+    phone_number
+    |> PhoneNumber.verify_changeset(%{verified_at: verified_at(verified)})
+    |> Repo.update()
   end
 end

@@ -27,14 +27,18 @@ defmodule MalanWeb.UserController do
   def me(conn, _params),      do: show(conn, %{"id" => conn.assigns.authed_user_id})
   def current(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
-  def show(conn, %{"id" => id}) do
+  def show(conn, %{"id" => id, "abbr" => _}) do
     user = Accounts.get_user(id)
+    render_user(conn, user)
+  end
 
+  def show(conn, %{"id" => id}) do
+    user = Accounts.get_user_full(id)
     render_user(conn, user)
   end
 
   def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user!(id)
+    user = Accounts.get_user_full(id)
 
     if is_nil(user) do
       render_user(conn, user)
@@ -46,7 +50,7 @@ defmodule MalanWeb.UserController do
   end
 
   def admin_update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user!(id)
+    user = Accounts.get_user_full(id)
 
     if is_nil(user) do
       render_user(conn, user)
