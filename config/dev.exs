@@ -49,7 +49,9 @@ config :malan, MalanWeb.Endpoint,
 # different ports.
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :console,
+  format: "[$level] $message\n",
+  log_health_check: (System.get_env("LOG_HEALTH_CHECKS") || "true") =~ ~r/(yes|true)/i
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

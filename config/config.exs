@@ -28,7 +28,8 @@ config :malan, MalanWeb.Endpoint,
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id],
+  log_health_check: (System.get_env("LOG_HEALTH_CHECKS") || "") =~ ~r/(yes|true)/i
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
