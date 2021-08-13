@@ -12,6 +12,7 @@ defmodule MalanWeb.PhoneNumberView do
 
   def render("phone_number.json", %{phone_number: phone_number}) do
     %{id: phone_number.id,
+      user_id: phone_number.user_id,
       primary: phone_number.primary,
       number: phone_number.number,
       verified: phone_number.verified}
