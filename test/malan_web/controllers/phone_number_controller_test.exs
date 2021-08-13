@@ -19,8 +19,8 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   }
   @invalid_attrs %{number: nil, primary: nil, verified: nil}
 
-  def fixture(:phone_number) do
-    {:ok, phone_number} = Malan.Accounts.create_phone_number(@create_attrs)
+  def fixture(:phone_number, user_id) do
+    {:ok, phone_number} = Malan.Accounts.create_phone_number(user_id, @create_attrs)
     phone_number
   end
 
@@ -56,9 +56,9 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
   describe "show" do
     test "gets phone_number", %{conn: conn} do
-      phone_number = fixture(:phone_number)
-      id = phone_number.id
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      phone_number = fixture(:phone_number, user.id)
+      id = phone_number.id
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
       assert %{
                "id" => ^id,
@@ -204,7 +204,8 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   end
 
   defp create_phone_number(_) do
-    phone_number = fixture(:phone_number)
-    %{phone_number: phone_number}
+    {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    phone_number = fixture(:phone_number, user.id)
+    %{user: user, session: session, phone_number: phone_number}
   end
 end
