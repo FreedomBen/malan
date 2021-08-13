@@ -8,7 +8,8 @@ defmodule Malan.Accounts.PhoneNumber do
     field :number, :string
     field :primary, :boolean, default: false
     field :verified, :utc_datetime, default: nil
-    field :user_id, :binary_id
+    #field :user_id, :binary_id
+    belongs_to :user, Malan.Accounts.User
 
     timestamps(type: :utc_datetime)
   end
@@ -17,6 +18,6 @@ defmodule Malan.Accounts.PhoneNumber do
   def changeset(phone_number, attrs) do
     phone_number
     |> cast(attrs, [:primary, :number, :verified])
-    |> validate_required([:primary, :number, :verified])
+    |> validate_required([:primary, :number, :verified, :user_id])
   end
 end

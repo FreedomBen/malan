@@ -11,11 +11,11 @@ defmodule MalanWeb.PhoneNumberController do
     render(conn, "index.json", phone_numbers: phone_numbers)
   end
 
-  def create(conn, %{"phone_number" => phone_number_params}) do
+  def create(conn, %{"user_id" => user_id, "phone_number" => phone_number_params}) do
     with {:ok, %PhoneNumber{} = phone_number} <- Accounts.create_phone_number(phone_number_params) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", Routes.phone_number_path(conn, :show, phone_number))
+      |> put_resp_header("location", Routes.user_phone_number_path(conn, :show, user_id, phone_number))
       |> render("show.json", phone_number: phone_number)
     end
   end
