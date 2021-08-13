@@ -3,6 +3,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
   #import Malan.AccountsFixtures
 
+  alias Malan.Accounts.User
   alias Malan.Accounts.PhoneNumber
 
   alias Malan.Test.Helpers
@@ -59,9 +60,11 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       phone_number = fixture(:phone_number, user.id)
       id = phone_number.id
+      user_id = user.id
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
       assert %{
                "id" => ^id,
+               "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
                "verified" => "2010-04-17T14:00:00Z"
@@ -71,6 +74,31 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     test "requires authentication", %{conn: conn} do
       conn = get(conn, Routes.user_phone_number_path(conn, :show, "43", "42"))
       assert conn.status == 403
+    end
+
+    test "won't work for a non-owner regular user", %{conn: conn} do
+      {:ok, user1, _session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, conn, _user2, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      #{:ok, conn, _user2, _session} = Helpers.Accounts.regular_user_session_conn(conn, %{username: "somerandomusername", email: "somerandomemail@exmaple.com"})
+      phone_number = fixture(:phone_number, user1.id)
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, user1.id, phone_number.id))
+      assert conn.status == 401
+    end
+
+    test "will work for a non-owner admin user", %{conn: conn} do
+      {:ok, user, _session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, conn, _admin, _session} = Helpers.Accounts.admin_user_session_conn(conn)
+      phone_number = fixture(:phone_number, user.id)
+      id = phone_number.id
+      user_id = user.id
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "verified" => "2010-04-17T14:00:00Z",
+               "number" => "some number"
+             } = json_response(conn, 200)["data"]
+      assert user_id == user.id
     end
 
     #test "requires accepting ToS and PP", %{conn: conn} do
@@ -90,6 +118,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   describe "create phone_number" do
     test "renders phone_number when data is valid", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      user_id = user.id
       conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
       assert %{"id" => id} = json_response(conn, 201)["data"]
 
@@ -97,6 +126,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
       assert %{
                "id" => ^id,
+               "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
                "verified" => "2010-04-17T14:00:00Z"
@@ -131,8 +161,8 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   describe "update phone_number" do
     setup [:create_phone_number]
 
-    test "renders phone_number when data is valid", %{conn: conn, phone_number: %PhoneNumber{id: id} = phone_number} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "renders phone_number when data is valid", %{conn: conn, user: %User{id: user_id} = user, session: session, phone_number: %PhoneNumber{id: id} = phone_number} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -140,6 +170,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
       assert %{
                "id" => ^id,
+               "user_id" => ^user_id,
                "number" => "some updated number",
                "primary" => false,
                "verified" => "2011-05-18T15:01:01Z"
