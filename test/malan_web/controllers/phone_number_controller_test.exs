@@ -85,6 +85,15 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert conn.status == 401
     end
 
+    test "can't sneak around access control by knowing the ID", %{conn: conn} do
+      # user1 owns the phone number, user2 can't request it
+      %{user: u1, session: s1, phone_number: phone_number} = create_phone_number(nil)
+      {:ok, u2, s2} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, s2.api_token)
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, u1.id, phone_number.id))
+      assert conn.status == 401
+    end
+
     test "will work for a non-owner admin user", %{conn: conn} do
       {:ok, user, _session} = Helpers.Accounts.regular_user_with_session()
       {:ok, conn, _admin, _session} = Helpers.Accounts.admin_user_session_conn(conn)
@@ -200,6 +209,24 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     #  # We haven't accepted the PP yet so expect 462
     #  assert conn.status == 462
     #end
+
+    test "User ID in attrs doesn't override the path param", %{conn: conn, user: %User{id: user_id} = user, session: session, phone_number: %PhoneNumber{id: id} = phone_number} do
+      {:ok, u2} = Helpers.Accounts.regular_user()
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      update_attrs = Map.merge(@update_attrs, %{"user_id" => u2.id})
+      conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: update_attrs)
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "number" => "some updated number",
+               "primary" => false,
+               "verified" => "2011-05-18T15:01:01Z"
+             } = json_response(conn, 200)["data"]
+    end
   end
 
   describe "delete phone_number" do
