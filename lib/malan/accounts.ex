@@ -727,16 +727,16 @@ defmodule Malan.Accounts do
 
   ## Examples
 
-      iex> create_phone_number(%{field: value})
+      iex> create_phone_number(user_id, %{field: value})
       {:ok, %PhoneNumber{}}
 
-      iex> create_phone_number(%{field: bad_value})
+      iex> create_phone_number(user_id, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_phone_number(attrs \\ %{}) do
+  def create_phone_number(user_id, attrs \\ %{}) do
     %PhoneNumber{}
-    |> PhoneNumber.changeset(attrs)
+    |> PhoneNumber.create_changeset(Map.merge(attrs, %{"user_id" => user_id}))
     |> Repo.insert()
   end
 
@@ -754,7 +754,7 @@ defmodule Malan.Accounts do
   """
   def update_phone_number(%PhoneNumber{} = phone_number, attrs) do
     phone_number
-    |> PhoneNumber.changeset(attrs)
+    |> PhoneNumber.update_changeset(attrs)
     |> Repo.update()
   end
 
@@ -774,16 +774,4 @@ defmodule Malan.Accounts do
     Repo.delete(phone_number)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking phone_number changes.
-
-  ## Examples
-
-      iex> change_phone_number(phone_number)
-      %Ecto.Changeset{data: %PhoneNumber{}}
-
-  """
-  def change_phone_number(%PhoneNumber{} = phone_number, attrs \\ %{}) do
-    PhoneNumber.changeset(phone_number, attrs)
-  end
 end
