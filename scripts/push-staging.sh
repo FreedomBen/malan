@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker push docker.io/freedomben/malan-staging:latest
+docker push docker.io/freedomben/malan-staging:2021-08-13
