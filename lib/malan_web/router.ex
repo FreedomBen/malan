@@ -127,6 +127,7 @@ defmodule MalanWeb.Router do
     # page, these can be moved to unauthenticated so that users can reset their
     # own passwords
     post "/users/:id/reset_password", UserController, :admin_reset_password
-    put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token
+    put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token_user
+    put "/users/reset_password/:token", UserController, :admin_reset_password_token
   end
 end

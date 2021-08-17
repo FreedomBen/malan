@@ -50,8 +50,22 @@ defmodule Malan.Accounts do
     end
   end
 
+  @doc ~S"""
+  Returns nil if no matching user is found.  Raises if more than one is found
+  """
   def get_user_by(params) do
     Repo.get_by(User, params)
+  end
+
+  @doc ~S"""
+  Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
+  """
+  def get_user_by!(params) do
+    Repo.get_by!(User, params)
+  end
+
+  def get_user_by_password_reset_token(token) do
+    get_user_by([password_reset_token_hash: Utils.Crypto.hash_token(token)])
   end
 
   #def get_user_by(username: username) do
@@ -163,8 +177,7 @@ defmodule Malan.Accounts do
       {:error, :missing_password_reset_token}
       {:error, :invalid_password_reset_token}
   """
-  def reset_password_with_token(id, token, new_password) do
-    orig_user = get_user(id)
+  def reset_password_with_token(%User{} = orig_user, token, new_password) do
     with {:ok}                 <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}}        <- clear_password_reset_token(orig_user),
          {:ok, %User{} = user} <- update_user_password(orig_user, new_password)
@@ -174,6 +187,17 @@ defmodule Malan.Accounts do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  @doc """
+    Returns: 
+
+      {:ok, %User{}}
+      {:error, :missing_password_reset_token}
+      {:error, :invalid_password_reset_token}
+  """
+  def reset_password_with_token(id, token, new_password),
+    do: reset_password_with_token(get_user(id), token, new_password)
+
 
   @doc """
   Updates a user.

@@ -521,7 +521,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
@@ -538,7 +538,7 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, "abcde"), new_password: "everythingturnstostone")
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, "abcde"), new_password: "everythingturnstostone")
       assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
     end
 
@@ -555,7 +555,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now try to change password with wrong token
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, "incorrect token"), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, "incorrect token"), new_password: new_password)
       assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
 
       # Try to login with new password and make sure it doesn't work
@@ -584,7 +584,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
@@ -598,7 +598,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Try to use the reset token again
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
       assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
     end
 
@@ -626,7 +626,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now try to change password with token 1 and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token_1), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token_1), new_password: new_password)
       assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
 
       # Try to login with new password and ensure it doesn't work
@@ -639,7 +639,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now try to change password with token 2 and make sure it succeeds
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token_2), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token_2), new_password: new_password)
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
@@ -669,7 +669,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # Now try to change password with the token and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user_id, password_reset_token), new_password: new_password)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
       assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} = json_response(conn, 401)
 
       # Try to login with new password and ensure it doesn't work
@@ -682,14 +682,211 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "requires auth to access", %{conn: conn, user: %User{} = user, session: _session} do
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user.id, "1234"))
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user.id, "1234"))
       assert conn.status == 403
     end
 
     test "requires being admin to access", %{conn: conn, user: %User{} = user, session: session} do
       # Our user is a regular user, not an admin
       conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, user.id, "1234"))
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user.id, "1234"))
+      assert conn.status == 401
+    end
+
+    test "works - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # First login with password to make sure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+
+      # Now change password
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Try to login with old password and ensure it doesn't work anymore
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Now login with new password to make sure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "Rejects when no password reset token is issued - endpoint with no user ID", %{conn: conn, user: %User{id: user_id}, session: _session} do
+      {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "abcde"), new_password: "everythingturnstostone")
+      #assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+      # For now just accept a 404
+      assert %{"errors" => %{}} = json_response(conn, 404)
+    end
+
+    test "Rejects when token is wrong - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+
+      # Now try to change password with wrong token
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "incorrect token"), new_password: new_password)
+      #assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+      # For now just accept a 404
+      assert %{"errors" => %{}} = json_response(conn, 404)
+
+      # Try to login with new password and make sure it doesn't work
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"invalid_credentials" => true} = json_response(conn, 401)
+
+      # Try to login with old password and ensure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "can't reuse a token - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # First login with password to make sure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+
+      # Now change password
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Try to login with old password and ensure it doesn't work anymore
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Now login with new password to make sure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Try to use the reset token again
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+      #assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+      # For now just accept a 404
+      assert %{"errors" => %{}} = json_response(conn, 404)
+    end
+
+    test "can't use a reset token after a new one has been created - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # First login with password to make sure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token_1
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
+
+      # Get a second password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token_2
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
+
+      # Now try to change password with token 1 and make sure it fails
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_1), new_password: new_password)
+      #assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+      # For now just accept a 404
+      assert %{"errors" => %{}} = json_response(conn, 404)
+
+      # Try to login with new password and ensure it doesn't work
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Now login with the old password to make sure it still works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Now try to change password with token 2 and make sure it succeeds
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_2), new_password: new_password)
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Now login with the old password to make sure it no longer works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Try to login with new password and ensure it works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "can't use token after expiration - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+      new_password = "bensonwinifredpayne"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+
+      # Set the expiration time into the past so the token is expired
+      Ecto.Changeset.change(user, %{password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)})
+      |> Repo.update()
+
+      # Now try to change password with the token and make sure it fails
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      # Try to login with new password and ensure it doesn't work
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+
+      # Now login with the old password to make sure it still works
+      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "requires auth to access - endpoint with no user ID", %{conn: conn, user: %User{} = user, session: _session} do
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
+      assert conn.status == 403
+    end
+
+    test "requires being admin to access - endpoint with no user ID", %{conn: conn, user: %User{} = user, session: session} do
+      # Our user is a regular user, not an admin
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
       assert conn.status == 401
     end
   end
