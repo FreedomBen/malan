@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-NEW_VERSION="2021-08-17"
+NEW_VERSION="2021-08-17a"
 
 K8S_FILES=("k8s/staging/deploy.yaml" "k8s/staging/migrate.yaml" "k8s/prod/deploy.yaml" "k8s/prod/migrate.yaml")
 
