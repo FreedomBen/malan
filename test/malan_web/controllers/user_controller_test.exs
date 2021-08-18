@@ -90,7 +90,7 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
 
-      conn = get(conn, Routes.user_path(conn, :show, id))
+      conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
       jr = json_response(conn, 200)["data"]
       assert %{
                "id" => ^id,
@@ -181,7 +181,7 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
 
-      conn = get(conn, Routes.user_path(conn, :show, id), full_user: 1)
+      conn = get(conn, Routes.user_path(conn, :show, id))
       jr = json_response(conn, 200)["data"]
       assert %{
                "id" => ^id,
