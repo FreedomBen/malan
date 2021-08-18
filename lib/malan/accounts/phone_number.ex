@@ -21,6 +21,12 @@ defmodule Malan.Accounts.PhoneNumber do
     |> validate_required([:primary, :number, :verified, :user_id])
   end
 
+  def create_changeset_assoc(phone_number, attrs) do
+    phone_number
+    |> cast(attrs, [:primary, :number, :verified])
+    |> validate_required([:primary, :number, :verified])
+  end
+
   @doc false
   def update_changeset(phone_number, attrs) do
     phone_number

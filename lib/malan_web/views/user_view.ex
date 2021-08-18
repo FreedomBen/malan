@@ -7,14 +7,23 @@ defmodule MalanWeb.UserView do
   alias MalanWeb.TosAcceptEventView
   alias MalanWeb.PrivacyPolicyAcceptEventView
   alias MalanWeb.PreferencesView
+  alias MalanWeb.PhoneNumberView
 
   def render("index.json", %{users: users}) do
     %{data: render_many(users, UserView, "user.json")}
   end
 
-  def render("show.json", %{user: user}) do
+  def render("show.json", %{user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user}) do
     %{data: render_one(user, UserView, "user.json")}
   end
+
+  def render("show.json", %{user: %User{phone_numbers: _} = user}) do
+    %{data: render_one(user, UserView, "user_full.json")}
+  end
+
+  #def render("show.json", %{user: user}) do
+  #  %{data: render_one(user, UserView, "user.json")}
+  #end
 
   def render("user.json", %{user: user}) do
     # If password is non-nil, it is included.  This is needed for
@@ -45,6 +54,12 @@ defmodule MalanWeb.UserView do
       custom_attrs: user.custom_attrs}
       |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
       |> Enum.into(%{})
+  end
+
+  def render("user_full.json", %{user: user}) do
+    render("user.json", %{user: user})
+    |> Map.put(:phone_numbers, render_many(user.phone_numbers, PhoneNumberView, "phone_number.json"))
+    #|> Map.put(:addresses, user.addresses)
   end
 
   def render("whoami.json", %{user_id: user_id, session_id: session_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do

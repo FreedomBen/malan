@@ -112,8 +112,12 @@ defmodule MalanWeb.UserControllerTest do
                  "year" => 1986,
                }
              } = jr
+
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
+
+      # Should not have phone numbers present because not set and not requested
+      assert Map.has_key?(jr, "phone_numbers") == false
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
@@ -151,6 +155,59 @@ defmodule MalanWeb.UserControllerTest do
              } = jr
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
+    end
+
+    test "Accepts phone numbers", %{conn: conn} do
+      %{phone_numbers: [%{} = ph1, %{} = ph2]} = phone_numbers = %{
+        phone_numbers: [
+          %{
+            "number" => "801-867-5309",
+            "primary" => true,
+            "verified" => "2010-04-17T14:00:00Z"
+          },
+          %{
+            "number" => "801-867-5310",
+            "primary" => false,
+            "verified" => "2010-04-17T14:00:00Z"
+          },
+        ]
+      }
+      conn = post(conn, Routes.user_path(conn, :create), user: Map.merge(@create_attrs, phone_numbers))
+      # password should be included after creation
+      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert is_nil(password) == false
+
+      # This uses the returned password above to authenticate
+      {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
+      conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, id), full_user: 1)
+      jr = json_response(conn, 200)["data"]
+      assert %{
+               "id" => ^id,
+               "email" => "some@email.com",
+               "email_verified" => nil,
+               "preferences" => %{"theme" => "light"},
+               "roles" => ["user"],
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => [],
+               "latest_tos_accept_ver" => nil,
+               "latest_pp_accept_ver" => nil,
+               "tos_accepted" => false,
+               "privacy_policy_accepted" => false,
+               "username" => "someusername",
+               "nick_name" => "",
+               "custom_attrs" => %{
+                 "hereiam" => "rockyou",
+                 "likea" => "hurricane",
+                 "year" => 1986,
+               },
+               "phone_numbers" => phs
+             } = jr
+      # password should not be included in get response
+      assert Map.has_key?(jr, "password") == false
+      assert Enum.count(phs) == 2
+      assert Enum.all?(phs, fn (ph) -> ph["number"] == ph1["number"] || ph["number"] == ph2["number"] end)
     end
   end
 

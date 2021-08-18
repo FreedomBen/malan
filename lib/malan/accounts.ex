@@ -50,6 +50,39 @@ defmodule Malan.Accounts do
     end
   end
 
+  @doc """
+  Gets a single user with their associations (like phone numbers and addresses)
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+
+  ## Examples
+
+      iex> get_user_full!(123)
+      %User{}
+
+      iex> get_user_full!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_user_full!(id) do
+    #query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses])
+
+    # Pipe version
+    query = User
+            |> where([u], u.id == ^id)
+            |> where([u], is_nil(u.deleted_at))
+            |> preload([:phone_numbers])
+            #|> preload([:phone_numbers, :addresses])
+
+    user = Repo.one(query)
+
+    if is_nil(user) do
+      raise Ecto.NoResultsError, queryable: query
+    else
+      user
+    end
+  end
+
   defp get_user_by_id_or_username_query(id_or_username) do
     cond do
       id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
