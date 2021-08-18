@@ -488,6 +488,16 @@ defmodule MalanWeb.UserControllerTest do
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
+    test "works with username instead of ID", %{conn: conn, user: %User{id: _user_id} = user, session: _session} do
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.username))
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
+    end
+
     test "requires auth to access", %{conn: conn, user: %User{} = user, session: _session} do
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.id))
       assert conn.status == 403
@@ -693,7 +703,7 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 401
     end
 
-    test "works - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "works - endpoint with no user ID", %{conn: conn, user: %User{id: _user_id} = user, session: _session} do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
@@ -702,7 +712,7 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
-      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.username))
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
@@ -723,7 +733,7 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "Rejects when no password reset token is issued - endpoint with no user ID", %{conn: conn, user: %User{id: user_id}, session: _session} do
+    test "Rejects when no password reset token is issued - endpoint with no user ID", %{conn: conn, user: %User{id: _user_id}, session: _session} do
       {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
@@ -878,12 +888,12 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "requires auth to access - endpoint with no user ID", %{conn: conn, user: %User{} = user, session: _session} do
+    test "requires auth to access - endpoint with no user ID", %{conn: conn, user: %User{} = _user, session: _session} do
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
       assert conn.status == 403
     end
 
-    test "requires being admin to access - endpoint with no user ID", %{conn: conn, user: %User{} = user, session: session} do
+    test "requires being admin to access - endpoint with no user ID", %{conn: conn, user: %User{} = _user, session: session} do
       # Our user is a regular user, not an admin
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))

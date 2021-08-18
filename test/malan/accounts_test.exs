@@ -485,6 +485,19 @@ defmodule Malan.AccountsTest do
       assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, user.password_reset_token)
       assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, cleared_user.password_reset_token)
     end
+
+    test "get_user_by_password_reset_token/1" do
+      # This is tested by the user controller test
+    end
+
+    test "get_user_by_id_or_username/1" do
+      uf = user_fixture()
+      u1 = Accounts.get_user_by_id_or_username!(uf.username)
+      assert %{ uf | custom_attrs: %{}, password: nil } == u1
+      u2 = Accounts.get_user_by_id_or_username!(uf.id)
+      assert %{ uf | custom_attrs: %{}, password: nil } == u2
+      assert u1 == u2
+    end
   end
 
   describe "sessions" do
