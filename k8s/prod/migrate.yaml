@@ -24,7 +24,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: malan-migration
-        image: docker.io/freedomben/malan-prod:2021-08-17
+        image: docker.io/freedomben/malan-prod:2021-08-17a
         command: ["mix", "ecto.create.migrate"]
         envFrom:
           - configMapRef:
