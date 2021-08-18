@@ -70,7 +70,7 @@ defmodule MalanWeb.UserController do
   end
 
   def admin_reset_password(conn, %{"id" => id}) do
-    user = Accounts.get_user(id)
+    user = Accounts.get_user_by_id_or_username(id)
 
     if is_nil(user) do
       render_user(conn, user)

@@ -50,6 +50,30 @@ defmodule Malan.Accounts do
     end
   end
 
+  defp get_user_by_id_or_username_query(id_or_username) do
+    cond do
+      id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+        from(u in User, where: (u.id == ^id_or_username or u.username == ^id_or_username) and is_nil(u.deleted_at))
+      true -> 
+        from(u in User, where: (u.username == ^id_or_username) and is_nil(u.deleted_at))
+    end
+  end
+
+  def get_user_by_id_or_username(id_or_username) do
+    query = get_user_by_id_or_username_query(id_or_username)
+    Repo.one(query)
+  end
+
+  def get_user_by_id_or_username!(id_or_username) do
+    query = get_user_by_id_or_username_query(id_or_username)
+    user = Repo.one(query)
+    if is_nil(user) do
+      raise Ecto.NoResultsError, queryable: query
+    else
+      user
+    end
+  end
+
   @doc ~S"""
   Returns nil if no matching user is found.  Raises if more than one is found
   """
