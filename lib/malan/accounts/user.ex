@@ -80,7 +80,7 @@ defmodule Malan.Accounts.User do
     user
     |> cast(params, [:password, :accept_tos, :accept_privacy_policy, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
-    #|> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset/2)
+    |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset/2)
     |> put_accept_tos()
     |> put_accept_privacy_policy()
     |> validate_common()
@@ -93,7 +93,7 @@ defmodule Malan.Accounts.User do
     user
     |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
-    #|> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset/2)
+    |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset/2)
     |> put_reset_pass()
     |> validate_common()
   end

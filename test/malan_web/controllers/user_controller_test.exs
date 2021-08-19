@@ -376,6 +376,51 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :index))
       assert conn.status == 401
     end
+
+    test "Allows updating phone numbers", %{conn: conn, user: %User{} = user} do
+      update_params = %{
+        phone_numbers: [
+          %{
+            number: "abc",
+            primary: true,
+            veririfed: "date"
+          },
+          %{
+            number: "abc",
+            primary: false,
+            veririfed: "date"
+          },
+          %{
+            number: "abc",
+            primary: false,
+            veririfed: "date"
+          },
+          %{
+            number: "abc",
+            primary: false,
+            veririfed: "date"
+          }
+        ]
+      }
+      {:ok, session} = Helpers.Accounts.create_session(user)
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
+      assert %{"id" => id} = json_response(conn, 200)["data"]
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{
+        "sex" => "Male",
+        "gender" => "Male",
+        "ethnicity" => "Not Hispanic or Latinx",
+        "race" => [
+          "American Indian or Alaska Native",
+          "Asian",
+          "Black or African American",
+          "Native Hawaiian or Other Pacific Islander",
+          "White",
+        ]
+      } = json_response(conn, 200)["data"]
+    end
   end
 
   describe "admin update user" do
