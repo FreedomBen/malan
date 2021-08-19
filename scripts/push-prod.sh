@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-LATEST_VERSION='2021-08-17a'
+LATEST_VERSION='20210819170954'
 
 docker push "docker.io/freedomben/malan-prod:${LATEST_VERSION}"
