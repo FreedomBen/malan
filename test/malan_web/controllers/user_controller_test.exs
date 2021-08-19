@@ -378,48 +378,66 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "Allows updating phone numbers", %{conn: conn, user: %User{} = user} do
-      update_params = %{
+      %{phone_numbers: [%{} = ph1, %{} = ph2, %{} = ph3, %{} = ph4]} = phone_numbers = %{
         phone_numbers: [
           %{
-            number: "abc",
-            primary: true,
-            veririfed: "date"
+            "number" => "801-867-5309",
+            "primary" => true,
+            "verified" => "2010-04-17T14:00:00Z"
           },
           %{
-            number: "abc",
-            primary: false,
-            veririfed: "date"
+            "number" => "801-867-5310",
+            "primary" => false,
+            "verified" => "2010-04-17T14:00:00Z"
           },
           %{
-            number: "abc",
-            primary: false,
-            veririfed: "date"
+            "number" => "801-867-5311",
+            "primary" => false,
+            "verified" => "2010-04-17T14:00:00Z"
           },
           %{
-            number: "abc",
-            primary: false,
-            veririfed: "date"
-          }
+            "number" => "801-867-5312",
+            "primary" => false,
+            "verified" => "2010-04-17T14:00:00Z"
+          },
         ]
       }
+      {user_id, username, email, nick_name} = {user.id, user.username, user.email, user.nick_name}
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
+      conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
+
       assert %{"id" => id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.user_path(conn, :show, id))
+      jr = json_response(conn, 200)["data"]
+
       assert %{
-        "sex" => "Male",
-        "gender" => "Male",
-        "ethnicity" => "Not Hispanic or Latinx",
-        "race" => [
-          "American Indian or Alaska Native",
-          "Asian",
-          "Black or African American",
-          "Native Hawaiian or Other Pacific Islander",
-          "White",
-        ]
-      } = json_response(conn, 200)["data"]
+               "id" => ^id,
+               "email" => ^email,
+               "email_verified" => nil,
+               "preferences" => %{"theme" => "light"},
+               "roles" => ["user"],
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => [],
+               "latest_tos_accept_ver" => nil,
+               "latest_pp_accept_ver" => nil,
+               "tos_accepted" => false,
+               "privacy_policy_accepted" => false,
+               "username" => ^username,
+               "nick_name" => ^nick_name,
+               "custom_attrs" => %{},
+               "phone_numbers" => phs
+             } = jr
+
+      # password should not be included in get response
+      assert Map.has_key?(jr, "password") == false
+      assert Enum.count(phs) == 4
+      assert Enum.all?(phs, fn (ph) ->
+        [ph1, ph2, ph3, ph4]
+        |> Enum.map(fn (phx) -> phx["number"] end)
+        |> Enum.member?(ph["number"])
+      end)
     end
   end
 

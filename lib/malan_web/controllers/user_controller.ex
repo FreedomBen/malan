@@ -38,7 +38,7 @@ defmodule MalanWeb.UserController do
   end
 
   def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user!(id)
+    user = Accounts.get_user_full(id)
 
     if is_nil(user) do
       render_user(conn, user)
