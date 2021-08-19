@@ -163,12 +163,12 @@ defmodule MalanWeb.UserControllerTest do
           %{
             "number" => "801-867-5309",
             "primary" => true,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
           %{
             "number" => "801-867-5310",
             "primary" => false,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
         ]
       }
@@ -383,26 +383,26 @@ defmodule MalanWeb.UserControllerTest do
           %{
             "number" => "801-867-5309",
             "primary" => true,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
           %{
             "number" => "801-867-5310",
             "primary" => false,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
           %{
             "number" => "801-867-5311",
             "primary" => false,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
           %{
             "number" => "801-867-5312",
             "primary" => false,
-            "verified" => "2010-04-17T14:00:00Z"
+            "verified_at" => "2010-04-17T14:00:00Z"
           },
         ]
       }
-      {user_id, username, email, nick_name} = {user.id, user.username, user.email, user.nick_name}
+      {_user_id, username, email, nick_name} = {user.id, user.username, user.email, user.nick_name}
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)

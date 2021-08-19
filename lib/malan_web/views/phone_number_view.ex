@@ -15,6 +15,6 @@ defmodule MalanWeb.PhoneNumberView do
       user_id: phone_number.user_id,
       primary: phone_number.primary,
       number: phone_number.number,
-      verified: phone_number.verified}
+      verified_at: phone_number.verified_at}
   end
 end

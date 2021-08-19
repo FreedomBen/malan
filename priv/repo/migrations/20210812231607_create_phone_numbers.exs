@@ -6,7 +6,7 @@ defmodule Malan.Repo.Migrations.CreatePhoneNumbers do
       add :id, :binary_id, primary_key: true
       add :primary, :boolean, default: false, null: false
       add :number, :string
-      add :verified, :utc_datetime, default: nil, null: true
+      add :verified_at, :utc_datetime, default: nil, null: true
       add :user_id, references(:users, on_delete: :nothing, type: :binary_id), null: false
 
       timestamps(type: :utc_datetime)

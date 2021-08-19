@@ -881,4 +881,12 @@ defmodule Malan.Accounts do
     Repo.delete(phone_number)
   end
 
+  defp verified_at(true), do: Utils.DateTime.utc_now_trunc()
+  defp verified_at(false), do: nil
+
+  def verify_phone_number(%PhoneNumber{} = phone_number, verified \\ true) do
+    phone_number
+    |> PhoneNumber.verify_changeset(%{verified_at: verified_at(verified)})
+    |> Repo.update()
+  end
 end

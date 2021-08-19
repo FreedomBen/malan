@@ -11,14 +11,14 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   @create_attrs %{
     "number" => "some number",
     "primary" => true,
-    "verified" => "2010-04-17T14:00:00Z"
+    "verified_at" => "2010-04-17T14:00:00Z"
   }
   @update_attrs %{
     "number" => "some updated number",
     "primary" => false,
-    "verified" => "2011-05-18T15:01:01Z"
+    "verified_at" => "2011-05-18T15:01:01Z"
   }
-  @invalid_attrs %{number: nil, primary: nil, verified: nil}
+  @invalid_attrs %{number: nil, primary: nil, verified_at: nil}
 
   def fixture(:phone_number, user_id) do
     {:ok, phone_number} = Malan.Accounts.create_phone_number(user_id, @create_attrs)
@@ -67,7 +67,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
-               "verified" => "2010-04-17T14:00:00Z"
+               "verified_at" => nil,
              } = json_response(conn, 200)["data"]
     end
 
@@ -104,7 +104,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
-               "verified" => "2010-04-17T14:00:00Z",
+               "verified_at" => nil,
                "number" => "some number"
              } = json_response(conn, 200)["data"]
       assert user_id == user.id
@@ -138,7 +138,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
-               "verified" => "2010-04-17T14:00:00Z"
+               "verified_at" => nil,
              } = json_response(conn, 200)["data"]
     end
 
@@ -182,7 +182,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some updated number",
                "primary" => false,
-               "verified" => "2011-05-18T15:01:01Z"
+               "verified_at" => nil,
              } = json_response(conn, 200)["data"]
     end
 
@@ -224,7 +224,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some updated number",
                "primary" => false,
-               "verified" => "2011-05-18T15:01:01Z"
+               "verified_at" => nil,
              } = json_response(conn, 200)["data"]
     end
   end
