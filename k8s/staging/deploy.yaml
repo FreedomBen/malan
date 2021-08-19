@@ -18,7 +18,7 @@ spec:
       namespace: malan-staging
     spec:
       containers:
-      - image: docker.io/freedomben/malan:20210819170954
+      - image: docker.io/freedomben/malan:20210819172734
         name: malan
         imagePullPolicy: Always
         ports:
