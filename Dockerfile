@@ -24,7 +24,6 @@ RUN apt-get update \
     build-essential \
     python \
     jq \
-    postgresql-client \
     ncat \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
@@ -38,6 +37,14 @@ ENV LANGUAGE   en_US.UTF-8
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen \
  && locale-gen \
  && dpkg-reconfigure locales
+
+# Install extra utilities
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+ && echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+ && apt-get update \
+ && apt-get --assume-yes install postgresql-client-12 \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/
 
 # Set environment to development
 ENV MIX_ENV dev
