@@ -18,7 +18,7 @@ spec:
       namespace: malan-prod
     spec:
       containers:
-      - image: docker.io/freedomben/malan:20210819172734
+      - image: docker.io/freedomben/malan:20210825154848
         name: malan
         imagePullPolicy: Always
         ports:
