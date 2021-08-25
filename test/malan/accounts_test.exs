@@ -498,6 +498,38 @@ defmodule Malan.AccountsTest do
       assert %{ uf | custom_attrs: %{}, password: nil } == u2
       assert u1 == u2
     end
+
+    test "when creating users the username and email are lowercased" do
+      uf = user_fixture(%{username: "CaPitAlUsername", email: "CaPitALaddr@example.COM"})
+      assert uf.email == "capitaladdr@example.com"
+      assert uf.username == "capitalusername"
+      assert %User{
+        email: "capitaladdr@example.com",
+        username: "capitalusername"
+      } = Accounts.get_user(uf.id)
+    end
+
+    test "getting a user with capitals by username returns the correct" do
+      orig_email = "CaPitALaddr@example.COM"
+      orig_username = "CaPitAlUsername"
+      %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+      assert %User{
+        id: ^user_id,
+        email: "capitaladdr@example.com",
+        username: "capitalusername"
+      } = Accounts.get_user_by_id_or_username(orig_username)
+    end
+
+    test "getting a user with capitals by email returns the correct" do
+      orig_email = "CaPitALaddr@example.COM"
+      orig_username = "CaPitAlUsername"
+      %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+      assert %User{
+        id: ^user_id,
+        email: "capitaladdr@example.com",
+        username: "capitalusername"
+      } = Accounts.get_user_by(email: orig_email)
+    end
   end
 
   describe "sessions" do

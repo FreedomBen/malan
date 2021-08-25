@@ -72,6 +72,8 @@ defmodule Malan.Accounts.User do
     |> put_change(:roles, ["user"])
     |> put_change(:preferences, %{theme: "light"})
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
+    |> downcase_username()
+    |> downcase_email()
     |> validate_common()
   end
 
@@ -94,6 +96,8 @@ defmodule Malan.Accounts.User do
     |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
+    |> downcase_username()
+    |> downcase_email()
     |> put_reset_pass()
     |> validate_common()
   end
@@ -409,4 +413,16 @@ defmodule Malan.Accounts.User do
     Application.get_env(:malan, Malan.Accounts.User)[:default_password_reset_token_expiration_secs]
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
   end
+
+  defp downcase_username(%Ecto.Changeset{changes: %{username: username}} = cs) do
+    put_change(cs, :username, String.downcase(username))
+  end
+
+  defp downcase_username(changeset), do: changeset
+
+  defp downcase_email(%Ecto.Changeset{changes: %{email: email}} = cs) do
+    put_change(cs, :email, String.downcase(email))
+  end
+
+  defp downcase_email(changeset), do: changeset
 end
