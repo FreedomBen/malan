@@ -24,6 +24,7 @@ defmodule Malan.AccountsTest do
 
   describe "users" do
     alias Malan.Accounts.User
+    alias Malan.Accounts.PhoneNumber
 
     test "list_users/0 returns all users" do
       user = %{user_fixture() | password: nil, custom_attrs: %{}}
@@ -529,6 +530,78 @@ defmodule Malan.AccountsTest do
         email: "capitaladdr@example.com",
         username: "capitalusername"
       } = Accounts.get_user_by(email: orig_email)
+    end
+
+    test "get_user_full/1 works" do
+      number = "123456789"
+      phone_numbers = [%{number: number}]
+      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full(user_id)
+    end
+
+    test "get_user_full/1 returns nil when not found" do
+      assert is_nil(Accounts.get_user_full(Ecto.UUID.generate))
+    end
+
+    test "get_user_full!/1 works" do
+      number = "123456789"
+      phone_numbers = [%{number: number}]
+      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full!(user_id)
+    end
+
+    test "get_user_full!/1 raises when not found" do
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full!(Ecto.UUID.generate) end
+    end
+
+    test "get_user_full_by_id_or_username/1 works" do
+      number = "123456789"
+      phone_numbers = [%{number: number}]
+      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full_by_id_or_username(user_id)
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full_by_id_or_username(username)
+    end
+
+    test "get_user_full_by_id_or_username/1 returns nil when not found" do
+      assert is_nil(Accounts.get_user_full_by_id_or_username(Ecto.UUID.generate))
+      assert is_nil(Accounts.get_user_full_by_id_or_username("notavalididorusernameoremailaddress"))
+    end
+
+    test "get_user_full_by_id_or_username!/1 works" do
+      number = "123456789"
+      phone_numbers = [%{number: number}]
+      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full_by_id_or_username!(user_id)
+      assert %User{
+        id: ^user_id,
+        username: ^username,
+        phone_numbers: [%PhoneNumber{number: ^number}]
+      } = Accounts.get_user_full_by_id_or_username!(username)
+    end
+
+    test "get_user_full_by_id_or_username!/1 raises when not found" do
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full_by_id_or_username!(Ecto.UUID.generate) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full_by_id_or_username!("notavalididorusernameoremailaddress") end
     end
   end
 

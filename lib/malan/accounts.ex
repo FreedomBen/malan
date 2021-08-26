@@ -133,6 +133,46 @@ defmodule Malan.Accounts do
     end
   end
 
+  defp get_user_full_by_id_or_username_query(:id, id) do
+    User
+    |> where([u], u.id == ^id or u.username == ^id)
+    |> where([u], is_nil(u.deleted_at))
+    |> preload([:phone_numbers])
+    #|> preload([:phone_numbers, :addresses])
+  end
+
+  defp get_user_full_by_id_or_username_query(:username, username) do
+    User
+    |> where([u], u.username == ^username)
+    |> where([u], is_nil(u.deleted_at))
+    |> preload([:phone_numbers])
+    #|> preload([:phone_numbers, :addresses])
+  end
+
+  defp get_user_full_by_id_or_username_query(id_or_username) do
+    cond do
+      id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+        get_user_full_by_id_or_username_query(:id, id_or_username)
+      true ->
+        get_user_full_by_id_or_username_query(:username, id_or_username)
+    end
+  end
+
+  def get_user_full_by_id_or_username(id_or_username) do
+    get_user_full_by_id_or_username_query(id_or_username)
+    |> Repo.one()
+  end
+
+  def get_user_full_by_id_or_username!(id_or_username) do
+    query = get_user_full_by_id_or_username_query(id_or_username)
+    user = Repo.one(query)
+    if is_nil(user) do
+      raise Ecto.NoResultsError, queryable: query
+    else
+      user
+    end
+  end
+
   @doc ~S"""
   Returns nil if no matching user is found.  Raises if more than one is found
   """
@@ -595,7 +635,7 @@ defmodule Malan.Accounts do
   @doc """
   Looks up user_id, expires_at, revoked_at, roles in the DB based
   on given api_token_hash.  Roles are included because this query
-  is run on every single API call and we also need to roles each
+  is run on every single API call and we also need the roles each
   time.  It's less clean to combine them, but a lot more efficient.
 
   Returns Map if token is found, otherwise nil.
@@ -605,6 +645,7 @@ defmodule Malan.Accounts do
 
   Returns %{
             user_id: s.user_id,
+            username: u.username,
             expires_at: s.expires_at,
             revoked_at: s.revoked_at,
             roles: u.roles,
@@ -619,6 +660,7 @@ defmodule Malan.Accounts do
       on: s.user_id == u.id,
       select: %{
         user_id: s.user_id,
+        username: u.username,
         session_id: s.id,
         expires_at: s.expires_at,
         revoked_at: s.revoked_at,
@@ -640,12 +682,13 @@ defmodule Malan.Accounts do
 
   Returns
 
-    {:ok, user_id, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+    {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     {:error, :revoked}
     {:error, :expired}
   """
   def session_valid?(%{
     user_id: user_id,
+    username: username,
     session_id: session_id,
     expires_at: expires_at,
     revoked_at: revoked_at,
@@ -656,12 +699,12 @@ defmodule Malan.Accounts do
     cond do
       !!revoked_at -> {:error, :revoked}
       DateTime.compare(expires_at, DateTime.utc_now) == :lt -> {:error, :expired}
-      true -> {:ok, user_id, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+      true -> {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     end
   end
 
-  def session_valid?(user_id, session_id, expires_at, revoked_at, roles) do
-    session_valid?([user_id, session_id, expires_at, revoked_at, roles])
+  def session_valid?(user_id, username, session_id, expires_at, revoked_at, roles) do
+    session_valid?([user_id, username, session_id, expires_at, revoked_at, roles])
   end
 
   def session_revoked?(revoked_at), do: !!revoked_at
@@ -679,7 +722,7 @@ defmodule Malan.Accounts do
 
   ## Examples
 
-    assert {:ok, user_id, session_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver} = validate_session(api_token)
+    assert {:ok, user_id, username, session_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver} = validate_session(api_token)
     assert {:error, :revoked} = validate_session(api_token)
     assert {:error, :expired} = validate_session(api_token)
     assert {:error, :not_found} = validate_session(api_token)

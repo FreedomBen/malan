@@ -28,17 +28,17 @@ defmodule MalanWeb.UserController do
   def current(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
   def show(conn, %{"id" => id, "abbr" => _}) do
-    user = Accounts.get_user(id)
+    user = Accounts.get_user_by_id_or_username(id)
     render_user(conn, user)
   end
 
   def show(conn, %{"id" => id}) do
-    user = Accounts.get_user_full(id)
+    user = Accounts.get_user_full_by_id_or_username(id)
     render_user(conn, user)
   end
 
   def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user_full(id)
+    user = Accounts.get_user_full_by_id_or_username(id)
 
     if is_nil(user) do
       render_user(conn, user)
@@ -50,7 +50,7 @@ defmodule MalanWeb.UserController do
   end
 
   def admin_update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user_full(id)
+    user = Accounts.get_user_full_by_id_or_username(id)
 
     if is_nil(user) do
       render_user(conn, user)
@@ -62,7 +62,7 @@ defmodule MalanWeb.UserController do
   end
 
   def delete(conn, %{"id" => id}) do
-    user = Accounts.get_user!(id)
+    user = Accounts.get_user_by_id_or_username!(id)
 
     if is_nil(user) do
       render_user(conn, user)
@@ -87,7 +87,7 @@ defmodule MalanWeb.UserController do
 
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
-      {:ok, user_id, session_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
+      {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
       # {:error, :revoked}
       # {:error, :expired}
       # {:error, :not_found}
@@ -96,7 +96,7 @@ defmodule MalanWeb.UserController do
   end
 
   def admin_reset_password_token_user(conn, %{"id" => id, "token" => token, "new_password" => new_password}), do:
-    admin_reset_password_token_p(conn, Accounts.get_user(id), token, new_password)
+    admin_reset_password_token_p(conn, Accounts.get_user_by_id_or_username(id), token, new_password)
 
   def admin_reset_password_token(conn, %{"token" => token, "new_password" => new_password}), do:
     admin_reset_password_token_p(conn, Accounts.get_user_by_password_reset_token(token), token, new_password)
@@ -176,7 +176,7 @@ defmodule MalanWeb.UserController do
   end
 
   defp is_self?(conn) do
-    conn.assigns.authed_user_id == conn.params["id"]
+    conn.assigns.authed_user_id == conn.params["id"] || conn.assigns.authed_username == conn.params["id"]
   end
 
   defp conn_to_session_info(conn) do

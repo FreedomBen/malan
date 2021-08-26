@@ -286,6 +286,34 @@ defmodule MalanWeb.UserControllerTest do
       check_response.(conn)
     end
 
+    test "allows using username instead of user ID", %{conn: conn, user: %User{id: id, email: email, username: username}, session: session} do
+      %{nick_name: nick_name} = update_params = %{nick_name: "Eddie van Halen"}
+      check_response = fn (conn) ->
+        assert %{
+          "id" => ^id,
+          "email" => ^email,
+          "username" => ^username,
+          "nick_name" => ^nick_name
+        } = json_response(conn, 200)["data"]
+      end
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, username))
+      assert %{
+        "nick_name" => "reggy",
+        "tos_accept_events" => [],
+        "privacy_policy_accept_events" => []
+      } = json_response(conn, 200)["data"]
+
+      conn = put(conn, Routes.user_path(conn, :update, username), user: update_params)
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      check_response.(conn)
+
+      conn = get(conn, Routes.user_path(conn, :show, username))
+      check_response.(conn)
+    end
+
     test "renders errors when data is invalid", %{conn: conn, user: %User{} = user, session: session} do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: @invalid_attrs)

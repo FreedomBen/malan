@@ -79,7 +79,7 @@ defmodule Malan.AuthController do
   """
   def validate_token(conn, _opts) do
     with {:ok, api_token} <- retrieve_token(conn),
-         {:ok, user_id, session_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token),
+         {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token),
          {:ok, accepted_tos} <- accepted_latest_tos?(tos),
          {:ok, accepted_pp} <- accepted_latest_pp?(pp),
          {:ok, is_admin} <- Accounts.user_is_admin?(user_roles),
@@ -88,6 +88,7 @@ defmodule Malan.AuthController do
       conn
       |> assign(:auth_error, nil)
       |> assign(:authed_user_id, user_id)
+      |> assign(:authed_username, username)
       |> assign(:auth_expires_at, expires_at)
       |> assign(:authed_session_id, session_id)
       |> assign(:authed_user_roles, user_roles)
@@ -104,6 +105,7 @@ defmodule Malan.AuthController do
         conn
         |> assign(:auth_error, err)
         |> assign(:authed_user_id, nil)
+        |> assign(:authed_username, nil)
         |> assign(:auth_expires_at, nil)
         |> assign(:authed_session_id, nil)
         |> assign(:authed_user_roles, [])
@@ -130,7 +132,7 @@ defmodule Malan.AuthController do
   def is_moderator_or_admin?(conn), do: !!(is_moderator?(conn) || is_admin?(conn))
   def is_admin_or_moderator?(conn), do: is_moderator_or_admin?(conn)
   def is_owner?(conn), do: is_owner?(conn, conn.params["user_id"])
-  def is_owner?(conn, user_id), do: conn.assigns.authed_user_id == user_id
+  def is_owner?(conn, user_id), do: conn.assigns.authed_user_id == user_id || conn.assigns.authed_username == user_id
 
   def is_not_admin?(conn), do: !is_admin?(conn)
   def is_not_moderator?(conn), do: !is_moderator?(conn)
