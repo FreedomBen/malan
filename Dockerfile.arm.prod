@@ -1,5 +1,10 @@
 FROM elixir:1.11
 
+# These are required to be in place for mix compile to run,
+# but the real values will be injected via Secret at runtime
+ARG DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
+ARG SECRET_KEY_BASE=124
+
 ENV USER_HOME /home/docker
 
 RUN addgroup --gid 1000 docker \
@@ -24,7 +29,6 @@ RUN apt-get update \
     build-essential \
     python \
     jq \
-    ncat \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
  && update-ca-certificates
@@ -47,7 +51,7 @@ RUN apt-get update \
  && update-ca-certificates
 
 # Set environment to production
-ENV MIX_ENV dev
+ENV MIX_ENV prod
 
 # Copy over source code
 RUN mkdir /app \
@@ -61,7 +65,7 @@ WORKDIR /app
 
 RUN mix local.hex --force
 RUN mix local.rebar --force
-RUN mix deps.get
+RUN mix deps.get --only prod
 RUN mix deps.compile
 
 COPY --chown=docker:docker config /app/config
@@ -72,4 +76,4 @@ COPY --chown=docker:docker test /app/test
 
 RUN mix compile
 
-CMD PORT=4000 ./scripts/start-in-docker.sh
+CMD PORT=4000 mix phx.server
