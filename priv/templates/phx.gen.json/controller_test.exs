@@ -57,7 +57,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :show, id))
       assert %{
-               "id" => id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+               "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
                "<%= key %>" => <%= inspect(val) %><% end %>
              } = json_response(conn, 200)["data"]
     end
@@ -156,7 +156,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       assert conn.status == 401
     end
 
-    test "requires being authenticated", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
+    test "requires being authenticated", %{conn: conn, <%= schema.singular %>: _<%= schema.singular %>} do
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, "42"), <%= schema.singular %>: @update_attrs)
       assert conn.status == 403
     end
