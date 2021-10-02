@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: malan
+  name: malan-reset-db-config
+  namespace: malan-staging
+data:
+  BIND_ADDR: '127.0.0.1'
+  DB_POOL_SIZE: '5'
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: malan-reset-db
+  name: malan-reset-db
+  namespace: malan-staging
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: malan-reset-db
+        image: docker.io/freedomben/malan:20210825193415
+        command: ["mix", "ecto.reset"]
+        envFrom:
+          - configMapRef:
+              name: malan-reset-db-config
+          - secretRef:
+              name: malan-secrets
+  ttlSecondsAfterFinished: 86400 # 24 hours
+  parallelism: 1
+  completions: 1
+  backoffLimit: 2
