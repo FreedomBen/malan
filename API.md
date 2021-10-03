@@ -25,7 +25,17 @@ Most endpoints will use an API token which should be passed as an Authorization:
 
 POST /api/users
 
--H Authorization: Bearer token
+```
+{
+  user: {
+    email: string,
+    username: string,
+    password: string,
+    first_name: string,
+    last_name: string
+  }
+}
+```
 
 Example:
 
@@ -34,7 +44,6 @@ curl \
   --request POST \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
   --data "{\"user\":{\"email\":\"${NEW_EMAIL}\",\"username\":\"${NEW_USERNAME}\",\"password\":\"${NEW_PASSWORD}\",\"first_name\":\"${NEW_FIRST_NAME}\",\"last_name\":\"${NEW_LAST_NAME}\"}}" \
   http://localhost:4000/api/users/
 ```
@@ -43,23 +52,28 @@ Returns user:
 
 201 - Created
 401 - Invalid credentials
+403 - Unauthorized (not logged in)
 422 - Validation failed.  Check properties
 
 ## Log in / Create Session
 
 POST /api/sessions
 
+```
 {
   session: {
     username: string,
     password: string
   }
 }
+```
 
 Returns: api_token:
 
-201 - session
-401 - invalid_credentials
+201 - Created
+401 - Invalid credentials
+403 - Unauthorized (not logged in)
+422 - Validation failed.  Check properties
 
 Example:
 
@@ -81,9 +95,11 @@ curl \
 
 DELETE /api/users/:user_id/sessions/:session_id
 
+```
 {
 
 }
+```
 
 Returns:
 
