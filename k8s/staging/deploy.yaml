@@ -7,7 +7,7 @@ metadata:
   name: malan
   namespace: malan-staging
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: malan
@@ -46,7 +46,7 @@ metadata:
   namespace: malan-staging
 data:
   BIND_ADDR: '0.0.0.0'
-  DB_POOL_SIZE: '5'
+  DB_POOL_SIZE: '3'
 
 ---
 apiVersion: v1
