@@ -7,9 +7,11 @@ else
   echo "RELEASE_VERSION already set to '${RELEASE_VERSION}'"
 fi
 
-docker build \
-  --file Dockerfile.prod \
-  --tag "docker.io/freedomben/malan:${RELEASE_VERSION}" \
-  --tag "docker.io/freedomben/malan:latest" \
-  .
+# Skip tests for now
+echo 'Skipping tests!'
+exit 0
+
+docker run --rm  \
+  "docker.io/freedomben/malan:${RELEASE_VERSION}" \
+  mix test
 

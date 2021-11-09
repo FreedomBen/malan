@@ -24,7 +24,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: malan-migration
-        image: docker.io/freedomben/malan:20210825193415
+        image: docker.io/freedomben/malan:${RELEASE_VERSION}
         command: ["mix", "ecto.create.migrate"]
           #command: ["sleep", "36000"]
         envFrom:
