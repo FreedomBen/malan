@@ -48,7 +48,7 @@ jobs:
     env:
       ENV: staging
       K8S_SERVER: https://79aad049-3068-4ca9-a029-e1587c7021fd.k8s.ondigitalocean.com:443
-      SLACK_CHANNEL: '#connect-tech'
+      SLACK_CHANNEL: '#connect-bots'
 
     steps:
       - name: Checkout

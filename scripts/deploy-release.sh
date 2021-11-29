@@ -11,7 +11,7 @@ declare -rx SLEEP_SECONDS_AFTER_APPLY='3'
 declare -rx KUBECTL_EXTERNAL_DIFF='diff --color -N -u'
 
 declare -x MIGRATION_TIMEOUT_SECS='1800'
-declare -x DEPLOY_TIMEOUT_SECS='300'
+declare -x DEPLOY_TIMEOUT_SECS='600'
 declare -x MIGRATION_DELETE_SECS='10'
 
 die ()
