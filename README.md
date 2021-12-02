@@ -108,6 +108,14 @@ The Malan API is a pretty standard REST interface.  For details, please visit [A
 
 If your client will be in TypeScript, you can also consider using [libmalan](https://github.com/FreedomBen/libmalan), a simple utility package that provides TypeScript methods.
 
+## CI/CD and Deployment
+
+Staging deploys automatically upon merge to master.  Prod deploys after being tagged:
+
+```bash
+git tag "prod-$(date '+%Y-%m-%d-%H-%M-%S')"
+git push --tags
+```
 
 ## Helpful links regarding Phoenix
 
