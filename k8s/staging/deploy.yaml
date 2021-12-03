@@ -17,6 +17,9 @@ spec:
         app: malan
       namespace: malan-staging
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 9999
       containers:
       - image: docker.io/freedomben/malan:${RELEASE_VERSION}
         name: malan
@@ -35,6 +38,8 @@ spec:
               name: malan-web-config
           - secretRef:
               name: malan-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
 
 ---
 apiVersion: v1

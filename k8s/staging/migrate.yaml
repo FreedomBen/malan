@@ -22,6 +22,9 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 9999
       containers:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}
@@ -32,6 +35,8 @@ spec:
               name: malan-migration-config
           - secretRef:
               name: malan-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
   ttlSecondsAfterFinished: 86400 # 24 hours
   parallelism: 1
   completions: 1
