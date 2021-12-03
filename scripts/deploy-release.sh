@@ -20,6 +20,12 @@ die ()
   exit 10
 }
 
+notify_failure_and_die ()
+{
+  notify_deploy_fail
+  die "${1}"
+}
+
 log ()
 {
   echo -e "${color_green}[LOG]${color_restore} ${color_cyan}$(date)${color_restore}:  * ${1}"
@@ -86,7 +92,17 @@ k8s_ca ()
 
 k8s_namespace ()
 {
-  echo "--namespace=$(get_namespace)"
+  echo "--namespace=$(get_namespace "${1}")"
+}
+
+k8s_namespace_deploy ()
+{
+  echo "--namespace=$(get_namespace "$(deploy_manifest)")"
+}
+
+k8s_namespace_migration ()
+{
+  echo "--namespace=$(get_namespace "$(migration_manifest)")"
 }
 
 check_required_vars ()
@@ -184,7 +200,7 @@ generate_deploy_manifest ()
 
 get_migration_name ()
 {
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(migration_manifest) \
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(migration_manifest) \
     | grep '^job.batch' \
     | awk '{ print $1 }'
 }
@@ -196,9 +212,9 @@ delete_old_migration_job ()
   log "Deleting old migration job '${old_migration}'"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) delete \"${old_migration}\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) delete \"${old_migration}\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) delete --wait=true "${old_migration}"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) delete --wait=true "${old_migration}"
 }
 
 object_exists ()
@@ -206,9 +222,9 @@ object_exists ()
   debug "Checking if object '${1}' exists"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) get \"${1}\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) get \"${1}\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) get "${1}"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) get "${1}"
 }
 
 delete_old_migration_job_if_exist ()
@@ -235,15 +251,15 @@ diff_migration_manifest ()
   log "Diffing migration manifest file '$(migration_manifest)' to cluster '$(k8s_server)'"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f \"$(migration_manifest)\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f \"$(migration_manifest)\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f "$(migration_manifest)"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f "$(migration_manifest)"
 }
 
 diff_deploy_manifest ()
 {
   log "Diffing deployment manifest file '$(deploy_manifest)' to cluster '$(k8s_server)'"
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f "$(deploy_manifest)"
+  kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) diff -f "$(deploy_manifest)"
 }
 
 apply_migration_manifest ()
@@ -251,9 +267,9 @@ apply_migration_manifest ()
   log "Applying migration manifest file '$(migration_manifest)' to cluster '$(k8s_server)'"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f \"$(migration_manifest)\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f \"$(migration_manifest)\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(migration_manifest)"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(migration_manifest)"
 }
 
 wait_for_migration_complete ()
@@ -270,9 +286,9 @@ wait_for_migration_complete ()
   log "Waiting ${MIGRATION_TIMEOUT_SECS} seconds for migration '${migration_name}' to complete"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) wait --for=condition=Complete --timeout=\"${MIGRATION_TIMEOUT_SECS}s\" \"${migration_name}\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) wait --for=condition=Complete --timeout=\"${MIGRATION_TIMEOUT_SECS}s\" \"${migration_name}\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) wait --for=condition=Complete --timeout="${MIGRATION_TIMEOUT_SECS}s" "${migration_name}"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) wait --for=condition=Complete --timeout="${MIGRATION_TIMEOUT_SECS}s" "${migration_name}"
 }
 
 print_migration_logs ()
@@ -283,9 +299,9 @@ print_migration_logs ()
   log "Retrieving logs for migration '${migration_name}'"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) logs \"${migration_name}\""
+  debug "|=> kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) logs \"${migration_name}\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) logs "${migration_name}"
+  kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) logs "${migration_name}"
 }
 
 apply_and_wait_migration_manifest ()
@@ -297,11 +313,12 @@ apply_and_wait_migration_manifest ()
     if wait_for_migration_complete; then
       log "Migration completed successfully!"
     else
-      error "Migration did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
+      print_migration_logs
+      notify_failure_and_die "Migration did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
     fi
     print_migration_logs
   else
-    die "Apply of migration manifest FAILED!"
+    notify_failure_and_die "Apply of migration manifest FAILED!"
   fi
 }
 
@@ -310,9 +327,9 @@ apply_deploy_manifest ()
   log "Applying deployment manifest file '$(deploy_manifest)' to cluster '$(k8s_server)'"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f \"$(deploy_manifest)\""
+  debug "|=> kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f \"$(deploy_manifest)\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(deploy_manifest)"
+  kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(deploy_manifest)"
 }
 
 get_deployment_name ()
@@ -334,8 +351,14 @@ get_namespace ()
   #  | sort \
   #  | uniq
 
+  local manifest="${1}"
+
+  if [ -z "${manifest}" ]; then
+    manifest=$(deploy_manifest)
+  fi
+
   kubectl $(k8s_server) $(k8s_token) $(k8s_ca) get \
-    -f $(deploy_manifest) \
+    -f "${manifest}" \
     -o jsonpath='{.items[0].metadata.namespace}'
 }
 
@@ -353,14 +376,13 @@ wait_for_deploy_complete ()
   log "Waiting ${DEPLOY_TIMEOUT_SECS} seconds for Deployment '${deploy_name}' to complete"
 
   debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout=\"${DEPLOY_TIMEOUT_SECS}s\" \"${deploy_name}\""
+  debug "|=> kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout=\"${DEPLOY_TIMEOUT_SECS}s\" \"${deploy_name}\""
 
-  kubectl $(k8s_namespace) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout="${DEPLOY_TIMEOUT_SECS}s" "${deploy_name}"
+  kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout="${DEPLOY_TIMEOUT_SECS}s" "${deploy_name}"
 }
 
 apply_and_wait_deployment_manifest ()
 {
-  notify_deploy_start
   if apply_deploy_manifest; then
     log "Apply of deploy manifest succeeded!  Waiting ${SLEEP_SECONDS_AFTER_APPLY} seconds before checking status..."
     sleep "${SLEEP_SECONDS_AFTER_APPLY}"
@@ -369,11 +391,22 @@ apply_and_wait_deployment_manifest ()
       log "Deployment completed successfully!"
       notify_deploy_complete
     else
-      error "Deployment did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
-      notify_deploy_fail
+      notify_failure_and_die "Deployment did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
     fi
   else
-    die "Apply of deploy manifest FAILED!  Check logs above"
+    notify_failure_and_die "Apply of deploy manifest FAILED!  Check logs above"
+  fi
+}
+
+verify_namespace_is_set ()
+{
+  debug "Verifying a namespace is set"
+  local namespace="$(get_namespace)"
+
+  if [ -n "${namespace}" ]; then
+    log "Namespace we're using is '${namespace}'"
+  else
+    die "Unable to parse a namespace from the deploy manifest at '$(deploy_manifest)'.  Ensure one is set and try again.  Parsed was '${namespace}'"
   fi
 }
 
@@ -448,9 +481,20 @@ send_slack_message ()
   fi
 }
 
+notify_migration_start ()
+{
+  send_slack_message ":hourglass:  ${ENV} migration of release ${RELEASE_VERSION} started for ${GITHUB_REPOSITORY} by ${GITHUB_ACTOR}.  To see details: $(get_gh_link)"
+}
+
 notify_deploy_start ()
 {
-  send_slack_message ":hourglass:  ${ENV} deploy of release ${RELEASE_VERSION} started for ${GITHUB_REPOSITORY} by $GITHUB_ACTOR.  To see details: $(get_gh_link)"
+  send_slack_message ":hourglass:  ${ENV} deploy of release ${RELEASE_VERSION} started for ${GITHUB_REPOSITORY} by ${GITHUB_ACTOR}.  To see details: $(get_gh_link)"
+}
+
+notify_migration_fail ()
+{
+
+  send_slack_message ":x:  ${ENV} migration of release ${RELEASE_VERSION} for ${GITHUB_REPOSITORY} by ${GITHUB_ACTOR} has FAILED!.  To see details: $(get_gh_link)"
 }
 
 notify_deploy_fail ()
@@ -460,7 +504,7 @@ notify_deploy_fail ()
 
 notify_deploy_complete ()
 {
-  send_slack_message ":white_check_mark:  ${ENV} deploy of release ${RELEASE_VERSION} for ${GITHUB_REPOSITORY} by $GITHUB_ACTOR has completed successfully.  To see details: $(get_gh_link)"
+  send_slack_message ":white_check_mark:  ${ENV} deploy of release ${RELEASE_VERSION} for ${GITHUB_REPOSITORY} by ${GITHUB_ACTOR} has completed successfully.  To see details: $(get_gh_link)"
 }
 
 main ()
@@ -680,6 +724,7 @@ main ()
 
   if is_enabled "${DIFF_DEPLOY}" || is_enabled "${APPLY_DEPLOY}"; then
     check_for_deploy_manifest
+    verify_namespace_is_set
     diff_deploy_manifest
     # Exit status of diff_deploy_manifest:
     #   0 - No differences were found.
