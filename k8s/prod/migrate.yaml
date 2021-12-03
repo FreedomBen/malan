@@ -24,7 +24,7 @@ spec:
       restartPolicy: Never
       securityContext:
         runAsNonRoot: true
-        runAsUser: 9999
+        runAsUser: 1000
       containers:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}

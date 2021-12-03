@@ -19,7 +19,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 9999
+        runAsUser: 1000
       containers:
       - image: docker.io/freedomben/malan:${RELEASE_VERSION}
         name: malan
