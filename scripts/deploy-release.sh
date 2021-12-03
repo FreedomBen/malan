@@ -361,11 +361,11 @@ get_namespace ()
   #  -f "${manifest}" \
   #  -o jsonpath='{.items[0].metadata.namespace}'
 
-  local num_namespaces="$(cat "${manifest}" | grep namespace | awk '{ print $2 }' | sort | uniq | wc -l)"
+  local num_namespaces="$(cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq | wc -l)"
   if (( "${num_namespaces}" != 1 )); then
     die "Expected 1 namespace but found ${num_namespaces}.  "
   else
-    cat "${manifest}" | grep namespace | awk '{ print $2 }' | sort | uniq
+    cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq
   fi
 }
 
