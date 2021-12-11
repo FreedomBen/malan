@@ -6,7 +6,7 @@ defmodule MalanWeb.Endpoint do
   # Set :encryption_salt if you would also like to encrypt it.
   @session_options [
     store: :cookie,
-    key: "_ace_key",
+    key: "_malan_key",
     signing_salt: "rkUF/sk8"
   ]
 
