@@ -29,11 +29,11 @@ defmodule MalanWeb.Telemetry do
       ),
 
       # Database Metrics
-      summary("ace.repo.query.total_time", unit: {:native, :millisecond}),
-      summary("ace.repo.query.decode_time", unit: {:native, :millisecond}),
-      summary("ace.repo.query.query_time", unit: {:native, :millisecond}),
-      summary("ace.repo.query.queue_time", unit: {:native, :millisecond}),
-      summary("ace.repo.query.idle_time", unit: {:native, :millisecond}),
+      summary("malan.repo.query.total_time", unit: {:native, :millisecond}),
+      summary("malan.repo.query.decode_time", unit: {:native, :millisecond}),
+      summary("malan.repo.query.query_time", unit: {:native, :millisecond}),
+      summary("malan.repo.query.queue_time", unit: {:native, :millisecond}),
+      summary("malan.repo.query.idle_time", unit: {:native, :millisecond}),
 
       # VM Metrics
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
