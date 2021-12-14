@@ -40,6 +40,7 @@ defmodule Malan.MixProject do
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.16.0"},
+      #{:phoenix_live_view, "~> 0.17.5"},
       {:floki, ">= 0.30.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.5"},
       {:esbuild, "~> 0.2", runtime: Mix.env() == :dev},
@@ -66,7 +67,11 @@ defmodule Malan.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       "ecto.create.migrate": ["ecto.create", "ecto.migrate"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "assets.deploy": [
+        "cmd --cd assets npm run deploy",
+        "esbuild default --minify",
+        "phx.digest"
+      ]
     ]
   end
 end
