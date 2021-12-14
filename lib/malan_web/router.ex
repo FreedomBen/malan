@@ -1,6 +1,15 @@
 defmodule MalanWeb.Router do
   use MalanWeb, :router
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, {EhrmanBlogWeb.LayoutView, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   pipeline :unauthed_api do
     plug :accepts, ["json"]
   end
@@ -56,6 +65,15 @@ defmodule MalanWeb.Router do
   scope "/health_check", MalanWeb, log: false do
     get "/liveness", HealthCheckController, :liveness
     get "/readiness", HealthCheckController, :readiness
+  end
+
+  scope "/", EhrmanBlogWeb do
+    pipe_through :browser
+
+    #live "/", PageLive.Index, :index
+
+    # Predefined pages
+    live "/dashboard", PageLive.Dashboard, :dashboard
   end
 
   scope "/api", MalanWeb do
