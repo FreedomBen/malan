@@ -202,16 +202,26 @@ defmodule Malan.UserSchemaTest do
       assert tos_cs.valid? == true
     end
 
-    test "roles must be valid" do
+    #test "roles must be valid" do
+    #  changeset = Ecto.Changeset.cast(%User{}, %{roles: ["user"]}, [:roles])
+    #              |> User.validate_roles()
+    #  assert changeset.valid? == true
+
+    #  changeset = Ecto.Changeset.cast(%User{}, %{roles: ["fake"]}, [:roles])
+    #              |> User.validate_roles()
+    #  assert changeset.valid? == false
+    #  assert errors_on(changeset).roles
+    #         |> Enum.any?(fn (x) -> x =~ ~r/has an invalid entry/ end)
+    #end
+
+    test "roles can be arbitrary" do
       changeset = Ecto.Changeset.cast(%User{}, %{roles: ["user"]}, [:roles])
                   |> User.validate_roles()
       assert changeset.valid? == true
 
       changeset = Ecto.Changeset.cast(%User{}, %{roles: ["fake"]}, [:roles])
                   |> User.validate_roles()
-      assert changeset.valid? == false
-      assert errors_on(changeset).roles
-             |> Enum.any?(fn (x) -> x =~ ~r/has an invalid entry/ end)
+      assert changeset.valid? == true
     end
   end
 

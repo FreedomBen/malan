@@ -145,7 +145,7 @@ defmodule Malan.Accounts.User do
 
   defp validate_roles(changeset) do
     changeset
-    |> validate_subset(:roles, ["admin", "user", "moderator"])
+    #|> validate_subset(:roles, ["admin", "user", "moderator"])
   end
 
   defp validate_username(changeset) do
