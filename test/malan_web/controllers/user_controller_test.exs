@@ -439,6 +439,32 @@ defmodule MalanWeb.UserControllerTest do
         |> Enum.member?(ph["number"])
       end)
     end
+
+    test "disallows setting roles", %{conn: conn, user: %User{} = user, session: session} do
+      id = user.id
+      update_params = %{
+        roles: ["admin", "user", "smileemptysoul"],  # Shouldn't make it through
+      }
+      check_response = fn (conn) ->
+        assert %{
+          "roles" => ["user"],
+        } = json_response(conn, 200)["data"]
+      end
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{
+        "roles" => ["user"],
+      } = json_response(conn, 200)["data"]
+
+      conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      check_response.(conn)
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      check_response.(conn)
+    end
   end
 
   describe "admin update user" do
@@ -514,6 +540,17 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
       conn = get(conn, Routes.user_path(conn, :show, au2.id))
       assert %{"roles" => ["user"]} = json_response(conn, 200)["data"]
+    end
+
+    test "allows setting arbitrary roles", %{conn: conn, user: %User{}, session: _session} do
+      [{:ok, conn, _au1, _as1}, {:ok, _conn, au2, _as2}] =
+        Helpers.Accounts.admin_users_session_conn(conn, 2)
+      conn = get(conn, Routes.user_path(conn, :show, au2.id))
+      assert %{"roles" => ["admin", "user"]} = json_response(conn, 200)["data"]
+      conn = put(conn, Routes.user_path(conn, :admin_update, au2.id), user: %{roles: ["user", "helloworld"]})
+      assert %{"roles" => ["user", "helloworld"]} = json_response(conn, 200)["data"]
+      conn = get(conn, Routes.user_path(conn, :show, au2.id))
+      assert %{"roles" => ["user", "helloworld"]} = json_response(conn, 200)["data"]
     end
 
     test "Allows updating phone numbers", %{conn: _conn, user: %User{} = user} do
