@@ -623,6 +623,7 @@ defmodule Malan.AccountsTest do
     def session_valid_fixture(args \\ %{}) do
       %{
         user_id: "user_id",
+        username: "username",
         session_id: "session_id",
         expires_at: Utils.DateTime.adjust_cur_time(7, :days),
         revoked_at: nil,
@@ -663,7 +664,7 @@ defmodule Malan.AccountsTest do
         %{"never_expires" => true, "ip_address" => "192.168.2.200"}
       )
       assert DateTime.diff(session.expires_at, DateTime.utc_now) > 5_000_000_000
-      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
     end
 
     test "create_session/1 with expires_in_seconds expires at specified time" do
@@ -727,8 +728,10 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/1 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{username: "randomusername1"})
-      assert {:ok, user_id, session_id, roles, exp, tos, pp} = Accounts.validate_session(session.api_token)
+      # TODO Unused
+      assert {:ok, user_id, username, session_id, roles, exp, tos, pp} = Accounts.validate_session(session.api_token)
       assert user_id == session.user_id
+      assert username == "randomusername1"
       assert session_id == session.id
       assert roles == ["user"]
       assert TestUtils.DateTime.first_after_second_within?(Utils.DateTime.adjust_cur_time(1, :weeks), exp, 3, :seconds)
@@ -811,13 +814,13 @@ defmodule Malan.AccountsTest do
         session
       end)
       {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
-      assert {:ok, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
+      assert {:ok, _, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
       assert DateTime.compare(
         Utils.DateTime.adjust_cur_time(36500, :days), exp
       ) == :lt
 
       Enum.each(sessions, fn (s) ->
-        assert {:ok, user_id, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, user_id, _username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
         assert user_id == user.id
       end)
 
@@ -847,6 +850,7 @@ defmodule Malan.AccountsTest do
     test "session_valid?/1 returns expected structure when valid" do
       args = %{
         user_id: user_id,
+        username: "fakeusername1",
         session_id: session_id,
         expires_at: expires_at,
         revoked_at: _revoked_at,
@@ -855,6 +859,7 @@ defmodule Malan.AccountsTest do
         latest_pp_accept_ver: latest_pp_accept_ver,
       } = %{
         user_id: "123",
+        username: "fakeusername1",
         session_id: "abc",
         expires_at: Utils.DateTime.adjust_cur_time(2, :days),
         revoked_at: nil,
@@ -863,7 +868,7 @@ defmodule Malan.AccountsTest do
         latest_pp_accept_ver: "13",
       }
 
-      assert {:ok, ^user_id, ^session_id, ^roles, ^expires_at, ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
+      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^roles, ^expires_at, ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
     end
 
     test "session_valid?/1 with map expired but not revoked is expired" do
@@ -871,7 +876,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "session_valid?/1 with forever token is valid" do
-      assert {:ok, _, _, _, _, _, _} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.distant_future, revoked_at: nil}))
+      assert {:ok, _, _, _, _, _, _, _} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.distant_future, revoked_at: nil}))
     end
 
   end
@@ -1012,70 +1017,80 @@ defmodule Malan.AccountsTest do
   describe "addresses" do
     alias Malan.Accounts.Address
 
-    import Malan.AccountsFixtures
+    @valid_attrs %{"city" => "some city", "primary" => true, "verified_at" => "2010-04-17T14:00:00Z", "country" => "some country", "line_1" => "some line_1", "line_2" => "some line_2", "name" => "some name", "postal" => "some postal", "state" => "some state"}
+    @update_attrs %{"city" => "some updated city", "primary" => false, "verified_at" => "2010-04-17T14:00:00Z", "country" => "some updated country", "line_1" => "some updated line_1", "line_2" => "some updated line_2", "name" => "some updated name", "postal" => "some updated postal", "state" => "some updated state"}
+    @invalid_attrs %{"city" => nil, "primary" => nil, "verified_at" => nil, "country" => nil, "line_1" => nil, "line_2" => nil, "name" => nil, "postal" => nil, "state" => nil}
 
-    @invalid_attrs %{city: nil, country: nil, line_1: nil, line_2: nil, name: nil, postal: nil, primary: nil, state: nil, verified_at: nil}
+    def address_fixture(attrs \\ %{}) do
+      with {:ok, user} <- Helpers.Accounts.regular_user(),
+           %{} = val_attrs <- Enum.into(attrs, @valid_attrs),
+           {:ok, address} <- Accounts.create_address(user.id, val_attrs),
+       do: {:ok, user, address}
+    end
 
     test "list_addresses/0 returns all addresses" do
-      address = address_fixture()
+      {:ok, _user, address} = address_fixture()
       assert Accounts.list_addresses() == [address]
     end
 
     test "get_address!/1 returns the address with given id" do
-      address = address_fixture()
+      {:ok, _user, address} = address_fixture()
       assert Accounts.get_address!(address.id) == address
     end
 
     test "create_address/1 with valid data creates a address" do
-      valid_attrs = %{city: "some city", country: "some country", line_1: "some line_1", line_2: "some line_2", name: "some name", postal: "some postal", primary: true, state: "some state", verified_at: ~U[2021-12-19 01:54:00Z]}
-
-      assert {:ok, %Address{} = address} = Accounts.create_address(valid_attrs)
+      {:ok, user} = Helpers.Accounts.regular_user()
+      assert {:ok, %Address{} = address} = Accounts.create_address(user.id, @valid_attrs)
       assert address.city == "some city"
+      assert address.primary == true
       assert address.country == "some country"
       assert address.line_1 == "some line_1"
       assert address.line_2 == "some line_2"
       assert address.name == "some name"
       assert address.postal == "some postal"
-      assert address.primary == true
       assert address.state == "some state"
-      assert address.verified_at == ~U[2021-12-19 01:54:00Z]
+      # can't set verified at this way
+      assert is_nil(address.verified_at)
     end
 
     test "create_address/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Accounts.create_address(@invalid_attrs)
+      {:ok, user} = Helpers.Accounts.regular_user()
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_address(user.id, @invalid_attrs)
     end
 
     test "update_address/2 with valid data updates the address" do
-      address = address_fixture()
-      update_attrs = %{city: "some updated city", country: "some updated country", line_1: "some updated line_1", line_2: "some updated line_2", name: "some updated name", postal: "some updated postal", primary: false, state: "some updated state", verified_at: ~U[2021-12-20 01:54:00Z]}
-
-      assert {:ok, %Address{} = address} = Accounts.update_address(address, update_attrs)
+      {:ok, _user, address} = address_fixture()
+      assert {:ok, %Address{} = address} = Accounts.update_address(address, @update_attrs)
       assert address.city == "some updated city"
+      assert address.primary == false
       assert address.country == "some updated country"
       assert address.line_1 == "some updated line_1"
       assert address.line_2 == "some updated line_2"
       assert address.name == "some updated name"
       assert address.postal == "some updated postal"
-      assert address.primary == false
       assert address.state == "some updated state"
-      assert address.verified_at == ~U[2021-12-20 01:54:00Z]
+      # can't set verified at this way
+      assert is_nil(address.verified_at)
     end
 
     test "update_address/2 with invalid data returns error changeset" do
-      address = address_fixture()
+      {:ok, _user, address} = address_fixture()
       assert {:error, %Ecto.Changeset{}} = Accounts.update_address(address, @invalid_attrs)
       assert address == Accounts.get_address!(address.id)
     end
 
     test "delete_address/1 deletes the address" do
-      address = address_fixture()
+      {:ok, _user, address} = address_fixture()
       assert {:ok, %Address{}} = Accounts.delete_address(address)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_address!(address.id) end
     end
 
-    test "change_address/1 returns a address changeset" do
-      address = address_fixture()
-      assert %Ecto.Changeset{} = Accounts.change_address(address)
+    test "verify_address/2" do
+      {:ok, _user, address} = address_fixture()
+      assert is_nil(address.verified_at)
+      {:ok, address} = Accounts.verify_address(address, true)
+      assert TestUtils.DateTime.within_last?(address.verified_at, 2, :seconds)
     end
   end
+
 end
