@@ -36,6 +36,7 @@ defmodule Malan.Accounts.User do
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
 
+    has_many :addresses, Malan.Accounts.Address, foreign_key: :user_id
     has_many :phone_numbers, Malan.Accounts.PhoneNumber, foreign_key: :user_id
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
@@ -71,6 +72,7 @@ defmodule Malan.Accounts.User do
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
     |> put_change(:preferences, %{theme: "light"})
+    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
     |> downcase_email()
@@ -82,6 +84,7 @@ defmodule Malan.Accounts.User do
     user
     |> cast(params, [:password, :accept_tos, :accept_privacy_policy, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
+    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
     |> put_accept_tos()
     |> put_accept_privacy_policy()
@@ -95,6 +98,7 @@ defmodule Malan.Accounts.User do
     user
     |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
     |> cast_embed(:preferences)
+    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
     |> downcase_email()

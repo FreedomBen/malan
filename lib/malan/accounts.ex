@@ -71,8 +71,7 @@ defmodule Malan.Accounts do
     User
     |> where([u], u.id == ^id)
     |> where([u], is_nil(u.deleted_at))
-    |> preload([:phone_numbers])
-    #|> preload([:phone_numbers, :addresses])
+    |> preload([:phone_numbers, :addresses])
     |> Repo.one()
   end
 
@@ -97,8 +96,7 @@ defmodule Malan.Accounts do
     query = User
             |> where([u], u.id == ^id)
             |> where([u], is_nil(u.deleted_at))
-            |> preload([:phone_numbers])
-            #|> preload([:phone_numbers, :addresses])
+            |> preload([:phone_numbers, :addresses])
 
     user = Repo.one(query)
 
@@ -137,16 +135,14 @@ defmodule Malan.Accounts do
     User
     |> where([u], u.id == ^id or u.username == ^id)
     |> where([u], is_nil(u.deleted_at))
-    |> preload([:phone_numbers])
-    #|> preload([:phone_numbers, :addresses])
+    |> preload([:phone_numbers, :addresses])
   end
 
   defp get_user_full_by_id_or_username_query(:username, username) do
     User
     |> where([u], u.username == ^username)
     |> where([u], is_nil(u.deleted_at))
-    |> preload([:phone_numbers])
-    #|> preload([:phone_numbers, :addresses])
+    |> preload([:phone_numbers, :addresses])
   end
 
   defp get_user_full_by_id_or_username_query(id_or_username) do
@@ -714,7 +710,7 @@ defmodule Malan.Accounts do
     do: !session_revoked?(revoked_at) && !session_expired?(expires_at)
 
   @doc """
-  Returns {:ok, user_id, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+  Returns {:ok, user_id, username, user_roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
   if API token is valid.  Otherwise returns {:err, :revoked}
 
   If the session's :revoked_at is nil and :expires_at is in the future,
@@ -924,12 +920,12 @@ defmodule Malan.Accounts do
     Repo.delete(phone_number)
   end
 
-  defp verified_at(true), do: Utils.DateTime.utc_now_trunc()
-  defp verified_at(false), do: nil
+  defp phone_verified_at(true), do: Utils.DateTime.utc_now_trunc()
+  defp phone_verified_at(false), do: nil
 
   def verify_phone_number(%PhoneNumber{} = phone_number, verified \\ true) do
     phone_number
-    |> PhoneNumber.verify_changeset(%{verified_at: verified_at(verified)})
+    |> PhoneNumber.verify_changeset(%{verified_at: phone_verified_at(verified)})
     |> Repo.update()
   end
 
@@ -969,16 +965,16 @@ defmodule Malan.Accounts do
 
   ## Examples
 
-      iex> create_address(%{field: value})
+      iex> create_address(user_id, %{field: value})
       {:ok, %Address{}}
 
-      iex> create_address(%{field: bad_value})
+      iex> create_address(user_id, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_address(attrs \\ %{}) do
+  def create_address(user_id, attrs \\ %{}) do
     %Address{}
-    |> Address.changeset(attrs)
+    |> Address.create_changeset(Map.merge(attrs, %{"user_id" => user_id}))
     |> Repo.insert()
   end
 
@@ -996,7 +992,7 @@ defmodule Malan.Accounts do
   """
   def update_address(%Address{} = address, attrs) do
     address
-    |> Address.changeset(attrs)
+    |> Address.update_changeset(attrs)
     |> Repo.update()
   end
 
@@ -1016,16 +1012,13 @@ defmodule Malan.Accounts do
     Repo.delete(address)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking address changes.
+  defp address_verified_at(true), do: Utils.DateTime.utc_now_trunc()
+  defp address_verified_at(false), do: nil
 
-  ## Examples
-
-      iex> change_address(address)
-      %Ecto.Changeset{data: %Address{}}
-
-  """
-  def change_address(%Address{} = address, attrs \\ %{}) do
-    Address.changeset(address, attrs)
+  def verify_address(%Address{} = address, verified \\ true) do
+    address
+    |> Address.verify_changeset(%{verified_at: address_verified_at(verified)})
+    |> Repo.update()
   end
+
 end
