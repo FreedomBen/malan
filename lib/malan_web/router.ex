@@ -106,6 +106,7 @@ defmodule MalanWeb.Router do
       delete "/sessions", SessionController, :delete_all  # Delete all active sessions for this user
       resources "/sessions", SessionController, only: [:index, :show, :delete]
       resources "/phone_numbers", PhoneNumberController, only: [:index, :show, :create, :update, :delete]
+      resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
     end
   end
 

@@ -1008,4 +1008,74 @@ defmodule Malan.AccountsTest do
       assert TestUtils.DateTime.within_last?(phone_number.verified_at, 2, :seconds)
     end
   end
+
+  describe "addresses" do
+    alias Malan.Accounts.Address
+
+    import Malan.AccountsFixtures
+
+    @invalid_attrs %{city: nil, country: nil, line_1: nil, line_2: nil, name: nil, postal: nil, primary: nil, state: nil, verified_at: nil}
+
+    test "list_addresses/0 returns all addresses" do
+      address = address_fixture()
+      assert Accounts.list_addresses() == [address]
+    end
+
+    test "get_address!/1 returns the address with given id" do
+      address = address_fixture()
+      assert Accounts.get_address!(address.id) == address
+    end
+
+    test "create_address/1 with valid data creates a address" do
+      valid_attrs = %{city: "some city", country: "some country", line_1: "some line_1", line_2: "some line_2", name: "some name", postal: "some postal", primary: true, state: "some state", verified_at: ~U[2021-12-19 01:54:00Z]}
+
+      assert {:ok, %Address{} = address} = Accounts.create_address(valid_attrs)
+      assert address.city == "some city"
+      assert address.country == "some country"
+      assert address.line_1 == "some line_1"
+      assert address.line_2 == "some line_2"
+      assert address.name == "some name"
+      assert address.postal == "some postal"
+      assert address.primary == true
+      assert address.state == "some state"
+      assert address.verified_at == ~U[2021-12-19 01:54:00Z]
+    end
+
+    test "create_address/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_address(@invalid_attrs)
+    end
+
+    test "update_address/2 with valid data updates the address" do
+      address = address_fixture()
+      update_attrs = %{city: "some updated city", country: "some updated country", line_1: "some updated line_1", line_2: "some updated line_2", name: "some updated name", postal: "some updated postal", primary: false, state: "some updated state", verified_at: ~U[2021-12-20 01:54:00Z]}
+
+      assert {:ok, %Address{} = address} = Accounts.update_address(address, update_attrs)
+      assert address.city == "some updated city"
+      assert address.country == "some updated country"
+      assert address.line_1 == "some updated line_1"
+      assert address.line_2 == "some updated line_2"
+      assert address.name == "some updated name"
+      assert address.postal == "some updated postal"
+      assert address.primary == false
+      assert address.state == "some updated state"
+      assert address.verified_at == ~U[2021-12-20 01:54:00Z]
+    end
+
+    test "update_address/2 with invalid data returns error changeset" do
+      address = address_fixture()
+      assert {:error, %Ecto.Changeset{}} = Accounts.update_address(address, @invalid_attrs)
+      assert address == Accounts.get_address!(address.id)
+    end
+
+    test "delete_address/1 deletes the address" do
+      address = address_fixture()
+      assert {:ok, %Address{}} = Accounts.delete_address(address)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_address!(address.id) end
+    end
+
+    test "change_address/1 returns a address changeset" do
+      address = address_fixture()
+      assert %Ecto.Changeset{} = Accounts.change_address(address)
+    end
+  end
 end
