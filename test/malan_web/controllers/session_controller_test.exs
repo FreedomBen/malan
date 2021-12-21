@@ -128,7 +128,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = get(conn, Routes.session_path(conn, :show_current))
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
-      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
       conn = get(conn, Routes.session_path(conn, :show_current))
       jr = json_response(conn, 200)["data"]
       assert %{
@@ -360,7 +360,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.session_path(conn, :delete_current))
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
-      assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
       conn = delete(conn, Routes.session_path(conn, :delete_current))
       assert %{
         "revoked_at" => revoked_at,
@@ -383,7 +383,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       for s <- [s1, s2, s3, s4] do
-        assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
       end
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
       assert %{
@@ -408,7 +408,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       for s <- [s1, s2, s3, s4] do
-        assert {:ok, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
       end
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
       assert %{

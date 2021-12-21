@@ -16,6 +16,7 @@ defmodule MalanWeb.AuthControllerTest do
   def conn_assigns_for_invalid_token(auth_error) do
   %{
     authed_user_id: nil,
+    authed_username: nil,
     authed_session_id: nil,
     authed_user_is_admin: false,
     authed_user_accepted_pp: false,
@@ -52,6 +53,7 @@ defmodule MalanWeb.AuthControllerTest do
       conn = Plug.Conn.put_req_header(conn, "authorization", "Bearer #{session.api_token}")
              |> AuthController.validate_token(nil)
       assert conn.assigns.authed_user_id == user.id
+      assert conn.assigns.authed_username == user.username
       assert conn.assigns.authed_user_roles == ["admin", "user"]
       assert conn.assigns.authed_user_is_admin == true
       assert conn.assigns.authed_user_is_moderator == false
@@ -62,6 +64,7 @@ defmodule MalanWeb.AuthControllerTest do
       conn = Plug.Conn.put_req_header(conn, "authorization", "Bearer #{session.api_token}")
              |> AuthController.validate_token(nil)
       assert conn.assigns.authed_user_id == user.id
+      assert conn.assigns.authed_username == user.username
       assert conn.assigns.authed_user_roles == ["moderator", "user"]
       assert conn.assigns.authed_user_is_admin == false
       assert conn.assigns.authed_user_is_moderator == true
@@ -72,6 +75,7 @@ defmodule MalanWeb.AuthControllerTest do
       conn = Plug.Conn.put_req_header(conn, "authorization", "Bearer #{session.api_token}")
              |> AuthController.validate_token(nil)
       assert conn.assigns.authed_user_id == user.id
+      assert conn.assigns.authed_username == user.username
       assert conn.assigns.authed_user_roles == ["user"]
       assert conn.assigns.authed_user_is_admin == false
       assert conn.assigns.authed_user_accepted_pp == false
@@ -253,33 +257,65 @@ defmodule MalanWeb.AuthControllerTest do
 
   describe "#is_owner?/1" do
     test "works" do
-      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => "abc"}})
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => "123"}})
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => nil}})
+      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "abc"}})
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "123"}})
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => nil}})
     end
   end
 
   describe "#is_not_owner?/1" do
     test "works" do
-      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => "abc"}})
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => "123"}})
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}, params: %{"user_id" => nil}})
+      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "abc"}})
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "123"}})
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => nil}})
     end
   end
 
   describe "#is_owner?/2" do
     test "works" do
-      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}}, "abc")
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}}, "123")
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc"}}, nil)
+      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, "abc")
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, "123")
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, nil)
     end
   end
 
   describe "#is_not_owner?/2" do
     test "works" do
-      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}}, "abc")
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}}, "123")
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc"}}, nil)
+      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, "abc")
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, "123")
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}}, nil)
+    end
+  end
+
+  describe "#is_owner?/1 for username" do
+    test "works" do
+      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => "def"}})
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => "123"}})
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => nil}})
+    end
+  end
+
+  describe "#is_not_owner?/1 for username" do
+    test "works" do
+      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => "def"}})
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => "123"}})
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}, params: %{"user_id" => nil}})
+    end
+  end
+
+  describe "#is_owner?/2 for username" do
+    test "works" do
+      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, "def")
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, "123")
+      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, nil)
+    end
+  end
+
+  describe "#is_not_owner?/2 for username" do
+    test "works" do
+      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, "def")
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, "123")
+      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "", authed_username: "def"}}, nil)
     end
   end
 end
