@@ -1,4 +1,4 @@
-FROM elixir:1.11
+FROM elixir:1.12
 
 # These are required to be in place for mix compile to run,
 # but the real values will be injected via Secret at runtime
