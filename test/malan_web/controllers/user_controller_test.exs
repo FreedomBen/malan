@@ -118,6 +118,9 @@ defmodule MalanWeb.UserControllerTest do
 
       # Should not have phone numbers present because not set and not requested
       assert Map.has_key?(jr, "phone_numbers") == false
+
+      # Should not have addresses present because not set and not requested
+      assert Map.has_key?(jr, "addresses") == false
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
@@ -208,6 +211,99 @@ defmodule MalanWeb.UserControllerTest do
       assert Map.has_key?(jr, "password") == false
       assert Enum.count(phs) == 2
       assert Enum.all?(phs, fn (ph) -> ph["number"] == ph1["number"] || ph["number"] == ph2["number"] end)
+    end
+
+    test "Accepts addresses and phone numbers together", %{conn: conn} do
+      %{phone_numbers: [%{} = ph1, %{} = ph2]} = phone_numbers = %{
+        phone_numbers: [
+          %{
+            "number" => "801-867-5309",
+            "primary" => true,
+            "verified_at" => "2010-04-17T14:00:00Z"
+          },
+          %{
+            "number" => "801-867-5310",
+            "primary" => false,
+            "verified_at" => "2010-04-17T14:00:00Z"
+          },
+        ]
+      }
+      %{addresses: [%{} = ad1, %{} = ad2]} = addresses = %{
+        addresses: [
+          %{
+            "city" => "some city 1",
+            "country" => "some country 1",
+            "line_1" => "some line_1 1",
+            "line_2" => "some line_2 1",
+            "name" => "some name 1",
+            "postal" => "some postal 1",
+            "primary" => true,
+            "state" => "some state 1",
+            "verified_at" => ~U[2021-12-19 01:54:00Z]
+          },
+          %{
+            "city" => "some city 2",
+            "country" => "some country 2",
+            "line_1" => "some line_1 2",
+            "line_2" => "some line_2 2",
+            "name" => "some name 2",
+            "postal" => "some postal 2",
+            "primary" => true,
+            "state" => "some state 2",
+            "verified_at" => ~U[2021-12-19 01:54:00Z]
+          },
+        ]
+      }
+      _user_attrs = @create_attrs
+                   |> Map.merge(phone_numbers)
+                   |> Map.merge(addresses)
+      conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs |> Map.merge(phone_numbers) |> Map.merge(addresses))
+      # password should be included after creation
+      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert is_nil(password) == false
+
+      # This uses the returned password above to authenticate
+      {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
+      conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      jr = json_response(conn, 200)["data"]
+      assert %{
+               "id" => ^id,
+               "email" => "some@email.com",
+               "email_verified" => nil,
+               "preferences" => %{"theme" => "light"},
+               "roles" => ["user"],
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => [],
+               "latest_tos_accept_ver" => nil,
+               "latest_pp_accept_ver" => nil,
+               "tos_accepted" => false,
+               "privacy_policy_accepted" => false,
+               "username" => "someusername",
+               "nick_name" => "",
+               "custom_attrs" => %{
+                 "hereiam" => "rockyou",
+                 "likea" => "hurricane",
+                 "year" => 1986,
+               },
+               "phone_numbers" => phs,
+               "addresses" => addrs
+             } = jr
+
+      # password should not be included in get response
+      assert Map.has_key?(jr, "password") == false
+      assert Enum.count(phs) == 2
+      assert Enum.all?(phs, fn (ph) -> ph["number"] == ph1["number"] || ph["number"] == ph2["number"] end)
+      assert Enum.count(addrs) == 2
+      assert Enum.all?(addrs, fn (ad) -> ad["city"]    == ad1["city"]    || ad["city"]    == ad2["city"]    end)
+      assert Enum.all?(addrs, fn (ad) -> ad["country"] == ad1["country"] || ad["country"] == ad2["country"] end)
+      assert Enum.all?(addrs, fn (ad) -> ad["line_1"]  == ad1["line_1"]  || ad["line_1"]  == ad2["line_1"]  end)
+      assert Enum.all?(addrs, fn (ad) -> ad["line_2"]  == ad1["line_2"]  || ad["line_2"]  == ad2["line_2"]  end)
+      assert Enum.all?(addrs, fn (ad) -> ad["state"]   == ad1["state"]   || ad["state"]   == ad2["state"]   end)
+      assert Enum.all?(addrs, fn (ad) -> ad["postal"]  == ad1["postal"]  || ad["postal"]  == ad2["postal"]  end)
+      assert Enum.all?(addrs, fn (ad) -> ad["primary"] == ad1["primary"] || ad["primary"] == ad2["primary"] end)
+      assert Enum.all?(addrs, fn (ad) -> ad["name"]    == ad1["name"]    || ad["name"]    == ad2["name"]    end)
     end
   end
 
