@@ -12,7 +12,7 @@ docker-compose up
 
 ### Adding Malan service to an eco-system
 
-If you are adding Malan to your current application, you can make use of [the example docker-compose file](https://github.com/FreedomBen/malan/blob/master/docker-compose-example.yml).  You will need to add Malan, and a Postgres for Malan to use as its data store.
+If you are adding Malan to your current application, you can make use of [the example docker-compose file](https://github.com/FreedomBen/malan/blob/main/docker-compose-example.yml).  You will need to add Malan, and a Postgres for Malan to use as its data store.
 
 ```yaml
 version: "3.9"
@@ -104,13 +104,13 @@ mix phx.server
 
 ## Malan API
 
-The Malan API is a pretty standard REST interface.  For details, please visit [API.md](https://github.com/FreedomBen/malan/blob/master/API.md).
+The Malan API is a pretty standard REST interface.  For details, please visit [API.md](https://github.com/FreedomBen/malan/blob/main/API.md).
 
 If your client will be in TypeScript, you can also consider using [libmalan](https://github.com/FreedomBen/libmalan), a simple utility package that provides TypeScript methods.
 
 ## CI/CD and Deployment
 
-Staging deploys automatically upon merge to master.  Prod deploys after being tagged:
+Staging deploys automatically upon merge to main.  Prod deploys after being tagged:
 
 ```bash
 git tag "prod-$(date '+%Y-%m-%d-%H-%M-%S')"

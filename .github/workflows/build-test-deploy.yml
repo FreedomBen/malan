@@ -2,7 +2,7 @@ name: Build -> Test -> Deploy
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - 'prod-*'
 
