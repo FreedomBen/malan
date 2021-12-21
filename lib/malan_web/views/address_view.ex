@@ -13,6 +13,7 @@ defmodule MalanWeb.AddressView do
   def render("address.json", %{address: address}) do
     %{
       id: address.id,
+      user_id: address.user_id,
       primary: address.primary,
       verified_at: address.verified_at,
       name: address.name,

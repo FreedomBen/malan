@@ -11,11 +11,11 @@ defmodule MalanWeb.AddressController do
     render(conn, "index.json", addresses: addresses)
   end
 
-  def create(conn, %{"address" => address_params}) do
-    with {:ok, %Address{} = address} <- Accounts.create_address(address_params) do
+  def create(conn, %{"user_id" => user_id, "address" => address_params}) do
+    with {:ok, %Address{} = address} <- Accounts.create_address(user_id, address_params) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", Routes.address_path(conn, :show, address))
+      |> put_resp_header("location", Routes.user_address_path(conn, :show, user_id, address))
       |> render("show.json", address: address)
     end
   end
