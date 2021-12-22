@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
+MALAN_ENDPOINT='https://malan.ameelio.org'
+
 api_token="$(curl \
                --request POST \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
                --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
-               http://localhost:4000/api/sessions/ \
+               "${MALAN_ENDPOINT}/api/sessions/" \
               | jq -r .data.api_token)"
 
 curl \
@@ -13,5 +15,5 @@ curl \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
   --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/whoami
+  "${MALAN_ENDPOINT}/api/users/whoami"
   
