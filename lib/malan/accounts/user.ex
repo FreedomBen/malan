@@ -14,8 +14,8 @@ defmodule Malan.Accounts.User do
   schema "users" do
     field :email, :string
     field :email_verified, :utc_datetime
-    field :password, :string, virtual: true
-    field :password_hash, :string
+    field :password, :string, virtual: true, redact: true
+    field :password_hash, :string, redact: true
     field :roles, {:array, :string} # admin, user, or moderator
     field :username, :string
     field :first_name, :string
