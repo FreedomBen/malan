@@ -18,8 +18,10 @@ defmodule MalanWeb do
   """
 
   def controller do
+    # For tweaking log output in production:
+    # https://www.verypossible.com/insights/thoughtful-logging-in-elixir-a-phoenix-story
     quote do
-      use Phoenix.Controller, namespace: MalanWeb
+      use Phoenix.Controller, namespace: MalanWeb, log: :info
 
       import Plug.Conn
       import MalanWeb.Gettext
