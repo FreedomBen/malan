@@ -22,4 +22,18 @@ defmodule Malan.AccountsFixtures do
 
     address
   end
+
+  def transaction_fixture(attrs \\ %{}) do
+    {:ok, transaction} =
+      attrs
+      |> Enum.into(%{
+        "type" => "some type",
+        "verb" => "some verb",
+        "what" => "some what",
+        "when" => ~U[2021-12-22 21:02:00Z]
+      })
+      |> Malan.Accounts.create_transaction()
+
+    transaction
+  end
 end

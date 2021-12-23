@@ -1093,4 +1093,64 @@ defmodule Malan.AccountsTest do
     end
   end
 
+
+  describe "transactions" do
+    alias Malan.Accounts.Transaction
+
+    import Malan.AccountsFixtures
+
+    @invalid_attrs %{type: nil, verb: nil, what: nil, when: nil}
+
+    test "list_transactions/0 returns all transactions" do
+      transaction = transaction_fixture()
+      assert Accounts.list_transactions() == [transaction]
+    end
+
+    test "get_transaction!/1 returns the transaction with given id" do
+      transaction = transaction_fixture()
+      assert Accounts.get_transaction!(transaction.id) == transaction
+    end
+
+    test "create_transaction/1 with valid data creates a transaction" do
+      valid_attrs = %{type: "some type", verb: "some verb", what: "some what", when: ~U[2021-12-22 21:02:00Z]}
+
+      assert {:ok, %Transaction{} = transaction} = Accounts.create_transaction(valid_attrs)
+      assert transaction.type == "some type"
+      assert transaction.verb == "some verb"
+      assert transaction.what == "some what"
+      assert transaction.when == ~U[2021-12-22 21:02:00Z]
+    end
+
+    test "create_transaction/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_transaction(@invalid_attrs)
+    end
+
+    test "update_transaction/2 with valid data updates the transaction" do
+      transaction = transaction_fixture()
+      update_attrs = %{type: "some updated type", verb: "some updated verb", what: "some updated what", when: ~U[2021-12-23 21:02:00Z]}
+
+      assert {:ok, %Transaction{} = transaction} = Accounts.update_transaction(transaction, update_attrs)
+      assert transaction.type == "some updated type"
+      assert transaction.verb == "some updated verb"
+      assert transaction.what == "some updated what"
+      assert transaction.when == ~U[2021-12-23 21:02:00Z]
+    end
+
+    test "update_transaction/2 with invalid data returns error changeset" do
+      transaction = transaction_fixture()
+      assert {:error, %Ecto.Changeset{}} = Accounts.update_transaction(transaction, @invalid_attrs)
+      assert transaction == Accounts.get_transaction!(transaction.id)
+    end
+
+    test "delete_transaction/1 deletes the transaction" do
+      transaction = transaction_fixture()
+      assert {:ok, %Transaction{}} = Accounts.delete_transaction(transaction)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_transaction!(transaction.id) end
+    end
+
+    test "change_transaction/1 returns a transaction changeset" do
+      transaction = transaction_fixture()
+      assert %Ecto.Changeset{} = Accounts.change_transaction(transaction)
+    end
+  end
 end
