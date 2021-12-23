@@ -97,6 +97,10 @@ defmodule MalanWeb.Router do
     # Not piped through "owner" because no User ID is passed and it will only delete the current session
     get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
+
+    resources "/users", UserController, only: [] do
+      get "/transactions", TransactionController, :user_index
+    end
   end
 
   scope "/api", MalanWeb do
@@ -149,5 +153,12 @@ defmodule MalanWeb.Router do
     post "/users/:id/reset_password", UserController, :admin_reset_password
     put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token_user
     put "/users/reset_password/:token", UserController, :admin_reset_password_token
+
+    # Index: returns a lot of records!
+    get "/transactions", TransactionController, :admin_index
+    get "/transactions/users/:id", TransactionController, :users
+    get "/transactions/sessions/:id", TransactionController, :sessions
+    get "/transactions/who/:id", TransactionController, :who
+
   end
 end
