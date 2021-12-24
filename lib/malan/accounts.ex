@@ -170,7 +170,11 @@ defmodule Malan.Accounts do
   end
 
   @doc ~S"""
-  Returns nil if no matching user is found.  Raises if more than one is found
+  Returns nil if no matching user is found.
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_user_by(title: "My post")
+
   """
   def get_user_by(params) do
     Repo.get_by(User, params)
@@ -178,6 +182,10 @@ defmodule Malan.Accounts do
 
   @doc ~S"""
   Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_user_by!(title: "My post")
+
   """
   def get_user_by!(params) do
     Repo.get_by!(User, params)
@@ -624,8 +632,26 @@ defmodule Malan.Accounts do
     |> Repo.update()
   end
 
+  @doc ~S"""
+  Returns nil if no matching user is found.
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_session_by(title: "My post")
+
+  """
   def get_session_by(params) do
     Repo.get_by(Session, params)
+  end
+
+  @doc ~S"""
+  Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_session_by!(title: "My post")
+
+  """
+  def get_session_by!(params) do
+    Repo.get_by!(Session, params)
   end
 
   @doc """
