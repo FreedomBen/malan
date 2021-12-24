@@ -1063,6 +1063,34 @@ defmodule Malan.Accounts do
     Repo.all(Transaction)
   end
 
+
+  @doc """
+  Returns the list of transactions for the specified user
+
+  ## Examples
+
+      iex> list_transactions("user_id")
+      [%Transaction{}, ...]
+
+  """
+  def list_transactions(%User{id: user_id}), do: list_transactions(user_id)
+
+  @doc """
+  Returns the list of transactions for the specified user
+
+  ## Examples
+
+      iex> list_transactions("user_id")
+      [%Transaction{}, ...]
+
+  """
+  def list_transactions(user_id) do
+    Repo.all(
+      from t in Transaction,
+      where: t.user_id == ^user_id
+    )
+  end
+
   @doc """
   Gets a single transaction.
 
@@ -1078,6 +1106,28 @@ defmodule Malan.Accounts do
 
   """
   def get_transaction!(id), do: Repo.get!(Transaction, id)
+
+  @doc ~S"""
+  Returns nil if no matching user is found.
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_transactions_by(title: "My post")
+
+  """
+  def get_transactions_by(params) do
+    Repo.get_by(Transaction, params)
+  end
+
+  @doc ~S"""
+  Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
+  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_transactions_by!(title: "My post")
+
+  """
+  def get_transactions_by!(params) do
+    Repo.get_by!(Transaction, params)
+  end
 
   @doc """
   Creates a transaction.

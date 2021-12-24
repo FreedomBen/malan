@@ -154,11 +154,13 @@ defmodule MalanWeb.Router do
     put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token_user
     put "/users/reset_password/:token", UserController, :admin_reset_password_token
 
-    # Index: returns a lot of records!
-    get "/transactions", TransactionController, :admin_index
-    get "/transactions/users/:id", TransactionController, :users
-    get "/transactions/sessions/:id", TransactionController, :sessions
-    get "/transactions/who/:id", TransactionController, :who
+    # Transactions can only be retreived (not created, updated, or deleted)
+    # they are created as side effects of user/session operations and are immutable
+    get "/transactions", TransactionController, :admin_index # Careful, returns a lot of records!
+    get "/transactions/:id", TransactionController, :show
+    get "/transactions/users/:user_id", TransactionController, :users
+    get "/transactions/sessions/:session_id", TransactionController, :sessions
+    get "/transactions/who/:user_id", TransactionController, :who
 
   end
 end
