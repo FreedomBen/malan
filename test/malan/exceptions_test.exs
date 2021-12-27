@@ -1,8 +1,4 @@
-# TODO:  Write tests for our exceptions!
 defmodule Malan.ExceptionsTest do
-  alias Malan.Utils
-  alias Malan.Test
-
   use ExUnit.Case, async: true
 
   describe "ObjectIsImmutable" do

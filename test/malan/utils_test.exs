@@ -1,6 +1,5 @@
 defmodule Malan.UtilsTest do
   alias Malan.Utils
-  alias Malan.Test
 
   use ExUnit.Case, async: true
 

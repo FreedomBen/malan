@@ -1,28 +1,9 @@
 defmodule Malan.UserSchemaTest do
   use Malan.DataCase, async: true
 
-  alias Malan.Accounts
   alias Malan.Accounts.User
 
   describe "users" do
-    @valid_attrs %{
-      email: "some@email.com",
-      email_verified: "2010-04-17T14:00:00Z",
-      password: "some password",
-      preferences: %{},
-      roles: [],
-      tos_accept_time: "2010-04-17T14:00:00Z",
-      username: "some username"
-    }
-
-    def user_fixture(attrs \\ %{}) do
-      {:ok, user} =
-        attrs
-        |> Enum.into(@valid_attrs)
-        |> Accounts.create_user()
-
-      user
-    end
 
     def validate_property(validation_func, key, value, valid, err_msg_regex \\ "") do
       changeset =
