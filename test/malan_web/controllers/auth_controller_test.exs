@@ -226,10 +226,6 @@ defmodule MalanWeb.AuthControllerTest do
     end
   end
 
-  describe "#is_owner/2" do
-    # TODO
-  end
-
   describe "#is_owner_or_admin/2" do
     # TODO
   end
