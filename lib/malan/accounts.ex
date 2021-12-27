@@ -1114,23 +1114,40 @@ defmodule Malan.Accounts do
       iex> Accounts.get_transactions_by(title: "My post")
 
   """
-  def get_transactions_by(params) do
+  def get_transaction_by(params) do
     Repo.get_by(Transaction, params)
   end
 
   @doc ~S"""
+  Returns transaction
+
   Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
   Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
 
       iex> Accounts.get_transactions_by!(title: "My post")
-
+      %Transaction{}
   """
-  def get_transactions_by!(params) do
+  def get_transaction_by!(params) do
     Repo.get_by!(Transaction, params)
   end
 
   @doc """
-  Creates a transaction.
+  Retrieve the owner (user_id) of the specified transaction.
+
+      iex> Accounts.get_transaction_owner(transaction_id)
+      %{user_id: "user_id"}
+  """
+  def get_transaction_owner(transaction_id) do
+    Repo.one(
+      from t in Transaction,
+      select: %{user_id: t.user_id},
+      where: t.id == ^transaction_id
+    )
+  end
+
+  @doc """
+  Creates a transaction.  A transaction is immutable once it is created, so it 
+  cannot be updated later.  Make sure you have all the info you need now!
 
   ## Examples
 
@@ -1141,14 +1158,15 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_transaction(attrs \\ %{}) do
+  def create_transaction(user_id, session_id, who_id, attrs \\ %{}) do
     %Transaction{}
-    |> Transaction.changeset(attrs)
+    |> Transaction.create_changeset(Map.merge(attrs, %{"user_id" => user_id, "session_id" => session_id, "who" => who_id}))
     |> Repo.insert()
   end
 
   @doc """
-  Updates a transaction.
+  Updates a transaction.  Because transactions are immutable and can't
+  be changed after the fact, this function should raise
 
   ## Examples
 
@@ -1160,9 +1178,14 @@ defmodule Malan.Accounts do
 
   """
   def update_transaction(%Transaction{} = transaction, attrs) do
-    transaction
-    |> Transaction.changeset(attrs)
-    |> Repo.update()
+    #transaction
+    #|> Transaction.changeset(attrs)
+    #|> Repo.update()
+
+    raise Malan.ObjectIsImmutable,
+      action: "update",
+      type: "Transaction",
+      id: transaction.id
   end
 
   @doc """
@@ -1178,19 +1201,12 @@ defmodule Malan.Accounts do
 
   """
   def delete_transaction(%Transaction{} = transaction) do
-    Repo.delete(transaction)
+    #Repo.delete(transaction)
+
+    raise Malan.ObjectIsImmutable,
+      action: "delete",
+      type: "Transaction",
+      id: transaction.id
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking transaction changes.
-
-  ## Examples
-
-      iex> change_transaction(transaction)
-      %Ecto.Changeset{data: %Transaction{}}
-
-  """
-  def change_transaction(%Transaction{} = transaction, attrs \\ %{}) do
-    Transaction.changeset(transaction, attrs)
-  end
 end
