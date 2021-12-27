@@ -10,6 +10,7 @@ defmodule Malan.Accounts.User.Gender do
 
   def valid?(i) when is_nil(i), do: true
   def valid?(i) when is_integer(i), do: Map.has_key?(all_by_value, i)
+
   def valid?(i) when is_binary(i) do
     all_by_keyword
     |> Map.merge(all_by_keyword_normalized)
@@ -89,7 +90,7 @@ defmodule Malan.Accounts.User.Gender do
       48 => "Transmasculine",
       49 => "Two-spirit",
       50 => "Male",
-      51 => "Female",
+      51 => "Female"
     }
   end
 

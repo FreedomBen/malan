@@ -1,7 +1,7 @@
 defmodule MalanWeb.TransactionControllerTest do
   use MalanWeb.ConnCase
 
-  #import Malan.AccountsFixtures
+  # import Malan.AccountsFixtures
 
   alias Malan.Accounts.Transaction
 
@@ -88,6 +88,7 @@ defmodule MalanWeb.TransactionControllerTest do
       id = transaction.id
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.transaction_path(conn, :show, id))
+
       assert %{
                "id" => ^id,
                "type" => "some type",
@@ -168,9 +169,15 @@ defmodule MalanWeb.TransactionControllerTest do
   describe "update transaction" do
     setup [:create_transaction]
 
-    test "renders transaction when data is valid", %{conn: conn, transaction: %Transaction{id: id} = transaction} do
+    test "renders transaction when data is valid", %{
+      conn: conn,
+      transaction: %Transaction{id: id} = transaction
+    } do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
+      conn =
+        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.transaction_path(conn, :show, id))
@@ -186,14 +193,20 @@ defmodule MalanWeb.TransactionControllerTest do
 
     test "renders errors when data is invalid", %{conn: conn, transaction: transaction} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @invalid_attrs)
+
+      conn =
+        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @invalid_attrs)
+
       assert json_response(conn, 422)["errors"] != %{}
     end
 
     # If regular users should be allowed to create a transaction, then remove this test
     test "won't work for regular user", %{conn: conn, transaction: transaction} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
+      conn =
+        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
       assert conn.status == 401
     end
 
@@ -205,12 +218,18 @@ defmodule MalanWeb.TransactionControllerTest do
     test "requires accepting ToS and PP", %{conn: conn, transaction: transaction} do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
+      conn =
+        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
       # We haven't accepted the terms of service yet so expect 461
       assert conn.status == 461
 
       {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
+      conn =
+        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+
       # We haven't accepted the PP yet so expect 462
       assert conn.status == 462
     end

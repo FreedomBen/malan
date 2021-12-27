@@ -11,10 +11,12 @@ defmodule MalanWeb.PhoneNumberView do
   end
 
   def render("phone_number.json", %{phone_number: phone_number}) do
-    %{id: phone_number.id,
+    %{
+      id: phone_number.id,
       user_id: phone_number.user_id,
       primary: phone_number.primary,
       number: phone_number.number,
-      verified_at: phone_number.verified_at}
+      verified_at: phone_number.verified_at
+    }
   end
 end

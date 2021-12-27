@@ -5,8 +5,15 @@ defmodule Malan.UserSchemaTest do
   alias Malan.Accounts.User
 
   describe "users" do
-
-    @valid_attrs %{email: "some@email.com", email_verified: "2010-04-17T14:00:00Z", password: "some password", preferences: %{}, roles: [], tos_accept_time: "2010-04-17T14:00:00Z", username: "some username"}
+    @valid_attrs %{
+      email: "some@email.com",
+      email_verified: "2010-04-17T14:00:00Z",
+      password: "some password",
+      preferences: %{},
+      roles: [],
+      tos_accept_time: "2010-04-17T14:00:00Z",
+      username: "some username"
+    }
 
     def user_fixture(attrs \\ %{}) do
       {:ok, user} =
@@ -18,28 +25,36 @@ defmodule Malan.UserSchemaTest do
     end
 
     def validate_property(validation_func, key, value, valid, err_msg_regex \\ "") do
-      changeset = Ecto.Changeset.cast(%User{}, %{key => value}, [key])
-                  |> validation_func.()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{key => value}, [key])
+        |> validation_func.()
 
       assert changeset.valid? == valid
-      case valid do
-        false -> Map.get(errors_on(changeset), key)
-                 |> Enum.any?(fn (x) -> x =~ ~r/#{err_msg_regex}/ end)
 
-        true -> true
+      case valid do
+        false ->
+          Map.get(errors_on(changeset), key)
+          |> Enum.any?(fn x -> x =~ ~r/#{err_msg_regex}/ end)
+
+        true ->
+          true
       end
     end
 
     def validate_email(email, valid, err_msg_regex \\ "") do
-      changeset = Ecto.Changeset.cast(%User{}, %{email: email}, [:email])
-                  |> User.validate_email()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{email: email}, [:email])
+        |> User.validate_email()
 
       assert changeset.valid? == valid
-      case valid do
-        false -> assert errors_on(changeset).email
-                 |> Enum.any?(fn (x) -> x =~ ~r/#{err_msg_regex}/ end)
 
-        true -> true
+      case valid do
+        false ->
+          assert errors_on(changeset).email
+                 |> Enum.any?(fn x -> x =~ ~r/#{err_msg_regex}/ end)
+
+        true ->
+          true
       end
     end
 
@@ -48,44 +63,53 @@ defmodule Malan.UserSchemaTest do
     end
 
     test "#validate_username minimum length" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "h"}, [:username])
-                  |> User.validate_username()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "h"}, [:username])
+        |> User.validate_username()
 
       assert changeset.valid? == false
+
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/should be at least/ end)
+             |> Enum.any?(fn x -> x =~ ~r/should be at least/ end)
     end
 
     test "#validate_username maximum length" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 101)}, [:username])
-                  |> User.validate_username()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 101)}, [:username])
+        |> User.validate_username()
 
       assert changeset.valid? == false
+
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/should be at most/ end)
+             |> Enum.any?(fn x -> x =~ ~r/should be at most/ end)
     end
 
     test "#validate_username only valid email prefix characters 1" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "abcdefg(h"}, [:username])
-                  |> User.validate_username()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "abcdefg(h"}, [:username])
+        |> User.validate_username()
 
       assert changeset.valid? == false
+
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/has invalid format/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
     end
 
     test "#validate_username only valid email prefix characters 2" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "abc)defgh"}, [:username])
-                  |> User.validate_username()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "abc)defgh"}, [:username])
+        |> User.validate_username()
 
       assert changeset.valid? == false
+
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/has invalid format/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
     end
 
     test "#validate_username allows email addresses" do
-      changeset = Ecto.Changeset.cast(%User{}, %{username: "hello-_=_+*&^world@example.com"}, [:username])
-                  |> User.validate_username()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "hello-_=_+*&^world@example.com"}, [:username])
+        |> User.validate_username()
 
       assert changeset.valid? == true
     end
@@ -152,7 +176,7 @@ defmodule Malan.UserSchemaTest do
       validate_property(
         &User.validate_password/1,
         :password,
-        #"password1",
+        # "password1",
         "pass",
         false,
         "Should be at least"
@@ -169,36 +193,45 @@ defmodule Malan.UserSchemaTest do
     end
 
     test "accept/reject ToS can be accepted/rejected" do
-      Enum.each([true, false], fn (accept) ->
-        changeset = Ecto.Changeset.cast(%User{}, %{accept_tos: accept}, [:accept_tos])
-                    |> User.put_accept_tos()
+      Enum.each([true, false], fn accept ->
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{accept_tos: accept}, [:accept_tos])
+          |> User.put_accept_tos()
 
         assert changeset.valid? == true
         assert changeset.valid? == true
-        tos_cs = changeset.changes
-                 |> Map.get(:tos_accept_events)
-                 |> List.first
+
+        tos_cs =
+          changeset.changes
+          |> Map.get(:tos_accept_events)
+          |> List.first()
+
         assert tos_cs.valid? == true
       end)
     end
 
     test "accept/reject ToS if not specified takes no action" do
-      changeset = Ecto.Changeset.cast(%User{}, %{accept_tos: nil}, [:accept_tos])
-                  |> User.put_accept_tos()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{accept_tos: nil}, [:accept_tos])
+        |> User.put_accept_tos()
 
       assert changeset.valid? == true
       assert changeset.changes == %{}
     end
 
     test "accept/reject ToS appends to the array" do
-      changeset = Ecto.Changeset.cast(%User{}, %{accept_tos: true}, [:accept_tos])
-                  |> User.put_accept_tos()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{accept_tos: true}, [:accept_tos])
+        |> User.put_accept_tos()
 
       assert changeset.valid? == true
       assert changeset.valid? == true
-      tos_cs = changeset.changes
-               |> Map.get(:tos_accept_events)
-               |> List.first
+
+      tos_cs =
+        changeset.changes
+        |> Map.get(:tos_accept_events)
+        |> List.first()
+
       assert tos_cs.valid? == true
     end
 
@@ -215,12 +248,16 @@ defmodule Malan.UserSchemaTest do
     #end
 
     test "roles can be arbitrary" do
-      changeset = Ecto.Changeset.cast(%User{}, %{roles: ["user"]}, [:roles])
-                  |> User.validate_roles()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{roles: ["user"]}, [:roles])
+        |> User.validate_roles()
+
       assert changeset.valid? == true
 
-      changeset = Ecto.Changeset.cast(%User{}, %{roles: ["fake"]}, [:roles])
-                  |> User.validate_roles()
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{roles: ["fake"]}, [:roles])
+        |> User.validate_roles()
+
       assert changeset.valid? == true
     end
   end
@@ -430,10 +467,15 @@ defmodule Malan.UserSchemaTest do
       assert false == User.all_races_valid?(races_to_cs(["one", "two"]))
       assert true == User.all_races_valid?(races_to_cs(["Black or African American", "White"]))
       assert true == User.all_races_valid?(races_to_cs(["Asian"]))
-      assert true == User.all_races_valid?(races_to_cs([
-        "American Indian or Alaska Native",
-        "Native Hawaiian or Other Pacific Islander"
-      ]))
+
+      assert true ==
+               User.all_races_valid?(
+                 races_to_cs([
+                   "American Indian or Alaska Native",
+                   "Native Hawaiian or Other Pacific Islander"
+                 ])
+               )
+
       assert true == User.all_races_valid?(races_to_cs([]))
       assert false == User.all_races_valid?(races_to_cs(["Asian", "one"]))
     end
@@ -441,7 +483,17 @@ defmodule Malan.UserSchemaTest do
     test "#race_list/1" do
       assert [1, 4] == User.race_list(races_to_cs(["Asian", "White"]))
       assert [1, 4] == User.race_list(races_to_cs(["asian", "white"]))
-      assert [0, 1, 2, 3, 4] = User.race_list(races_to_cs(["American Indian or Alaska Native", "Asian", "Black or African American", "Native Hawaiian or Other Pacific Islander", "white"]))
+
+      assert [0, 1, 2, 3, 4] =
+               User.race_list(
+                 races_to_cs([
+                   "American Indian or Alaska Native",
+                   "Asian",
+                   "Black or African American",
+                   "Native Hawaiian or Other Pacific Islander",
+                   "white"
+                 ])
+               )
     end
   end
 end

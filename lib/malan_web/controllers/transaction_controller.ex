@@ -80,6 +80,7 @@ defmodule MalanWeb.TransactionController do
 
   defp is_transaction_user_or_admin(conn, _opts) do
     %{user_id: user_id} = Recipes.get_transaction_user(conn.params["recipe_id"])
+
     cond do
       is_owner?(conn, user_id) || is_admin?(conn) -> conn
       user_id == nil && conn.assigns.authed_user_is_moderator -> conn

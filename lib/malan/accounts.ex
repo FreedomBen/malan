@@ -43,6 +43,7 @@ defmodule Malan.Accounts do
   def get_user!(id) do
     query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at))
     user = Repo.one(query)
+
     if is_nil(user) do
       raise Ecto.NoResultsError, queryable: query
     else
@@ -93,10 +94,11 @@ defmodule Malan.Accounts do
     #query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses])
 
     # Pipe version
-    query = User
-            |> where([u], u.id == ^id)
-            |> where([u], is_nil(u.deleted_at))
-            |> preload([:phone_numbers, :addresses])
+    query =
+      User
+      |> where([u], u.id == ^id)
+      |> where([u], is_nil(u.deleted_at))
+      |> preload([:phone_numbers, :addresses])
 
     user = Repo.one(query)
 
@@ -124,6 +126,7 @@ defmodule Malan.Accounts do
   def get_user_by_id_or_username!(id_or_username) do
     query = get_user_by_id_or_username_query(id_or_username)
     user = Repo.one(query)
+
     if is_nil(user) do
       raise Ecto.NoResultsError, queryable: query
     else
@@ -147,8 +150,10 @@ defmodule Malan.Accounts do
 
   defp get_user_full_by_id_or_username_query(id_or_username) do
     cond do
-      id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+      id_or_username =~
+          ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
         get_user_full_by_id_or_username_query(:id, id_or_username)
+
       true ->
         get_user_full_by_id_or_username_query(:username, id_or_username)
     end
@@ -162,6 +167,7 @@ defmodule Malan.Accounts do
   def get_user_full_by_id_or_username!(id_or_username) do
     query = get_user_full_by_id_or_username_query(id_or_username)
     user = Repo.one(query)
+
     if is_nil(user) do
       raise Ecto.NoResultsError, queryable: query
     else
@@ -192,7 +198,7 @@ defmodule Malan.Accounts do
   end
 
   def get_user_by_password_reset_token(token) do
-    get_user_by([password_reset_token_hash: Utils.Crypto.hash_token(token)])
+    get_user_by(password_reset_token_hash: Utils.Crypto.hash_token(token))
   end
 
   #def get_user_by(username: username) do
@@ -325,7 +331,6 @@ defmodule Malan.Accounts do
   def reset_password_with_token(id, token, new_password),
     do: reset_password_with_token(get_user(id), token, new_password)
 
-
   @doc """
   Updates a user.
 
@@ -405,7 +410,7 @@ defmodule Malan.Accounts do
   def list_sessions(user_id) do
     Repo.all(
       from s in Session,
-      where: s.user_id == ^user_id
+        where: s.user_id == ^user_id
     )
   end
 
@@ -461,8 +466,8 @@ defmodule Malan.Accounts do
   def get_user_id_pass_hash_by_username(username) do
     Repo.one(
       from u in User,
-      select: {u.id, u.password_hash},
-      where: u.username == ^username
+        select: {u.id, u.password_hash},
+        where: u.username == ^username
     )
   end
 
@@ -506,9 +511,10 @@ defmodule Malan.Accounts do
   def get_user_roles(user_id) do
     Repo.one(
       from u in User,
-      select: [u.roles],
-      where: u.id == ^user_id
-    ) |> List.first()
+        select: [u.roles],
+        where: u.id == ^user_id
+    )
+    |> List.first()
   end
 
   @doc """
@@ -548,6 +554,7 @@ defmodule Malan.Accounts do
 
   def user_add_role(role, user_id) do
     user = get_user!(user_id)
+
     cond do
       Enum.member?(user.roles, role) ->
         {:ok, user}
@@ -581,6 +588,7 @@ defmodule Malan.Accounts do
 
   def user_accept_privacy_policy(user_id),
     do: user_set_privacy_policy(true, user_id)
+
   def user_reject_privacy_policy(user_id),
     do: user_set_privacy_policy(false, user_id)
 
@@ -678,19 +686,19 @@ defmodule Malan.Accounts do
   def get_session_expires_revoked_by_token(api_token_hash) do
     Repo.one(
       from s in Session,
-      join: u in User,
-      on: s.user_id == u.id,
-      select: %{
-        user_id: s.user_id,
-        username: u.username,
-        session_id: s.id,
-        expires_at: s.expires_at,
-        revoked_at: s.revoked_at,
-        roles: u.roles,
-        latest_tos_accept_ver: u.latest_tos_accept_ver,
-        latest_pp_accept_ver: u.latest_pp_accept_ver
-      },
-      where: s.api_token_hash == ^api_token_hash
+        join: u in User,
+        on: s.user_id == u.id,
+        select: %{
+          user_id: s.user_id,
+          username: u.username,
+          session_id: s.id,
+          expires_at: s.expires_at,
+          revoked_at: s.revoked_at,
+          roles: u.roles,
+          latest_tos_accept_ver: u.latest_tos_accept_ver,
+          latest_pp_accept_ver: u.latest_pp_accept_ver
+        },
+        where: s.api_token_hash == ^api_token_hash
     )
   end
 
@@ -709,19 +717,25 @@ defmodule Malan.Accounts do
     {:error, :expired}
   """
   def session_valid?(%{
-    user_id: user_id,
-    username: username,
-    session_id: session_id,
-    expires_at: expires_at,
-    revoked_at: revoked_at,
-    roles: roles,
-    latest_tos_accept_ver: latest_tos_accept_ver,
-    latest_pp_accept_ver: latest_pp_accept_ver
-  }) do
+        user_id: user_id,
+        username: username,
+        session_id: session_id,
+        expires_at: expires_at,
+        revoked_at: revoked_at,
+        roles: roles,
+        latest_tos_accept_ver: latest_tos_accept_ver,
+        latest_pp_accept_ver: latest_pp_accept_ver
+      }) do
     cond do
-      !!revoked_at -> {:error, :revoked}
-      DateTime.compare(expires_at, DateTime.utc_now) == :lt -> {:error, :expired}
-      true -> {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+      !!revoked_at ->
+        {:error, :revoked}
+
+      DateTime.compare(expires_at, DateTime.utc_now()) == :lt ->
+        {:error, :expired}
+
+      true ->
+        {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver,
+         latest_pp_accept_ver}
     end
   end
 
@@ -730,8 +744,10 @@ defmodule Malan.Accounts do
   end
 
   def session_revoked?(revoked_at), do: !!revoked_at
+
   def session_expired?(expires_at),
-    do: DateTime.compare(expires_at, DateTime.utc_now) == :lt
+    do: DateTime.compare(expires_at, DateTime.utc_now()) == :lt
+
   def session_valid_bool?(expires_at, revoked_at),
     do: !session_revoked?(revoked_at) && !session_expired?(expires_at)
 
@@ -760,10 +776,12 @@ defmodule Malan.Accounts do
     do: revoke_active_sessions(user_id)
 
   def revoke_active_sessions(user_id) do
-    {num_revoked, nil} = Repo.update_all(
-      from(s in Session, where: s.user_id == ^user_id),
-      set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
-    )
+    {num_revoked, nil} =
+      Repo.update_all(
+        from(s in Session, where: s.user_id == ^user_id),
+        set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
+      )
+
     {:ok, num_revoked}
   end
 
@@ -1047,7 +1065,6 @@ defmodule Malan.Accounts do
     |> Repo.update()
   end
 
-
   alias Malan.Accounts.Transaction
 
   @doc """
@@ -1062,7 +1079,6 @@ defmodule Malan.Accounts do
   def list_transactions do
     Repo.all(Transaction)
   end
-
 
   @doc """
   Returns the list of transactions for the specified user
@@ -1087,7 +1103,7 @@ defmodule Malan.Accounts do
   def list_transactions(user_id) do
     Repo.all(
       from t in Transaction,
-      where: t.user_id == ^user_id
+        where: t.user_id == ^user_id
     )
   end
 
@@ -1140,8 +1156,8 @@ defmodule Malan.Accounts do
   def get_transaction_owner(transaction_id) do
     Repo.one(
       from t in Transaction,
-      select: %{user_id: t.user_id},
-      where: t.id == ^transaction_id
+        select: %{user_id: t.user_id},
+        where: t.id == ^transaction_id
     )
   end
 
@@ -1160,7 +1176,9 @@ defmodule Malan.Accounts do
   """
   def create_transaction(user_id, session_id, who_id, attrs \\ %{}) do
     %Transaction{}
-    |> Transaction.create_changeset(Map.merge(attrs, %{"user_id" => user_id, "session_id" => session_id, "who" => who_id}))
+    |> Transaction.create_changeset(
+      Map.merge(attrs, %{"user_id" => user_id, "session_id" => session_id, "who" => who_id})
+    )
     |> Repo.insert()
   end
 
@@ -1208,5 +1226,4 @@ defmodule Malan.Accounts do
       type: "Transaction",
       id: transaction.id
   end
-
 end

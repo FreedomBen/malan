@@ -1,7 +1,7 @@
 defmodule MalanWeb.AddressControllerTest do
   use MalanWeb.ConnCase
 
-  #import Malan.AccountsFixtures
+  # import Malan.AccountsFixtures
 
   alias Malan.Accounts.Address
 
@@ -29,7 +29,17 @@ defmodule MalanWeb.AddressControllerTest do
     "state" => "some updated state",
     "verified_at" => ~U[2021-12-20 01:54:00Z]
   }
-  @invalid_attrs %{city: nil, country: nil, line_1: nil, line_2: nil, name: nil, postal: nil, primary: nil, state: nil, verified_at: nil}
+  @invalid_attrs %{
+    city: nil,
+    country: nil,
+    line_1: nil,
+    line_2: nil,
+    name: nil,
+    postal: nil,
+    primary: nil,
+    state: nil,
+    verified_at: nil
+  }
 
   def fixture(:address, user_id) do
     {:ok, address} = Malan.Accounts.create_address(user_id, @create_attrs)
@@ -85,7 +95,7 @@ defmodule MalanWeb.AddressControllerTest do
                "postal" => "some postal",
                "primary" => true,
                "state" => "some state",
-               "verified_at" => nil,
+               "verified_at" => nil
              } = json_response(conn, 200)["data"]
     end
 
@@ -175,7 +185,12 @@ defmodule MalanWeb.AddressControllerTest do
 
     test "renders address when data is valid", %{conn: conn, address: %Address{id: id} = address} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
+
+      conn =
+        put(conn, Routes.user_address_path(conn, :update, user.id, address),
+          address: @update_attrs
+        )
+
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.user_address_path(conn, :show, user.id, id))
@@ -196,7 +211,12 @@ defmodule MalanWeb.AddressControllerTest do
 
     test "renders errors when data is invalid", %{conn: conn, address: address} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @invalid_attrs)
+
+      conn =
+        put(conn, Routes.user_address_path(conn, :update, user.id, address),
+          address: @invalid_attrs
+        )
+
       assert json_response(conn, 422)["errors"] != %{}
     end
 
@@ -208,7 +228,9 @@ defmodule MalanWeb.AddressControllerTest do
     #end
 
     test "requires being authenticated", %{conn: conn, address: _address} do
-      conn = put(conn, Routes.user_address_path(conn, :update, "43", "42"), address: @update_attrs)
+      conn =
+        put(conn, Routes.user_address_path(conn, :update, "43", "42"), address: @update_attrs)
+
       assert conn.status == 403
     end
 

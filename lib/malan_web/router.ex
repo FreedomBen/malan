@@ -70,7 +70,7 @@ defmodule MalanWeb.Router do
   scope "/", EhrmanBlogWeb do
     pipe_through :browser
 
-    #live "/", PageLive.Index, :index
+    # live "/", PageLive.Index, :index
 
     # Predefined pages
     live "/dashboard", PageLive.Dashboard, :dashboard
@@ -107,9 +107,13 @@ defmodule MalanWeb.Router do
     pipe_through :authed_owner_api_no_tos_pp
 
     resources "/users", UserController, only: [] do
-      delete "/sessions", SessionController, :delete_all  # Delete all active sessions for this user
+      # Delete all active sessions for this user
+      delete "/sessions", SessionController, :delete_all
       resources "/sessions", SessionController, only: [:index, :show, :delete]
-      resources "/phone_numbers", PhoneNumberController, only: [:index, :show, :create, :update, :delete]
+
+      resources "/phone_numbers", PhoneNumberController,
+        only: [:index, :show, :create, :update, :delete]
+
       resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
     end
   end
@@ -117,7 +121,7 @@ defmodule MalanWeb.Router do
   scope "/api", MalanWeb do
     pipe_through :authed_api
 
-    #resources "/teams", TeamController, only: [:index, :show, :create, :update, :delete]
+    # resources "/teams", TeamController, only: [:index, :show, :create, :update, :delete]
   end
 
   scope "/api", MalanWeb do
@@ -136,7 +140,7 @@ defmodule MalanWeb.Router do
     #end
   end
 
-  #scope "/api/admin", MalanWeb, as: :admin do
+  # scope "/api/admin", MalanWeb, as: :admin do
   scope "/api/admin", MalanWeb do
     pipe_through :admin_api
 
@@ -156,11 +160,11 @@ defmodule MalanWeb.Router do
 
     # Transactions can only be retreived (not created, updated, or deleted)
     # they are created as side effects of user/session operations and are immutable
-    get "/transactions", TransactionController, :admin_index # Careful, returns a lot of records!
+    # Careful, returns a lot of records!
+    get "/transactions", TransactionController, :admin_index
     get "/transactions/:id", TransactionController, :show
     get "/transactions/users/:user_id", TransactionController, :users
     get "/transactions/sessions/:session_id", TransactionController, :sessions
     get "/transactions/who/:user_id", TransactionController, :who
-
   end
 end

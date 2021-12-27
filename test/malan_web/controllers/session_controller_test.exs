@@ -46,7 +46,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(build_conn(), rs1.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
       assert conn.status == 401
-      
+
       # When ToS and Privay Policy are required, uncomment the below
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       #conn = get(conn, Routes.session_path(conn, :admin_index))
@@ -60,8 +60,8 @@ defmodule MalanWeb.SessionControllerTest do
       conn = get(conn, Routes.session_path(conn, :admin_index))
       jr = json_response(conn, 200)["data"]
       assert length(jr) == 4
-      assert true == Enum.any?(jr, fn (s) -> s["id"] == as.id end)
-      assert true == Enum.any?(jr, fn (s) -> s["id"] == rs1.id end)
+      assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
+      assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
     end
   end
 
@@ -131,6 +131,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
       conn = get(conn, Routes.session_path(conn, :show_current))
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^session_id,
                "user_id" => ^user_id,
@@ -139,14 +140,19 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "192.168.2.200",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
     end
   end
 
@@ -155,7 +161,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
 
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
@@ -165,6 +176,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
 
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
@@ -173,24 +185,38 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
     end
 
     test "invalid username", %{conn: conn} do
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: "invalid username", password: "something wrong"})
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: "invalid username", password: "something wrong"}
+        )
+
       assert true == json_response(conn, 401)["invalid_credentials"]
     end
 
     test "invalid password", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: "incorrect password"})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: "incorrect password"}
+        )
+
       assert true == json_response(conn, 401)["invalid_credentials"]
     end
 
@@ -198,13 +224,19 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
 
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
@@ -213,20 +245,30 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
     end
 
     test "can't be called by non-admin non-owner", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       {:ok, conn, _au, _as} = Helpers.Accounts.regular_user_session_conn(build_conn())
@@ -238,13 +280,19 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password, never_expires: true})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, never_expires: true}
+        )
+
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
 
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
 
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
@@ -253,27 +301,38 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(200, :years), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(200, :years), expires_at, :second)
+             )
     end
 
     test "Allows specifying token expiration", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password, expires_in_seconds: 60})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, expires_in_seconds: 60}
+        )
+
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
 
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
 
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
@@ -282,27 +341,43 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(60, :seconds), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(60, :seconds), expires_at, :second)
+             )
     end
 
     test "Ignores if you set User ID or IP address in the parameters", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
-      conn = post(conn, Routes.session_path(conn, :create), session: %{username: user.username, password: user.password, user_id: "ohia", ip_address: "10.0.0.0"})
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            user_id: "ohia",
+            ip_address: "10.0.0.0"
+          }
+        )
+
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
 
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
 
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
@@ -311,14 +386,19 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true,
+               "is_valid" => true
              } = jr
+
       assert false == Map.has_key?(jr, "api_token")
       {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
       assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
     end
   end
 
@@ -329,10 +409,12 @@ defmodule MalanWeb.SessionControllerTest do
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
+
       assert %{
-        "revoked_at" => revoked_at,
-        "is_valid" => false,
-      } = json_response(conn, 200)["data"]
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
     end
@@ -362,10 +444,12 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
       assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
       conn = delete(conn, Routes.session_path(conn, :delete_current))
+
       assert %{
-        "revoked_at" => revoked_at,
-        "is_valid" => false,
-      } = json_response(conn, 200)["data"]
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
       assert {:error, :revoked} = Accounts.validate_session(session.api_token)
@@ -382,17 +466,21 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+
       for s <- [s1, s2, s3, s4] do
         assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
       end
+
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+
       assert %{
-        "message" => _message,
-        "num_revoked" => 4,
-        "status" => true,
-      } = json_response(conn, 200)["data"]
+               "message" => _message,
+               "num_revoked" => 4,
+               "status" => true
+             } = json_response(conn, 200)["data"]
+
       for s <- [s1, s2, s3, s4] do
-         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+        assert {:error, :revoked} = Accounts.validate_session(s.api_token)
       end
     end
 
@@ -407,17 +495,21 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
       assert conn.status == 403
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
       for s <- [s1, s2, s3, s4] do
         assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token)
       end
+
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
+
       assert %{
-        "message" => _message,
-        "num_revoked" => 4,
-        "status" => true,
-      } = json_response(conn, 200)["data"]
+               "message" => _message,
+               "num_revoked" => 4,
+               "status" => true
+             } = json_response(conn, 200)["data"]
+
       for s <- [s1, s2, s3, s4] do
-         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+        assert {:error, :revoked} = Accounts.validate_session(s.api_token)
       end
     end
 

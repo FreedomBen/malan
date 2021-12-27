@@ -7,9 +7,12 @@ defmodule Malan.Repo.Migrations.DowncaseEmailAndUsernamesChangeTypeToString do
 
   def up do
     # First downcase all usernames and emails
-    Enum.each(Repo.all(User), fn (user) ->
+    Enum.each(Repo.all(User), fn user ->
       user
-      |> User.admin_changeset(%{email: String.downcase(user.email), username: String.downcase(user.username)})
+      |> User.admin_changeset(%{
+        email: String.downcase(user.email),
+        username: String.downcase(user.username)
+      })
       |> Repo.update()
     end)
 

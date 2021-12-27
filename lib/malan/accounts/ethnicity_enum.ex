@@ -10,6 +10,7 @@ defmodule Malan.Accounts.User.Ethnicity do
 
   def valid?(i) when is_nil(i), do: true
   def valid?(i) when is_integer(i), do: Map.has_key?(all_by_value, i)
+
   def valid?(i) when is_binary(i) do
     all_by_keyword
     |> Map.merge(all_by_keyword_normalized)
@@ -39,14 +40,14 @@ defmodule Malan.Accounts.User.Ethnicity do
   def all_by_value() do
     %{
       0 => "Hispanic or Latinx",
-      1 => "Not Hispanic or Latinx",
+      1 => "Not Hispanic or Latinx"
     }
   end
 
   def all_by_keyword() do
     %{
       "Hispanic or Latinx" => 0,
-      "Not Hispanic or Latinx" => 1,
+      "Not Hispanic or Latinx" => 1
     }
   end
 end

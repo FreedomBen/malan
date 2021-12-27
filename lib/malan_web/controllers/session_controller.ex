@@ -1,6 +1,6 @@
 defmodule MalanWeb.SessionController do
   use MalanWeb, :controller
-  
+
   require Logger
 
   alias Malan.Accounts
@@ -26,14 +26,17 @@ defmodule MalanWeb.SessionController do
     render(conn, "index.json", sessions: sessions)
   end
 
-  def create(conn, %{"session" => %{"username" => username, "password" => password} = session_opts}) do
-    with {:ok, %Session{} = session} <- Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
+  def create(conn, %{
+        "session" => %{"username" => username, "password" => password} = session_opts
+      }) do
+    with {:ok, %Session{} = session} <-
+           Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
       conn
       |> put_status(:created)
       |> render("show.json", session: session)
     else
-      #{:error, :not_a_user} ->
-      #{:error, :unauthorized} ->
+      # {:error, :not_a_user} ->
+      # {:error, :unauthorized} ->
       _err ->
         conn
         |> put_status(401)

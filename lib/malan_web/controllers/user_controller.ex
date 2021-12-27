@@ -7,7 +7,16 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :is_self_or_admin when action not in [:index, :create, :whoami, :me, :current, :admin_reset_password, :admin_reset_password_token]
+  plug :is_self_or_admin
+       when action not in [
+              :index,
+              :create,
+              :whoami,
+              :me,
+              :current,
+              :admin_reset_password,
+              :admin_reset_password_token
+            ]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -87,26 +96,44 @@ defmodule MalanWeb.UserController do
 
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
-      {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} -> render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
+      {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} ->
+        render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
+
       # {:error, :revoked}
       # {:error, :expired}
       # {:error, :not_found}
-      {:error, _} -> send_resp(conn, :not_found, "")
+      {:error, _} ->
+        send_resp(conn, :not_found, "")
     end
   end
 
-  def admin_reset_password_token_user(conn, %{"id" => id, "token" => token, "new_password" => new_password}), do:
-    admin_reset_password_token_p(conn, Accounts.get_user_by_id_or_username(id), token, new_password)
+  def admin_reset_password_token_user(conn, %{
+        "id" => id,
+        "token" => token,
+        "new_password" => new_password
+      }),
+      do:
+        admin_reset_password_token_p(
+          conn,
+          Accounts.get_user_by_id_or_username(id),
+          token,
+          new_password
+        )
 
-  def admin_reset_password_token(conn, %{"token" => token, "new_password" => new_password}), do:
-    admin_reset_password_token_p(conn, Accounts.get_user_by_password_reset_token(token), token, new_password)
+  def admin_reset_password_token(conn, %{"token" => token, "new_password" => new_password}),
+    do:
+      admin_reset_password_token_p(
+        conn,
+        Accounts.get_user_by_password_reset_token(token),
+        token,
+        new_password
+      )
 
   defp admin_reset_password_token_p(conn, nil, token, new_password),
     do: render_user(conn, nil)
 
   defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
-    with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password)
-    do
+    with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
       conn
       |> put_status(200)
       |> json(%{ok: true})
@@ -114,15 +141,29 @@ defmodule MalanWeb.UserController do
       {:error, :missing_password_reset_token} ->
         conn
         |> put_status(401)
-        |> json(%{ok: false, err: :missing_password_reset_token, msg: "No password reset token has been issued"})
+        |> json(%{
+          ok: false,
+          err: :missing_password_reset_token,
+          msg: "No password reset token has been issued"
+        })
+
       {:error, :invalid_password_reset_token} ->
         conn
         |> put_status(401)
-        |> json(%{ok: false, err: :invalid_password_reset_token, msg: "Password reset token in invalid"})
+        |> json(%{
+          ok: false,
+          err: :invalid_password_reset_token,
+          msg: "Password reset token in invalid"
+        })
+
       {:error, :expired_password_reset_token} ->
         conn
         |> put_status(401)
-        |> json(%{ok: false, err: :expired_password_reset_token, msg: "Password reset token is expired"})
+        |> json(%{
+          ok: false,
+          err: :expired_password_reset_token,
+          msg: "Password reset token is expired"
+        })
     end
   end
 
@@ -176,13 +217,14 @@ defmodule MalanWeb.UserController do
   end
 
   defp is_self?(conn) do
-    conn.assigns.authed_user_id == conn.params["id"] || conn.assigns.authed_username == conn.params["id"]
+    conn.assigns.authed_user_id == conn.params["id"] ||
+      conn.assigns.authed_username == conn.params["id"]
   end
 
   defp conn_to_session_info(conn) do
     with {:ok, api_token} <- retrieve_token(conn),
-         {:ok, user_id, session_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token)
-    do
+         {:ok, user_id, session_id, user_roles, expires_at, tos, pp} <-
+           Accounts.validate_session(api_token) do
       {:ok, user_id, session_id, user_roles, expires_at, tos, pp}
     end
   end

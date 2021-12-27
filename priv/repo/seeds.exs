@@ -13,16 +13,18 @@
 alias Malan.Accounts
 alias Malan.Accounts.User
 
-root = User.registration_changeset(%User{}, %{
-  username: "root",
-  first_name: "Root",
-  last_name: "User",
-  password: "password10",
-  email: "root@example.com",
-  roles: ["admin", "user"],
-  sex: "male",
-  birthday: ~U[1983-06-13 01:09:08.105179Z]
-})
+root =
+  User.registration_changeset(%User{}, %{
+    username: "root",
+    first_name: "Root",
+    last_name: "User",
+    password: "password10",
+    email: "root@example.com",
+    roles: ["admin", "user"],
+    sex: "male",
+    birthday: ~U[1983-06-13 01:09:08.105179Z]
+  })
+
 Malan.Repo.insert!(root, on_conflict: :nothing, conflict_target: :username)
 
 # Promote root user to admin (currently the role gets stripped on create.  See #7)

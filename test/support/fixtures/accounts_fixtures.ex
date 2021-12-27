@@ -50,13 +50,13 @@ defmodule Malan.AccountsFixtures do
   def transaction_fixture(attrs \\ %{}) do
     with {:ok, user, session} <- Helpers.Accounts.regular_user_with_session(),
          %{} = val_attrs <- Map.merge(@transaction_valid_attrs, attrs),
-         {:ok, transaction} <- create_transaction(
-                                 Map.get(attrs, "user_id"),
-                                 user,
-                                 session,
-                                 val_attrs
-                               ),
-     do: {:ok, user, session, transaction}
+         {:ok, transaction} <-
+           create_transaction(
+             Map.get(attrs, "user_id"),
+             user,
+             session,
+             val_attrs
+           ),
+         do: {:ok, user, session, transaction}
   end
-
 end

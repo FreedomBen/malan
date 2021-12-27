@@ -4,6 +4,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   def admin_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "admin#{ui}@email.com",
       username: "adminuser#{ui}",
@@ -15,6 +16,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   def moderator_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "moderator#{ui}@email.com",
       username: "moderatoruser#{ui}",
@@ -26,6 +28,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   def regular_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "regular#{ui}@email.com",
       username: "regularuser#{ui}",
@@ -185,7 +188,7 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, user1, session1}, {:ok, user2, session2}]
   #
   def regular_users_with_session(num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       regular_user_with_session(%{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
@@ -199,7 +202,7 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, conn, user1, session1}, {:ok, conn, user2, session2}]
   #
   def regular_users_session_conn(conn, num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       regular_user_session_conn(conn, %{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
@@ -211,10 +214,11 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, user1, session1}, {:ok, user2, session2}]
   #
   def admin_users_with_session(num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       admin_user_with_session(%{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
+
   #
   # This function can be used to get the specified number of users
   # with their session tokens added to the conn that is returned
@@ -225,7 +229,7 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, conn, user1, session1}, {:ok, conn, user2, session2}]
   #
   def admin_users_session_conn(conn, num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       admin_user_session_conn(conn, %{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end

@@ -1,7 +1,7 @@
 defmodule MalanWeb.PhoneNumberControllerTest do
   use MalanWeb.ConnCase
 
-  #import Malan.AccountsFixtures
+  # import Malan.AccountsFixtures
 
   alias Malan.Accounts.User
   alias Malan.Accounts.PhoneNumber
@@ -62,12 +62,13 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       id = phone_number.id
       user_id = user.id
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
-               "verified_at" => nil,
+               "verified_at" => nil
              } = json_response(conn, 200)["data"]
     end
 
@@ -121,14 +122,19 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     #  conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id))
     #  # We haven't accepted the PP yet so expect 462
     #  assert conn.status == 462
-    #end
+    # end
   end
 
   describe "create phone_number" do
     test "renders phone_number when data is valid", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       user_id = user.id
-      conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
+
+      conn =
+        post(conn, Routes.user_phone_number_path(conn, :create, user.id),
+          phone_number: @create_attrs
+        )
+
       assert %{"id" => id} = json_response(conn, 201)["data"]
 
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
@@ -138,18 +144,25 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some number",
                "primary" => true,
-               "verified_at" => nil,
+               "verified_at" => nil
              } = json_response(conn, 200)["data"]
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @invalid_attrs)
+
+      conn =
+        post(conn, Routes.user_phone_number_path(conn, :create, user.id),
+          phone_number: @invalid_attrs
+        )
+
       assert json_response(conn, 422)["errors"] != %{}
     end
 
     test "requires being authenticated", %{conn: conn} do
-      conn = post(conn, Routes.user_phone_number_path(conn, :create, "42"), phone_number: @create_attrs)
+      conn =
+        post(conn, Routes.user_phone_number_path(conn, :create, "42"), phone_number: @create_attrs)
+
       assert conn.status == 403
     end
 
@@ -170,9 +183,19 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   describe "update phone_number" do
     setup [:create_phone_number]
 
-    test "renders phone_number when data is valid", %{conn: conn, user: %User{id: user_id} = user, session: session, phone_number: %PhoneNumber{id: id} = phone_number} do
+    test "renders phone_number when data is valid", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: session,
+      phone_number: %PhoneNumber{id: id} = phone_number
+    } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
+
+      conn =
+        put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number),
+          phone_number: @update_attrs
+        )
+
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
@@ -182,18 +205,27 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some updated number",
                "primary" => false,
-               "verified_at" => nil,
+               "verified_at" => nil
              } = json_response(conn, 200)["data"]
     end
 
     test "renders errors when data is invalid", %{conn: conn, phone_number: phone_number} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @invalid_attrs)
+
+      conn =
+        put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number),
+          phone_number: @invalid_attrs
+        )
+
       assert json_response(conn, 422)["errors"] != %{}
     end
 
     test "requires being authenticated", %{conn: conn, phone_number: _phone_number} do
-      conn = put(conn, Routes.user_phone_number_path(conn, :update, "43", "42"), phone_number: @update_attrs)
+      conn =
+        put(conn, Routes.user_phone_number_path(conn, :update, "43", "42"),
+          phone_number: @update_attrs
+        )
+
       assert conn.status == 403
     end
 
@@ -208,13 +240,23 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     #  conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
     #  # We haven't accepted the PP yet so expect 462
     #  assert conn.status == 462
-    #end
+    # end
 
-    test "User ID in attrs doesn't override the path param", %{conn: conn, user: %User{id: user_id} = user, session: session, phone_number: %PhoneNumber{id: id} = phone_number} do
+    test "User ID in attrs doesn't override the path param", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: session,
+      phone_number: %PhoneNumber{id: id} = phone_number
+    } do
       {:ok, u2} = Helpers.Accounts.regular_user()
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       update_attrs = Map.merge(@update_attrs, %{"user_id" => u2.id})
-      conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: update_attrs)
+
+      conn =
+        put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number),
+          phone_number: update_attrs
+        )
+
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
@@ -224,7 +266,7 @@ defmodule MalanWeb.PhoneNumberControllerTest do
                "user_id" => ^user_id,
                "number" => "some updated number",
                "primary" => false,
-               "verified_at" => nil,
+               "verified_at" => nil
              } = json_response(conn, 200)["data"]
     end
   end

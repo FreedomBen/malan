@@ -8,10 +8,35 @@ defmodule Malan.AccountsTest do
   alias Malan.Test.Utils, as: TestUtils
   alias Malan.Test.Helpers
 
-  @user1_attrs %{email: "user1@email.com", username: "someusername1", first_name: "First Name1", last_name: "Last Name1", nick_name: "user nick1"}
-  @user2_attrs %{email: "user2@email.com", username: "someusername2", first_name: "First Name2", last_name: "Last Name2", nick_name: "user nick2"}
-  @update_attrs %{password: "some updated password", preferences: %{theme: "light"}, roles: [], sex: "other", gender: "male"}
-  @invalid_attrs %{email: nil, email_verified: nil, password: nil, preferences: nil, roles: nil, username: nil}
+  @user1_attrs %{
+    email: "user1@email.com",
+    username: "someusername1",
+    first_name: "First Name1",
+    last_name: "Last Name1",
+    nick_name: "user nick1"
+  }
+  @user2_attrs %{
+    email: "user2@email.com",
+    username: "someusername2",
+    first_name: "First Name2",
+    last_name: "Last Name2",
+    nick_name: "user nick2"
+  }
+  @update_attrs %{
+    password: "some updated password",
+    preferences: %{theme: "light"},
+    roles: [],
+    sex: "other",
+    gender: "male"
+  }
+  @invalid_attrs %{
+    email: nil,
+    email_verified: nil,
+    password: nil,
+    preferences: nil,
+    roles: nil,
+    username: nil
+  }
 
   def user_fixture(attrs \\ %{}) do
     {:ok, user} =
@@ -31,14 +56,20 @@ defmodule Malan.AccountsTest do
       # password should be nil coming from database since that's a virtual field
       users = Accounts.list_users()
       assert is_list(users)
-      assert Enum.member?((1..3), length(users))
-      #assert(length(users) == 1 || length(users) == 3) # flakey based on seeds.exs adding 2
-      assert Enum.any?(users, fn (u) -> user == u end)
+      assert Enum.member?(1..3, length(users))
+      # assert(length(users) == 1 || length(users) == 3) # flakey based on seeds.exs adding 2
+      assert Enum.any?(users, fn u -> user == u end)
     end
 
     test "get_user!/1 returns the user with given id" do
       user = user_fixture()
-      assert Accounts.get_user!(user.id) == %{user | password: nil, tos_accept_events: [], custom_attrs: %{}}
+
+      assert Accounts.get_user!(user.id) == %{
+               user
+               | password: nil,
+                 tos_accept_events: [],
+                 custom_attrs: %{}
+             }
     end
 
     test "register_user/1 with valid data creates a user, email unverified and ToS not accepted" do
@@ -120,8 +151,9 @@ defmodule Malan.AccountsTest do
       user1 = Map.put(@user1_attrs, :gender, "fake")
       assert {:error, %Ecto.Changeset{} = changeset} = Accounts.register_user(user1)
       assert changeset.valid? == false
+
       assert errors_on(changeset).gender
-             |> Enum.any?(fn (x) -> x =~ ~r/gender.is.invalid/ end)
+             |> Enum.any?(fn x -> x =~ ~r/gender.is.invalid/ end)
     end
 
     test "admin can trigger a password reset with random value" do
@@ -141,69 +173,99 @@ defmodule Malan.AccountsTest do
       assert {:ok, %User{} = user} = Accounts.update_user(user, @update_attrs)
       assert user.password == "some updated password"
       assert %{theme: "light", id: _} = user.preferences
+
       assert %{
-        user | password: nil, sex: nil, sex_enum: 2, gender: nil, gender_enum: 50, custom_attrs: %{}
-      } == Accounts.get_user!(user.id)
+               user
+               | password: nil,
+                 sex: nil,
+                 sex_enum: 2,
+                 gender: nil,
+                 gender_enum: 50,
+                 custom_attrs: %{}
+             } == Accounts.get_user!(user.id)
+
       assert user.sex == "other"
     end
 
     test "update_user_password/2 with valid data updates the user's password" do
       %User{id: user_id} = user_fixture()
-      assert {:ok, %User{} = user} = Accounts.update_user_password(user_id, "some updated password")
+
+      assert {:ok, %User{} = user} =
+               Accounts.update_user_password(user_id, "some updated password")
+
       assert user.password == "some updated password"
-      assert %{ user | password: nil } == Accounts.get_user!(user_id)
+      assert %{user | password: nil} == Accounts.get_user!(user_id)
     end
 
     test "update_user/2 disallows setting mutable fields" do
       # attempt to change and then do a get from the db to
       # verify no changes
       uf = user_fixture()
-      assert {:ok, %User{} = user} = Accounts.update_user(uf, %{
-        email: "shineshine@hushhush.com",
-        username: "TooShyShy"
-      })
+
+      assert {:ok, %User{} = user} =
+               Accounts.update_user(uf, %{
+                 email: "shineshine@hushhush.com",
+                 username: "TooShyShy"
+               })
+
       assert user.email == "user1@email.com"
       assert user.username == "someusername1"
-      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
+
+      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} ==
+               Accounts.get_user!(user.id)
     end
 
     test "update_user/2 disallows settings ToS or Email verify" do
       uf = user_fixture()
-%{email: "some@email.com", username: "someusername"}
-      assert {:ok, %User{} = user} = Accounts.update_user(uf, %{
-        email_verified: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC"),
-        tos_accept_events: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC")
-      })
+      %{email: "some@email.com", username: "someusername"}
+
+      assert {:ok, %User{} = user} =
+               Accounts.update_user(uf, %{
+                 email_verified: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC"),
+                 tos_accept_events: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC")
+               })
+
       assert user.email_verified == nil
       assert user.tos_accept_events == []
-      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
+
+      assert %{uf | password: nil, tos_accept_events: [], custom_attrs: %{}} ==
+               Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid data returns error changeset" do
       user = user_fixture()
       assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, @invalid_attrs)
       assert changeset.valid? == false
+
       assert errors_on(changeset).password
-             |> Enum.any?(fn (x) -> x =~ ~r/can.t.be.blank/ end)
-      assert %{user | password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
+             |> Enum.any?(fn x -> x =~ ~r/can.t.be.blank/ end)
+
+      assert %{user | password: nil, tos_accept_events: [], custom_attrs: %{}} ==
+               Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid sex returns error changeset" do
       user = user_fixture()
       assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{sex: "Y"})
       assert changeset.valid? == false
+
       assert errors_on(changeset).sex
-             |> Enum.any?(fn (x) -> x =~ ~r/sex.is.invalid/ end)
-      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
+             |> Enum.any?(fn x -> x =~ ~r/sex.is.invalid/ end)
+
+      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} ==
+               Accounts.get_user!(user.id)
     end
 
     test "update_user/2 with invalid gender returns error changeset" do
       user = user_fixture()
       assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{gender: "Y"})
       assert changeset.valid? == false
+
       assert errors_on(changeset).gender
-             |> Enum.any?(fn (x) -> x =~ ~r/gender.is.invalid/ end)
-      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} == Accounts.get_user!(user.id)
+             |> Enum.any?(fn x -> x =~ ~r/gender.is.invalid/ end)
+
+      assert %{user | gender: nil, password: nil, tos_accept_events: [], custom_attrs: %{}} ==
+               Accounts.get_user!(user.id)
     end
 
     #test "update_user/2 can be used to accept the ToS" do
@@ -236,8 +298,10 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, user} = Accounts.user_accept_tos(orig.id)
-      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version}
-        = List.first(user.tos_accept_events)
+
+      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version} =
+               List.first(user.tos_accept_events)
+
       assert tos_version == ToS.current_version()
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -248,8 +312,10 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, user} = Accounts.user_reject_tos(orig.id)
-      assert %{accept: false, id: id, timestamp: timestamp, tos_version: tos_version}
-        = List.first(user.tos_accept_events)
+
+      assert %{accept: false, id: id, timestamp: timestamp, tos_version: tos_version} =
+               List.first(user.tos_accept_events)
+
       assert tos_version == ToS.current_version()
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -260,16 +326,20 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, u1} = Accounts.user_accept_tos(orig.id)
-      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version}
-        = List.first(u1.tos_accept_events)
+
+      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version} =
+               List.first(u1.tos_accept_events)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
 
       assert {:ok, u2} = Accounts.user_accept_tos(orig.id)
       assert length(u2.tos_accept_events) == 2
-      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version}
-        = Enum.at(u2.tos_accept_events, 0)
+
+      assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version} =
+               Enum.at(u2.tos_accept_events, 0)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -277,8 +347,10 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, u3} = Accounts.user_reject_tos(orig.id)
       assert length(u2.tos_accept_events) == 2
-      assert %{accept: false, id: id, timestamp: timestamp, tos_version: tos_version}
-        = Enum.at(u3.tos_accept_events, 0)
+
+      assert %{accept: false, id: id, timestamp: timestamp, tos_version: tos_version} =
+               Enum.at(u3.tos_accept_events, 0)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -289,8 +361,10 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, user} = Accounts.user_accept_privacy_policy(orig.id)
-      assert %{accept: true, id: id, timestamp: timestamp, privacy_policy_version: ppv}
-        = List.first(user.privacy_policy_accept_events)
+
+      assert %{accept: true, id: id, timestamp: timestamp, privacy_policy_version: ppv} =
+               List.first(user.privacy_policy_accept_events)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert ppv == PrivacyPolicy.current_version()
@@ -301,8 +375,10 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, user} = Accounts.user_reject_privacy_policy(orig.id)
-      assert %{accept: false, id: id, timestamp: timestamp, privacy_policy_version: ppv}
-        = List.first(user.privacy_policy_accept_events)
+
+      assert %{accept: false, id: id, timestamp: timestamp, privacy_policy_version: ppv} =
+               List.first(user.privacy_policy_accept_events)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert ppv == PrivacyPolicy.current_version()
@@ -313,16 +389,30 @@ defmodule Malan.AccountsTest do
       orig = user_fixture()
 
       assert {:ok, u1} = Accounts.user_accept_privacy_policy(orig.id)
-      assert %{accept: true, id: id, timestamp: timestamp, privacy_policy_version: privacy_policy_version}
-        = List.first(u1.privacy_policy_accept_events)
+
+      assert %{
+               accept: true,
+               id: id,
+               timestamp: timestamp,
+               privacy_policy_version: privacy_policy_version
+             } =
+               List.first(u1.privacy_policy_accept_events)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
 
       assert {:ok, u2} = Accounts.user_accept_privacy_policy(orig.id)
       assert length(u2.privacy_policy_accept_events) == 2
-      assert %{accept: true, id: id, timestamp: timestamp, privacy_policy_version: privacy_policy_version}
-        = Enum.at(u2.privacy_policy_accept_events, 0)
+
+      assert %{
+               accept: true,
+               id: id,
+               timestamp: timestamp,
+               privacy_policy_version: privacy_policy_version
+             } =
+               Enum.at(u2.privacy_policy_accept_events, 0)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -330,8 +420,15 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, u3} = Accounts.user_reject_privacy_policy(orig.id)
       assert length(u2.privacy_policy_accept_events) == 2
-      assert %{accept: false, id: id, timestamp: timestamp, privacy_policy_version: privacy_policy_version}
-        = Enum.at(u3.privacy_policy_accept_events, 0)
+
+      assert %{
+               accept: false,
+               id: id,
+               timestamp: timestamp,
+               privacy_policy_version: privacy_policy_version
+             } =
+               Enum.at(u3.privacy_policy_accept_events, 0)
+
       assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
@@ -346,7 +443,10 @@ defmodule Malan.AccountsTest do
     test "update_user/2 doesn't allow a user to change their roles" do
       user = user_fixture()
       assert user.roles == ["user"]
-      assert {:ok, %Accounts.User{} = updated_user} = Accounts.update_user(user, %{roles: ["admin", "moderator"]})
+
+      assert {:ok, %Accounts.User{} = updated_user} =
+               Accounts.update_user(user, %{roles: ["admin", "moderator"]})
+
       assert updated_user.roles == ["user"]
     end
 
@@ -360,49 +460,49 @@ defmodule Malan.AccountsTest do
     end
 
     test "Usernames must be unique on creation" do
-      user1_attrs = %{@user1_attrs | username: "someusername" }
-      user2_attrs = %{@user2_attrs | username: "someusername" }
+      user1_attrs = %{@user1_attrs | username: "someusername"}
+      user2_attrs = %{@user2_attrs | username: "someusername"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.username == "someusername"
       assert user1.email == "user1@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
 
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/has already been taken/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has already been taken/ end)
     end
 
     test "Usernames must be unique and case insensitive" do
-      user1_attrs = %{@user1_attrs | username: "someusername" }
-      user2_attrs = %{@user2_attrs | username: "SoMeUsErNAmE" }
+      user1_attrs = %{@user1_attrs | username: "someusername"}
+      user2_attrs = %{@user2_attrs | username: "SoMeUsErNAmE"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.username == "someusername"
       assert user1.email == "user1@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
 
       assert errors_on(changeset).username
-             |> Enum.any?(fn (x) -> x =~ ~r/has already been taken/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has already been taken/ end)
     end
 
     test "Email must be unique on creation" do
-      user1_attrs = %{@user1_attrs | email: "some@email.com" }
-      user2_attrs = %{@user2_attrs | email: "some@email.com" }
+      user1_attrs = %{@user1_attrs | email: "some@email.com"}
+      user2_attrs = %{@user2_attrs | email: "some@email.com"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.email == "some@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
 
       assert errors_on(changeset).email
-             |> Enum.any?(fn (x) -> x =~ ~r/has already been taken/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has already been taken/ end)
     end
 
     test "Email must be unique on creation and case insensitive" do
-      user1_attrs = %{@user1_attrs | email: "some@email.com" }
-      user2_attrs = %{@user2_attrs | email: "SOME@email.com" }
+      user1_attrs = %{@user1_attrs | email: "some@email.com"}
+      user2_attrs = %{@user2_attrs | email: "SOME@email.com"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.email == "some@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
 
       assert errors_on(changeset).email
-             |> Enum.any?(fn (x) -> x =~ ~r/has already been taken/ end)
+             |> Enum.any?(fn x -> x =~ ~r/has already been taken/ end)
     end
 
     test "Can set arbitrary JSON on a user" do
@@ -419,7 +519,7 @@ defmodule Malan.AccountsTest do
       {:ok, user} = Accounts.update_user_password(uf.id, new_password)
       assert user.password != uf.password
       assert user.password == new_password
-      assert %{ user | password: nil } == Accounts.get_user!(user_id)
+      assert %{user | password: nil} == Accounts.get_user!(user_id)
     end
 
     test "generate_password_reset/1 adds a reset token to the database and an expiration" do
@@ -429,7 +529,14 @@ defmodule Malan.AccountsTest do
       assert is_nil(uf.password_reset_token_hash)
       assert is_nil(uf.password_reset_token_expires_at)
       {:ok, updated} = Accounts.generate_password_reset(user)
-      assert %{ updated | password_reset_token: nil, password_reset_token_hash: nil, password_reset_token_expires_at: nil } == user
+
+      assert %{
+               updated
+               | password_reset_token: nil,
+                 password_reset_token_hash: nil,
+                 password_reset_token_expires_at: nil
+             } == user
+
       assert updated.password_reset_token
       assert updated.password_reset_token_hash
       assert updated.password_reset_token_expires_at
@@ -440,21 +547,33 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_password_reset_token/2 logic test: returns properly with no token" do
-      uf = user_fixture() # this won't have a password reset token yet
-      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, "")
-      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, nil)
-      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(uf, "abcde")
+      # this won't have a password reset token yet
+      uf = user_fixture()
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.validate_password_reset_token(uf, "")
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.validate_password_reset_token(uf, nil)
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.validate_password_reset_token(uf, "abcde")
     end
 
     test "validate_password_reset_token/2 logic test: returns properly incorrect token" do
-      uf = user_fixture()
-           |> Map.merge(%{
-             password_reset_token: "ohai",
-             password_reset_token_hash: "hellow",
-             password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(1, :minutes)
-           })
-      assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "helloworld")
-      assert {:error, :invalid_password_reset_token} = Accounts.validate_password_reset_token(uf, "42")
+      uf =
+        user_fixture()
+        |> Map.merge(%{
+          password_reset_token: "ohai",
+          password_reset_token_hash: "hellow",
+          password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(1, :minutes)
+        })
+
+      assert {:error, :invalid_password_reset_token} =
+               Accounts.validate_password_reset_token(uf, "helloworld")
+
+      assert {:error, :invalid_password_reset_token} =
+               Accounts.validate_password_reset_token(uf, "42")
     end
 
     test "validate_password_reset_token/2 logic test: returns properly with valid token" do
@@ -464,12 +583,14 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_password_reset_token/2 logic test: returns expired when expired" do
-      uf = user_fixture()
-           |> Map.merge(%{
-             password_reset_token: "ohai",
-             password_reset_token_hash: "hellow",
-             password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(-1, :minutes)
-           })
+      uf =
+        user_fixture()
+        |> Map.merge(%{
+          password_reset_token: "ohai",
+          password_reset_token_hash: "hellow",
+          password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(-1, :minutes)
+        })
+
       {:ok, user} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
     end
@@ -483,8 +604,15 @@ defmodule Malan.AccountsTest do
       assert {:ok, cleared_user} = Accounts.clear_password_reset_token(user)
       assert is_nil(cleared_user.password_reset_token)
       assert is_nil(cleared_user.password_reset_token_hash)
-      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, user.password_reset_token)
-      assert {:error, :missing_password_reset_token} = Accounts.validate_password_reset_token(cleared_user, cleared_user.password_reset_token)
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.validate_password_reset_token(cleared_user, user.password_reset_token)
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.validate_password_reset_token(
+                 cleared_user,
+                 cleared_user.password_reset_token
+               )
     end
 
     test "get_user_by_password_reset_token/1" do
@@ -494,9 +622,9 @@ defmodule Malan.AccountsTest do
     test "get_user_by_id_or_username/1" do
       uf = user_fixture()
       u1 = Accounts.get_user_by_id_or_username!(uf.username)
-      assert %{ uf | custom_attrs: %{}, password: nil } == u1
+      assert %{uf | custom_attrs: %{}, password: nil} == u1
       u2 = Accounts.get_user_by_id_or_username!(uf.id)
-      assert %{ uf | custom_attrs: %{}, password: nil } == u2
+      assert %{uf | custom_attrs: %{}, password: nil} == u2
       assert u1 == u2
     end
 
@@ -504,104 +632,121 @@ defmodule Malan.AccountsTest do
       uf = user_fixture(%{username: "CaPitAlUsername", email: "CaPitALaddr@example.COM"})
       assert uf.email == "capitaladdr@example.com"
       assert uf.username == "capitalusername"
+
       assert %User{
-        email: "capitaladdr@example.com",
-        username: "capitalusername"
-      } = Accounts.get_user(uf.id)
+               email: "capitaladdr@example.com",
+               username: "capitalusername"
+             } = Accounts.get_user(uf.id)
     end
 
     test "getting a user with capitals by username returns the correct" do
       orig_email = "CaPitALaddr@example.COM"
       orig_username = "CaPitAlUsername"
       %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+
       assert %User{
-        id: ^user_id,
-        email: "capitaladdr@example.com",
-        username: "capitalusername"
-      } = Accounts.get_user_by_id_or_username(orig_username)
+               id: ^user_id,
+               email: "capitaladdr@example.com",
+               username: "capitalusername"
+             } = Accounts.get_user_by_id_or_username(orig_username)
     end
 
     test "getting a user with capitals by email returns the correct" do
       orig_email = "CaPitALaddr@example.COM"
       orig_username = "CaPitAlUsername"
       %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+
       assert %User{
-        id: ^user_id,
-        email: "capitaladdr@example.com",
-        username: "capitalusername"
-      } = Accounts.get_user_by(email: orig_email)
+               id: ^user_id,
+               email: "capitaladdr@example.com",
+               username: "capitalusername"
+             } = Accounts.get_user_by(email: orig_email)
     end
 
     test "get_user_full/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
       %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full(user_id)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full(user_id)
     end
 
     test "get_user_full/1 returns nil when not found" do
-      assert is_nil(Accounts.get_user_full(Ecto.UUID.generate))
+      assert is_nil(Accounts.get_user_full(Ecto.UUID.generate()))
     end
 
     test "get_user_full!/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
       %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full!(user_id)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full!(user_id)
     end
 
     test "get_user_full!/1 raises when not found" do
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full!(Ecto.UUID.generate) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full!(Ecto.UUID.generate()) end
     end
 
     test "get_user_full_by_id_or_username/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
       %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full_by_id_or_username(user_id)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full_by_id_or_username(user_id)
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full_by_id_or_username(username)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full_by_id_or_username(username)
     end
 
     test "get_user_full_by_id_or_username/1 returns nil when not found" do
-      assert is_nil(Accounts.get_user_full_by_id_or_username(Ecto.UUID.generate))
-      assert is_nil(Accounts.get_user_full_by_id_or_username("notavalididorusernameoremailaddress"))
+      assert is_nil(Accounts.get_user_full_by_id_or_username(Ecto.UUID.generate()))
+
+      assert is_nil(
+               Accounts.get_user_full_by_id_or_username("notavalididorusernameoremailaddress")
+             )
     end
 
     test "get_user_full_by_id_or_username!/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
       %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full_by_id_or_username!(user_id)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full_by_id_or_username!(user_id)
+
       assert %User{
-        id: ^user_id,
-        username: ^username,
-        phone_numbers: [%PhoneNumber{number: ^number}]
-      } = Accounts.get_user_full_by_id_or_username!(username)
+               id: ^user_id,
+               username: ^username,
+               phone_numbers: [%PhoneNumber{number: ^number}]
+             } = Accounts.get_user_full_by_id_or_username!(username)
     end
 
     test "get_user_full_by_id_or_username!/1 raises when not found" do
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full_by_id_or_username!(Ecto.UUID.generate) end
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_full_by_id_or_username!("notavalididorusernameoremailaddress") end
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_full_by_id_or_username!(Ecto.UUID.generate())
+      end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_full_by_id_or_username!("notavalididorusernameoremailaddress")
+      end
     end
   end
 
@@ -611,11 +756,12 @@ defmodule Malan.AccountsTest do
     def session_fixture(user_attrs \\ %{}, session_attrs \\ %{}) do
       user = user_fixture(user_attrs)
 
-      {:ok, session} = Accounts.create_session(
-        user.username,
-        user.password,
-        Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
-      )
+      {:ok, session} =
+        Accounts.create_session(
+          user.username,
+          user.password,
+          Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
+        )
 
       session
     end
@@ -629,7 +775,7 @@ defmodule Malan.AccountsTest do
         revoked_at: nil,
         roles: ["user"],
         latest_tos_accept_ver: "1",
-        latest_pp_accept_ver: "2",
+        latest_pp_accept_ver: "2"
       }
       |> Map.merge(args)
     end
@@ -646,34 +792,58 @@ defmodule Malan.AccountsTest do
 
     test "create_session/1 with valid data creates a session" do
       user = user_fixture()
-      assert {:ok, %Session{} = session} = Accounts.create_session(user.username, user.password, %{"ip_address" => "192.168.2.200"})
+
+      assert {:ok, %Session{} = session} =
+               Accounts.create_session(user.username, user.password, %{
+                 "ip_address" => "192.168.2.200"
+               })
+
       # API token should be included after creation, but not after that
       assert session.api_token =~ ~r/[A-Za-z0-9]{10}/
       assert TestUtils.DateTime.within_last?(session.authenticated_at, 5, :seconds) == true
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, session.authenticated_at, :second))
-      assert Enum.member?(0..5, DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), session.expires_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(DateTime.utc_now(), session.authenticated_at, :second)
+             )
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(
+                 Utils.DateTime.adjust_cur_time(1, :weeks),
+                 session.expires_at,
+                 :second
+               )
+             )
+
       assert session.ip_address == "192.168.2.200"
       assert session.revoked_at == nil
     end
 
     test "create_session/1 with expires_never at true expires over 200 years from now" do
       user = user_fixture()
-      assert {:ok, %Session{} = session} = Accounts.create_session(
-        user.username,
-        user.password,
-        %{"never_expires" => true, "ip_address" => "192.168.2.200"}
-      )
-      assert DateTime.diff(session.expires_at, DateTime.utc_now) > 5_000_000_000
+
+      assert {:ok, %Session{} = session} =
+               Accounts.create_session(
+                 user.username,
+                 user.password,
+                 %{"never_expires" => true, "ip_address" => "192.168.2.200"}
+               )
+
+      assert DateTime.diff(session.expires_at, DateTime.utc_now()) > 5_000_000_000
       assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
     end
 
     test "create_session/1 with expires_in_seconds expires at specified time" do
       user = user_fixture()
-      assert {:ok, %Session{} = session} = Accounts.create_session(
-        user.username,
-        user.password,
-        %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
-      )
+
+      assert {:ok, %Session{} = session} =
+               Accounts.create_session(
+                 user.username,
+                 user.password,
+                 %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
+               )
+
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
       assert {:error, :expired} = Accounts.validate_session(session.api_token)
@@ -681,11 +851,18 @@ defmodule Malan.AccountsTest do
 
     test "create_session/1 never_expire set to 'false' doesn't affect stuff" do
       user = user_fixture()
-      assert {:ok, %Session{} = session} = Accounts.create_session(
-        user.username,
-        user.password,
-        %{"never_expires" => false, "expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
-      )
+
+      assert {:ok, %Session{} = session} =
+               Accounts.create_session(
+                 user.username,
+                 user.password,
+                 %{
+                   "never_expires" => false,
+                   "expires_in_seconds" => -120,
+                   "ip_address" => "192.168.2.200"
+                 }
+               )
+
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
       assert {:error, :expired} = Accounts.validate_session(session.api_token)
@@ -694,7 +871,13 @@ defmodule Malan.AccountsTest do
     test "create_session/1 doesn't allow specifying user ID" do
       user1 = user_fixture(%{username: "username1"})
       user2 = user_fixture(%{username: "username2", email: "username2@example.com"})
-      assert {:ok, session} = Accounts.create_session(user1.username, user1.password, %{"user_id" => user2.id, "ip_address" => "192.168.2.200"})
+
+      assert {:ok, session} =
+               Accounts.create_session(user1.username, user1.password, %{
+                 "user_id" => user2.id,
+                 "ip_address" => "192.168.2.200"
+               })
+
       assert user2.id != user1.id
       assert session.user_id == user1.id
     end
@@ -712,29 +895,45 @@ defmodule Malan.AccountsTest do
 
     test "create_session/1 with incorrect pass returns {:error, :unauthorized}" do
       user = user_fixture()
-      assert {:error, :unauthorized} = Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200")
+
+      assert {:error, :unauthorized} =
+               Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200")
     end
 
     test "create_session/1 with non-existent user returns {:error, :not_a_user}" do
-      assert {:error, :not_a_user} = Accounts.create_session("notarealusernameatall", "nottherightpassword", "192.168.2.200")
+      assert {:error, :not_a_user} =
+               Accounts.create_session(
+                 "notarealusernameatall",
+                 "nottherightpassword",
+                 "192.168.2.200"
+               )
     end
 
     test "delete_session/1 revokes the session" do
       session = session_fixture()
       assert {:ok, %Session{}} = Accounts.delete_session(session)
       sesh = Accounts.get_session!(session.id)
-      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now, sesh.revoked_at, :second))
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), sesh.revoked_at, :second))
     end
 
     test "validate_session/1 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{username: "randomusername1"})
       # TODO Unused
-      assert {:ok, user_id, username, session_id, roles, exp, tos, pp} = Accounts.validate_session(session.api_token)
+      assert {:ok, user_id, username, session_id, roles, exp, tos, pp} =
+               Accounts.validate_session(session.api_token)
+
       assert user_id == session.user_id
       assert username == "randomusername1"
       assert session_id == session.id
       assert roles == ["user"]
-      assert TestUtils.DateTime.first_after_second_within?(Utils.DateTime.adjust_cur_time(1, :weeks), exp, 3, :seconds)
+
+      assert TestUtils.DateTime.first_after_second_within?(
+               Utils.DateTime.adjust_cur_time(1, :weeks),
+               exp,
+               3,
+               :seconds
+             )
+
       assert is_nil(tos)
       assert is_nil(pp)
     end
@@ -762,71 +961,90 @@ defmodule Malan.AccountsTest do
 
     test "update_user/2 can be used to update user preferences" do
       user = user_fixture()
+
       update_user_prefs = %{
         preferences: %{
           invalid: "invalid",
-          theme: "dark",
+          theme: "dark"
         }
       }
-      assert {:ok, %Accounts.User{} = updated_user} = Accounts.update_user(user, update_user_prefs)
+
+      assert {:ok, %Accounts.User{} = updated_user} =
+               Accounts.update_user(user, update_user_prefs)
+
       assert %{id: _, theme: "dark"} = updated_user.preferences
       assert false == Map.has_key?(updated_user.preferences, :invalid)
     end
 
     test "update_user/2 invalid theme is rejected" do
       user = user_fixture()
+
       update_user_prefs = %{
         preferences: %{
-          theme: "invalid",
+          theme: "invalid"
         }
       }
+
       assert {:error, changeset} = Accounts.update_user(user, update_user_prefs)
+
       assert errors_on(changeset).preferences.theme
-             |> Enum.any?(fn (x) -> x =~ ~r/valid.themes.are/i end)
+             |> Enum.any?(fn x -> x =~ ~r/valid.themes.are/i end)
     end
 
     test "update_user/2 overwrites old preferences" do
       user = user_fixture()
+
       update_user_prefs = %{
         preferences: %{
-          theme: "dark",
+          theme: "dark"
         }
       }
-      assert {:ok, %Accounts.User{} = updated_user} = Accounts.update_user(user, update_user_prefs)
+
+      assert {:ok, %Accounts.User{} = updated_user} =
+               Accounts.update_user(user, update_user_prefs)
+
       assert %{id: _, theme: "dark"} = updated_user.preferences
       assert false == Map.has_key?(updated_user.preferences, :invalid)
 
       second_user_prefs = %{
         preferences: %{
           theme: "dark",
-          default_sans: "something",
+          default_sans: "something"
         }
       }
-      assert {:ok, %Accounts.User{} = updated_user} = Accounts.update_user(user, second_user_prefs)
+
+      assert {:ok, %Accounts.User{} = updated_user} =
+               Accounts.update_user(user, second_user_prefs)
+
       assert %{id: _, theme: "dark", default_sans: "something"} = updated_user.preferences
     end
 
     test "revoke_active_sessions/1 revokes all session for the user except non-expiring" do
       {:ok, user} = Helpers.Accounts.regular_user()
 
-      sessions = 1..3 |> Enum.map(fn (_i) ->
-        {:ok, session} = Helpers.Accounts.create_session(user)
-        session
-      end)
+      sessions =
+        1..3
+        |> Enum.map(fn _i ->
+          {:ok, session} = Helpers.Accounts.create_session(user)
+          session
+        end)
+
       {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
       assert {:ok, _, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
-      assert DateTime.compare(
-        Utils.DateTime.adjust_cur_time(36500, :days), exp
-      ) == :lt
 
-      Enum.each(sessions, fn (s) ->
+      assert DateTime.compare(
+               Utils.DateTime.adjust_cur_time(36500, :days),
+               exp
+             ) == :lt
+
+      Enum.each(sessions, fn s ->
         assert {:ok, user_id, _username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
         assert user_id == user.id
       end)
 
       Accounts.revoke_active_sessions(user)
 
-      Enum.each(sessions, fn (s) ->
+      Enum.each(sessions, fn s ->
         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
       end)
     end
@@ -843,42 +1061,63 @@ defmodule Malan.AccountsTest do
     end
 
     test "session_valid?/1 with map revoked tokens always shows revoked" do
-      assert {:error, :revoked} = Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now}))
-      assert {:error, :revoked} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.adjust_cur_time(-2, :hours), revoked_at: DateTime.utc_now}))
+      assert {:error, :revoked} =
+               Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now()}))
+
+      assert {:error, :revoked} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   expires_at: Utils.DateTime.adjust_cur_time(-2, :hours),
+                   revoked_at: DateTime.utc_now()
+                 })
+               )
     end
 
     test "session_valid?/1 returns expected structure when valid" do
-      args = %{
-        user_id: user_id,
-        username: "fakeusername1",
-        session_id: session_id,
-        expires_at: expires_at,
-        revoked_at: _revoked_at,
-        roles: roles,
-        latest_tos_accept_ver: latest_tos_accept_ver,
-        latest_pp_accept_ver: latest_pp_accept_ver,
-      } = %{
-        user_id: "123",
-        username: "fakeusername1",
-        session_id: "abc",
-        expires_at: Utils.DateTime.adjust_cur_time(2, :days),
-        revoked_at: nil,
-        roles: ["user"],
-        latest_tos_accept_ver: "12",
-        latest_pp_accept_ver: "13",
-      }
+      args =
+        %{
+          user_id: user_id,
+          username: "fakeusername1",
+          session_id: session_id,
+          expires_at: expires_at,
+          revoked_at: _revoked_at,
+          roles: roles,
+          latest_tos_accept_ver: latest_tos_accept_ver,
+          latest_pp_accept_ver: latest_pp_accept_ver
+        } = %{
+          user_id: "123",
+          username: "fakeusername1",
+          session_id: "abc",
+          expires_at: Utils.DateTime.adjust_cur_time(2, :days),
+          revoked_at: nil,
+          roles: ["user"],
+          latest_tos_accept_ver: "12",
+          latest_pp_accept_ver: "13"
+        }
 
-      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^roles, ^expires_at, ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
+      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^roles, ^expires_at,
+              ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
     end
 
     test "session_valid?/1 with map expired but not revoked is expired" do
-      assert {:error, :expired} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.adjust_cur_time(-2, :hours), revoked_at: nil}))
+      assert {:error, :expired} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   expires_at: Utils.DateTime.adjust_cur_time(-2, :hours),
+                   revoked_at: nil
+                 })
+               )
     end
 
     test "session_valid?/1 with forever token is valid" do
-      assert {:ok, _, _, _, _, _, _, _} = Accounts.session_valid?(session_valid_fixture(%{expires_at: Utils.DateTime.distant_future, revoked_at: nil}))
+      assert {:ok, _, _, _, _, _, _, _} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   expires_at: Utils.DateTime.distant_future(),
+                   revoked_at: nil
+                 })
+               )
     end
-
   end
 
   #describe "teams" do
@@ -947,11 +1186,19 @@ defmodule Malan.AccountsTest do
   describe "phone_numbers" do
     alias Malan.Accounts.PhoneNumber
 
-    #@valid_attrs %{number: "some number", primary: true, verified_at: "2010-04-17T14:00:00Z"}
-    #@update_attrs %{number: "some updated number", primary: false, verified_at: "2011-05-18T15:01:01Z"}
-    #@invalid_attrs %{number: nil, primary: nil, verified_at: nil}
-    @valid_attrs %{"number" => "some number", "primary" => true, "verified_at" => "2010-04-17T14:00:00Z"}
-    @update_attrs %{"number" => "some updated number", "primary" => false, "verified_at" => "2011-05-18T15:01:01Z"}
+    # @valid_attrs %{number: "some number", primary: true, verified_at: "2010-04-17T14:00:00Z"}
+    # @update_attrs %{number: "some updated number", primary: false, verified_at: "2011-05-18T15:01:01Z"}
+    # @invalid_attrs %{number: nil, primary: nil, verified_at: nil}
+    @valid_attrs %{
+      "number" => "some number",
+      "primary" => true,
+      "verified_at" => "2010-04-17T14:00:00Z"
+    }
+    @update_attrs %{
+      "number" => "some updated number",
+      "primary" => false,
+      "verified_at" => "2011-05-18T15:01:01Z"
+    }
     @invalid_attrs %{"number" => nil, "primary" => nil, "verified_at" => nil}
 
     def phone_number_fixture(attrs \\ %{}) do
@@ -973,7 +1220,10 @@ defmodule Malan.AccountsTest do
 
     test "create_phone_number/1 with valid data creates a phone_number" do
       {:ok, user} = Helpers.Accounts.regular_user()
-      assert {:ok, %PhoneNumber{} = phone_number} = Accounts.create_phone_number(user.id, @valid_attrs)
+
+      assert {:ok, %PhoneNumber{} = phone_number} =
+               Accounts.create_phone_number(user.id, @valid_attrs)
+
       assert phone_number.number == "some number"
       assert phone_number.primary == true
       # can't set verified at this way
@@ -987,7 +1237,10 @@ defmodule Malan.AccountsTest do
 
     test "update_phone_number/2 with valid data updates the phone_number" do
       {:ok, _user, phone_number} = phone_number_fixture()
-      assert {:ok, %PhoneNumber{} = phone_number} = Accounts.update_phone_number(phone_number, @update_attrs)
+
+      assert {:ok, %PhoneNumber{} = phone_number} =
+               Accounts.update_phone_number(phone_number, @update_attrs)
+
       assert phone_number.number == "some updated number"
       assert phone_number.primary == false
       # can't set verified at this way
@@ -996,7 +1249,10 @@ defmodule Malan.AccountsTest do
 
     test "update_phone_number/2 with invalid data returns error changeset" do
       {:ok, _user, phone_number} = phone_number_fixture()
-      assert {:error, %Ecto.Changeset{}} = Accounts.update_phone_number(phone_number, @invalid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Accounts.update_phone_number(phone_number, @invalid_attrs)
+
       assert phone_number == Accounts.get_phone_number!(phone_number.id)
     end
 
@@ -1017,9 +1273,39 @@ defmodule Malan.AccountsTest do
   describe "addresses" do
     alias Malan.Accounts.Address
 
-    @valid_attrs %{"city" => "some city", "primary" => true, "verified_at" => "2010-04-17T14:00:00Z", "country" => "some country", "line_1" => "some line_1", "line_2" => "some line_2", "name" => "some name", "postal" => "some postal", "state" => "some state"}
-    @update_attrs %{"city" => "some updated city", "primary" => false, "verified_at" => "2010-04-17T14:00:00Z", "country" => "some updated country", "line_1" => "some updated line_1", "line_2" => "some updated line_2", "name" => "some updated name", "postal" => "some updated postal", "state" => "some updated state"}
-    @invalid_attrs %{"city" => nil, "primary" => nil, "verified_at" => nil, "country" => nil, "line_1" => nil, "line_2" => nil, "name" => nil, "postal" => nil, "state" => nil}
+    @valid_attrs %{
+      "city" => "some city",
+      "primary" => true,
+      "verified_at" => "2010-04-17T14:00:00Z",
+      "country" => "some country",
+      "line_1" => "some line_1",
+      "line_2" => "some line_2",
+      "name" => "some name",
+      "postal" => "some postal",
+      "state" => "some state"
+    }
+    @update_attrs %{
+      "city" => "some updated city",
+      "primary" => false,
+      "verified_at" => "2010-04-17T14:00:00Z",
+      "country" => "some updated country",
+      "line_1" => "some updated line_1",
+      "line_2" => "some updated line_2",
+      "name" => "some updated name",
+      "postal" => "some updated postal",
+      "state" => "some updated state"
+    }
+    @invalid_attrs %{
+      "city" => nil,
+      "primary" => nil,
+      "verified_at" => nil,
+      "country" => nil,
+      "line_1" => nil,
+      "line_2" => nil,
+      "name" => nil,
+      "postal" => nil,
+      "state" => nil
+    }
 
     def address_fixture(attrs \\ %{}) do
       with {:ok, user} <- Helpers.Accounts.regular_user(),
@@ -1093,7 +1379,6 @@ defmodule Malan.AccountsTest do
     end
   end
 
-
   describe "transactions" do
     alias Malan.Accounts.Transaction
 
@@ -1148,16 +1433,25 @@ defmodule Malan.AccountsTest do
     test "get_transaction_by!/1 raises if multiple results" do
       {:ok,  u1, _s1, _t1} = transaction_fixture()
       {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+
       assert_raise Ecto.MultipleResultsError, fn ->
         Accounts.get_transaction_by!(user_id: u1.id)
       end
     end
 
     test "create_transaction/1 with valid data creates a transaction" do
-      valid_attrs = %{"type" => "some type", "verb" => "some verb", "what" => "some what", "when" => ~U[2021-12-22 21:02:00Z]}
+      valid_attrs = %{
+        "type" => "some type",
+        "verb" => "some verb",
+        "what" => "some what",
+        "when" => ~U[2021-12-22 21:02:00Z]
+      }
+
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
 
-      assert {:ok, %Transaction{} = transaction} = Accounts.create_transaction(user.id, session.id, user.id, valid_attrs)
+      assert {:ok, %Transaction{} = transaction} =
+               Accounts.create_transaction(user.id, session.id, user.id, valid_attrs)
+
       assert transaction.type == "some type"
       assert transaction.verb == "some verb"
       assert transaction.what == "some what"
@@ -1165,16 +1459,24 @@ defmodule Malan.AccountsTest do
     end
 
     test "create_transaction/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Accounts.create_transaction(nil, nil, nil, @invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} =
+               Accounts.create_transaction(nil, nil, nil, @invalid_attrs)
     end
 
     test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do
       {:ok, user, session, transaction} = transaction_fixture()
-      update_attrs = %{type: "some updated type", verb: "some updated verb", what: "some updated what", when: ~U[2021-12-23 21:02:00Z]}
+
+      update_attrs = %{
+        type: "some updated type",
+        verb: "some updated verb",
+        what: "some updated what",
+        when: ~U[2021-12-23 21:02:00Z]
+      }
 
       assert_raise Malan.ObjectIsImmutable, fn ->
         Accounts.update_transaction(transaction, update_attrs)
       end
+
       assert transaction == Accounts.get_transaction!(transaction.id)
     end
 
@@ -1184,6 +1486,7 @@ defmodule Malan.AccountsTest do
       assert_raise Malan.ObjectIsImmutable, fn ->
         Accounts.update_transaction(transaction, @invalid_attrs)
       end
+
       assert transaction == Accounts.get_transaction!(transaction.id)
     end
 
@@ -1193,6 +1496,7 @@ defmodule Malan.AccountsTest do
       assert_raise Malan.ObjectIsImmutable, fn ->
         Accounts.delete_transaction(transaction)
       end
+
       assert transaction == Accounts.get_transaction!(transaction.id)
     end
 

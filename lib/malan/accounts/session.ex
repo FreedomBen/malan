@@ -1,5 +1,5 @@
 defmodule Malan.Accounts.Session do
-  @compile if Mix.env == :test, do: :export_all
+  @compile if Mix.env() == :test, do: :export_all
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -28,8 +28,22 @@ defmodule Malan.Accounts.Session do
   @doc "Being updated by an admin"
   def admin_changeset(session, attrs) do
     session
-    |> cast(attrs, [:api_token, :expires_at, :authenticated_at, :revoked_at, :ip_address, :location])
-    |> validate_required([:api_token, :expires_at, :authenticated_at, :revoked_at, :ip_address, :location])
+    |> cast(attrs, [
+      :api_token,
+      :expires_at,
+      :authenticated_at,
+      :revoked_at,
+      :ip_address,
+      :location
+    ])
+    |> validate_required([
+      :api_token,
+      :expires_at,
+      :authenticated_at,
+      :revoked_at,
+      :ip_address,
+      :location
+    ])
   end
 
   @doc "User login session"
@@ -46,7 +60,13 @@ defmodule Malan.Accounts.Session do
   def revoke_changeset(session, attrs) do
     session
     |> cast(attrs, [:revoked_at])
-    |> validate_required([:revoked_at, :api_token_hash, :expires_at, :authenticated_at, :ip_address])
+    |> validate_required([
+      :revoked_at,
+      :api_token_hash,
+      :expires_at,
+      :authenticated_at,
+      :ip_address
+    ])
   end
 
   defp gen_api_token(), do: Utils.Crypto.strong_random_string(65)
@@ -57,13 +77,14 @@ defmodule Malan.Accounts.Session do
 
   defp put_api_token(changeset) do
     api_token = gen_api_token()
+
     changeset
     |> put_change(:api_token, api_token)
     |> put_change(:api_token_hash, Utils.Crypto.hash_token(api_token))
   end
 
   defp put_authenticated_at(changeset) do
-    put_change(changeset, :authenticated_at, Utils.DateTime.utc_now_trunc)
+    put_change(changeset, :authenticated_at, Utils.DateTime.utc_now_trunc())
   end
 
   defp set_expiration_time(%Ecto.Changeset{} = changeset, %DateTime{} = date_time) do
