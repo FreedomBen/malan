@@ -12,7 +12,8 @@ defmodule MalanWeb.SessionView do
   end
 
   def render("session.json", %{session: session}) do
-    %{id: session.id,
+    %{
+      id: session.id,
       user_id: session.user_id,
       api_token: session.api_token,
       expires_at: session.expires_at,
@@ -20,16 +21,19 @@ defmodule MalanWeb.SessionView do
       revoked_at: session.revoked_at,
       ip_address: session.ip_address,
       location: session.location,
-      is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at)}
-      |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
-      |> Enum.into(%{})
+      is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at)
+    }
+    |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
+    |> Enum.into(%{})
   end
 
   def render("delete_all.json", %{num_revoked: num_revoked}) do
-    %{data: %{
-      status: true,
-      num_revoked: num_revoked,
-      message: "Successfully revoked #{num_revoked} session"
-    }}
+    %{
+      data: %{
+        status: true,
+        num_revoked: num_revoked,
+        message: "Successfully revoked #{num_revoked} session"
+      }
+    }
   end
 end

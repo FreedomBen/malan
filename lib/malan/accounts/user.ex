@@ -1,5 +1,5 @@
 defmodule Malan.Accounts.User do
-  @compile if Mix.env == :test, do: :export_all
+  @compile if Mix.env() == :test, do: :export_all
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -51,15 +51,17 @@ defmodule Malan.Accounts.User do
     field :ethnicity, :string, virtual: true
 
     @primary_key {:id, :binary_id, autogenerate: true}
-    embeds_many :tos_accept_events, TosAcceptEvent, on_replace: :raise  do
-      field :accept, :boolean # true == accept, false == reject
+    embeds_many :tos_accept_events, TosAcceptEvent, on_replace: :raise do
+      # true == accept, false == reject
+      field :accept, :boolean
       field :tos_version, :integer
       field :timestamp, :utc_datetime
     end
 
     @primary_key {:id, :binary_id, autogenerate: true}
-    embeds_many :privacy_policy_accept_events, PrivacyPolicyAcceptEvent, on_replace: :raise  do
-      field :accept, :boolean # true == accept, false == reject
+    embeds_many :privacy_policy_accept_events, PrivacyPolicyAcceptEvent, on_replace: :raise do
+      # true == accept, false == reject
+      field :accept, :boolean
       field :privacy_policy_version, :integer
       field :timestamp, :utc_datetime
     end
@@ -68,7 +70,21 @@ defmodule Malan.Accounts.User do
   @doc false
   def registration_changeset(user, params) do
     user
-    |> cast(params, [:username, :email, :password, :first_name, :last_name, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :custom_attrs])
+    |> cast(params, [
+      :username,
+      :email,
+      :password,
+      :first_name,
+      :last_name,
+      :nick_name,
+      :sex,
+      :gender,
+      :race,
+      :ethnicity,
+      :birthday,
+      :weight,
+      :custom_attrs
+    ])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
     |> put_change(:preferences, %{theme: "light"})
@@ -82,7 +98,20 @@ defmodule Malan.Accounts.User do
   @doc false
   def update_changeset(user, params) do
     user
-    |> cast(params, [:password, :accept_tos, :accept_privacy_policy, :nick_name, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
+    |> cast(params, [
+      :password,
+      :accept_tos,
+      :accept_privacy_policy,
+      :nick_name,
+      :sex,
+      :gender,
+      :race,
+      :ethnicity,
+      :birthday,
+      :weight,
+      :height,
+      :custom_attrs
+    ])
     |> cast_embed(:preferences)
     |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
@@ -96,7 +125,24 @@ defmodule Malan.Accounts.User do
     # Note that admins are NOT allowed to accept ToS or Privacy Policy
     # on behalf of users
     user
-    |> cast(params, [:email, :username, :password, :first_name, :last_name, :nick_name, :roles, :reset_password, :sex, :gender, :race, :ethnicity, :birthday, :weight, :height, :custom_attrs])
+    |> cast(params, [
+      :email,
+      :username,
+      :password,
+      :first_name,
+      :last_name,
+      :nick_name,
+      :roles,
+      :reset_password,
+      :sex,
+      :gender,
+      :race,
+      :ethnicity,
+      :birthday,
+      :weight,
+      :height,
+      :custom_attrs
+    ])
     |> cast_embed(:preferences)
     |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
@@ -144,7 +190,15 @@ defmodule Malan.Accounts.User do
     |> validate_birthday()
     |> validate_weight()
     |> validate_height()
-    |> validate_required([:username, :password_hash, :email, :roles, :preferences, :first_name, :last_name])
+    |> validate_required([
+      :username,
+      :password_hash,
+      :email,
+      :roles,
+      :preferences,
+      :first_name,
+      :last_name
+    ])
   end
 
   defp validate_roles(changeset) do
@@ -163,7 +217,10 @@ defmodule Malan.Accounts.User do
     changeset
     |> unique_constraint(:email)
     |> validate_length(:email, min: 6, max: 100)
-    |> validate_format(:email, ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/)
+    |> validate_format(
+      :email,
+      ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/
+    )
     |> validate_not_format(:email, ~r/@.*@/)
   end
 
@@ -185,7 +242,7 @@ defmodule Malan.Accounts.User do
   end
 
   defp prepend_accept_tos(changeset, %{} = new_tos) do
-    [ new_tos | changeset.data.tos_accept_events ]
+    [new_tos | changeset.data.tos_accept_events]
   end
 
   defp current_tos_ver(false), do: nil
@@ -194,9 +251,12 @@ defmodule Malan.Accounts.User do
   defp put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset), do: changeset
 
   defp put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: accept_tos}} = changeset) do
-    new_tos_accept_events = prepend_accept_tos(
-      changeset, new_accept_tos(accept_tos, ToS.current_version())
-    )
+    new_tos_accept_events =
+      prepend_accept_tos(
+        changeset,
+        new_accept_tos(accept_tos, ToS.current_version())
+      )
+
     changeset
     |> put_embed(:tos_accept_events, new_tos_accept_events)
     |> put_change(:latest_tos_accept_ver, current_tos_ver(accept_tos))
@@ -213,18 +273,26 @@ defmodule Malan.Accounts.User do
   end
 
   defp prepend_accept_pp(changeset, %{} = new_pp) do
-    [ new_pp | changeset.data.privacy_policy_accept_events ]
+    [new_pp | changeset.data.privacy_policy_accept_events]
   end
 
   defp current_pp_ver(false), do: nil
   defp current_pp_ver(true), do: PrivacyPolicy.current_version()
 
-  defp put_accept_privacy_policy(%Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset), do: changeset
+  defp put_accept_privacy_policy(
+         %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
+       ),
+       do: changeset
 
-  defp put_accept_privacy_policy(%Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset) do
-    new_pp_accept_events = prepend_accept_pp(
-      changeset, new_accept_pp(accept_pp, PrivacyPolicy.current_version())
-    )
+  defp put_accept_privacy_policy(
+         %Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset
+       ) do
+    new_pp_accept_events =
+      prepend_accept_pp(
+        changeset,
+        new_accept_pp(accept_pp, PrivacyPolicy.current_version())
+      )
+
     changeset
     |> put_embed(:privacy_policy_accept_events, new_pp_accept_events)
     |> put_change(:latest_pp_accept_ver, current_pp_ver(accept_pp))
@@ -255,8 +323,15 @@ defmodule Malan.Accounts.User do
 
   defp validate_and_put_gender(changeset) do
     case User.Gender.valid?(get_change(changeset, :gender)) do
-      true -> put_change(changeset, :gender_enum, gender_to_i(changeset))
-      false -> Ecto.Changeset.add_error(changeset, :gender, "gender is invalid.  Should be one of: '#{User.Gender.valid_values_str()}'")
+      true ->
+        put_change(changeset, :gender_enum, gender_to_i(changeset))
+
+      false ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :gender,
+          "gender is invalid.  Should be one of: '#{User.Gender.valid_values_str()}'"
+        )
     end
   end
 
@@ -270,14 +345,14 @@ defmodule Malan.Accounts.User do
   defp all_races_valid?(changeset) do
     changeset
     |> get_change(:race)
-    |> Enum.all?(fn (r) -> User.Race.valid?(r) end)
+    |> Enum.all?(fn r -> User.Race.valid?(r) end)
   end
 
   # Map string races to enum ints
   defp race_list(changeset) do
     changeset
     |> get_change(:race)
-    |> Enum.map(fn (r) -> User.Race.to_i(r) end)
+    |> Enum.map(fn r -> User.Race.to_i(r) end)
   end
 
   defp validate_and_put_races(changeset) do
@@ -286,7 +361,8 @@ defmodule Malan.Accounts.User do
         put_change(changeset, :race_enum, race_list(changeset))
 
       true ->
-        Ecto.Changeset.add_error(changeset,
+        Ecto.Changeset.add_error(
+          changeset,
           :race,
           "race contains an invalid selection.  Should be one of: '#{User.Race.valid_values_str()}'"
         )
@@ -308,8 +384,15 @@ defmodule Malan.Accounts.User do
 
   defp validate_and_put_ethnicity(changeset) do
     case User.Ethnicity.valid?(get_change(changeset, :ethnicity)) do
-      true -> put_change(changeset, :ethnicity_enum, ethnicity_to_i(changeset))
-      false -> Ecto.Changeset.add_error(changeset, :ethnicity, "ethnicity is invalid.  Should be one of: '#{User.Ethnicity.valid_values_str()}'")
+      true ->
+        put_change(changeset, :ethnicity_enum, ethnicity_to_i(changeset))
+
+      false ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :ethnicity,
+          "ethnicity is invalid.  Should be one of: '#{User.Ethnicity.valid_values_str()}'"
+        )
     end
   end
 
@@ -328,8 +411,15 @@ defmodule Malan.Accounts.User do
 
   defp validate_and_put_sex(changeset) do
     case User.Sex.valid?(get_change(changeset, :sex)) do
-      true -> put_change(changeset, :sex_enum, sex_to_i(changeset))
-      false -> Ecto.Changeset.add_error(changeset, :sex, "sex is invalid.  Should be one of: '#{User.Sex.valid_values_str()}'")
+      true ->
+        put_change(changeset, :sex_enum, sex_to_i(changeset))
+
+      false ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :sex,
+          "sex is invalid.  Should be one of: '#{User.Sex.valid_values_str()}'"
+        )
     end
   end
 
@@ -392,6 +482,7 @@ defmodule Malan.Accounts.User do
 
   defp put_password_reset_token(changeset) do
     reset_token = gen_reset_token()
+
     changeset
     |> put_change(:password_reset_token, reset_token)
     |> put_change(:password_reset_token_hash, Utils.Crypto.hash_token(reset_token))
@@ -414,7 +505,9 @@ defmodule Malan.Accounts.User do
   end
 
   defp get_password_reset_token_expiration_time do
-    Application.get_env(:malan, Malan.Accounts.User)[:default_password_reset_token_expiration_secs]
+    Application.get_env(:malan, Malan.Accounts.User)[
+      :default_password_reset_token_expiration_secs
+    ]
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
   end
 

@@ -1,6 +1,7 @@
 defmodule Malan.Utils do
   def pry_pipe(retval) do
-    require IEx; IEx.pry
+    require IEx
+    IEx.pry()
     retval
   end
 
@@ -21,8 +22,8 @@ defmodule Malan.Utils do
     |> Map.delete(:__meta__)
   end
 
-  #def nil_or_empty?(nil), do: true
-  #def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
+  # def nil_or_empty?(nil), do: true
+  # def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
 
   @doc """
   Checks if the passwed item is nil or empty string.  The param will be passed to to_string()
@@ -41,7 +42,7 @@ defmodule Malan.Utils.Enum do
   end result will be false
   """
   def none?(enum, func) do
-    Enum.all?(enum, fn (i) -> !func.(i) end)
+    Enum.all?(enum, fn i -> !func.(i) end)
   end
 end
 
@@ -74,7 +75,7 @@ end
 
 defmodule Malan.Utils.DateTime do
   def utc_now_trunc(),
-    do: DateTime.truncate(DateTime.utc_now, :second)
+    do: DateTime.truncate(DateTime.utc_now(), :second)
 
   @doc "Return a DateTime about 200 years into the future"
   def distant_future() do
@@ -102,7 +103,7 @@ defmodule Malan.Utils.DateTime do
     do: adjust_cur_time(num_minutes * 60, :seconds)
 
   def adjust_cur_time(num_seconds, :seconds),
-    do: adjust_time(DateTime.utc_now, num_seconds, :seconds)
+    do: adjust_time(DateTime.utc_now(), num_seconds, :seconds)
 
   def adjust_cur_time_trunc(num_weeks, :weeks),
     do: adjust_cur_time_trunc(num_weeks * 7, :days)
@@ -138,9 +139,8 @@ defmodule Malan.Utils.DateTime do
     do: DateTime.compare(expires_at, current_time) != :gt
 
   def expired?(nil),
-    do: raise ArgumentError, message: "expires_at time must not be nil!"
+    do: raise(ArgumentError, message: "expires_at time must not be nil!")
 
   def expired?(expires_at),
-    do: expired?(expires_at, DateTime.utc_now)
-
+    do: expired?(expires_at, DateTime.utc_now())
 end

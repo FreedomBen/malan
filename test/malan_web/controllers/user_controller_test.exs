@@ -10,10 +10,10 @@ defmodule MalanWeb.UserControllerTest do
 
   @create_attrs %{
     email: "some@email.com",
-    #email_verified: "2010-04-17T14:00:00Z",
-    #password: "some password",
-    #preferences: %{},
-    #roles: [],
+    # email_verified: "2010-04-17T14:00:00Z",
+    # password: "some password",
+    # preferences: %{},
+    # roles: [],
     username: "someusername",
     first_name: "Some",
     last_name: "cool User",
@@ -39,23 +39,25 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, ru, _rs} = Helpers.Accounts.regular_user_with_session()
       conn = get(conn, Routes.user_path(conn, :index))
       users = json_response(conn, 200)["data"]
-      assert Enum.any?(users, fn (u) ->
-        u["id"] == au.id
-        && u["email"] == au.email
-        && u["first_name"] == au.first_name
-        && u["last_name"] == au.last_name
-        && u["nick_name"] == au.nick_name
-        && u["roles"] == au.roles
-        && u["sex"] == au.sex
-      end)
-      assert Enum.any?(users, fn (u) ->
-        u["id"] == ru.id
-        && u["email"] == ru.email
-        && u["first_name"] == ru.first_name
-        && u["last_name"] == ru.last_name
-        && u["nick_name"] == ru.nick_name
-        && u["roles"] == ru.roles
-      end)
+
+      assert Enum.any?(users, fn u ->
+               u["id"] == au.id &&
+                 u["email"] == au.email &&
+                 u["first_name"] == au.first_name &&
+                 u["last_name"] == au.last_name &&
+                 u["nick_name"] == au.nick_name &&
+                 u["roles"] == au.roles &&
+                 u["sex"] == au.sex
+             end)
+
+      assert Enum.any?(users, fn u ->
+               u["id"] == ru.id &&
+                 u["email"] == ru.email &&
+                 u["first_name"] == ru.first_name &&
+                 u["last_name"] == ru.last_name &&
+                 u["nick_name"] == ru.nick_name &&
+                 u["roles"] == ru.roles
+             end)
     end
 
     test "requires being an admin to access (unauthenticated)", %{conn: conn} do
@@ -83,7 +85,9 @@ defmodule MalanWeb.UserControllerTest do
     test "renders user when data is valid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => password} =
+               user = json_response(conn, 201)["data"]
+
       assert is_nil(password) == false
 
       # This uses the returned password above to authenticate
@@ -92,6 +96,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "email" => "some@email.com",
@@ -109,7 +114,7 @@ defmodule MalanWeb.UserControllerTest do
                "custom_attrs" => %{
                  "hereiam" => "rockyou",
                  "likea" => "hurricane",
-                 "year" => 1986,
+                 "year" => 1986
                }
              } = jr
 
@@ -130,9 +135,15 @@ defmodule MalanWeb.UserControllerTest do
 
     test "allows specifying initial password and requires ToS/PP", %{conn: conn} do
       password = "initialpassword"
-      conn = post(conn, Routes.user_path(conn, :create), user: Map.put(@create_attrs, :password, password))
+
+      conn =
+        post(conn, Routes.user_path(conn, :create),
+          user: Map.put(@create_attrs, :password, password)
+        )
+
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => ^password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => ^password} =
+               user = json_response(conn, 201)["data"]
 
       # This uses the returned password above to authenticate
       {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
@@ -141,6 +152,7 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :show, id))
       assert conn.status == 200
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "email" => "some@email.com",
@@ -154,30 +166,37 @@ defmodule MalanWeb.UserControllerTest do
                "latest_tos_accept_ver" => nil,
                "latest_pp_accept_ver" => nil,
                "tos_accepted" => false,
-               "privacy_policy_accepted" => false,
+               "privacy_policy_accepted" => false
              } = jr
+
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
     end
 
     test "Accepts phone numbers", %{conn: conn} do
-      %{phone_numbers: [%{} = ph1, %{} = ph2]} = phone_numbers = %{
-        phone_numbers: [
-          %{
-            "number" => "801-867-5309",
-            "primary" => true,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5310",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-        ]
-      }
-      conn = post(conn, Routes.user_path(conn, :create), user: Map.merge(@create_attrs, phone_numbers))
+      %{phone_numbers: [%{} = ph1, %{} = ph2]} =
+        phone_numbers = %{
+          phone_numbers: [
+            %{
+              "number" => "801-867-5309",
+              "primary" => true,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5310",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            }
+          ]
+        }
+
+      conn =
+        post(conn, Routes.user_path(conn, :create), user: Map.merge(@create_attrs, phone_numbers))
+
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => password} =
+               user = json_response(conn, 201)["data"]
+
       assert is_nil(password) == false
 
       # This uses the returned password above to authenticate
@@ -186,6 +205,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, id))
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "email" => "some@email.com",
@@ -203,63 +223,79 @@ defmodule MalanWeb.UserControllerTest do
                "custom_attrs" => %{
                  "hereiam" => "rockyou",
                  "likea" => "hurricane",
-                 "year" => 1986,
+                 "year" => 1986
                },
                "phone_numbers" => phs
              } = jr
+
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
       assert Enum.count(phs) == 2
-      assert Enum.all?(phs, fn (ph) -> ph["number"] == ph1["number"] || ph["number"] == ph2["number"] end)
+
+      assert Enum.all?(phs, fn ph ->
+               ph["number"] == ph1["number"] || ph["number"] == ph2["number"]
+             end)
     end
 
     test "Accepts addresses and phone numbers together", %{conn: conn} do
-      %{phone_numbers: [%{} = ph1, %{} = ph2]} = phone_numbers = %{
-        phone_numbers: [
-          %{
-            "number" => "801-867-5309",
-            "primary" => true,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5310",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-        ]
-      }
-      %{addresses: [%{} = ad1, %{} = ad2]} = addresses = %{
-        addresses: [
-          %{
-            "city" => "some city 1",
-            "country" => "some country 1",
-            "line_1" => "some line_1 1",
-            "line_2" => "some line_2 1",
-            "name" => "some name 1",
-            "postal" => "some postal 1",
-            "primary" => true,
-            "state" => "some state 1",
-            "verified_at" => ~U[2021-12-19 01:54:00Z]
-          },
-          %{
-            "city" => "some city 2",
-            "country" => "some country 2",
-            "line_1" => "some line_1 2",
-            "line_2" => "some line_2 2",
-            "name" => "some name 2",
-            "postal" => "some postal 2",
-            "primary" => true,
-            "state" => "some state 2",
-            "verified_at" => ~U[2021-12-19 01:54:00Z]
-          },
-        ]
-      }
-      _user_attrs = @create_attrs
-                   |> Map.merge(phone_numbers)
-                   |> Map.merge(addresses)
-      conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs |> Map.merge(phone_numbers) |> Map.merge(addresses))
+      %{phone_numbers: [%{} = ph1, %{} = ph2]} =
+        phone_numbers = %{
+          phone_numbers: [
+            %{
+              "number" => "801-867-5309",
+              "primary" => true,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5310",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            }
+          ]
+        }
+
+      %{addresses: [%{} = ad1, %{} = ad2]} =
+        addresses = %{
+          addresses: [
+            %{
+              "city" => "some city 1",
+              "country" => "some country 1",
+              "line_1" => "some line_1 1",
+              "line_2" => "some line_2 1",
+              "name" => "some name 1",
+              "postal" => "some postal 1",
+              "primary" => true,
+              "state" => "some state 1",
+              "verified_at" => ~U[2021-12-19 01:54:00Z]
+            },
+            %{
+              "city" => "some city 2",
+              "country" => "some country 2",
+              "line_1" => "some line_1 2",
+              "line_2" => "some line_2 2",
+              "name" => "some name 2",
+              "postal" => "some postal 2",
+              "primary" => true,
+              "state" => "some state 2",
+              "verified_at" => ~U[2021-12-19 01:54:00Z]
+            }
+          ]
+        }
+
+      _user_attrs =
+        @create_attrs
+        |> Map.merge(phone_numbers)
+        |> Map.merge(addresses)
+
+      conn =
+        post(conn, Routes.user_path(conn, :create),
+          user: @create_attrs |> Map.merge(phone_numbers) |> Map.merge(addresses)
+        )
+
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => password} = user = json_response(conn, 201)["data"]
+      assert %{"id" => id, "username" => _username, "password" => password} =
+               user = json_response(conn, 201)["data"]
+
       assert is_nil(password) == false
 
       # This uses the returned password above to authenticate
@@ -268,6 +304,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, id))
       jr = json_response(conn, 200)["data"]
+
       assert %{
                "id" => ^id,
                "email" => "some@email.com",
@@ -285,7 +322,7 @@ defmodule MalanWeb.UserControllerTest do
                "custom_attrs" => %{
                  "hereiam" => "rockyou",
                  "likea" => "hurricane",
-                 "year" => 1986,
+                 "year" => 1986
                },
                "phone_numbers" => phs,
                "addresses" => addrs
@@ -294,23 +331,47 @@ defmodule MalanWeb.UserControllerTest do
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
       assert Enum.count(phs) == 2
-      assert Enum.all?(phs, fn (ph) -> ph["number"] == ph1["number"] || ph["number"] == ph2["number"] end)
+
+      assert Enum.all?(phs, fn ph ->
+               ph["number"] == ph1["number"] || ph["number"] == ph2["number"]
+             end)
+
       assert Enum.count(addrs) == 2
-      assert Enum.all?(addrs, fn (ad) -> ad["city"]    == ad1["city"]    || ad["city"]    == ad2["city"]    end)
-      assert Enum.all?(addrs, fn (ad) -> ad["country"] == ad1["country"] || ad["country"] == ad2["country"] end)
-      assert Enum.all?(addrs, fn (ad) -> ad["line_1"]  == ad1["line_1"]  || ad["line_1"]  == ad2["line_1"]  end)
-      assert Enum.all?(addrs, fn (ad) -> ad["line_2"]  == ad1["line_2"]  || ad["line_2"]  == ad2["line_2"]  end)
-      assert Enum.all?(addrs, fn (ad) -> ad["state"]   == ad1["state"]   || ad["state"]   == ad2["state"]   end)
-      assert Enum.all?(addrs, fn (ad) -> ad["postal"]  == ad1["postal"]  || ad["postal"]  == ad2["postal"]  end)
-      assert Enum.all?(addrs, fn (ad) -> ad["primary"] == ad1["primary"] || ad["primary"] == ad2["primary"] end)
-      assert Enum.all?(addrs, fn (ad) -> ad["name"]    == ad1["name"]    || ad["name"]    == ad2["name"]    end)
+      assert Enum.all?(addrs, fn ad -> ad["city"] == ad1["city"] || ad["city"] == ad2["city"] end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["country"] == ad1["country"] || ad["country"] == ad2["country"]
+             end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["line_1"] == ad1["line_1"] || ad["line_1"] == ad2["line_1"]
+             end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["line_2"] == ad1["line_2"] || ad["line_2"] == ad2["line_2"]
+             end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["state"] == ad1["state"] || ad["state"] == ad2["state"]
+             end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["postal"] == ad1["postal"] || ad["postal"] == ad2["postal"]
+             end)
+
+      assert Enum.all?(addrs, fn ad ->
+               ad["primary"] == ad1["primary"] || ad["primary"] == ad2["primary"]
+             end)
+
+      assert Enum.all?(addrs, fn ad -> ad["name"] == ad1["name"] || ad["name"] == ad2["name"] end)
     end
   end
 
   describe "update user" do
     setup [:create_regular_user_with_session]
 
-    test "allows updating password, preferences, nickname, and accepting ToS and privacy policy", %{conn: conn, user: %User{id: id} = user, session: session} do
+    test "allows updating password, preferences, nickname, and accepting ToS and privacy policy",
+         %{conn: conn, user: %User{id: id} = user, session: session} do
       update_params = %{
         nick_name: "Eddie van Halen",
         accept_tos: true,
@@ -322,41 +383,47 @@ defmodule MalanWeb.UserControllerTest do
         custom_attrs: %{
           "hereiam" => "rockyou",
           "likea" => "hurricane",
-          "year" => 1986,
+          "year" => 1986
         }
       }
-      check_response = fn (conn) ->
+
+      check_response = fn conn ->
         assert %{
-          "id" => ^id,
-          "email" => email,
-          "username" => username,
-          "email_verified" => nil,
-          "preferences" => %{"theme" => "dark"},
-          "roles" => ["user"],
-          "birthday" => "1986-06-13T01:09:08Z",
-          "sex" => "Male",
-          "gender" => nil,
-          "latest_tos_accept_ver" => 1,
-          "latest_pp_accept_ver" => 1,
-          "tos_accepted" => true,
-          "privacy_policy_accepted" => true,
-          "tos_accept_events" => [%{
-            "accept" => true,
-            "tos_version" => 1,
-            "timestamp" => tostimestamp
-          }],
-          "privacy_policy_accept_events" => [%{
-            "accept" => true,
-            "privacy_policy_version" => 1,
-            "timestamp" => pptimestamp
-          }],
-          "nick_name" => "Eddie van Halen",
-          "custom_attrs" => %{
-            "hereiam" => "rockyou",
-            "likea" => "hurricane",
-            "year" => 1986,
-          }
-        } = json_response(conn, 200)["data"]
+                 "id" => ^id,
+                 "email" => email,
+                 "username" => username,
+                 "email_verified" => nil,
+                 "preferences" => %{"theme" => "dark"},
+                 "roles" => ["user"],
+                 "birthday" => "1986-06-13T01:09:08Z",
+                 "sex" => "Male",
+                 "gender" => nil,
+                 "latest_tos_accept_ver" => 1,
+                 "latest_pp_accept_ver" => 1,
+                 "tos_accepted" => true,
+                 "privacy_policy_accepted" => true,
+                 "tos_accept_events" => [
+                   %{
+                     "accept" => true,
+                     "tos_version" => 1,
+                     "timestamp" => tostimestamp
+                   }
+                 ],
+                 "privacy_policy_accept_events" => [
+                   %{
+                     "accept" => true,
+                     "privacy_policy_version" => 1,
+                     "timestamp" => pptimestamp
+                   }
+                 ],
+                 "nick_name" => "Eddie van Halen",
+                 "custom_attrs" => %{
+                   "hereiam" => "rockyou",
+                   "likea" => "hurricane",
+                   "year" => 1986
+                 }
+               } = json_response(conn, 200)["data"]
+
         for ts <- [pptimestamp, tostimestamp] do
           assert {:ok, ts, 0} = DateTime.from_iso8601(ts)
           assert TestUtils.DateTime.within_last?(ts, 5, :seconds) == true
@@ -368,11 +435,12 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{
-        "nick_name" => "reggy",
-        "tos_accept_events" => [],
-        "privacy_policy_accept_events" => []
-      } = json_response(conn, 200)["data"]
+               "nick_name" => "reggy",
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => []
+             } = json_response(conn, 200)["data"]
 
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
@@ -382,25 +450,31 @@ defmodule MalanWeb.UserControllerTest do
       check_response.(conn)
     end
 
-    test "allows using username instead of user ID", %{conn: conn, user: %User{id: id, email: email, username: username}, session: session} do
+    test "allows using username instead of user ID", %{
+      conn: conn,
+      user: %User{id: id, email: email, username: username},
+      session: session
+    } do
       %{nick_name: nick_name} = update_params = %{nick_name: "Eddie van Halen"}
-      check_response = fn (conn) ->
+
+      check_response = fn conn ->
         assert %{
-          "id" => ^id,
-          "email" => ^email,
-          "username" => ^username,
-          "nick_name" => ^nick_name
-        } = json_response(conn, 200)["data"]
+                 "id" => ^id,
+                 "email" => ^email,
+                 "username" => ^username,
+                 "nick_name" => ^nick_name
+               } = json_response(conn, 200)["data"]
       end
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, username))
+
       assert %{
-        "nick_name" => "reggy",
-        "tos_accept_events" => [],
-        "privacy_policy_accept_events" => []
-      } = json_response(conn, 200)["data"]
+               "nick_name" => "reggy",
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => []
+             } = json_response(conn, 200)["data"]
 
       conn = put(conn, Routes.user_path(conn, :update, username), user: update_params)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
@@ -410,7 +484,11 @@ defmodule MalanWeb.UserControllerTest do
       check_response.(conn)
     end
 
-    test "renders errors when data is invalid", %{conn: conn, user: %User{} = user, session: session} do
+    test "renders errors when data is invalid", %{
+      conn: conn,
+      user: %User{} = user,
+      session: session
+    } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
@@ -420,8 +498,9 @@ defmodule MalanWeb.UserControllerTest do
       # authenticate with first password, then change it,
       # then authenticate with the new password
       update_params = %{
-        password: "rockyoulikeahurricane",
+        password: "rockyoulikeahurricane"
       }
+
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
@@ -433,7 +512,10 @@ defmodule MalanWeb.UserControllerTest do
 
       # Re authenticate with new password
       assert {:error, :unauthorized} = Helpers.Accounts.create_session(user)
-      assert {:ok, session} = Helpers.Accounts.create_session(%{user | password: "rockyoulikeahurricane"})
+
+      assert {:ok, session} =
+               Helpers.Accounts.create_session(%{user | password: "rockyoulikeahurricane"})
+
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: %{nick_name: "ronaldo"})
       assert %{"nick_name" => "ronaldo"} = json_response(conn, 200)["data"]
@@ -445,8 +527,10 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "requires being self or admin", %{conn: conn, user: %User{} = user} do
-      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session
-      {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session(%{email: "e1@mail.com", username: "e1abcdefg"})
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+
+      {:ok, _ru, rs} =
+        Helpers.Accounts.regular_user_with_session(%{email: "e1@mail.com", username: "e1abcdefg"})
 
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       assert json_response(conn, 201)["data"]
@@ -471,27 +555,29 @@ defmodule MalanWeb.UserControllerTest do
           "Asian",
           "Black or African American",
           "Native Hawaiian or Other Pacific Islander",
-          "White",
+          "White"
         ]
       }
+
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
       assert %{"id" => id} = json_response(conn, 200)["data"]
 
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{
-        "sex" => "Male",
-        "gender" => "Male",
-        "ethnicity" => "Not Hispanic or Latinx",
-        "race" => [
-          "American Indian or Alaska Native",
-          "Asian",
-          "Black or African American",
-          "Native Hawaiian or Other Pacific Islander",
-          "White",
-        ]
-      } = json_response(conn, 200)["data"]
+               "sex" => "Male",
+               "gender" => "Male",
+               "ethnicity" => "Not Hispanic or Latinx",
+               "race" => [
+                 "American Indian or Alaska Native",
+                 "Asian",
+                 "Black or African American",
+                 "Native Hawaiian or Other Pacific Islander",
+                 "White"
+               ]
+             } = json_response(conn, 200)["data"]
     end
 
     test "requires being an admin to access (as regular user)", %{conn: conn} do
@@ -502,31 +588,35 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "Allows updating phone numbers", %{conn: conn, user: %User{} = user} do
-      %{phone_numbers: [%{} = ph1, %{} = ph2, %{} = ph3, %{} = ph4]} = phone_numbers = %{
-        phone_numbers: [
-          %{
-            "number" => "801-867-5309",
-            "primary" => true,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5310",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5311",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5312",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-        ]
-      }
-      {_user_id, username, email, nick_name} = {user.id, user.username, user.email, user.nick_name}
+      %{phone_numbers: [%{} = ph1, %{} = ph2, %{} = ph3, %{} = ph4]} =
+        phone_numbers = %{
+          phone_numbers: [
+            %{
+              "number" => "801-867-5309",
+              "primary" => true,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5310",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5311",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5312",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            }
+          ]
+        }
+
+      {_user_id, username, email, nick_name} =
+        {user.id, user.username, user.email, user.nick_name}
+
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
@@ -557,30 +647,34 @@ defmodule MalanWeb.UserControllerTest do
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
       assert Enum.count(phs) == 4
-      assert Enum.all?(phs, fn (ph) ->
-        [ph1, ph2, ph3, ph4]
-        |> Enum.map(fn (phx) -> phx["number"] end)
-        |> Enum.member?(ph["number"])
-      end)
+
+      assert Enum.all?(phs, fn ph ->
+               [ph1, ph2, ph3, ph4]
+               |> Enum.map(fn phx -> phx["number"] end)
+               |> Enum.member?(ph["number"])
+             end)
     end
 
     test "disallows setting roles", %{conn: conn, user: %User{} = user, session: session} do
       id = user.id
+
       update_params = %{
         roles: ["admin", "user", "smileemptysoul"],  # Shouldn't make it through
       }
-      check_response = fn (conn) ->
+
+      check_response = fn conn ->
         assert %{
-          "roles" => ["user"],
-        } = json_response(conn, 200)["data"]
+                 "roles" => ["user"]
+               } = json_response(conn, 200)["data"]
       end
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{
-        "roles" => ["user"],
-      } = json_response(conn, 200)["data"]
+               "roles" => ["user"]
+             } = json_response(conn, 200)["data"]
 
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
@@ -594,7 +688,8 @@ defmodule MalanWeb.UserControllerTest do
   describe "admin update user" do
     setup [:create_regular_user_with_session]
 
-    test "allows updating roles, password, preferences, nickname, and accepting ToS and privacy policy", %{conn: conn, user: %User{id: id} = user, session: session} do
+    test "allows updating roles, password, preferences, nickname, and accepting ToS and privacy policy",
+         %{conn: conn, user: %User{id: id} = user, session: session} do
       # admin user cannot accept ToS or PP on behalf of user
       # so these changes should not be applied
       update_params = %{
@@ -610,33 +705,35 @@ defmodule MalanWeb.UserControllerTest do
         sex: "female",
         gender: "Trans*Woman",
         race: ["Asian", "white"],
-        ethnicity: "Hispanic or Latinx",
+        ethnicity: "Hispanic or Latinx"
       }
-      check_response = fn (conn) ->
+
+      check_response = fn conn ->
         assert %{
-          "id" => _id,
-          "email" => "brandnew@address.com",
-          "username" => "brandnewusername",
-          "email_verified" => nil,
-          "preferences" => %{"theme" => "dark"},
-          "roles" => ["admin", "user"],
-          "tos_accept_events" => [],
-          "privacy_policy_accept_events" => [],
-          "nick_name" => "Eddie v Dawg",
-          "sex" => "Female",
-          "gender" => "Trans*Woman",
-          "race" => ["Asian", "White"],
-        } = json_response(conn, 200)["data"]
+                 "id" => _id,
+                 "email" => "brandnew@address.com",
+                 "username" => "brandnewusername",
+                 "email_verified" => nil,
+                 "preferences" => %{"theme" => "dark"},
+                 "roles" => ["admin", "user"],
+                 "tos_accept_events" => [],
+                 "privacy_policy_accept_events" => [],
+                 "nick_name" => "Eddie v Dawg",
+                 "sex" => "Female",
+                 "gender" => "Trans*Woman",
+                 "race" => ["Asian", "White"]
+               } = json_response(conn, 200)["data"]
       end
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{
-        "nick_name" => "reggy",
-        "tos_accept_events" => [],
-        "privacy_policy_accept_events" => []
-      } = json_response(conn, 200)["data"]
+               "nick_name" => "reggy",
+               "tos_accept_events" => [],
+               "privacy_policy_accept_events" => []
+             } = json_response(conn, 200)["data"]
 
       # regular user can't call admin_update
       conn = put(conn, Routes.user_path(conn, :admin_update, user), user: update_params)
@@ -669,9 +766,15 @@ defmodule MalanWeb.UserControllerTest do
     test "allows setting arbitrary roles", %{conn: conn, user: %User{}, session: _session} do
       [{:ok, conn, _au1, _as1}, {:ok, _conn, au2, _as2}] =
         Helpers.Accounts.admin_users_session_conn(conn, 2)
+
       conn = get(conn, Routes.user_path(conn, :show, au2.id))
       assert %{"roles" => ["admin", "user"]} = json_response(conn, 200)["data"]
-      conn = put(conn, Routes.user_path(conn, :admin_update, au2.id), user: %{roles: ["user", "helloworld"]})
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_update, au2.id),
+          user: %{roles: ["user", "helloworld"]}
+        )
+
       assert %{"roles" => ["user", "helloworld"]} = json_response(conn, 200)["data"]
       conn = get(conn, Routes.user_path(conn, :show, au2.id))
       assert %{"roles" => ["user", "helloworld"]} = json_response(conn, 200)["data"]
@@ -679,31 +782,36 @@ defmodule MalanWeb.UserControllerTest do
 
     test "Allows updating phone numbers", %{conn: _conn, user: %User{} = user} do
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
-      %{phone_numbers: [%{} = ph1, %{} = ph2, %{} = ph3, %{} = ph4]} = phone_numbers = %{
-        phone_numbers: [
-          %{
-            "number" => "801-867-5309",
-            "primary" => true,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5310",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5311",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-          %{
-            "number" => "801-867-5312",
-            "primary" => false,
-            "verified_at" => "2010-04-17T14:00:00Z"
-          },
-        ]
-      }
-      {_user_id, username, email, nick_name} = {user.id, user.username, user.email, user.nick_name}
+
+      %{phone_numbers: [%{} = ph1, %{} = ph2, %{} = ph3, %{} = ph4]} =
+        phone_numbers = %{
+          phone_numbers: [
+            %{
+              "number" => "801-867-5309",
+              "primary" => true,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5310",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5311",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            },
+            %{
+              "number" => "801-867-5312",
+              "primary" => false,
+              "verified_at" => "2010-04-17T14:00:00Z"
+            }
+          ]
+        }
+
+      {_user_id, username, email, nick_name} =
+        {user.id, user.username, user.email, user.nick_name}
+
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
@@ -734,11 +842,12 @@ defmodule MalanWeb.UserControllerTest do
       # password should not be included in get response
       assert Map.has_key?(jr, "password") == false
       assert Enum.count(phs) == 4
-      assert Enum.all?(phs, fn (ph) ->
-        [ph1, ph2, ph3, ph4]
-        |> Enum.map(fn (phx) -> phx["number"] end)
-        |> Enum.member?(ph["number"])
-      end)
+
+      assert Enum.all?(phs, fn ph ->
+               [ph1, ph2, ph3, ph4]
+               |> Enum.map(fn phx -> phx["number"] end)
+               |> Enum.member?(ph["number"])
+             end)
     end
   end
 
@@ -759,14 +868,19 @@ defmodule MalanWeb.UserControllerTest do
   describe "me" do
     setup [:create_regular_user_with_session]
 
-    test "Retrieves all user info based on API token", %{conn: conn, user: %User{id: user_id}, session: session} do
+    test "Retrieves all user info based on API token", %{
+      conn: conn,
+      user: %User{id: user_id},
+      session: session
+    } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.user_path(conn, :me))
+
       assert %{
                "id" => ^user_id,
                "roles" => ["user"],
                "username" => _username,
-               "nick_name" => _nick_name,
+               "nick_name" => _nick_name
              } = json_response(conn, 200)["data"]
     end
 
@@ -779,14 +893,19 @@ defmodule MalanWeb.UserControllerTest do
   describe "current" do
     setup [:create_regular_user_with_session]
 
-    test "Retrieves all user info based on API token", %{conn: conn, user: %User{id: user_id}, session: session} do
+    test "Retrieves all user info based on API token", %{
+      conn: conn,
+      user: %User{id: user_id},
+      session: session
+    } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.user_path(conn, :current))
+
       assert %{
                "id" => ^user_id,
                "roles" => ["user"],
                "username" => _username,
-               "nick_name" => _nick_name,
+               "nick_name" => _nick_name
              } = json_response(conn, 200)["data"]
     end
 
@@ -799,10 +918,14 @@ defmodule MalanWeb.UserControllerTest do
   describe "whoami" do
     setup [:create_regular_user_with_session]
 
-    test "Retrieves user ID and roles based on API token", %{conn: conn, user: %User{id: user_id}, session: session} do
+    test "Retrieves user ID and roles based on API token", %{
+      conn: conn,
+      user: %User{id: user_id},
+      session: session
+    } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.user_path(conn, :whoami))
-      #jr = json_response(conn, 200)["data"]
+      # jr = json_response(conn, 200)["data"]
       assert %{
                "user_id" => ^user_id,
                "user_roles" => ["user"],
@@ -830,16 +953,23 @@ defmodule MalanWeb.UserControllerTest do
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
-    test "works with username instead of ID", %{conn: conn, user: %User{id: _user_id} = user, session: _session} do
+    test "works with username instead of ID", %{
+      conn: conn,
+      user: %User{id: _user_id} = user,
+      session: _session
+    } do
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.username))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
@@ -864,61 +994,114 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Try to login with old password and ensure it doesn't work anymore
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with new password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "Rejects when no password reset token is issued", %{conn: conn, user: %User{id: user_id}, session: _session} do
+    test "Rejects when no password reset token is issued", %{
+      conn: conn,
+      user: %User{id: user_id},
+      session: _session
+    } do
       {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, "abcde"), new_password: "everythingturnstostone")
-      assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, "abcde"),
+          new_password: "everythingturnstostone"
+        )
+
+      assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
     end
 
-    test "Rejects when token is wrong", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "Rejects when token is wrong", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now try to change password with wrong token
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, "incorrect token"), new_password: new_password)
-      assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, "incorrect token"),
+          new_password: new_password
+        )
+
+      assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
 
       # Try to login with new password and make sure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} = json_response(conn, 401)
 
       # Try to login with old password and ensure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
@@ -927,112 +1110,218 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Try to login with old password and ensure it doesn't work anymore
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with new password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Try to use the reset token again
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
-      assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: new_password
+        )
+
+      assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
     end
 
-    test "can't use a reset token after a new one has been created", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "can't use a reset token after a new one has been created", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token_1
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token_2
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
       # Now try to change password with token 1 and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token_1), new_password: new_password)
-      assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(
+            conn,
+            :admin_reset_password_token_user,
+            user_id,
+            password_reset_token_1
+          ),
+          new_password: new_password
+        )
+
+      assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
 
       # Try to login with new password and ensure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Now try to change password with token 2 and make sure it succeeds
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token_2), new_password: new_password)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(
+            conn,
+            :admin_reset_password_token_user,
+            user_id,
+            password_reset_token_2
+          ),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Now login with the old password to make sure it no longer works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Try to login with new password and ensure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "can't use token after expiration", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "can't use token after expiration", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Set the expiration time into the past so the token is expired
-      Ecto.Changeset.change(user, %{password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)})
+      Ecto.Changeset.change(user, %{
+        password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)
+      })
       |> Repo.update()
 
       # Now try to change password with the token and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token), new_password: new_password)
-      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: new_password
+        )
+
+      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
 
       # Try to login with new password and ensure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
@@ -1048,204 +1337,350 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 401
     end
 
-    test "works - endpoint with no user ID", %{conn: conn, user: %User{id: _user_id} = user, session: _session} do
+    test "works - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: _user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.username))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Try to login with old password and ensure it doesn't work anymore
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with new password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "Rejects when no password reset token is issued - endpoint with no user ID", %{conn: conn, user: %User{id: _user_id}, session: _session} do
+    test "Rejects when no password reset token is issued - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: _user_id},
+      session: _session
+    } do
       {:ok, _conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "abcde"), new_password: "everythingturnstostone")
-      #assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, "abcde"),
+          new_password: "everythingturnstostone"
+        )
+
+      # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
       assert %{"errors" => %{}} = json_response(conn, 404)
     end
 
-    test "Rejects when token is wrong - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "Rejects when token is wrong - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now try to change password with wrong token
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "incorrect token"), new_password: new_password)
-      #assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, "incorrect token"),
+          new_password: new_password
+        )
+
+      # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
       assert %{"errors" => %{}} = json_response(conn, 404)
 
       # Try to login with new password and make sure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} = json_response(conn, 401)
 
       # Try to login with old password and ensure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "can't reuse a token - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "can't reuse a token - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Now change password
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Try to login with old password and ensure it doesn't work anymore
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with new password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Try to use the reset token again
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
-      #assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token),
+          new_password: new_password
+        )
+
+      # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
       assert %{"errors" => %{}} = json_response(conn, 404)
     end
 
-    test "can't use a reset token after a new one has been created - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "can't use a reset token after a new one has been created - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # First login with password to make sure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token_1
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token_2
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
       # Now try to change password with token 1 and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_1), new_password: new_password)
-      #assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_1),
+          new_password: new_password
+        )
+
+      # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
       assert %{"errors" => %{}} = json_response(conn, 404)
 
       # Try to login with new password and ensure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       # Now try to change password with token 2 and make sure it succeeds
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_2), new_password: new_password)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token_2),
+          new_password: new_password
+        )
+
       assert conn.status == 200
       assert %{"ok" => true} = json_response(conn, 200)
 
       # Now login with the old password to make sure it no longer works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Try to login with new password and ensure it works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "can't use token after expiration - endpoint with no user ID", %{conn: conn, user: %User{id: user_id} = user, session: _session} do
+    test "can't use token after expiration - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
       new_password = "bensonwinifredpayne"
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Set the expiration time into the past so the token is expired
-      Ecto.Changeset.change(user, %{password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)})
+      Ecto.Changeset.change(user, %{
+        password_reset_token_expires_at: Utils.DateTime.adjust_cur_time_trunc(-1, :minutes)
+      })
       |> Repo.update()
 
       # Now try to change password with the token and make sure it fails
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token), new_password: new_password)
-      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} = json_response(conn, 401)
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_reset_password_token, password_reset_token),
+          new_password: new_password
+        )
+
+      assert %{"ok" => false, "err" => "expired_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
 
       # Try to login with new password and ensure it doesn't work
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: new_password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: new_password}
+        )
+
       assert %{"invalid_credentials" => true} == json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
-      conn = post(conn, Routes.session_path(build_conn(), :create), session: %{username: user.username, password: user.password})
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "requires auth to access - endpoint with no user ID", %{conn: conn, user: %User{} = _user, session: _session} do
+    test "requires auth to access - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{} = _user,
+      session: _session
+    } do
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
       assert conn.status == 403
     end
 
-    test "requires being admin to access - endpoint with no user ID", %{conn: conn, user: %User{} = _user, session: session} do
+    test "requires being admin to access - endpoint with no user ID", %{
+      conn: conn,
+      user: %User{} = _user,
+      session: session
+    } do
       # Our user is a regular user, not an admin
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
       assert conn.status == 401
     end
   end
-
 
   defp create_regular_user(_) do
     {:ok, user} = Helpers.Accounts.regular_user()

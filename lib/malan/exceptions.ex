@@ -19,7 +19,7 @@ defmodule Malan.NoResultsError do
   defexception [:message]
 
   def exception(opts) do
-    query = Keyword.fetch!(opts, :queryable) |> Ecto.Queryable.to_query
+    query = Keyword.fetch!(opts, :queryable) |> Ecto.Queryable.to_query()
 
     msg = """
     expected at least one result but got none in query:

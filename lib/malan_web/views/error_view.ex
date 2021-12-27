@@ -4,7 +4,7 @@ defmodule MalanWeb.ErrorView do
   def render("400.json", _assigns) do
     %{
       errors: %{
-        detail: "Bad Request",
+        detail: "Bad Request"
       }
     }
   end
@@ -13,7 +13,7 @@ defmodule MalanWeb.ErrorView do
     %{
       errors: %{
         detail: "Unauthorized",
-        message: "You are authenticated but do not have access to this method on this object.",
+        message: "You are authenticated but do not have access to this method on this object."
       }
     }
   end
@@ -22,7 +22,8 @@ defmodule MalanWeb.ErrorView do
     %{
       errors: %{
         detail: "Forbidden",
-        message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token.",
+        message:
+          "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
       }
     }
   end
@@ -31,7 +32,7 @@ defmodule MalanWeb.ErrorView do
     %{
       errors: %{
         detail: "Not Found",
-        message: "The requested object was not found.",
+        message: "The requested object was not found."
       }
     }
   end
@@ -40,7 +41,8 @@ defmodule MalanWeb.ErrorView do
     %{
       errors: %{
         detail: "Terms of Service Required",
-        message: "You have not yet accepted the Terms of Service.  Acceptance is required to use this API.",
+        message:
+          "You have not yet accepted the Terms of Service.  Acceptance is required to use this API."
       }
     }
   end
@@ -49,7 +51,8 @@ defmodule MalanWeb.ErrorView do
     %{
       errors: %{
         detail: "Privacy Policy Required",
-        message: "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API.",
+        message:
+          "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API."
       }
     }
   end

@@ -25,7 +25,7 @@ defmodule Malan.UtilsTest do
     # This exercises all of the adjust_yyy_time funcs since they call each other
     test "adjust_cur_time weeks" do
       adjusted = Utils.DateTime.adjust_cur_time(2, :weeks)
-      manually = DateTime.add(DateTime.utc_now, 2 * 7 * 24 * 60 * 60, :second)
+      manually = DateTime.add(DateTime.utc_now(), 2 * 7 * 24 * 60 * 60, :second)
       diff = DateTime.diff(manually, adjusted, :second)
       # Possibly flakey test. These numbers might be too close.
       # Changed 1 to 2, hopefully that is fuzzy enough to work
@@ -33,23 +33,32 @@ defmodule Malan.UtilsTest do
     end
 
     test "adjust_time weeks" do
-    # This exercises all of the adjust_time funcs since they call each other
-      start_dt = DateTime.utc_now
-      assert DateTime.add(start_dt, 2 * 7 * 24 * 60 * 60, :second) == Utils.DateTime.adjust_time(start_dt, 2, :weeks)
+      # This exercises all of the adjust_time funcs since they call each other
+      start_dt = DateTime.utc_now()
+
+      assert DateTime.add(start_dt, 2 * 7 * 24 * 60 * 60, :second) ==
+               Utils.DateTime.adjust_time(start_dt, 2, :weeks)
     end
 
     test "expired?" do
-      cur_time = DateTime.utc_now
+      cur_time = DateTime.utc_now()
 
-      assert_raise(ArgumentError, ~r/expires_at.*must.not.be.nil/, fn -> Utils.DateTime.expired?(nil) end)
+      assert_raise(ArgumentError, ~r/expires_at.*must.not.be.nil/, fn ->
+        Utils.DateTime.expired?(nil)
+      end)
 
-      assert false == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time( 1, :minutes))
-      assert true  == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time(-1, :minutes))
-      assert true  == Utils.DateTime.expired?(cur_time) # exact same time shows as expired
+      assert false == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time(1, :minutes))
+      assert true == Utils.DateTime.expired?(Utils.DateTime.adjust_cur_time(-1, :minutes))
+      # exact same time shows as expired
+      assert true == Utils.DateTime.expired?(cur_time)
 
-      assert true  == Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time( 1, :minutes))
-      assert false == Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time(-1, :minutes))
-      assert true  == Utils.DateTime.expired?(cur_time, cur_time)
+      assert true ==
+               Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time(1, :minutes))
+
+      assert false ==
+               Utils.DateTime.expired?(cur_time, Utils.DateTime.adjust_cur_time(-1, :minutes))
+
+      assert true == Utils.DateTime.expired?(cur_time, cur_time)
     end
   end
 

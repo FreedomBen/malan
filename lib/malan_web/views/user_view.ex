@@ -34,7 +34,8 @@ defmodule MalanWeb.UserView do
   def render("user.json", %{user: user}) do
     # If password is non-nil, it is included.  This is needed for
     # example with returning randomly generated passwords
-    %{id: user.id,
+    %{
+      id: user.id,
       username: user.username,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -52,37 +53,59 @@ defmodule MalanWeb.UserView do
       latest_tos_accept_ver: user.latest_tos_accept_ver,
       latest_pp_accept_ver: user.latest_pp_accept_ver,
       tos_accepted: user.latest_tos_accept_ver == Malan.Accounts.TermsOfService.current_version(),
-      privacy_policy_accepted: user.latest_pp_accept_ver == Malan.Accounts.PrivacyPolicy.current_version(),
-      tos_accept_events: render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
-      privacy_policy_accept_events: render_many(user.privacy_policy_accept_events, PrivacyPolicyAcceptEventView, "privacy_policy_accept_event.json"),
+      privacy_policy_accepted:
+        user.latest_pp_accept_ver == Malan.Accounts.PrivacyPolicy.current_version(),
+      tos_accept_events:
+        render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
+      privacy_policy_accept_events:
+        render_many(
+          user.privacy_policy_accept_events,
+          PrivacyPolicyAcceptEventView,
+          "privacy_policy_accept_event.json"
+        ),
       roles: user.roles,
       preferences: render_one(user.preferences, PreferencesView, "preferences.json"),
-      custom_attrs: user.custom_attrs}
-      |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
-      |> Enum.into(%{})
+      custom_attrs: user.custom_attrs
+    }
+    |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
+    |> Enum.into(%{})
   end
 
   def render("user_full.json", %{user: user}) do
     render("user.json", %{user: user})
     |> Map.put(:addresses, render_many(user.addresses, AddressView, "address.json"))
-    |> Map.put(:phone_numbers, render_many(user.phone_numbers, PhoneNumberView, "phone_number.json"))
+    |> Map.put(
+      :phone_numbers,
+      render_many(user.phone_numbers, PhoneNumberView, "phone_number.json")
+    )
   end
 
-  def render("whoami.json", %{user_id: user_id, session_id: session_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do
-    %{data:
-      %{user_id: user_id,
+  def render("whoami.json", %{
+        user_id: user_id,
+        session_id: session_id,
+        user_roles: user_roles,
+        expires_at: expires_at,
+        tos: tos,
+        pp: pp
+      }) do
+    %{
+      data: %{
+        user_id: user_id,
         session_id: session_id,
         user_roles: user_roles,
         expires_at: expires_at,
         terms_of_service: tos,
-        privacy_policy: pp,
+        privacy_policy: pp
       }
     }
   end
 
-  def render("password_reset.json", %{password_reset_token: password_reset_token, password_reset_token_expires_at: password_reset_token_expires_at}) do
-    %{data:
-      %{
+  def render("password_reset.json", %{
+        password_reset_token: password_reset_token,
+        password_reset_token_expires_at: password_reset_token_expires_at
+      }) do
+    %{
+      data: %{
         password_reset_token: password_reset_token,
         password_reset_token_expires_at: password_reset_token_expires_at
       }

@@ -8,7 +8,7 @@ defmodule Malan.Accounts.PhoneNumber do
     field :number, :string
     field :primary, :boolean, default: false
     field :verified_at, :utc_datetime, default: nil
-    #field :user_id, :binary_id
+    # field :user_id, :binary_id
     belongs_to :user, Malan.Accounts.User
 
     timestamps(type: :utc_datetime)

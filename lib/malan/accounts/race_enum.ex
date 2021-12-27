@@ -18,6 +18,7 @@ defmodule Malan.Accounts.User.Race do
 
   def valid?(i) when is_nil(i), do: true
   def valid?(i) when is_integer(i), do: Map.has_key?(all_by_value, i)
+
   def valid?(i) when is_binary(i) do
     all_by_keyword
     |> Map.merge(all_by_keyword_normalized)
@@ -50,7 +51,7 @@ defmodule Malan.Accounts.User.Race do
       1 => "Asian",
       2 => "Black or African American",
       3 => "Native Hawaiian or Other Pacific Islander",
-      4 => "White",
+      4 => "White"
     }
   end
 
@@ -60,7 +61,7 @@ defmodule Malan.Accounts.User.Race do
       "Asian" => 1,
       "Black or African American" => 2,
       "Native Hawaiian or Other Pacific Islander" => 3,
-      "White" => 4,
+      "White" => 4
     }
   end
 end
