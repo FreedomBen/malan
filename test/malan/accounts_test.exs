@@ -1387,7 +1387,7 @@ defmodule Malan.AccountsTest do
     @invalid_attrs %{"type" => nil, "verb" => nil, "what" => nil, "when" => nil}
 
     test "list_transactions/0 returns all transactions" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, _user, _session, transaction} = transaction_fixture()
       assert Accounts.list_transactions() == [transaction]
     end
 
@@ -1398,12 +1398,12 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction!/1 returns the transaction with given id" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, _user, _session, transaction} = transaction_fixture()
       assert Accounts.get_transaction!(transaction.id) == transaction
     end
 
     test "get_transaction_by/1 returns the transaction matching the param" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, user, _session, transaction} = transaction_fixture()
       assert Accounts.get_transaction_by(user_id: user.id) == transaction
     end
 
@@ -1420,7 +1420,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction_by!/1 returns the transaction matching the param" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, user, _session, transaction} = transaction_fixture()
       assert Accounts.get_transaction_by!(user_id: user.id) == transaction
     end
 
@@ -1464,7 +1464,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, _user, _session, transaction} = transaction_fixture()
 
       update_attrs = %{
         type: "some updated type",
@@ -1481,7 +1481,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "update_transaction/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, _user, _session, transaction} = transaction_fixture()
 
       assert_raise Malan.ObjectIsImmutable, fn ->
         Accounts.update_transaction(transaction, @invalid_attrs)
@@ -1491,7 +1491,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "delete_transaction/1 raises a Malan.ObjectIsImmutable exception" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, _user, _session, transaction} = transaction_fixture()
 
       assert_raise Malan.ObjectIsImmutable, fn ->
         Accounts.delete_transaction(transaction)
@@ -1501,7 +1501,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction_owner/1" do
-      {:ok, user, session, transaction} = transaction_fixture()
+      {:ok, user, _session, transaction} = transaction_fixture()
       user_id = user.id
       assert %{user_id: ^user_id} = Accounts.get_transaction_owner(transaction.id)
     end
