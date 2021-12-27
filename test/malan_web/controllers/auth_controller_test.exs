@@ -256,57 +256,134 @@ defmodule MalanWeb.AuthControllerTest do
 
   describe "#is_not_moderator?/1" do
     test "works" do
-      assert false == AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: true}})
-      assert true  == AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: false}})
-      assert true  == AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: nil}})
+      assert false ==
+               AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: true}})
+
+      assert true ==
+               AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: false}})
+
+      assert true ==
+               AuthController.is_not_moderator?(%{assigns: %{authed_user_is_moderator: nil}})
     end
   end
 
   describe "#is_moderator_or_admin?/1" do
     test "works" do
-      assert true  == AuthController.is_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}})
-      assert true  == AuthController.is_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}})
-      assert false == AuthController.is_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}})
+      assert true ==
+               AuthController.is_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}
+               })
+
+      assert true ==
+               AuthController.is_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}
+               })
+
+      assert false ==
+               AuthController.is_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}
+               })
     end
   end
 
   describe "#is_not_moderator_or_admin?/1" do
     test "works" do
-      assert false == AuthController.is_not_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}})
-      assert false == AuthController.is_not_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}})
-      assert true  == AuthController.is_not_moderator_or_admin?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}})
+      assert false ==
+               AuthController.is_not_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}
+               })
+
+      assert false ==
+               AuthController.is_not_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}
+               })
+
+      assert true ==
+               AuthController.is_not_moderator_or_admin?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}
+               })
     end
   end
 
   describe "#is_admin_or_moderator?/1" do
     test "works" do
-      assert true  == AuthController.is_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}})
-      assert true  == AuthController.is_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}})
-      assert false == AuthController.is_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}})
+      assert true ==
+               AuthController.is_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}
+               })
+
+      assert true ==
+               AuthController.is_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}
+               })
+
+      assert false ==
+               AuthController.is_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}
+               })
     end
   end
 
   describe "#is_not_admin_or_moderator?/1" do
     test "works" do
-      assert false == AuthController.is_not_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}})
-      assert false == AuthController.is_not_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}})
-      assert true  == AuthController.is_not_admin_or_moderator?(%{assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}})
+      assert false ==
+               AuthController.is_not_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: true, authed_user_is_admin: false}
+               })
+
+      assert false ==
+               AuthController.is_not_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: true}
+               })
+
+      assert true ==
+               AuthController.is_not_admin_or_moderator?(%{
+                 assigns: %{authed_user_is_moderator: false, authed_user_is_admin: false}
+               })
     end
   end
 
   describe "#is_owner?/1" do
     test "works" do
-      assert true  == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "abc"}})
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "123"}})
-      assert false == AuthController.is_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => nil}})
+      assert true ==
+               AuthController.is_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => "abc"}
+               })
+
+      assert false ==
+               AuthController.is_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => "123"}
+               })
+
+      assert false ==
+               AuthController.is_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => nil}
+               })
     end
   end
 
   describe "#is_not_owner?/1" do
     test "works" do
-      assert false == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "abc"}})
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => "123"}})
-      assert true  == AuthController.is_not_owner?(%{assigns: %{authed_user_id: "abc", authed_username: ""}, params: %{"user_id" => nil}})
+      assert false ==
+               AuthController.is_not_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => "abc"}
+               })
+
+      assert true ==
+               AuthController.is_not_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => "123"}
+               })
+
+      assert true ==
+               AuthController.is_not_owner?(%{
+                 assigns: %{authed_user_id: "abc", authed_username: ""},
+                 params: %{"user_id" => nil}
+               })
     end
   end
 
