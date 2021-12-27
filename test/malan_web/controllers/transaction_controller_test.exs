@@ -30,7 +30,7 @@ defmodule MalanWeb.TransactionControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  describe "index" do
+  describe "admin_index" do
     test "lists all transactions", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.transaction_path(conn, :index))
@@ -39,6 +39,32 @@ defmodule MalanWeb.TransactionControllerTest do
 
     test "requires authentication", %{conn: conn} do
       conn = get(conn, Routes.transaction_path(conn, :index))
+      assert conn.status == 403
+    end
+
+    test "requires accepting ToS and PP", %{conn: conn} do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :index))
+      # We haven't accepted the terms of service yet so expect 461
+      assert conn.status == 461
+
+      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+      conn = get(conn, Routes.transaction_path(conn, :index))
+      # We haven't accepted the PP yet so expect 462
+      assert conn.status == 462
+    end
+  end
+
+  describe "user_index" do
+    test "lists all transactions for user", %{conn: conn} do
+      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, user.id))
+      assert json_response(conn, 200)["data"] == []
+    end
+
+    test "requires authentication", %{conn: conn} do
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, "42"))
       assert conn.status == 403
     end
 

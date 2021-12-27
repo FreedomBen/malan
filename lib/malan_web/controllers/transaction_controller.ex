@@ -26,7 +26,7 @@ defmodule MalanWeb.TransactionController do
 
   # User ID of the user who made the change (token owner) (Admin endpoint)
   def users(conn, %{"user_id" => user_id}) do
-    user = get_user_by_id_or_username!(user_id)
+    user = Accounts.get_user_by_id_or_username!(user_id)
     transactions = Accounts.list_transactions(user)
     render(conn, "index.json", transactions: transactions)
   end
@@ -79,7 +79,7 @@ defmodule MalanWeb.TransactionController do
   #end
 
   defp is_transaction_user_or_admin(conn, _opts) do
-    %{user_id: user_id} = Recipes.get_recipe_owner_and_visibility(conn.params["recipe_id"])
+    %{user_id: user_id} = Recipes.get_transaction_user(conn.params["recipe_id"])
     cond do
       is_owner?(conn, user_id) || is_admin?(conn) -> conn
       user_id == nil && conn.assigns.authed_user_is_moderator -> conn

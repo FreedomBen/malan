@@ -1099,22 +1099,65 @@ defmodule Malan.AccountsTest do
 
     import Malan.AccountsFixtures
 
-    @invalid_attrs %{type: nil, verb: nil, what: nil, when: nil}
+    @invalid_attrs %{"type" => nil, "verb" => nil, "what" => nil, "when" => nil}
 
     test "list_transactions/0 returns all transactions" do
-      transaction = transaction_fixture()
+      {:ok, user, session, transaction} = transaction_fixture()
       assert Accounts.list_transactions() == [transaction]
     end
 
+    test "list_transactions/1 returns all transactions for user" do
+      {:ok, u1, _s1, t1} = transaction_fixture()
+      {:ok, _u2, _s2, _t2} = transaction_fixture()
+      assert Accounts.list_transactions(u1.id) == [t1]
+    end
+
     test "get_transaction!/1 returns the transaction with given id" do
-      transaction = transaction_fixture()
+      {:ok, user, session, transaction} = transaction_fixture()
       assert Accounts.get_transaction!(transaction.id) == transaction
     end
 
-    test "create_transaction/1 with valid data creates a transaction" do
-      valid_attrs = %{type: "some type", verb: "some verb", what: "some what", when: ~U[2021-12-22 21:02:00Z]}
+    test "get_transaction_by/1 returns the transaction matching the param" do
+      {:ok, user, session, transaction} = transaction_fixture()
+      assert Accounts.get_transaction_by(user_id: user.id) == transaction
+    end
 
-      assert {:ok, %Transaction{} = transaction} = Accounts.create_transaction(valid_attrs)
+    test "get_transaction_by/1 returns nil if no results" do
+      assert Accounts.get_transaction_by(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04") == nil
+    end
+
+    test "get_transaction_by/1 raises if multiple results" do
+      {:ok,  u1, _s1, _t1} = transaction_fixture()
+      {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+      assert_raise Ecto.MultipleResultsError, fn ->
+        Accounts.get_transaction_by(user_id: u1.id)
+      end
+    end
+
+    test "get_transaction_by!/1 returns the transaction matching the param" do
+      {:ok, user, session, transaction} = transaction_fixture()
+      assert Accounts.get_transaction_by!(user_id: user.id) == transaction
+    end
+
+    test "get_transaction_by!/1 raises if no results" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_transaction_by!(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04")
+      end
+    end
+
+    test "get_transaction_by!/1 raises if multiple results" do
+      {:ok,  u1, _s1, _t1} = transaction_fixture()
+      {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+      assert_raise Ecto.MultipleResultsError, fn ->
+        Accounts.get_transaction_by!(user_id: u1.id)
+      end
+    end
+
+    test "create_transaction/1 with valid data creates a transaction" do
+      valid_attrs = %{"type" => "some type", "verb" => "some verb", "what" => "some what", "when" => ~U[2021-12-22 21:02:00Z]}
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+
+      assert {:ok, %Transaction{} = transaction} = Accounts.create_transaction(user.id, session.id, user.id, valid_attrs)
       assert transaction.type == "some type"
       assert transaction.verb == "some verb"
       assert transaction.what == "some what"
@@ -1122,35 +1165,41 @@ defmodule Malan.AccountsTest do
     end
 
     test "create_transaction/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Accounts.create_transaction(@invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_transaction(nil, nil, nil, @invalid_attrs)
     end
 
-    test "update_transaction/2 with valid data updates the transaction" do
-      transaction = transaction_fixture()
+    test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do
+      {:ok, user, session, transaction} = transaction_fixture()
       update_attrs = %{type: "some updated type", verb: "some updated verb", what: "some updated what", when: ~U[2021-12-23 21:02:00Z]}
 
-      assert {:ok, %Transaction{} = transaction} = Accounts.update_transaction(transaction, update_attrs)
-      assert transaction.type == "some updated type"
-      assert transaction.verb == "some updated verb"
-      assert transaction.what == "some updated what"
-      assert transaction.when == ~U[2021-12-23 21:02:00Z]
-    end
-
-    test "update_transaction/2 with invalid data returns error changeset" do
-      transaction = transaction_fixture()
-      assert {:error, %Ecto.Changeset{}} = Accounts.update_transaction(transaction, @invalid_attrs)
+      assert_raise Malan.ObjectIsImmutable, fn ->
+        Accounts.update_transaction(transaction, update_attrs)
+      end
       assert transaction == Accounts.get_transaction!(transaction.id)
     end
 
-    test "delete_transaction/1 deletes the transaction" do
-      transaction = transaction_fixture()
-      assert {:ok, %Transaction{}} = Accounts.delete_transaction(transaction)
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_transaction!(transaction.id) end
+    test "update_transaction/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
+      {:ok, user, session, transaction} = transaction_fixture()
+
+      assert_raise Malan.ObjectIsImmutable, fn ->
+        Accounts.update_transaction(transaction, @invalid_attrs)
+      end
+      assert transaction == Accounts.get_transaction!(transaction.id)
     end
 
-    test "change_transaction/1 returns a transaction changeset" do
-      transaction = transaction_fixture()
-      assert %Ecto.Changeset{} = Accounts.change_transaction(transaction)
+    test "delete_transaction/1 raises a Malan.ObjectIsImmutable exception" do
+      {:ok, user, session, transaction} = transaction_fixture()
+
+      assert_raise Malan.ObjectIsImmutable, fn ->
+        Accounts.delete_transaction(transaction)
+      end
+      assert transaction == Accounts.get_transaction!(transaction.id)
+    end
+
+    test "get_transaction_owner/1" do
+      {:ok, user, session, transaction} = transaction_fixture()
+      user_id = user.id
+      assert %{user_id: ^user_id} = Accounts.get_transaction_owner(transaction.id)
     end
   end
 end
