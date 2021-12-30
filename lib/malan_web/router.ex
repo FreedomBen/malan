@@ -98,9 +98,8 @@ defmodule MalanWeb.Router do
     get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
 
-    resources "/users", UserController, only: [] do
-      get "/transactions", TransactionController, :user_index
-    end
+    get "/transactions", TransactionController, :user_index
+    get "/transactions/:id", TransactionController, :show
   end
 
   scope "/api", MalanWeb do
@@ -115,6 +114,8 @@ defmodule MalanWeb.Router do
         only: [:index, :show, :create, :update, :delete]
 
       resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
+
+      get "/transactions", TransactionController, :user_index
     end
   end
 
@@ -162,7 +163,7 @@ defmodule MalanWeb.Router do
     # they are created as side effects of user/session operations and are immutable
     # Careful, returns a lot of records!
     get "/transactions", TransactionController, :admin_index
-    get "/transactions/:id", TransactionController, :show
+    get "/transactions/:id", TransactionController, :show, as: :admin_transaction
     get "/transactions/users/:user_id", TransactionController, :users
     get "/transactions/sessions/:session_id", TransactionController, :sessions
     get "/transactions/who/:user_id", TransactionController, :who
