@@ -14,6 +14,21 @@ defmodule Malan.ObjectIsImmutable do
   end
 end
 
+defmodule Malan.CantBeNil do
+  defexception [:message]
+
+  def exception(opts) do
+    argv = Keyword.get(opts, :argv, "argv")
+    argn = Keyword.get(opts, :argn, "argn")
+
+    msg = """
+    variable "#{argn}" was set to "#{argv}" but cannot be
+    """
+
+    %__MODULE__{message: msg}
+  end
+end
+
 # Note:  This is the same code as Ecto.NoResultsError
 defmodule Malan.NoResultsError do
   defexception [:message]
