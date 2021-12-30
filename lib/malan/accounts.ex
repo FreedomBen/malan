@@ -113,7 +113,7 @@ defmodule Malan.Accounts do
     cond do
       id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
         from(u in User, where: (u.id == ^id_or_username or u.username == ^id_or_username) and is_nil(u.deleted_at))
-      true -> 
+      true ->
         from(u in User, where: (u.username == ^id_or_username) and is_nil(u.deleted_at))
     end
   end
@@ -304,7 +304,7 @@ defmodule Malan.Accounts do
   end
 
   @doc """
-    Returns: 
+    Returns:
 
       {:ok, %User{}}
       {:error, :missing_password_reset_token}
@@ -322,7 +322,7 @@ defmodule Malan.Accounts do
   end
 
   @doc """
-    Returns: 
+    Returns:
 
       {:ok, %User{}}
       {:error, :missing_password_reset_token}
@@ -1100,10 +1100,84 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
-  def list_transactions(user_id) do
+  def list_transactions(user_id_or_username) do
+    cond do
+      user_id_or_username == nil ->
+        []
+      user_id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+        list_transactions_by_user_id(user_id_or_username)
+      true ->
+        list_transactions_by_username(user_id_or_username)
+    end
+  end
+
+  #
+  # SELECT t.* FROM transactions AS t WHERE t.id = (SELECT u.id FROM users AS u WHERE u.username = '$1');
+  #
+  # Written as join:
+  #
+  # SELECT t.* FROM transactions AS t JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
+  # SELECT t.* FROM transactions AS t LEFT JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
+  #
+  def list_transactions_by_username(username) do
+    # Initially attempted using a subquery in "where', but ran into a cast error.
+    # Also found some docs that said that subqueries in ecto couldn't be used
+    # in where clauses, but I don't think that's true anymore
+
+    # user_id_q =
+    #   from u in User,
+    #   select: u.id,
+    #   where: u.username == ^username
+
+    # Repo.all(
+    #   from t in Transaction,
+    #     where: t.user_id == ^[subquery(user_id_q)]
+    # )
+
+    Repo.all(
+      from t in Transaction,
+      select: t,
+      join: u in User, on: u.username == ^username,
+      where: t.user_id == u.id
+    )
+  end
+
+  def list_transactions_by_user_id(user_id) do
     Repo.all(
       from t in Transaction,
         where: t.user_id == ^user_id
+    )
+  end
+
+  @doc """
+  Returns the list of transactions created by the specified session id.
+
+  ## Examples
+
+      iex> list_transactions_by_session_id(session_id)
+      [%Transaction{}, ...]
+
+  """
+  def list_transactions_by_session_id(session_id) do
+    Repo.all(
+      from t in Transaction,
+        where: t.session_id == ^session_id
+    )
+  end
+
+  @doc """
+  Returns the list of transactions that affected the specified user id.
+
+  ## Examples
+
+      iex> list_transactions_by_who(user_id)
+      [%Transaction{}, ...]
+
+  """
+  def list_transactions_by_who(user_id) do
+    Repo.all(
+      from t in Transaction,
+        where: t.who == ^user_id
     )
   end
 
@@ -1150,10 +1224,14 @@ defmodule Malan.Accounts do
   @doc """
   Retrieve the owner (user_id) of the specified transaction.
 
-      iex> Accounts.get_transaction_owner(transaction_id)
+  Raises Malan.CantBeNil if given a nil argument for transaction_id
+  Returns %{user_id: "user_id"}
+
+      iex> Accounts.get_transaction_user(transaction_id)
       %{user_id: "user_id"}
   """
-  def get_transaction_owner(transaction_id) do
+  def get_transaction_user(transaction_id) do
+    Utils.raise_if_nil("transaction_id", transaction_id)
     Repo.one(
       from t in Transaction,
         select: %{user_id: t.user_id},
@@ -1162,7 +1240,7 @@ defmodule Malan.Accounts do
   end
 
   @doc """
-  Creates a transaction.  A transaction is immutable once it is created, so it 
+  Creates a transaction.  A transaction is immutable once it is created, so it
   cannot be updated later.  Make sure you have all the info you need now!
 
   ## Examples
