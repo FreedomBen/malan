@@ -1,29 +1,38 @@
 defmodule MalanWeb.TransactionControllerTest do
   use MalanWeb.ConnCase
 
-  # import Malan.AccountsFixtures
+  import Malan.AccountsFixtures
 
   alias Malan.Accounts.Transaction
 
   alias Malan.Test.Helpers
 
-  @create_attrs %{
-    "type" => "some type",
-    "verb" => "some verb",
-    "what" => "some what",
-    "when" => ~U[2021-12-22 21:02:00Z]
-  }
-  @update_attrs %{
-    "type" => "some updated type",
-    "verb" => "some updated verb",
-    "what" => "some updated what",
-    "when" => ~U[2021-12-23 21:02:00Z]
-  }
-  @invalid_attrs %{type: nil, verb: nil, what: nil, when: nil}
+  def transactions_eq?(%{id: _} = t1, %{id: _} = t2) do
+    t1.id == t2.id &&
+      t1.type == t2.type &&
+      t1.verb == t2.verb &&
+      t1.what == t2.what
+  end
 
-  def fixture(:transaction) do
-    {:ok, transaction} = Malan.Accounts.create_transaction(@create_attrs)
-    transaction
+  def transactions_eq?(%{"id" => _} = t1, %{id: _} = t2) do
+    t1["id"] == t2.id &&
+      t1["type"] == t2.type &&
+      t1["verb"] == t2.verb &&
+      t1["what"] == t2.what
+  end
+
+  def transactions_eq?(%{id: _} = t1, %{"id" => _} = t2) do
+    t1.id == t2["id"] &&
+      t1.type == t2["type"] &&
+      t1.verb == t2["verb"] &&
+      t1.what == t2["what"]
+  end
+
+  def transactions_eq?(%{"id" => _} = t1, %{"id" => _} = t2) do
+    t1["id"] == t2["id"] &&
+      t1["type"] == t2["type"] &&
+      t1["verb"] == t2["verb"] &&
+      t1["what"] == t2["what"]
   end
 
   setup %{conn: conn} do
@@ -31,62 +40,216 @@ defmodule MalanWeb.TransactionControllerTest do
   end
 
   describe "admin_index" do
-    test "lists all transactions", %{conn: conn} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = get(conn, Routes.transaction_path(conn, :index))
+    test "lists all transactions empty", %{conn: conn} do
+      {:ok, conn, _user, _session} = Helpers.Accounts.admin_user_session_conn(conn)
+      conn = get(conn, Routes.transaction_path(conn, :admin_index))
       assert json_response(conn, 200)["data"] == []
     end
 
+    test "lists all transactions", %{conn: conn} do
+      {:ok, _u1, _s1, t1} = transaction_fixture()
+      {:ok, _u2, _s2, t2} = transaction_fixture()
+
+      {:ok, conn, _user, _session} = Helpers.Accounts.admin_user_session_conn(conn)
+      conn = get(conn, Routes.transaction_path(conn, :admin_index))
+      [t1a, t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+      assert transactions_eq?(t2, t2a)
+    end
+
+    test "requires being an admin", %{conn: conn} do
+      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = get(conn, Routes.transaction_path(conn, :admin_index))
+      assert conn.status == 401
+    end
+
     test "requires authentication", %{conn: conn} do
-      conn = get(conn, Routes.transaction_path(conn, :index))
+      conn = get(conn, Routes.transaction_path(conn, :admin_index))
       assert conn.status == 403
     end
 
-    test "requires accepting ToS and PP", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = get(conn, Routes.transaction_path(conn, :index))
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+    # Uncomment when ready to enforce ToS and PP for admins
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #  {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
+    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #  conn = get(conn, Routes.transaction_path(conn, :admin_index))
+    #  # We haven't accepted the terms of service yet so expect 461
+    #  assert conn.status == 461
 
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = get(conn, Routes.transaction_path(conn, :index))
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
-    end
+    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #  conn = get(conn, Routes.transaction_path(conn, :admin_index))
+    #  # We haven't accepted the PP yet so expect 462
+    #  assert conn.status == 462
+    # end
   end
 
   describe "user_index" do
-    test "lists all transactions for user", %{conn: conn} do
+    test "with no user id:  lists all transactions for user", %{conn: conn} do
+      {:ok, _u1, s1, t1} = transaction_fixture()
+      {:ok, _u2, s2, t2} = transaction_fixture()
+
+      # First make request as a user that has no transactions
+      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
+      assert json_response(conn, 200)["data"] == []
+
+      # Now make request as user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request as user 2
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+    end
+
+    test "with user id and username:  lists all transactions for user", %{conn: conn} do
+      {:ok, u1, s1, t1} = transaction_fixture()
+      {:ok, u2, s2, t2} = transaction_fixture()
+
+      # First make request as a user that has no transactions
+      {:ok, conn, u3, _s3} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u3.id))
+      assert json_response(conn, 200)["data"] == []
+
+      # Now make request as user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u1.id))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request as user 2
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u2.id))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+
+      # Now make request as user 1 using username
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u1.username))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request as user 2 using username
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u2.username))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+    end
+
+    test "with 'current' as user id:  lists all transactions for user", %{conn: _conn} do
+      {:ok, _u1, s1, t1} = transaction_fixture()
+      {:ok, _u2, s2, t2} = transaction_fixture()
+
+      # make request as a user that has no transactions
+      #{:ok, conn, u3, _s3} = Helpers.Accounts.regular_user_session_conn(conn)
+      #conn = get(conn, Routes.user_transaction_path(conn, :user_index, "current"))
+      #assert json_response(conn, 200)["data"] == []
+
+      # Now make request as user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, "current"))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request as user 2
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, "current"))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+    end
+
+    test "user can't list other users transactions", %{conn: conn} do
+      {:ok, u1, _s1, _t1} = transaction_fixture()
+      {:ok, _u2, s2, _t2} = transaction_fixture()
+
+      # Now make request as user 2 but for user 1 transactions
+      conn = Helpers.Accounts.put_token(conn, s2.api_token)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u1.id))
+      assert conn.status == 401
+    end
+
+    test "admin can list for user", %{conn: conn} do
+      {:ok, u1, _s1, t1} = transaction_fixture()
+      {:ok, _u2, _s2, _t2} = transaction_fixture()
+
+      # Now make request as admin for user 1 transactions
+      {:ok, conn, _au1, _as4} = Helpers.Accounts.admin_user_session_conn(conn)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, u1.id))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+    end
+
+    test "lists all transactions for user empty without id", %{conn: conn} do
+      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
+      assert json_response(conn, 200)["data"] == []
+    end
+
+    test "lists all transactions for user empty with id", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.user_transaction_path(conn, :user_index, user.id))
       assert json_response(conn, 200)["data"] == []
     end
 
-    test "requires authentication", %{conn: conn} do
+    test "requires authentication without user id", %{conn: conn} do
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
+      assert conn.status == 403
+    end
+
+    test "requires authentication with user id", %{conn: conn} do
       conn = get(conn, Routes.user_transaction_path(conn, :user_index, "42"))
       assert conn.status == 403
     end
 
-    test "requires accepting ToS and PP", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = get(conn, Routes.transaction_path(conn, :index))
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
-
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = get(conn, Routes.transaction_path(conn, :index))
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+    test "non-existent user id", %{conn: conn} do
+      {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
+      conn = get(conn, Routes.user_transaction_path(conn, :user_index, "notarealuser"))
+      assert json_response(conn, 200)["data"] == []
     end
+
+    # Uncomment when ready to require ToS and PP
+    # test "requires accepting ToS and PP without user id", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.transaction_path(conn, :user_index))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.transaction_path(conn, :user_index))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
+
+    # Uncomment when ready to require ToS and PP
+    # test "requires accepting ToS and PP with user id", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.user_transaction_path(conn, :user_index, user.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.user_transaction_path(conn, :user_index, user.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "show" do
+
+    #
+    # User version of endpoint
+    #
+
     test "gets transaction", %{conn: conn} do
-      transaction = fixture(:transaction)
-      id = transaction.id
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+      {:ok, _u1, s1, %Transaction{id: id} = _t1} = transaction_fixture()
+      conn = Helpers.Accounts.put_token(conn, s1.api_token)
+
       conn = get(conn, Routes.transaction_path(conn, :show, id))
 
       assert %{
@@ -96,186 +259,283 @@ defmodule MalanWeb.TransactionControllerTest do
                "what" => "some what",
                "when" => "2021-12-22T21:02:00Z"
              } = json_response(conn, 200)["data"]
+    end
+
+    test "requires authentication", %{conn: _} do
+      {:ok, _u1, _s1, t1} = transaction_fixture()
+      conn = build_conn()
+      conn = get(conn, Routes.transaction_path(conn, :show, t1.id))
+      assert conn.status == 403
+    end
+
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, u1, s1, %Transaction{id: id} = _t1} = transaction_fixture()
+    #   conn = Helpers.Accounts.put_token(conn, s1.api_token)
+
+    #   conn = get(conn, Routes.transaction_path(conn, :show, id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(u1, true)
+    #   conn = get(conn, Routes.transaction_path(conn, :show, id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
+
+    test "requires being transaction user to view", %{conn: conn} do
+      {:ok, _u1, _s1, t1} = transaction_fixture()
+      {:ok, conn, _u2, _s2} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.transaction_path(conn, :show, t1.id))
+      assert conn.status == 401
+    end
+
+    test "allows admin to get transaction through regular endpoint", %{conn: conn} do
+      {:ok, _u1, _s1, %Transaction{id: id} = _t1} = transaction_fixture()
+      {:ok, conn, _u2, _s2} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = get(conn, Routes.admin_transaction_path(conn, :show, id))
+
+      assert %{
+               "id" => ^id,
+               "type" => "some type",
+               "verb" => "some verb",
+               "what" => "some what",
+               "when" => "2021-12-22T21:02:00Z"
+             } = json_response(conn, 200)["data"]
+    end
+
+    #
+    # Admin version of endpoint
+    #
+
+    test "allows admin to get transaction through admin endpoint", %{conn: conn} do
+      {:ok, _u1, _s1, %Transaction{id: id} = _t1} = transaction_fixture()
+      {:ok, conn, _u2, _s2} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = get(conn, Routes.admin_transaction_path(conn, :show, id))
+
+      assert %{
+               "id" => ^id,
+               "type" => "some type",
+               "verb" => "some verb",
+               "what" => "some what",
+               "when" => "2021-12-22T21:02:00Z"
+             } = json_response(conn, 200)["data"]
+    end
+
+    test "disallows regular user through admin endpoint even when user owns it", %{conn: conn} do
+      {:ok, _u1, s1, %Transaction{id: id} = _t1} = transaction_fixture()
+      conn = Helpers.Accounts.put_token(conn, s1.api_token)
+
+      conn = get(conn, Routes.admin_transaction_path(conn, :show, id))
+      assert conn.status == 401
+    end
+
+    # test "admin version requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, _u1, s1, %Transaction{id: id} = _t1} = transaction_fixture()
+    #   {:ok, conn, a1, _s2} = Helpers.Accounts.admin_user_session_conn(conn)
+
+    #   conn = get(conn, Routes.admin_transaction_path(conn, :show, id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(a1, true)
+    #   conn = get(conn, Routes.admin_transaction_path(conn, :show, id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
+  end
+
+  describe "users" do
+    test "with user id and username:  lists all transactions for user", %{conn: _conn} do
+      {:ok, u1, _s1, t1} = transaction_fixture()
+      {:ok, u2, _s2, t2} = transaction_fixture()
+
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, u1.id))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request for user 2
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, u2.id))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+
+      # Now make request for user 1 using username
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, u1.username))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request for user 2 using username
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, u2.username))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
     end
 
     test "requires authentication", %{conn: conn} do
-      conn = get(conn, Routes.transaction_path(conn, :show, "42"))
+      conn = get(conn, Routes.transaction_path(conn, :user_index))
       assert conn.status == 403
     end
 
-    test "requires accepting ToS and PP", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = get(conn, Routes.transaction_path(conn, :show, user.id))
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+    test "requires being admin", %{conn: _conn} do
+      {:ok, u1, s1, _t1} = transaction_fixture()
 
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = get(conn, Routes.transaction_path(conn, :show, user.id))
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
-    end
-  end
-
-  describe "create transaction" do
-    test "renders transaction when data is valid", %{conn: conn} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @create_attrs)
-      assert %{"id" => id} = json_response(conn, 201)["data"]
-
-      conn = get(conn, Routes.transaction_path(conn, :show, id))
-
-      assert %{
-               "id" => ^id,
-               "type" => "some type",
-               "verb" => "some verb",
-               "what" => "some what",
-               "when" => "2021-12-22T21:02:00Z"
-             } = json_response(conn, 200)["data"]
-    end
-
-    test "renders errors when data is invalid", %{conn: conn} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-
-    # If regular users should be allowed to create a transaction, then remove this test
-    test "won't work for regular user", %{conn: conn} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @create_attrs)
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, u1.id))
       assert conn.status == 401
     end
 
-    test "requires being authenticated", %{conn: conn} do
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @create_attrs)
+    test "non-existent user", %{conn: conn} do
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :users, "notarealuser"))
+      assert json_response(conn, 200)["data"] == []
+    end
+
+    # Uncomment when ready to require ToS and PP
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, u1, s1, t1} = transaction_fixture()
+    #   {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
+
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.transaction_path(conn, :users, u1.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.transaction_path(conn, :users, u1.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
+  end
+
+  describe "sessions" do
+    test "lists all transactions for user", %{conn: _conn} do
+      {:ok, _u1, s1, t1} = transaction_fixture()
+      {:ok, _u2, s2, t2} = transaction_fixture()
+
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :sessions, s1.id))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request for user 2
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :sessions, s2.id))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
+    end
+
+    test "requires authentication", %{conn: conn} do
+      conn = get(conn, Routes.transaction_path(conn, :sessions, "42"))
       assert conn.status == 403
     end
 
-    test "requires accepting ToS and PP", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @create_attrs)
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+    test "requires being admin", %{conn: _conn} do
+      {:ok, _u1, s1, _t1} = transaction_fixture()
 
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = post(conn, Routes.transaction_path(conn, :create), transaction: @create_attrs)
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
-    end
-  end
-
-  describe "update transaction" do
-    setup [:create_transaction]
-
-    test "renders transaction when data is valid", %{
-      conn: conn,
-      transaction: %Transaction{id: id} = transaction
-    } do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-
-      conn =
-        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
-
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
-
-      conn = get(conn, Routes.transaction_path(conn, :show, id))
-
-      assert %{
-               "id" => ^id,
-               "type" => "some updated type",
-               "verb" => "some updated verb",
-               "what" => "some updated what",
-               "when" => "2021-12-23T21:02:00Z"
-             } = json_response(conn, 200)["data"]
-    end
-
-    test "renders errors when data is invalid", %{conn: conn, transaction: transaction} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-
-      conn =
-        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @invalid_attrs)
-
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-
-    # If regular users should be allowed to create a transaction, then remove this test
-    test "won't work for regular user", %{conn: conn, transaction: transaction} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-
-      conn =
-        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
-
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :sessions, s1.id))
       assert conn.status == 401
     end
 
-    test "requires being authenticated", %{conn: conn, transaction: _transaction} do
-      conn = put(conn, Routes.transaction_path(conn, :update, "42"), transaction: @update_attrs)
-      assert conn.status == 403
+    test "non-existent session", %{conn: conn} do
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :sessions, Ecto.UUID.generate()))
+      assert json_response(conn, 200)["data"] == []
     end
 
-    test "requires accepting ToS and PP", %{conn: conn, transaction: transaction} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
+    # Uncomment when ready to require ToS and PP
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, u1, s1, t1} = transaction_fixture()
+    #   {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
 
-      conn =
-        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.transaction_path(conn, :sessions, s1.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
-
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-
-      conn =
-        put(conn, Routes.transaction_path(conn, :update, transaction), transaction: @update_attrs)
-
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
-    end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.transaction_path(conn, :sessions, s1.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
-  describe "delete transaction" do
-    setup [:create_transaction]
+  describe "who" do
+    test "lists all transactions for user", %{conn: _conn} do
+      {:ok, u1, _s1, t1} = transaction_fixture()
+      {:ok, u2, _s2, t2} = transaction_fixture()
 
-    test "deletes chosen transaction", %{conn: conn, transaction: transaction} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = delete(conn, Routes.transaction_path(conn, :delete, transaction))
-      assert response(conn, 204)
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
 
-      assert_error_sent 404, fn ->
-        get(conn, Routes.transaction_path(conn, :show, transaction))
-      end
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :who, u1.id))
+      [t1a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t1, t1a)
+
+      # Now make request for user 2
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :who, u2.id))
+      [t2a] = json_response(conn, 200)["data"]
+      assert transactions_eq?(t2, t2a)
     end
 
-    test "Requires being authenticated", %{conn: conn, transaction: transaction} do
-      conn = delete(conn, Routes.transaction_path(conn, :delete, transaction))
+    test "requires authentication", %{conn: conn} do
+      conn = get(conn, Routes.transaction_path(conn, :who, "42"))
       assert conn.status == 403
     end
 
-    # If regular users should be allowed to create a transaction, then remove this test
-    test "won't work for regular user", %{conn: conn, transaction: transaction} do
-      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      conn = delete(conn, Routes.transaction_path(conn, :delete, transaction))
+    test "requires being admin", %{conn: _conn} do
+      {:ok, u1, s1, _t1} = transaction_fixture()
+
+      # Now make request for user 1
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :who, u1.id))
       assert conn.status == 401
     end
 
-    test "requires accepting ToS and PP", %{conn: conn, transaction: transaction} do
-      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      conn = Helpers.Accounts.put_token(conn, session.api_token)
-      conn = delete(conn, Routes.transaction_path(conn, :delete, transaction))
-      # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
-
-      {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-      conn = delete(conn, Routes.transaction_path(conn, :delete, transaction))
-      # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+    test "non-existent session", %{conn: conn} do
+      {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = get(conn, Routes.transaction_path(conn, :who, Ecto.UUID.generate()))
+      assert json_response(conn, 200)["data"] == []
     end
+
+    # Uncomment when ready to require ToS and PP
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, u1, s1, t1} = transaction_fixture()
+    #   {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
+
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.transaction_path(conn, :who, u1.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
+
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.transaction_path(conn, :who, u1.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   defp create_transaction(_) do
-    transaction = fixture(:transaction)
-    %{transaction: transaction}
+    {:ok, user, session, transaction} = transaction_fixture()
+    conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+    %{conn: conn, user: user, session: session, transaction: transaction}
   end
 end
