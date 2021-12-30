@@ -88,8 +88,8 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
     test "can't sneak around access control by knowing the ID", %{conn: conn} do
       # user1 owns the phone number, user2 can't request it
-      %{user: u1, session: s1, phone_number: phone_number} = create_phone_number(nil)
-      {:ok, u2, s2} = Helpers.Accounts.regular_user_with_session()
+      %{user: u1, session: _s1, phone_number: phone_number} = create_phone_number(nil)
+      {:ok, _u2, s2} = Helpers.Accounts.regular_user_with_session()
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.user_phone_number_path(conn, :show, u1.id, phone_number.id))
       assert conn.status == 401
