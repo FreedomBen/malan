@@ -13,4 +13,17 @@ defmodule Malan.ExceptionsTest do
       end
     end
   end
+
+  describe "CantBeNil" do
+    test "can create and raise exception" do
+      # assert_raise Malan.CantBeNil, fn -> Accounts.update end
+      assert_raise Malan.CantBeNil, fn ->
+        raise Malan.CantBeNil
+      end
+
+      assert_raise Malan.CantBeNil, fn ->
+        raise Malan.CantBeNil, argv: "argv", argn: "argn"
+      end
+    end
+  end
 end

@@ -32,6 +32,17 @@ defmodule Malan.Utils do
   def nil_or_empty?(str_or_nil) do
     "" == str_or_nil |> to_string() |> String.trim()
   end
+
+  @doc """
+  if argv (value of the argument) is nil, this will raise Malan.CantBeNil.
+  argn (name of the argument) will be passed to allow for more helpful error
+  messages that can tell you the variable name that was nil
+  """
+  def raise_if_nil(argn, argv) do
+    if is_nil(argv) do
+      raise Malan.CantBeNil, argv: argv, argn: argn
+    end
+  end
 end
 
 defmodule Malan.Utils.Enum do
@@ -84,8 +95,8 @@ defmodule Malan.Utils.DateTime do
   end
 
   # New implementation, needs testing
-  #def distant_future(),
-    #do: adjust_cur_time(200, :years)
+  # def distant_future(),
+  #   do: adjust_cur_time(200, :years)
 
   def adjust_cur_time(num_years, :years),
     do: adjust_cur_time(round(num_years * 52.5), :weeks)
