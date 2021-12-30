@@ -1500,10 +1500,10 @@ defmodule Malan.AccountsTest do
       assert transaction == Accounts.get_transaction!(transaction.id)
     end
 
-    test "get_transaction_owner/1" do
+    test "get_transaction_user/1" do
       {:ok, user, _session, transaction} = transaction_fixture()
       user_id = user.id
-      assert %{user_id: ^user_id} = Accounts.get_transaction_owner(transaction.id)
+      assert %{user_id: ^user_id} = Accounts.get_transaction_user(transaction.id)
     end
   end
 end
