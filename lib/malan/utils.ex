@@ -22,19 +22,28 @@ defmodule Malan.Utils do
     |> Map.delete(:__meta__)
   end
 
+  def uuidgen(),
+    do: Ecto.UUID.generate()
+
+  def is_uuid?(str),
+    do: str =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+
   # def nil_or_empty?(nil), do: true
   # def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
 
   @doc """
-  Checks if the passwed item is nil or empty string.  The param will be passed to to_string()
-  and then trimmed and checked for empty string
+  Checks if the passed item is nil or empty string.
+
+  The param will be passed to `to_string()`
+  and then `String.trim()` and checked for empty string
   """
   def nil_or_empty?(str_or_nil) do
     "" == str_or_nil |> to_string() |> String.trim()
   end
 
   @doc """
-  if argv (value of the argument) is nil, this will raise Malan.CantBeNil.
+  if argv (value of the argument) is nil, this will raise `Malan.CantBeNil`
+
   argn (name of the argument) will be passed to allow for more helpful error
   messages that can tell you the variable name that was nil
   """
@@ -47,10 +56,10 @@ end
 
 defmodule Malan.Utils.Enum do
   @doc """
-  Enum.all? will return true if all invocations of the function return
-  true. Enum.none? is the opposite.  Enum.none? will return true if all
-  invocations of the function return false.  If one returns true, the
-  end result will be false
+  will return true if all invocations of the function return false.  If one callback returns `true`, the end result will be `false`
+
+  `Enum.all?` will return true if all invocations of the function return
+  true. `Malan.Utils.Enum.none?` is the opposite.
   """
   def none?(enum, func) do
     Enum.all?(enum, fn i -> !func.(i) end)

@@ -10,6 +10,14 @@ defmodule Malan.UtilsTest do
       assert false == Utils.nil_or_empty?("abcd")
       assert false == Utils.nil_or_empty?(42)
     end
+
+    test "uuidgen/0" do
+      assert Utils.uuidgen() =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+    end
+
+    test "#is_uuid?/1" do
+      assert Utils.is_uuid?(Ecto.UUID.generate())
+    end
   end
 
   describe "Crypto" do
