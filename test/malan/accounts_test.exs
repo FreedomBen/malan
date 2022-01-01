@@ -303,7 +303,7 @@ defmodule Malan.AccountsTest do
                List.first(user.tos_accept_events)
 
       assert tos_version == ToS.current_version()
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert user.latest_tos_accept_ver == ToS.current_version()
     end
@@ -317,7 +317,7 @@ defmodule Malan.AccountsTest do
                List.first(user.tos_accept_events)
 
       assert tos_version == ToS.current_version()
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert user.latest_tos_accept_ver == nil
     end
@@ -330,7 +330,7 @@ defmodule Malan.AccountsTest do
       assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version} =
                List.first(u1.tos_accept_events)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
 
@@ -340,7 +340,7 @@ defmodule Malan.AccountsTest do
       assert %{accept: true, id: id, timestamp: timestamp, tos_version: tos_version} =
                Enum.at(u2.tos_accept_events, 0)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert u2.latest_tos_accept_ver == ToS.current_version()
@@ -351,7 +351,7 @@ defmodule Malan.AccountsTest do
       assert %{accept: false, id: id, timestamp: timestamp, tos_version: tos_version} =
                Enum.at(u3.tos_accept_events, 0)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert u3.latest_tos_accept_ver == nil
@@ -365,7 +365,7 @@ defmodule Malan.AccountsTest do
       assert %{accept: true, id: id, timestamp: timestamp, privacy_policy_version: ppv} =
                List.first(user.privacy_policy_accept_events)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert ppv == PrivacyPolicy.current_version()
       assert user.latest_pp_accept_ver == PrivacyPolicy.current_version()
@@ -379,7 +379,7 @@ defmodule Malan.AccountsTest do
       assert %{accept: false, id: id, timestamp: timestamp, privacy_policy_version: ppv} =
                List.first(user.privacy_policy_accept_events)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert ppv == PrivacyPolicy.current_version()
       assert user.latest_pp_accept_ver == nil
@@ -398,7 +398,7 @@ defmodule Malan.AccountsTest do
              } =
                List.first(u1.privacy_policy_accept_events)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
 
@@ -413,7 +413,7 @@ defmodule Malan.AccountsTest do
              } =
                Enum.at(u2.privacy_policy_accept_events, 0)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert u2.latest_pp_accept_ver == PrivacyPolicy.current_version()
@@ -429,7 +429,7 @@ defmodule Malan.AccountsTest do
              } =
                Enum.at(u3.privacy_policy_accept_events, 0)
 
-      assert id =~ ~r/[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}/
+      assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
       assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
       assert u3.latest_pp_accept_ver == nil
