@@ -243,7 +243,7 @@ defmodule Malan.UserSchemaTest do
     end
   end
 
-  describe "Users.Sex" do
+  describe "User.Sex" do
     test "#to_s" do
       assert nil == User.Sex.to_s(nil)
       assert "Male" == User.Sex.to_s(0)
@@ -276,7 +276,7 @@ defmodule Malan.UserSchemaTest do
     end
   end
 
-  describe "Users.Gender" do
+  describe "User.Gender" do
     test "#to_s" do
       assert "Agender" == User.Gender.to_s(0)
       assert "Androgyne" == User.Gender.to_s(1)
@@ -415,7 +415,7 @@ defmodule Malan.UserSchemaTest do
     end
   end
 
-  describe "Users.Ethnicity" do
+  describe "User.Ethnicity" do
     test "#to_s" do
       assert nil == User.Ethnicity.to_s(nil)
       assert "Hispanic or Latinx" == User.Ethnicity.to_s(0)
@@ -441,7 +441,7 @@ defmodule Malan.UserSchemaTest do
     end
   end
 
-  describe "Users.Race" do
+  describe "User.Race" do
     defp races_to_cs(races), do: %Ecto.Changeset{changes: %{race: races}}
 
     test "#all_races_valid?/1" do
