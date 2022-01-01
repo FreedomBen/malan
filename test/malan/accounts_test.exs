@@ -1388,23 +1388,23 @@ defmodule Malan.AccountsTest do
 
     test "list_transactions/0 returns all transactions" do
       {:ok, _user, _session, transaction} = transaction_fixture()
-      assert Accounts.list_transactions() == [transaction]
+      assert Accounts.list_transactions() == [transaction_fixture_to_retrieved(transaction)]
     end
 
     test "list_transactions/1 returns all transactions for user" do
       {:ok, u1, _s1, t1} = transaction_fixture()
       {:ok, _u2, _s2, _t2} = transaction_fixture()
-      assert Accounts.list_transactions(u1.id) == [t1]
+      assert Accounts.list_transactions(u1.id) == [transaction_fixture_to_retrieved(t1)]
     end
 
     test "get_transaction!/1 returns the transaction with given id" do
       {:ok, _user, _session, transaction} = transaction_fixture()
-      assert Accounts.get_transaction!(transaction.id) == transaction
+      assert Accounts.get_transaction!(transaction.id) == transaction_fixture_to_retrieved(transaction)
     end
 
     test "get_transaction_by/1 returns the transaction matching the param" do
       {:ok, user, _session, transaction} = transaction_fixture()
-      assert Accounts.get_transaction_by(user_id: user.id) == transaction
+      assert Accounts.get_transaction_by(user_id: user.id) == transaction_fixture_to_retrieved(transaction)
     end
 
     test "get_transaction_by/1 returns nil if no results" do
@@ -1420,8 +1420,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction_by!/1 returns the transaction matching the param" do
-      {:ok, user, _session, transaction} = transaction_fixture()
-      assert Accounts.get_transaction_by!(user_id: user.id) == transaction
+      {:ok, user, _session, tf} = transaction_fixture()
+      assert transaction_fixture_to_retrieved(tf) == Accounts.get_transaction_by!(user_id: user.id)
     end
 
     test "get_transaction_by!/1 raises if no results" do
@@ -1441,8 +1441,8 @@ defmodule Malan.AccountsTest do
 
     test "create_transaction/1 with valid data creates a transaction" do
       valid_attrs = %{
-        "type" => "some type",
-        "verb" => "some verb",
+        "type" => "sessions",
+        "verb" => "DELETE",
         "what" => "some what",
         "when" => ~U[2021-12-22 21:02:00Z]
       }
@@ -1452,8 +1452,8 @@ defmodule Malan.AccountsTest do
       assert {:ok, %Transaction{} = transaction} =
                Accounts.create_transaction(user.id, session.id, user.id, valid_attrs)
 
-      assert transaction.type == "some type"
-      assert transaction.verb == "some verb"
+      assert transaction.type == "sessions"
+      assert transaction.verb == "DELETE"
       assert transaction.what == "some what"
       assert transaction.when == ~U[2021-12-22 21:02:00Z]
     end
@@ -1467,8 +1467,8 @@ defmodule Malan.AccountsTest do
       {:ok, _user, _session, transaction} = transaction_fixture()
 
       update_attrs = %{
-        type: "some updated type",
-        verb: "some updated verb",
+        type: "sessions",
+        verb: "PUT",
         what: "some updated what",
         when: ~U[2021-12-23 21:02:00Z]
       }
@@ -1477,17 +1477,17 @@ defmodule Malan.AccountsTest do
         Accounts.update_transaction(transaction, update_attrs)
       end
 
-      assert transaction == Accounts.get_transaction!(transaction.id)
+      assert transaction_fixture_to_retrieved(transaction) == Accounts.get_transaction!(transaction.id)
     end
 
     test "update_transaction/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
-      {:ok, _user, _session, transaction} = transaction_fixture()
+      {:ok, _user, _session, tf} = transaction_fixture()
 
       assert_raise Malan.ObjectIsImmutable, fn ->
-        Accounts.update_transaction(transaction, @invalid_attrs)
+        Accounts.update_transaction(tf, @invalid_attrs)
       end
 
-      assert transaction == Accounts.get_transaction!(transaction.id)
+      assert transaction_fixture_to_retrieved(tf) == Accounts.get_transaction!(tf.id)
     end
 
     test "delete_transaction/1 raises a Malan.ObjectIsImmutable exception" do
@@ -1497,7 +1497,7 @@ defmodule Malan.AccountsTest do
         Accounts.delete_transaction(transaction)
       end
 
-      assert transaction == Accounts.get_transaction!(transaction.id)
+      assert transaction_fixture_to_retrieved(transaction) == Accounts.get_transaction!(transaction.id)
     end
 
     test "get_transaction_user/1" do

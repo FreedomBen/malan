@@ -29,10 +29,10 @@ defmodule Malan.AccountsFixtures do
 #  end
 
   @transaction_valid_attrs %{
-    "type" => "some type",
-    "verb" => "some verb",
+    "type" => "users",
+    "verb" => "GET",
     "what" => "some what",
-    "when" => ~U[2021-12-22 21:02:00Z]
+    "when" => nil
   }
 
   def create_transaction(nil, user, session, attrs) do
@@ -59,4 +59,9 @@ defmodule Malan.AccountsFixtures do
            ),
          do: {:ok, user, session, transaction}
   end
+
+  def transaction_fixture_to_retrieved(transaction) do
+    %{ transaction | type: nil, verb: nil }
+  end
+
 end

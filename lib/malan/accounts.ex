@@ -1271,6 +1271,10 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  def create_transaction(user_id, session_id, who_id, type, verb, what, when_utc \\ nil) do
+    create_transaction(user_id, session_id, who_id, %{"type" => type, "verb" => verb, "what" => what, "when" => when_utc})
+  end
+
   def create_transaction(user_id, session_id, who_id, attrs \\ %{}) do
     %Transaction{}
     |> Transaction.create_changeset(
