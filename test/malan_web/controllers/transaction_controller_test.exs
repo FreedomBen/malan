@@ -6,33 +6,34 @@ defmodule MalanWeb.TransactionControllerTest do
   alias Malan.Accounts.Transaction
 
   alias Malan.Test.Helpers
+  alias Malan.Test.Utils, as: TestUtils
 
   def transactions_eq?(%{id: _} = t1, %{id: _} = t2) do
     t1.id == t2.id &&
-      t1.type == t2.type &&
-      t1.verb == t2.verb &&
-      t1.what == t2.what
+      t1.what == t2.what &&
+      t1.type_enum == t2.type_enum &&
+      t1.verb_enum == t2.verb_enum
   end
 
   def transactions_eq?(%{"id" => _} = t1, %{id: _} = t2) do
     t1["id"] == t2.id &&
-      t1["type"] == t2.type &&
-      t1["verb"] == t2.verb &&
-      t1["what"] == t2.what
+      t1["what"] == t2.what &&
+      Transaction.Type.to_i(t1["type_enum"]) == t2.type_enum &&
+      Transaction.Verb.to_i(t1["verb_enum"]) == t2.verb_enum
   end
 
   def transactions_eq?(%{id: _} = t1, %{"id" => _} = t2) do
     t1.id == t2["id"] &&
-      t1.type == t2["type"] &&
-      t1.verb == t2["verb"] &&
-      t1.what == t2["what"]
+      t1.what == t2["what"] &&
+      t1.type_enum == Transaction.Type.to_i(t2["type"]) &&
+      t1.verb_enum == Transaction.Verb.to_i(t2["verb"])
   end
 
   def transactions_eq?(%{"id" => _} = t1, %{"id" => _} = t2) do
     t1["id"] == t2["id"] &&
+      t1["what"] == t2["what"] &&
       t1["type"] == t2["type"] &&
-      t1["verb"] == t2["verb"] &&
-      t1["what"] == t2["what"]
+      t1["verb"] == t2["verb"]
   end
 
   setup %{conn: conn} do
@@ -254,11 +255,14 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
-               "type" => "some type",
-               "verb" => "some verb",
+               "type" => "users",
+               "verb" => "GET",
                "what" => "some what",
-               "when" => "2021-12-22T21:02:00Z"
+               "when" => when_str,
              } = json_response(conn, 200)["data"]
+
+      assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
+      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
     end
 
     test "requires authentication", %{conn: _} do
@@ -298,11 +302,14 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
-               "type" => "some type",
-               "verb" => "some verb",
+               "type" => "users",
+               "verb" => "GET",
                "what" => "some what",
-               "when" => "2021-12-22T21:02:00Z"
+               "when" => when_str
              } = json_response(conn, 200)["data"]
+
+      assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
+      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
     end
 
     #
@@ -317,11 +324,14 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
-               "type" => "some type",
-               "verb" => "some verb",
+               "type" => "users",
+               "verb" => "GET",
                "what" => "some what",
-               "when" => "2021-12-22T21:02:00Z"
+               "when" => when_str
              } = json_response(conn, 200)["data"]
+
+      assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
+      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
     end
 
     test "disallows regular user through admin endpoint even when user owns it", %{conn: conn} do
