@@ -4,6 +4,9 @@ end
 defmodule Malan.Test.Utils.DateTime do
   defp inner_compare(dt1, dt2, range), do: Enum.member?(range, DateTime.diff(dt1, dt2, :second))
 
+  @doc ~S"""
+  check if `dt1` and `dt2` are within `num` units of each other
+  """
   def plus_or_minus?(dt1, dt2, num, :seconds),
     do: inner_compare(dt1, dt2, Range.new(num * -1, num))
 
@@ -15,6 +18,9 @@ defmodule Malan.Test.Utils.DateTime do
 
   def plus_or_minus?(dt1, dt2, num, :weeks), do: plus_or_minus?(dt1, dt2, num * 7, :days)
 
+  @doc ~S"""
+  Check if the first `DateTime` is within `num` units of the second DateTime
+  """
   def first_after_second_within?(dt1, dt2, num, :seconds),
     do: inner_compare(dt1, dt2, Range.new(0, num))
 
@@ -30,6 +36,9 @@ defmodule Malan.Test.Utils.DateTime do
   def first_after_second_within?(dt1, dt2, num, :weeks),
     do: first_after_second_within?(dt1, dt2, num * 7, :days)
 
+  @doc ~S"""
+  Check if the specified datetime references a time within the last `num` of units
+  """
   def within_last?(dt, num, :seconds),
     do: inner_compare(DateTime.utc_now(), dt, Range.new(0, num))
 
