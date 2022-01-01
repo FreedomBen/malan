@@ -111,7 +111,7 @@ defmodule Malan.Accounts do
 
   defp get_user_by_id_or_username_query(id_or_username) do
     cond do
-      id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+      Utils.is_uuid?(id_or_username) ->
         from(u in User, where: (u.id == ^id_or_username or u.username == ^id_or_username) and is_nil(u.deleted_at))
       true ->
         from(u in User, where: (u.username == ^id_or_username) and is_nil(u.deleted_at))
@@ -150,8 +150,7 @@ defmodule Malan.Accounts do
 
   defp get_user_full_by_id_or_username_query(id_or_username) do
     cond do
-      id_or_username =~
-          ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+      Utils.is_uuid?(id_or_username) ->
         get_user_full_by_id_or_username_query(:id, id_or_username)
 
       true ->
@@ -159,11 +158,31 @@ defmodule Malan.Accounts do
     end
   end
 
+  @doc ~S"""
+  Retrieve the user matching the specified argument which can be either id or username.
+
+  Returns %User{} if found, or nil if not found
+
+  ## Examples
+
+      iex>  Accounts.get_user_full_by_id_or_username("username")
+      %User{}
+  """
   def get_user_full_by_id_or_username(id_or_username) do
     get_user_full_by_id_or_username_query(id_or_username)
     |> Repo.one()
   end
 
+  @doc ~S"""
+  Retrieve the user matching the specified argument which can be either id or username.
+
+  Returns %User{} if found, raises Ecto.NoResultsError if not found
+
+  ## Examples
+
+      iex>  Accounts.get_user_full_by_id_or_username!("username")
+      %User{}
+  """
   def get_user_full_by_id_or_username!(id_or_username) do
     query = get_user_full_by_id_or_username_query(id_or_username)
     user = Repo.one(query)
@@ -1104,7 +1123,7 @@ defmodule Malan.Accounts do
     cond do
       user_id_or_username == nil ->
         []
-      user_id_or_username =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/ ->
+      Utils.is_uuid?(user_id_or_username) ->
         list_transactions_by_user_id(user_id_or_username)
       true ->
         list_transactions_by_username(user_id_or_username)
