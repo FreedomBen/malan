@@ -200,4 +200,38 @@ defmodule Malan.AuthController do
   def accepted_latest_pp?(pp) do
     {:ok, pp == PrivacyPolicy.current_version()}
   end
+
+  @doc ~S"""
+  Extract the authed user ID from the `conn`
+
+  Returns the user id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_user_id(Plug.Conn.t()) :: String.t() | nil
+  def authed_user_id(%Plug.Conn{} = conn) do
+    conn
+    |> Map.get(:assigns, %{})
+    |> Map.get(:authed_user_id, nil)
+  end
+
+  @doc ~S"""
+  Extract the authed session ID from the `conn`
+
+  Returns the session id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_session_id(Plug.Conn.t()) :: String.t() | nil
+  def authed_session_id(%Plug.Conn{} = conn) do
+    conn
+    |> Map.get(:assigns, %{})
+    |> Map.get(:authed_session_id, nil)
+  end
+
+  @doc ~S"""
+  Extract the authed user ID and authed session ID from the `conn`
+
+  Returns the session id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_user_and_session(Plug.Conn.t()) :: {String.t() | nil, String.t() | nil}
+  def authed_user_and_session(%Plug.Conn{} = conn) do
+    {authed_user_id(conn), authed_session_id(conn)}
+  end
 end

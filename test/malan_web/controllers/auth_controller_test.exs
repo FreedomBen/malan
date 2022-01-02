@@ -518,4 +518,26 @@ defmodule MalanWeb.AuthControllerTest do
                )
     end
   end
+
+  describe "#authed_user_and_session/1" do
+    test "works correctly" do
+      assert {"abcdefg", "hijklmnop"} ==
+               AuthController.authed_user_and_session(%Plug.Conn{
+                 assigns: %{authed_user_id: "abcdefg", authed_session_id: "hijklmnop"}
+               })
+
+      assert {"abcdefg", nil} ==
+               AuthController.authed_user_and_session(%Plug.Conn{
+                 assigns: %{authed_user_id: "abcdefg"}
+               })
+
+      assert {nil, "hijklmnop"} ==
+               AuthController.authed_user_and_session(%Plug.Conn{
+                 assigns: %{authed_session_id: "hijklmnop"}
+               })
+
+      assert {nil, nil} == AuthController.authed_user_and_session(%Plug.Conn{assigns: %{}})
+      assert {nil, nil} == AuthController.authed_user_and_session(%Plug.Conn{})
+    end
+  end
 end
