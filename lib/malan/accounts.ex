@@ -3,6 +3,8 @@ defmodule Malan.Accounts do
   The Accounts context.
   """
 
+  require Logger
+
   import Ecto.Query, warn: false
   alias Malan.Repo
 
@@ -66,7 +68,7 @@ defmodule Malan.Accounts do
 
   """
   def get_user_full(id) do
-    #Repo.one(from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses]))
+    # Repo.one(from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses]))
 
     # Pipe version
     User
@@ -91,7 +93,7 @@ defmodule Malan.Accounts do
 
   """
   def get_user_full!(id) do
-    #query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses])
+    # query = from(u in User, where: u.id == ^id and is_nil(u.deleted_at), preload: [:phone_numbers, :addresses])
 
     # Pipe version
     query =
@@ -112,9 +114,13 @@ defmodule Malan.Accounts do
   defp get_user_by_id_or_username_query(id_or_username) do
     cond do
       Utils.is_uuid?(id_or_username) ->
-        from(u in User, where: (u.id == ^id_or_username or u.username == ^id_or_username) and is_nil(u.deleted_at))
+        from(u in User,
+          where:
+            (u.id == ^id_or_username or u.username == ^id_or_username) and is_nil(u.deleted_at)
+        )
+
       true ->
-        from(u in User, where: (u.username == ^id_or_username) and is_nil(u.deleted_at))
+        from(u in User, where: u.username == ^id_or_username and is_nil(u.deleted_at))
     end
   end
 
@@ -220,13 +226,12 @@ defmodule Malan.Accounts do
     get_user_by(password_reset_token_hash: Utils.Crypto.hash_token(token))
   end
 
-  #def get_user_by(username: username) do
-  #  Repo.one(
-  #    from u in User,
-  #    where: u.username == ^username
-  #  )
-  #end
-
+  # def get_user_by(username: username) do
+  #   Repo.one(
+  #     from u in User,
+  #     where: u.username == ^username
+  #   )
+  # end
 
   @doc """
   Creates a user.
@@ -246,8 +251,8 @@ defmodule Malan.Accounts do
     |> Repo.insert()
   end
 
-  #@doc """
-  #Updates a user.
+  # @doc """
+  # Updates a user.
 
   ### Examples
 
@@ -257,11 +262,11 @@ defmodule Malan.Accounts do
   #    iex> update_user(user, %{field: bad_value})
   #    {:error, %Ecto.Changeset{}}
 
-  #"""
-  #def update_user(%User{password: nil} = user, attrs) do
-  #  update_usr(user, attrs)
-  #end
-    #do: update_usr(user, attrs)
+  # """
+  # def update_user(%User{password: nil} = user, attrs) do
+  #   update_usr(user, attrs)
+  # end
+  # do: update_usr(user, attrs)
 
   @doc """
   Updates a user's password.  If password is being changed, all non-permanent
@@ -299,10 +304,17 @@ defmodule Malan.Accounts do
   """
   def validate_password_reset_token(user, password_reset_token) do
     cond do
-      Utils.nil_or_empty?(user.password_reset_token_hash) -> {:error, :missing_password_reset_token}
-      Utils.DateTime.expired?(user.password_reset_token_expires_at) -> {:error, :expired_password_reset_token}
-      user.password_reset_token_hash == Utils.Crypto.hash_token(password_reset_token) -> {:ok}
-      true -> {:error, :invalid_password_reset_token}
+      Utils.nil_or_empty?(user.password_reset_token_hash) ->
+        {:error, :missing_password_reset_token}
+
+      Utils.DateTime.expired?(user.password_reset_token_expires_at) ->
+        {:error, :expired_password_reset_token}
+
+      user.password_reset_token_hash == Utils.Crypto.hash_token(password_reset_token) ->
+        {:ok}
+
+      true ->
+        {:error, :invalid_password_reset_token}
     end
   end
 
@@ -403,7 +415,7 @@ defmodule Malan.Accounts do
 
   """
   def delete_user(%User{} = user) do
-    #Repo.delete(user)
+    # Repo.delete(user)
     user
     |> User.delete_changeset()
     |> Repo.update()
@@ -435,18 +447,17 @@ defmodule Malan.Accounts do
 
   def list_sessions, do: Repo.all(Session)
 
-  #def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
+  # def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
 
-  #def list_active_session(user_id) do
-  #  Repo.all(
+  # def list_active_session(user_id) do
+  #   Repo.all(
+  #     from s in Session,
+  #     where: s.user_id == ^user_id and s.kjll
 
-  #    from s in Session,
-  #    where: s.user_id == ^user_id and s.kjll
-
-  #    from(s in Session, where: s.user_id == ^user_id),
-  #    set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
-  #  )
-  #end
+  #     from(s in Session, where: s.user_id == ^user_id),
+  #     set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
+  #   )
+  # end
 
   @doc """
   Returns the list of all user sessions.  Requires being an admin.
@@ -1123,8 +1134,10 @@ defmodule Malan.Accounts do
     cond do
       user_id_or_username == nil ->
         []
+
       Utils.is_uuid?(user_id_or_username) ->
         list_transactions_by_user_id(user_id_or_username)
+
       true ->
         list_transactions_by_username(user_id_or_username)
     end
@@ -1155,9 +1168,10 @@ defmodule Malan.Accounts do
 
     Repo.all(
       from t in Transaction,
-      select: t,
-      join: u in User, on: u.username == ^username,
-      where: t.user_id == u.id
+        select: t,
+        join: u in User,
+        on: u.username == ^username,
+        where: t.user_id == u.id
     )
   end
 
@@ -1265,6 +1279,7 @@ defmodule Malan.Accounts do
   """
   def get_transaction_user(transaction_id) do
     Utils.raise_if_nil("transaction_id", transaction_id)
+
     Repo.one(
       from t in Transaction,
         select: %{user_id: t.user_id},
@@ -1276,6 +1291,14 @@ defmodule Malan.Accounts do
   Creates a transaction.  A transaction is immutable once it is created, so it
   cannot be updated later.  Make sure you have all the info you need now!
 
+  `user_id` is the user owning the session that made the change
+  `session_id` is the session that made the change
+  `who_id` is the user id of the user being changed
+  `type` is either "users" or "sessions" depending on which table was changed
+  `verb` is GET || PUT || POST || DELETE
+  `what` is a human readable stering describing the change
+  `when_utc` is a utc timestamp of when the change happened
+
   ## Examples
 
       iex> create_transaction(%{field: value})
@@ -1286,7 +1309,12 @@ defmodule Malan.Accounts do
 
   """
   def create_transaction(user_id, session_id, who_id, type, verb, what, when_utc \\ nil) do
-    create_transaction(user_id, session_id, who_id, %{"type" => type, "verb" => verb, "what" => what, "when" => when_utc})
+    create_transaction(user_id, session_id, who_id, %{
+      "type" => type,
+      "verb" => verb,
+      "what" => what,
+      "when" => when_utc
+    })
   end
 
   def create_transaction(user_id, session_id, who_id, attrs \\ %{}) do
@@ -1311,9 +1339,9 @@ defmodule Malan.Accounts do
 
   """
   def update_transaction(%Transaction{} = transaction, attrs) do
-    #transaction
-    #|> Transaction.changeset(attrs)
-    #|> Repo.update()
+    # transaction
+    # |> Transaction.changeset(attrs)
+    # |> Repo.update()
 
     raise Malan.ObjectIsImmutable,
       action: "update",
@@ -1334,7 +1362,7 @@ defmodule Malan.Accounts do
 
   """
   def delete_transaction(%Transaction{} = transaction) do
-    #Repo.delete(transaction)
+    # Repo.delete(transaction)
 
     raise Malan.ObjectIsImmutable,
       action: "delete",

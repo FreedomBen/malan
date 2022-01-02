@@ -1,7 +1,8 @@
 defmodule MalanWeb.UserControllerTest do
   use MalanWeb.ConnCase, async: true
 
-  alias Malan.Accounts.User
+  alias Malan.Accounts
+  alias Malan.Accounts.{User, Session, Transaction}
   alias Malan.Utils
   alias Malan.Repo
 
@@ -365,6 +366,28 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.all?(addrs, fn ad -> ad["name"] == ad1["name"] || ad["name"] == ad2["name"] end)
     end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
+      # password should be included after creation
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+
+      assert [
+               %Transaction{
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 0,
+                 verb_enum: 1,
+                 who: ^id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(nil)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil)
+      assert [tx] == Accounts.list_transactions_by_who(id)
+    end
   end
 
   describe "update user" do
@@ -683,6 +706,37 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :show, id))
       check_response.(conn)
     end
+
+    test "Creates a corresponding Transaction", %{
+      conn: conn,
+      user: %User{id: id} = user,
+      session: %Session{id: session_id} = session
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      conn = put(conn, Routes.user_path(conn, :update, user), user: %{nick_name: "Danny Carey"})
+
+      assert %{
+               "id" => ^id,
+               "nick_name" => "Danny Carey"
+             } = json_response(conn, 200)["data"]
+
+      assert [
+               %Transaction{
+                 user_id: ^id,
+                 session_id: ^session_id,
+                 type_enum: 0,
+                 verb_enum: 2,
+                 who: ^id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(id)
+      assert [tx] == Accounts.list_transactions_by_session_id(session_id)
+      assert [tx] == Accounts.list_transactions_by_who(id)
+    end
   end
 
   describe "admin update user" do
@@ -752,9 +806,10 @@ defmodule MalanWeb.UserControllerTest do
     test "allows removing roles", %{conn: conn, user: %User{}, session: _session} do
       [{:ok, conn, _au1, _as1}, {:ok, _conn, au2, _as2}] =
         Helpers.Accounts.admin_users_session_conn(conn, 2)
-      #{:ok, _au1, as1} = Helpers.Accounts.admin_user_with_session()
-      #{:ok, au2, _as2} = Helpers.Accounts.admin_user_with_session(%{email: "au2@mail.com", username: "au2"})
-      #conn = Helpers.Accounts.put_token(conn, as1.api_token)
+
+      # {:ok, _au1, as1} = Helpers.Accounts.admin_user_with_session()
+      # {:ok, au2, _as2} = Helpers.Accounts.admin_user_with_session(%{email: "au2@mail.com", username: "au2"})
+      # conn = Helpers.Accounts.put_token(conn, as1.api_token)
       conn = get(conn, Routes.user_path(conn, :show, au2.id))
       assert %{"roles" => ["admin", "user"]} = json_response(conn, 200)["data"]
       conn = put(conn, Routes.user_path(conn, :admin_update, au2.id), user: %{roles: ["user"]})
@@ -849,6 +904,39 @@ defmodule MalanWeb.UserControllerTest do
                |> Enum.member?(ph["number"])
              end)
     end
+
+    test "Creates a corresponding transaction", %{
+      conn: _conn,
+      user: %User{id: id} = user,
+      session: %Session{} = _session
+    } do
+      {:ok, conn, %{id: admin_user_id} = _au, %{id: admin_session_id} = _as} =
+        Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_update, user), user: %{roles: ["admin", "user"]})
+
+      assert %{
+               "id" => ^id,
+               "roles" => ["admin", "user"]
+             } = json_response(conn, 200)["data"]
+
+      assert [
+               %Transaction{
+                 user_id: ^admin_user_id,
+                 session_id: ^admin_session_id,
+                 type_enum: 0,
+                 verb_enum: 2,
+                 who: ^id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
+      assert [tx] == Accounts.list_transactions_by_who(id)
+    end
   end
 
   describe "delete user" do
@@ -861,6 +949,35 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, user))
       assert conn.status == 404
+    end
+
+    test "Creates a corresponding transaction", %{
+      conn: conn,
+      user: %User{id: id} = user,
+      session: %Session{id: session_id} = session
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = delete(conn, Routes.user_path(conn, :delete, user))
+      assert response(conn, 204)
+
+      conn = get(conn, Routes.user_path(conn, :show, user))
+      assert conn.status == 404
+
+      assert [
+               %Transaction{
+                 user_id: ^id,
+                 session_id: ^session_id,
+                 type_enum: 0,
+                 verb_enum: 3,
+                 who: ^id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(id)
+      assert [tx] == Accounts.list_transactions_by_session_id(session_id)
+      assert [tx] == Accounts.list_transactions_by_who(id)
     end
   end
 
@@ -948,8 +1065,8 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
-      #conn = post(conn, Routes.user_path(conn, user_id, :admin_reset_password), %{})
-      #conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
+      # conn = post(conn, Routes.user_path(conn, user_id, :admin_reset_password), %{})
+      # conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]

@@ -30,7 +30,6 @@ defmodule MalanWeb.TransactionController do
 
   # User ID of the user who made the change (token owner) (Admin endpoint)
   def users(conn, %{"user_id" => user_id}) do
-    #user = Accounts.get_user_by_id_or_username!(user_id)
     user = Accounts.get_user_by_id_or_username(user_id)
     transactions = Accounts.list_transactions(user)
     render(conn, "index.json", transactions: transactions)
@@ -38,14 +37,12 @@ defmodule MalanWeb.TransactionController do
 
   # Session ID of session who made the change
   def sessions(conn, %{"session_id" => session_id}) do
-    #transactions = Accounts.get_transaction_by!(session_id: session_id)
     transactions = Accounts.list_transactions_by_session_id(session_id)
     render(conn, "index.json", transactions: transactions)
   end
 
   # User ID of target/who was modified
   def who(conn, %{"user_id" => user_id}) do
-    #transactions = Accounts.get_transaction_by!(who: user_id)
     transactions = Accounts.list_transactions_by_who(user_id)
     render(conn, "index.json", transactions: transactions)
   end
@@ -58,32 +55,32 @@ defmodule MalanWeb.TransactionController do
 
   # Transactions can't be created directly.
   # They are created as a side effect of other events
-  #def create(conn, %{"transaction" => transaction_params}) do
-  #  with {:ok, %Transaction{} = transaction} <- Accounts.create_transaction(transaction_params) do
-  #    conn
-  #    |> put_status(:created)
-  #    |> put_resp_header("location", Routes.transaction_path(conn, :show, transaction))
-  #    |> render("show.json", transaction: transaction)
-  #  end
-  #end
+  # def create(conn, %{"transaction" => transaction_params}) do
+  #   with {:ok, %Transaction{} = transaction} <- Accounts.create_transaction(transaction_params) do
+  #     conn
+  #     |> put_status(:created)
+  #     |> put_resp_header("location", Routes.transaction_path(conn, :show, transaction))
+  #     |> render("show.json", transaction: transaction)
+  #   end
+  # end
 
   # Transactions are immutable and can't be updated
-  #def update(conn, %{"id" => id, "transaction" => transaction_params}) do
-  #  transaction = Accounts.get_transaction!(id)
+  # def update(conn, %{"id" => id, "transaction" => transaction_params}) do
+  #   transaction = Accounts.get_transaction!(id)
 
-  #  with {:ok, %Transaction{} = transaction} <- Accounts.update_transaction(transaction, transaction_params) do
-  #    render(conn, "show.json", transaction: transaction)
-  #  end
-  #end
+  #   with {:ok, %Transaction{} = transaction} <- Accounts.update_transaction(transaction, transaction_params) do
+  #     render(conn, "show.json", transaction: transaction)
+  #   end
+  # end
 
   # Transactions are immutable and can't be deleted
-  #def delete(conn, %{"id" => id}) do
-  #  transaction = Accounts.get_transaction!(id)
+  # def delete(conn, %{"id" => id}) do
+  #   transaction = Accounts.get_transaction!(id)
 
-  #  with {:ok, %Transaction{}} <- Accounts.delete_transaction(transaction) do
-  #    send_resp(conn, :no_content, "")
-  #  end
-  #end
+  #   with {:ok, %Transaction{}} <- Accounts.delete_transaction(transaction) do
+  #     send_resp(conn, :no_content, "")
+  #   end
+  # end
 
   defp is_transaction_user?(conn, _opts) do
     %{user_id: transaction_user} = Accounts.get_transaction_user(conn.params["id"])

@@ -84,7 +84,8 @@ defmodule Malan.AccountsTest do
       assert user.username == "someusername1"
       assert us = Accounts.get_user!(user.id)
       assert us.email == user.email
-      assert us.password == nil # important check since password is hashed
+      # important check since password is hashed
+      assert us.password == nil
       assert us.preferences == user.preferences
       assert us.roles == user.roles
       assert us.tos_accept_events == []
@@ -268,26 +269,26 @@ defmodule Malan.AccountsTest do
                Accounts.get_user!(user.id)
     end
 
-    #test "update_user/2 can be used to accept the ToS" do
-    #  user1 = user_fixture()
-    #  assert user1.tos_accept_events == []
-    #  assert {:ok, %User{} = user2} = Accounts.update_user(user1, %{accept_tos: true})
-    #  assert user2.password =~ ~r/[A-Za-z0-9]{10}/
-    #  assert TestUtils.DateTime.within_last?(user2.tos_accept_events, 5, :seconds)
-    #  assert %{ user2 | password: nil, accept_tos: nil } == Accounts.get_user!(user2.id)
-    #end
+    # test "update_user/2 can be used to accept the ToS" do
+    #   user1 = user_fixture()
+    #   assert user1.tos_accept_events == []
+    #   assert {:ok, %User{} = user2} = Accounts.update_user(user1, %{accept_tos: true})
+    #   assert user2.password =~ ~r/[A-Za-z0-9]{10}/
+    #   assert TestUtils.DateTime.within_last?(user2.tos_accept_events, 5, :seconds)
+    #   assert %{ user2 | password: nil, accept_tos: nil } == Accounts.get_user!(user2.id)
+    # end
 
-    #test "update_user/2 doesn't accept ToS when set to false" do
-    #  user = user_fixture()
-    #  assert {:ok, %User{} = user} = Accounts.update_user(
-    #    user, %{accept_tos: false, preferences: %{theme: "undark"}}
-    #  )
-    #  assert user.tos_accept_events == []
-    #  assert user.preferences == %{theme: "undark"}
-    #  assert %{
-    #    user | password: nil, accept_tos: nil, preferences: %{"theme" => "undark"}, tos_accept_events: []
-    #  } == Accounts.get_user!(user.id)
-    #end
+    # test "update_user/2 doesn't accept ToS when set to false" do
+    #   user = user_fixture()
+    #   assert {:ok, %User{} = user} = Accounts.update_user(
+    #     user, %{accept_tos: false, preferences: %{theme: "undark"}}
+    #   )
+    #   assert user.tos_accept_events == []
+    #   assert user.preferences == %{theme: "undark"}
+    #   assert %{
+    #     user | password: nil, accept_tos: nil, preferences: %{"theme" => "undark"}, tos_accept_events: []
+    #   } == Accounts.get_user!(user.id)
+    # end
 
     test "is_admin/1 returns false when not an admin" do
       user = user_fixture()
@@ -395,8 +396,7 @@ defmodule Malan.AccountsTest do
                id: id,
                timestamp: timestamp,
                privacy_policy_version: privacy_policy_version
-             } =
-               List.first(u1.privacy_policy_accept_events)
+             } = List.first(u1.privacy_policy_accept_events)
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
@@ -410,8 +410,7 @@ defmodule Malan.AccountsTest do
                id: id,
                timestamp: timestamp,
                privacy_policy_version: privacy_policy_version
-             } =
-               Enum.at(u2.privacy_policy_accept_events, 0)
+             } = Enum.at(u2.privacy_policy_accept_events, 0)
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
@@ -426,8 +425,7 @@ defmodule Malan.AccountsTest do
                id: id,
                timestamp: timestamp,
                privacy_policy_version: privacy_policy_version
-             } =
-               Enum.at(u3.privacy_policy_accept_events, 0)
+             } = Enum.at(u3.privacy_policy_accept_events, 0)
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
@@ -541,7 +539,8 @@ defmodule Malan.AccountsTest do
       assert updated.password_reset_token_hash
       assert updated.password_reset_token_expires_at
       uuser = Accounts.get_user(updated.id)
-      assert is_nil(uuser.password_reset_token) # should be blank now
+      # should be blank now
+      assert is_nil(uuser.password_reset_token)
       assert uuser.password_reset_token_hash
       assert uuser.password_reset_token_expires_at
     end
@@ -1120,68 +1119,68 @@ defmodule Malan.AccountsTest do
     end
   end
 
-  #describe "teams" do
-  #  alias Malan.Accounts.Team
+  # describe "teams" do
+  #   alias Malan.Accounts.Team
 
-  #  @valid_attrs %{avatar_url: "some avatar_url", description: "some description", name: "some name"}
-  #  @update_attrs %{avatar_url: "some updated avatar_url", description: "some updated description", name: "some updated name"}
-  #  @invalid_attrs %{avatar_url: nil, description: nil, name: nil}
+  #   @valid_attrs %{avatar_url: "some avatar_url", description: "some description", name: "some name"}
+  #   @update_attrs %{avatar_url: "some updated avatar_url", description: "some updated description", name: "some updated name"}
+  #   @invalid_attrs %{avatar_url: nil, description: nil, name: nil}
 
-  #  def team_fixture(attrs \\ %{}) do
-  #    {:ok, team} =
-  #      attrs
-  #      |> Enum.into(@valid_attrs)
-  #      |> Accounts.create_team()
+  #   def team_fixture(attrs \\ %{}) do
+  #     {:ok, team} =
+  #       attrs
+  #       |> Enum.into(@valid_attrs)
+  #       |> Accounts.create_team()
 
-  #    team
-  #  end
+  #     team
+  #   end
 
-  #  test "list_teams/0 returns all teams" do
-  #    team = team_fixture()
-  #    assert Accounts.list_teams() == [team]
-  #  end
+  #   test "list_teams/0 returns all teams" do
+  #     team = team_fixture()
+  #     assert Accounts.list_teams() == [team]
+  #   end
 
-  #  test "get_team!/1 returns the team with given id" do
-  #    team = team_fixture()
-  #    assert Accounts.get_team!(team.id) == team
-  #  end
+  #   test "get_team!/1 returns the team with given id" do
+  #     team = team_fixture()
+  #     assert Accounts.get_team!(team.id) == team
+  #   end
 
-  #  test "create_team/1 with valid data creates a team" do
-  #    assert {:ok, %Team{} = team} = Accounts.create_team(@valid_attrs)
-  #    assert team.avatar_url == "some avatar_url"
-  #    assert team.description == "some description"
-  #    assert team.name == "some name"
-  #  end
+  #   test "create_team/1 with valid data creates a team" do
+  #     assert {:ok, %Team{} = team} = Accounts.create_team(@valid_attrs)
+  #     assert team.avatar_url == "some avatar_url"
+  #     assert team.description == "some description"
+  #     assert team.name == "some name"
+  #   end
 
-  #  test "create_team/1 with invalid data returns error changeset" do
-  #    assert {:error, %Ecto.Changeset{}} = Accounts.create_team(@invalid_attrs)
-  #  end
+  #   test "create_team/1 with invalid data returns error changeset" do
+  #     assert {:error, %Ecto.Changeset{}} = Accounts.create_team(@invalid_attrs)
+  #   end
 
-  #  test "update_team/2 with valid data updates the team" do
-  #    team = team_fixture()
-  #    assert {:ok, %Team{} = team} = Accounts.update_team(team, @update_attrs)
-  #    assert team.avatar_url == "some updated avatar_url"
-  #    assert team.description == "some updated description"
-  #    assert team.name == "some updated name"
-  #  end
+  #   test "update_team/2 with valid data updates the team" do
+  #     team = team_fixture()
+  #     assert {:ok, %Team{} = team} = Accounts.update_team(team, @update_attrs)
+  #     assert team.avatar_url == "some updated avatar_url"
+  #     assert team.description == "some updated description"
+  #     assert team.name == "some updated name"
+  #   end
 
-  #  test "update_team/2 with invalid data returns error changeset" do
-  #    team = team_fixture()
-  #    assert {:error, %Ecto.Changeset{}} = Accounts.update_team(team, @invalid_attrs)
-  #    assert team == Accounts.get_team!(team.id)
-  #  end
+  #   test "update_team/2 with invalid data returns error changeset" do
+  #     team = team_fixture()
+  #     assert {:error, %Ecto.Changeset{}} = Accounts.update_team(team, @invalid_attrs)
+  #     assert team == Accounts.get_team!(team.id)
+  #   end
 
-  #  test "delete_team/1 deletes the team" do
-  #    team = team_fixture()
-  #    assert {:ok, %Team{}} = Accounts.delete_team(team)
-  #    assert_raise Ecto.NoResultsError, fn -> Accounts.get_team!(team.id) end
-  #  end
+  #   test "delete_team/1 deletes the team" do
+  #     team = team_fixture()
+  #     assert {:ok, %Team{}} = Accounts.delete_team(team)
+  #     assert_raise Ecto.NoResultsError, fn -> Accounts.get_team!(team.id) end
+  #   end
 
-  #  test "change_team/1 returns a team changeset" do
-  #    team = team_fixture()
-  #    assert %Ecto.Changeset{} = Accounts.change_team(team)
-  #  end
-  #end
+  #   test "change_team/1 returns a team changeset" do
+  #     team = team_fixture()
+  #     assert %Ecto.Changeset{} = Accounts.change_team(team)
+  #   end
+  # end
 
   describe "phone_numbers" do
     alias Malan.Accounts.PhoneNumber
@@ -1399,12 +1398,16 @@ defmodule Malan.AccountsTest do
 
     test "get_transaction!/1 returns the transaction with given id" do
       {:ok, _user, _session, transaction} = transaction_fixture()
-      assert Accounts.get_transaction!(transaction.id) == transaction_fixture_to_retrieved(transaction)
+
+      assert Accounts.get_transaction!(transaction.id) ==
+               transaction_fixture_to_retrieved(transaction)
     end
 
     test "get_transaction_by/1 returns the transaction matching the param" do
       {:ok, user, _session, transaction} = transaction_fixture()
-      assert Accounts.get_transaction_by(user_id: user.id) == transaction_fixture_to_retrieved(transaction)
+
+      assert Accounts.get_transaction_by(user_id: user.id) ==
+               transaction_fixture_to_retrieved(transaction)
     end
 
     test "get_transaction_by/1 returns nil if no results" do
@@ -1421,7 +1424,9 @@ defmodule Malan.AccountsTest do
 
     test "get_transaction_by!/1 returns the transaction matching the param" do
       {:ok, user, _session, tf} = transaction_fixture()
-      assert transaction_fixture_to_retrieved(tf) == Accounts.get_transaction_by!(user_id: user.id)
+
+      assert transaction_fixture_to_retrieved(tf) ==
+               Accounts.get_transaction_by!(user_id: user.id)
     end
 
     test "get_transaction_by!/1 raises if no results" do
@@ -1477,7 +1482,8 @@ defmodule Malan.AccountsTest do
         Accounts.update_transaction(transaction, update_attrs)
       end
 
-      assert transaction_fixture_to_retrieved(transaction) == Accounts.get_transaction!(transaction.id)
+      assert transaction_fixture_to_retrieved(transaction) ==
+               Accounts.get_transaction!(transaction.id)
     end
 
     test "update_transaction/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
@@ -1497,7 +1503,8 @@ defmodule Malan.AccountsTest do
         Accounts.delete_transaction(transaction)
       end
 
-      assert transaction_fixture_to_retrieved(transaction) == Accounts.get_transaction!(transaction.id)
+      assert transaction_fixture_to_retrieved(transaction) ==
+               Accounts.get_transaction!(transaction.id)
     end
 
     test "get_transaction_user/1" do
