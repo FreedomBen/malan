@@ -1161,6 +1161,13 @@ defmodule Malan.Accounts do
     )
   end
 
+  def list_transactions_by_user_id(nil) do
+    Repo.all(
+      from t in Transaction,
+        where: is_nil(t.user_id)
+    )
+  end
+
   def list_transactions_by_user_id(user_id) do
     Repo.all(
       from t in Transaction,
@@ -1177,6 +1184,13 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
+  def list_transactions_by_session_id(nil) do
+    Repo.all(
+      from t in Transaction,
+        where: is_nil(t.session_id)
+    )
+  end
+
   def list_transactions_by_session_id(session_id) do
     Repo.all(
       from t in Transaction,
