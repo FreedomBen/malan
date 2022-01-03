@@ -176,16 +176,8 @@ defmodule MalanWeb.UserController do
 
   defp record_transaction(conn, who, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
-    case Accounts.create_transaction(user_id, session_id, who, "users", verb, what) do
-      {:ok, _transaction} -> conn
-      {:error, _changeset} -> report_transaction_error(conn, user_id, session_id, who, verb, what)
-    end
+    Accounts.record_transaction(user_id, session_id, who, "users", verb, what)
     conn
-  end
-
-  defp report_transaction_error(_conn, user_id, session_id, who, verb, what) do
-    # TODO: Report a failure in create_transaction to Sentry
-    Logger.warning("Error recording transaction: user_id: #{user_id}, session_id: #{session_id}, who: #{who}, verb: #{verb}, what: #{what}")
   end
 
   defp render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp) do

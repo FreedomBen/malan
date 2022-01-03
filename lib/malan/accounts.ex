@@ -1297,6 +1297,25 @@ defmodule Malan.Accounts do
     |> Repo.insert()
   end
 
+  @doc ~S"""
+  Record a transaction with the specified properties. Logs failures and reports to Sentry
+
+  Returns {:ok, transaction} on success or {:error, changeset} on failure
+  """
+  def record_transaction(user_id, session_id, who, type, verb, what) do
+    case create_transaction(user_id, session_id, who, type, verb, what) do
+      {:ok, transaction} -> {:ok, transaction}
+      {:error, changeset} -> report_transaction_error(changeset, user_id, session_id, who, verb, what)
+    end
+  end
+
+  defp report_transaction_error(changeset, user_id, session_id, who, verb, what) do
+    # TODO: Report a failure in create_transaction to Sentry
+    # TODO: incorporate error message from changeset into log output
+    Logger.warning("Error recording transaction: user_id: #{user_id}, session_id: #{session_id}, who: #{who}, verb: #{verb}, what: #{what}")
+    {:error, changeset}
+  end
+
   @doc """
   Updates a transaction.  Because transactions are immutable and can't
   be changed after the fact, this function should raise
