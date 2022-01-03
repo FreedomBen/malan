@@ -102,7 +102,7 @@ defmodule MalanWeb.UserController do
 
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
-      {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} ->
+      {:ok, user_id, _username, session_id, user_roles, expires_at, tos, pp} ->
         render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
 
       # {:error, :revoked}
@@ -135,7 +135,7 @@ defmodule MalanWeb.UserController do
         new_password
       )
 
-  defp admin_reset_password_token_p(conn, nil, token, new_password),
+  defp admin_reset_password_token_p(conn, nil, _token, _new_password),
     do: render_user(conn, nil)
 
   defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
@@ -178,7 +178,7 @@ defmodule MalanWeb.UserController do
     {user_id, session_id} = authed_user_and_session(conn)
     case Accounts.create_transaction(user_id, session_id, who, "users", verb, what) do
       {:ok, transaction} -> conn
-      {:error, changeset} -> report_transaction_error(conn, user_id, session_id, who, verb, what)
+      {:error, _changeset} -> report_transaction_error(conn, user_id, session_id, who, verb, what)
     end
     conn
   end
