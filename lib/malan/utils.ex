@@ -1,32 +1,101 @@
 defmodule Malan.Utils do
+  @doc ~S"""
+  Easy drop-in to a pipe to inspect the return value of the previous function.
+
+  ## Examples
+
+      conn
+      |> put_status(:not_found)
+      |> put_view(MalanWeb.ErrorView)
+      |> render(:"404")
+      |> pry_pipe()
+
+  """
   def pry_pipe(retval) do
     require IEx
     IEx.pry()
     retval
   end
 
+
+  @doc ~S"""
+  Convert a map with `String` keys into a map with `Atom` keys.
+
+  ## Examples
+
+      iex> Malan.Utils.map_string_keys_to_atoms(%{"one" => "one", "two" => "two"})
+      %{one: "one", two: "two"}m
+
+  """
   def map_string_keys_to_atoms(map) do
     for {key, val} <- map, into: %{} do
       {String.to_atom(key), val}
     end
   end
 
+
+  @doc ~S"""
+  Convert a map with `String` keys into a map with `Atom` keys.
+
+  ## Examples
+
+      iex> Malan.Utils.map_atom_keys_to_strings(%{one: "one", two: "two"})
+      %{"one" => "one", "two" => "two"}
+
+  """
   def map_atom_keys_to_strings(map) do
     for {key, val} <- map, into: %{} do
       {Atom.to_string(key), val}
     end
   end
 
+
+  @doc ~S"""
+  Converts a struct to a regular map by deleting the `:__meta__` key
+
+  ## Examples
+
+      Malan.Utils.struct_to_map(%Something{hello: "world"})
+      %{hello: "world"}
+
+  """
   def struct_to_map(struct) do
     Map.from_struct(struct)
     |> Map.delete(:__meta__)
   end
 
+
+  @doc ~S"""
+  Generate a new UUIDv4
+
+  ## Examples
+
+      Malan.Utils.uuidgen()
+      "4c2fd8d3-a6e3-4e4b-a2ce-3f21456eeb85"
+
+  """
   def uuidgen(),
     do: Ecto.UUID.generate()
 
-  def is_uuid?(str),
-    do: str =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+
+  @doc ~S"""
+  Quick regex check to see if the supplied `string` is a valid UUID
+
+  Check is done by simple regular expression and is not overly sophisticated.
+
+  ## Examples
+
+      iex> Malan.Utils.is_uuid?(nil)
+      false
+      iex> Malan.Utils.is_uuid?("hello world")
+      false
+      iex> Malan.Utils.is_uuid?("4c2fd8d3-a6e3-4e4b-a2ce-3f21456eeb85")
+      true
+
+  """
+  def is_uuid?(nil), do: false
+  def is_uuid?(string),
+    do: string =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
 
   # def nil_or_empty?(nil), do: true
   # def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
