@@ -16,7 +16,28 @@ defmodule Malan.UtilsTest do
     end
 
     test "#is_uuid?/1" do
-      assert Utils.is_uuid?(Ecto.UUID.generate())
+      assert  Utils.is_uuid?(Ecto.UUID.generate())
+      assert !Utils.is_uuid?(nil)
+    end
+
+    test "#nil_or_empty?" do
+      assert false == Malan.Utils.nil_or_empty?("hello")
+      assert true  == Malan.Utils.nil_or_empty?("")
+      assert true  == Malan.Utils.nil_or_empty?(nil)
+    end
+
+    test "#raise_if_nil!/2" do
+      assert "lateralus" == Utils.raise_if_nil!("song",  "lateralus")
+      assert_raise Malan.CantBeNil, fn ->
+        Utils.raise_if_nil!("song", nil)
+      end
+    end
+
+    test "#raise_if_nil!/1" do
+      assert "lateralus" == Utils.raise_if_nil!("lateralus")
+      assert_raise Malan.CantBeNil, fn ->
+        Utils.raise_if_nil!(nil)
+      end
     end
   end
 

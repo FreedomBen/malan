@@ -36,20 +36,63 @@ defmodule Malan.Utils do
 
   The param will be passed to `to_string()`
   and then `String.trim()` and checked for empty string
+
+  ## Examples
+
+      iex> Malan.Utils.nil_or_empty?("hello")
+      false
+      iex> Malan.Utils.nil_or_empty?("")
+      true
+      iex> Malan.Utils.nil_or_empty?(nil)
+      true
+
   """
   def nil_or_empty?(str_or_nil) do
     "" == str_or_nil |> to_string() |> String.trim()
   end
 
   @doc """
-  if argv (value of the argument) is nil, this will raise `Malan.CantBeNil`
+  if `value` (value of the argument) is nil, this will raise `Malan.CantBeNil`
 
-  argn (name of the argument) will be passed to allow for more helpful error
-  messages that can tell you the variable name that was nil
+  `argn` (name of the argument) will be passed to allow for more helpful error
+  messages that tell you the name of the variable that was `nil`
+
+  ## Examples
+
+      iex> Malan.Utils.raise_if_nil!("somevar", "someval")
+      "someval"
+      iex> Malan.Utils.raise_if_nil!("somevar", nil)
+      ** (Malan.CantBeNil) variable 'somevar' was nil but cannot be
+          (malan 0.1.0) lib/malan/utils.ex:135: Malan.Utils.raise_if_nil!/2
+
   """
-  def raise_if_nil(argn, argv) do
-    if is_nil(argv) do
-      raise Malan.CantBeNil, argv: argv, argn: argn
+  def raise_if_nil!(varname, value) do
+    case is_nil(value) do
+      true -> raise Malan.CantBeNil, varname: varname
+      false -> value
+    end
+  end
+
+
+  @doc """
+  if `value` (value of the argument) is nil, this will raise `Malan.CantBeNil`
+
+  `argn` (name of the argument) will be passed to allow for more helpful error
+  messages that tell you the name of the variable that was `nil`
+
+  ## Examples
+
+      iex> Malan.Utils.raise_if_nil!("someval")
+      "someval"
+      iex> Malan.Utils.raise_if_nil!(nil)
+      ** (Malan.CantBeNil) variable 'somevar' was nil but cannot be
+          (malan 0.1.0) lib/malan/utils.ex:142: Malan.Utils.raise_if_nil!/1
+
+  """
+  def raise_if_nil!(value) do
+    case is_nil(value) do
+      true -> raise Malan.CantBeNil
+      false -> value
     end
   end
 end
