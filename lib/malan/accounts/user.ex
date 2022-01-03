@@ -52,7 +52,6 @@ defmodule Malan.Accounts.User do
     field :race, {:array, :string}, virtual: true
     field :ethnicity, :string, virtual: true
 
-    #@primary_key {:id, :binary_id, autogenerate: true}
     embeds_many :tos_accept_events, TosAcceptEvent, on_replace: :raise do
       # true == accept, false == reject
       field :accept, :boolean
@@ -60,7 +59,6 @@ defmodule Malan.Accounts.User do
       field :timestamp, :utc_datetime
     end
 
-    #@primary_key {:id, :binary_id, autogenerate: true}
     embeds_many :privacy_policy_accept_events, PrivacyPolicyAcceptEvent, on_replace: :raise do
       # true == accept, false == reject
       field :accept, :boolean
