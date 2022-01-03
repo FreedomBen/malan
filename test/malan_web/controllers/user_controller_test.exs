@@ -1829,8 +1829,8 @@ defmodule MalanWeb.UserControllerTest do
 
     test "Creates a corresponding transaction", %{
       conn: conn,
-      user: %User{id: id} = user,
-      session: %Session{} = session
+      user: %User{id: id} = _user,
+      session: %Session{} = _session
     } do
       new_password = "bensonwinifredpayne"
 
