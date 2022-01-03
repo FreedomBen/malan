@@ -1,6 +1,6 @@
 defmodule Malan.Test.Helpers.Accounts do
   alias Malan.{Accounts, Repo}
-  alias Malan.Accounts.{User, Session}
+  alias Malan.Accounts.User
 
   def admin_attrs() do
     ui = System.unique_integer([:positive])
@@ -80,7 +80,7 @@ defmodule Malan.Test.Helpers.Accounts do
       |> Enum.into(admin_attrs())
       |> Accounts.register_user()
 
-    {:ok, user} = make_user_admin(user)
+    make_user_admin(user)
   end
 
   @doc "Returns: {:ok, user}"
@@ -90,7 +90,7 @@ defmodule Malan.Test.Helpers.Accounts do
       |> Enum.into(moderator_attrs())
       |> Accounts.register_user()
 
-    {:ok, user} = make_user_moderator(user)
+    make_user_moderator(user)
   end
 
   @doc "Returns: {:ok, session}"
@@ -109,7 +109,7 @@ defmodule Malan.Test.Helpers.Accounts do
   """
   def create_session_conn(conn, user, session_attrs \\ %{}) do
     with {:ok, session} <- create_session(user, session_attrs),
-         {:ok, user} <- accept_user_tos_and_pp(user, true),
+         {:ok, _user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
      do: {:ok, conn, session}
   end

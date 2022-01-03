@@ -5,8 +5,6 @@ defmodule Malan.AccountsFixtures do
   """
 
   alias Malan.Accounts
-  alias Malan.Utils
-  alias Malan.Test.Utils, as: TestUtils
   alias Malan.Test.Helpers
 
 #  def address_fixture(attrs \\ %{}) do

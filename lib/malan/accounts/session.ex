@@ -71,10 +71,6 @@ defmodule Malan.Accounts.Session do
 
   defp gen_api_token(), do: Utils.Crypto.strong_random_string(65)
 
-  defp gen_api_token(changeset) do
-    put_change(changeset, :api_token, gen_api_token())
-  end
-
   defp put_api_token(changeset) do
     api_token = gen_api_token()
 

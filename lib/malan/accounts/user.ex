@@ -2,7 +2,9 @@ defmodule Malan.Accounts.User do
   @compile if Mix.env() == :test, do: :export_all
 
   use Ecto.Schema
+
   import Ecto.Changeset
+  import Malan.Utils.Ecto.Changeset
 
   alias Malan.{Utils, Accounts}
   alias Malan.Accounts.TermsOfService, as: ToS

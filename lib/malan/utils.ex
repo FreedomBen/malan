@@ -276,3 +276,20 @@ defmodule Malan.Utils.DateTime do
   def expired?(expires_at),
     do: expired?(expires_at, DateTime.utc_now())
 end
+
+defmodule Malan.Utils.Ecto.Changeset do
+  @doc """
+  Validates that the property specified does NOT match the provided regex.
+
+  This function is essentially the opposite of validate_format()
+  """
+  def validate_not_format(nil, _regex), do: false
+  def validate_not_format(value, regex), do: value =~ regex
+
+  def validate_not_format(changeset, property, regex) do
+    case validate_not_format(Map.get(changeset.changes, property), regex) do
+      true  -> Ecto.Changeset.add_error(changeset, property, "has invalid format")
+      false -> changeset
+    end
+  end
+end

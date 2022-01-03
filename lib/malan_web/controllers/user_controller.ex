@@ -177,7 +177,7 @@ defmodule MalanWeb.UserController do
   defp record_transaction(conn, who, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
     case Accounts.create_transaction(user_id, session_id, who, "users", verb, what) do
-      {:ok, transaction} -> conn
+      {:ok, _transaction} -> conn
       {:error, _changeset} -> report_transaction_error(conn, user_id, session_id, who, verb, what)
     end
     conn
@@ -223,14 +223,6 @@ defmodule MalanWeb.UserController do
 
   defp is_self_or_admin(conn, _opts) do
     if is_self?(conn) || is_admin?(conn) do
-      conn
-    else
-      halt_not_owner(conn)
-    end
-  end
-
-  defp is_self(conn, _opts) do
-    if is_self?(conn) do
       conn
     else
       halt_not_owner(conn)

@@ -4,7 +4,7 @@ defmodule Malan.Accounts.Transaction do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Malan.{Utils, Accounts}
+  alias Malan.Utils
   alias Malan.Accounts.Transaction
 
   @primary_key {:id, :binary_id, autogenerate: true}

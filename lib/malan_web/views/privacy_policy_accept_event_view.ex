@@ -1,6 +1,5 @@
 defmodule MalanWeb.PrivacyPolicyAcceptEventView do
   use MalanWeb, :view
-  alias MalanWeb.PrivacyPolicyAcceptEventView
 
   def render("privacy_policy_accept_event.json", %{
         privacy_policy_accept_event: privacy_policy_accept_event
