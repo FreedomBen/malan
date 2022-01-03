@@ -1065,8 +1065,7 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
-      # conn = post(conn, Routes.user_path(conn, user_id, :admin_reset_password), %{})
-      # conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
+
       assert %{
                "password_reset_token" => password_reset_token
              } = json_response(conn, 200)["data"]
@@ -1100,6 +1099,36 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, user.id))
       assert conn.status == 401
+    end
+
+    test "Creates a corresponding transaction", %{
+      conn: conn,
+      user: %User{id: id} = _user,
+      session: %Session{} = _session
+    } do
+      {:ok, conn, %{id: admin_user_id} = _au, %{id: admin_session_id} = as} =
+        Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, id))
+
+      assert conn.status == 200
+
+      assert [
+               %Transaction{
+                 user_id: ^admin_user_id,
+                 session_id: ^admin_session_id,
+                 type_enum: 0,
+                 verb_enum: 2,
+                 who: ^id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
+      assert [tx] == Accounts.list_transactions_by_who(id)
     end
   end
 
@@ -1796,6 +1825,87 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :admin_reset_password_token, "1234"))
       assert conn.status == 401
+    end
+
+    test "Creates a corresponding transaction", %{
+      conn: conn,
+      user: %User{id: id} = user,
+      session: %Session{} = session
+    } do
+      new_password = "bensonwinifredpayne"
+
+      {:ok, conn, %{id: admin_user_id} = _au, %{id: admin_session_id} = as} =
+        Helpers.Accounts.admin_user_session_conn(conn)
+
+      # Second get a password reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, id))
+      assert conn.status == 200
+
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+
+      # Now change password
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, id, password_reset_token),
+          new_password: new_password
+        )
+
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Now check for the corresponding transaction
+      match_transaction_extract_when = fn t ->
+        try do
+          %Transaction{
+            user_id: ^admin_user_id,
+            session_id: ^admin_session_id,
+            type_enum: 0,
+            verb_enum: 2,
+            who: ^id,
+            what: "#UserController.admin_reset_password_token/3",
+            when: when_utc
+          } = t
+
+          {:ok, when_utc}
+        rescue
+          me in MatchError -> {:error, me}
+          e in StandardError -> {:error, e}
+        end
+      end
+
+      trans_by_who = Accounts.list_transactions_by_who(id)
+      assert 2 == length(trans_by_who)
+
+      assert Enum.any?(trans_by_who, fn t ->
+               case match_transaction_extract_when.(t) do
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:error, _} -> false
+               end
+             end)
+
+      trans_by_user_id = Accounts.list_transactions_by_user_id(admin_user_id)
+      assert 2 == length(trans_by_user_id)
+
+      assert Enum.any?(trans_by_user_id, fn t ->
+               case match_transaction_extract_when.(t) do
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:error, _} -> false
+               end
+             end)
+
+      trans_by_session_id = Accounts.list_transactions_by_session_id(admin_session_id)
+      assert 2 == length(trans_by_session_id)
+
+      assert Enum.any?(trans_by_session_id, fn t ->
+               case match_transaction_extract_when.(t) do
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:error, _} -> false
+               end
+             end)
     end
   end
 
