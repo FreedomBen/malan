@@ -430,10 +430,6 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp validate_race(changeset) do
-    changeset
-  end
-
   defp validate_birthday(changeset) do
     # TODO
     changeset

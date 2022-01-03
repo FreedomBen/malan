@@ -1338,7 +1338,7 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_transaction(%Transaction{} = transaction, attrs) do
+  def update_transaction(%Transaction{} = transaction, _attrs) do
     # transaction
     # |> Transaction.changeset(attrs)
     # |> Repo.update()
