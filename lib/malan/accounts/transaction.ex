@@ -1,5 +1,5 @@
 defmodule Malan.Accounts.Transaction do
-  @compile if Mix.env() == :test, do: :export_all
+  import Malan.Utils, only: [defp_testable: 2]
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -37,21 +37,21 @@ defmodule Malan.Accounts.Transaction do
     |> foreign_key_constraint(:who)
   end
 
-  defp put_default_when(changeset) do
+  defp_testable put_default_when(changeset) do
     case get_change(changeset, :when, nil) do
       nil -> put_change(changeset, :when, Utils.DateTime.utc_now_trunc())
       _   -> changeset
     end
   end
 
-  defp validate_type(changeset) do
+  defp_testable validate_type(changeset) do
     case get_change(changeset, :type, nil) do
       nil -> changeset
       _   -> validate_and_put_type(changeset)
     end
   end
 
-  defp validate_and_put_type(changeset) do
+  defp_testable validate_and_put_type(changeset) do
     case Transaction.Type.valid?(get_change(changeset, :type, nil)) do
       true ->
         put_change(changeset, :type_enum, type_to_i(changeset))
@@ -65,20 +65,20 @@ defmodule Malan.Accounts.Transaction do
     end
   end
 
-  defp type_to_i(changeset) do
+  defp_testable type_to_i(changeset) do
     changeset
     |> get_change(:type, nil)
     |> Transaction.Type.to_i()
   end
 
-  defp validate_verb(changeset) do
+  defp_testable validate_verb(changeset) do
     case get_change(changeset, :verb, nil) do
       nil -> changeset
       _   -> validate_and_put_verb(changeset)
     end
   end
 
-  defp validate_and_put_verb(changeset) do
+  defp_testable validate_and_put_verb(changeset) do
     case Transaction.Verb.valid?(get_change(changeset, :verb, nil)) do
       true ->
         put_change(changeset, :verb_enum, verb_to_i(changeset))
@@ -92,13 +92,13 @@ defmodule Malan.Accounts.Transaction do
     end
   end
 
-  defp verb_to_i(changeset) do
+  defp_testable verb_to_i(changeset) do
     changeset
     |> get_change(:verb, nil)
     |> Transaction.Verb.to_i()
   end
 
-  defp validate_who_s_binary_id(changeset) do
+  defp_testable validate_who_s_binary_id(changeset) do
     case Utils.is_uuid?(get_change(changeset, :who)) do
       true -> changeset
       false -> add_error(changeset, :who, "who must be a valid ID of a user")
