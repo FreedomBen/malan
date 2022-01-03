@@ -32,6 +32,7 @@ defmodule Malan.Accounts.Transaction do
     |> validate_required([:who, :type, :verb, :when, :what])
     |> validate_type()
     |> validate_verb()
+    |> validate_who_s_binary_id()
     |> validate_required([:who, :type_enum, :verb_enum, :when, :what])
     |> foreign_key_constraint(:who)
   end
@@ -95,5 +96,12 @@ defmodule Malan.Accounts.Transaction do
     changeset
     |> get_change(:verb, nil)
     |> Transaction.Verb.to_i()
+  end
+
+  defp validate_who_s_binary_id(changeset) do
+    case Utils.is_uuid?(get_change(changeset, :who)) do
+      true -> changeset
+      false -> add_error(changeset, :who, "who must be a valid ID of a user")
+    end
   end
 end
