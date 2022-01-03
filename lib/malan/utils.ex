@@ -1,5 +1,26 @@
 defmodule Malan.Utils do
   @doc ~S"""
+  Macro that makes a function public in test, private in non-test
+
+  See:  https://stackoverflow.com/a/47598190/2062384
+  """
+  defmacro defp_testable(head, body \\ nil) do
+    if Mix.env == :test do
+      quote do
+        def unquote(head) do
+          unquote(body[:do])
+        end
+      end
+    else
+      quote do
+        defp unquote(head) do
+          unquote(body[:do])
+        end
+      end
+    end
+  end
+
+  @doc ~S"""
   Easy drop-in to a pipe to inspect the return value of the previous function.
 
   ## Examples

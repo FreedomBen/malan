@@ -1,5 +1,5 @@
 defmodule Malan.Accounts.User do
-  @compile if Mix.env() == :test, do: :export_all
+  import Malan.Utils, only: [defp_testable: 2]
 
   use Ecto.Schema
 
@@ -203,19 +203,19 @@ defmodule Malan.Accounts.User do
     ])
   end
 
-  defp validate_roles(changeset) do
+  defp_testable validate_roles(changeset) do
     changeset
     #|> validate_subset(:roles, ["admin", "user", "moderator"])
   end
 
-  defp validate_username(changeset) do
+  defp_testable validate_username(changeset) do
     changeset
     |> unique_constraint(:username)
     |> validate_length(:username, min: 3, max: 89)
     |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
   end
 
-  defp validate_email(changeset) do
+  defp_testable validate_email(changeset) do
     changeset
     |> unique_constraint(:email)
     |> validate_length(:email, min: 6, max: 100)
@@ -226,16 +226,16 @@ defmodule Malan.Accounts.User do
     |> validate_not_format(:email, ~r/@.*@/)
   end
 
-  defp validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
+  defp_testable validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
     changeset
     |> validate_required([:password])
     |> validate_length(:password, min: 6, max: 100)
     |> put_pass_hash()
   end
 
-  defp validate_password(changeset), do: changeset
+  defp_testable validate_password(changeset), do: changeset
 
-  defp new_accept_tos(accept_tos, tos_version) do
+  defp_testable new_accept_tos(accept_tos, tos_version) do
     %{
       accept: accept_tos,
       tos_version: tos_version,
@@ -243,16 +243,16 @@ defmodule Malan.Accounts.User do
     }
   end
 
-  defp prepend_accept_tos(changeset, %{} = new_tos) do
+  defp_testable prepend_accept_tos(changeset, %{} = new_tos) do
     [new_tos | changeset.data.tos_accept_events]
   end
 
-  defp current_tos_ver(false), do: nil
-  defp current_tos_ver(true), do: ToS.current_version()
+  defp_testable current_tos_ver(false), do: nil
+  defp_testable current_tos_ver(true), do: ToS.current_version()
 
-  defp put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset), do: changeset
+  defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset), do: changeset
 
-  defp put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: accept_tos}} = changeset) do
+  defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: accept_tos}} = changeset) do
     new_tos_accept_events =
       prepend_accept_tos(
         changeset,
@@ -264,9 +264,9 @@ defmodule Malan.Accounts.User do
     |> put_change(:latest_tos_accept_ver, current_tos_ver(accept_tos))
   end
 
-  defp put_accept_tos(changeset), do: changeset
+  defp_testable put_accept_tos(changeset), do: changeset
 
-  defp new_accept_pp(accept_pp, pp_version) do
+  defp_testable new_accept_pp(accept_pp, pp_version) do
     %{
       accept: accept_pp,
       privacy_policy_version: pp_version,
@@ -274,19 +274,19 @@ defmodule Malan.Accounts.User do
     }
   end
 
-  defp prepend_accept_pp(changeset, %{} = new_pp) do
+  defp_testable prepend_accept_pp(changeset, %{} = new_pp) do
     [new_pp | changeset.data.privacy_policy_accept_events]
   end
 
-  defp current_pp_ver(false), do: nil
-  defp current_pp_ver(true), do: PrivacyPolicy.current_version()
+  defp_testable current_pp_ver(false), do: nil
+  defp_testable current_pp_ver(true), do: PrivacyPolicy.current_version()
 
-  defp put_accept_privacy_policy(
+  defp_testable put_accept_privacy_policy(
          %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
        ),
        do: changeset
 
-  defp put_accept_privacy_policy(
+  defp_testable put_accept_privacy_policy(
          %Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset
        ) do
     new_pp_accept_events =
@@ -300,30 +300,15 @@ defmodule Malan.Accounts.User do
     |> put_change(:latest_pp_accept_ver, current_pp_ver(accept_pp))
   end
 
-  defp put_accept_privacy_policy(changeset), do: changeset
+  defp_testable put_accept_privacy_policy(changeset), do: changeset
 
-  defp validate_not_format(nil, _regex), do: false
-  defp validate_not_format(value, regex), do: value =~ regex
-
-  @doc """
-  Validates that the property specified does NOT match the provided regex.
-
-  This function is essentially the opposite of validate_format()
-  """
-  defp validate_not_format(changeset, property, regex) do
-    case validate_not_format(Map.get(changeset.changes, property), regex) do
-      true  -> Ecto.Changeset.add_error(changeset, property, "has invalid format")
-      false -> changeset
-    end
-  end
-
-  defp gender_to_i(changeset) do
+  defp_testable gender_to_i(changeset) do
     changeset
     |> get_change(:gender)
     |> User.Gender.to_i()
   end
 
-  defp validate_and_put_gender(changeset) do
+  defp_testable validate_and_put_gender(changeset) do
     case User.Gender.valid?(get_change(changeset, :gender)) do
       true ->
         put_change(changeset, :gender_enum, gender_to_i(changeset))
@@ -337,27 +322,27 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp validate_gender(changeset) do
+  defp_testable validate_gender(changeset) do
     case get_change(changeset, :gender) do
       nil -> changeset
       _ -> validate_and_put_gender(changeset)
     end
   end
 
-  defp all_races_valid?(changeset) do
+  defp_testable all_races_valid?(changeset) do
     changeset
     |> get_change(:race)
     |> Enum.all?(fn r -> User.Race.valid?(r) end)
   end
 
   # Map string races to enum ints
-  defp race_list(changeset) do
+  defp_testable race_list(changeset) do
     changeset
     |> get_change(:race)
     |> Enum.map(fn r -> User.Race.to_i(r) end)
   end
 
-  defp validate_and_put_races(changeset) do
+  defp_testable validate_and_put_races(changeset) do
     cond do
       all_races_valid?(changeset) ->
         put_change(changeset, :race_enum, race_list(changeset))
@@ -371,20 +356,20 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp validate_race(changeset) do
+  defp_testable validate_race(changeset) do
     case get_change(changeset, :race) do
       nil -> changeset
       _ -> validate_and_put_races(changeset)
     end
   end
 
-  defp ethnicity_to_i(changeset) do
+  defp_testable ethnicity_to_i(changeset) do
     changeset
     |> get_change(:ethnicity)
     |> User.Ethnicity.to_i()
   end
 
-  defp validate_and_put_ethnicity(changeset) do
+  defp_testable validate_and_put_ethnicity(changeset) do
     case User.Ethnicity.valid?(get_change(changeset, :ethnicity)) do
       true ->
         put_change(changeset, :ethnicity_enum, ethnicity_to_i(changeset))
@@ -398,20 +383,20 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp validate_ethnicity(changeset) do
+  defp_testable validate_ethnicity(changeset) do
     case get_change(changeset, :ethnicity) do
       nil -> changeset
       _ -> validate_and_put_ethnicity(changeset)
     end
   end
 
-  defp sex_to_i(changeset) do
+  defp_testable sex_to_i(changeset) do
     changeset
     |> get_change(:sex)
     |> User.Sex.to_i()
   end
 
-  defp validate_and_put_sex(changeset) do
+  defp_testable validate_and_put_sex(changeset) do
     case User.Sex.valid?(get_change(changeset, :sex)) do
       true ->
         put_change(changeset, :sex_enum, sex_to_i(changeset))
@@ -425,30 +410,30 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp validate_sex(changeset) do
+  defp_testable validate_sex(changeset) do
     case get_change(changeset, :sex) do
       nil -> changeset
       _ -> validate_and_put_sex(changeset)
     end
   end
 
-  defp validate_birthday(changeset) do
+  defp_testable validate_birthday(changeset) do
     # TODO
     changeset
   end
 
-  defp validate_weight(changeset) do
+  defp_testable validate_weight(changeset) do
     # TODO
     changeset
   end
 
-  defp validate_height(changeset) do
+  defp_testable validate_height(changeset) do
     # TODO
     changeset
   end
 
   @doc false
-  defp put_pass_hash(changeset) do
+  defp_testable put_pass_hash(changeset) do
     case changeset do
       %Ecto.Changeset{valid?: true, changes: %{password: pass}} ->
         put_change(changeset, :password_hash, Utils.Crypto.hash_password(pass))
@@ -458,27 +443,27 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp put_random_pass(changeset) do
+  defp_testable put_random_pass(changeset) do
     put_change(changeset, :password, Utils.Crypto.strong_random_string(10))
   end
 
-  defp put_reset_pass(changeset) do
+  defp_testable put_reset_pass(changeset) do
     case changeset do
       %Ecto.Changeset{changes: %{reset_password: true}} -> put_random_pass(changeset)
       _ -> changeset
     end
   end
 
-  defp put_initial_pass(changeset) do
+  defp_testable put_initial_pass(changeset) do
     cond do
       Map.has_key?(changeset.changes, :password) -> changeset
       true -> put_random_pass(changeset)
     end
   end
 
-  defp gen_reset_token(), do: Utils.Crypto.strong_random_string(65)
+  defp_testable gen_reset_token(), do: Utils.Crypto.strong_random_string(65)
 
-  defp put_password_reset_token(changeset) do
+  defp_testable put_password_reset_token(changeset) do
     reset_token = gen_reset_token()
 
     changeset
@@ -486,38 +471,38 @@ defmodule Malan.Accounts.User do
     |> put_change(:password_reset_token_hash, Utils.Crypto.hash_token(reset_token))
   end
 
-  defp clear_password_reset_token(changeset) do
+  defp_testable clear_password_reset_token(changeset) do
     changeset
     |> put_change(:password_reset_token, nil)
     |> put_change(:password_reset_token_hash, nil)
   end
 
-  defp put_password_reset_token_expires_at(changeset) do
+  defp_testable put_password_reset_token_expires_at(changeset) do
     changeset
     |> put_change(:password_reset_token_expires_at, get_password_reset_token_expiration_time())
   end
 
-  defp clear_password_reset_token_expires_at(changeset) do
+  defp_testable clear_password_reset_token_expires_at(changeset) do
     changeset
     |> put_change(:password_reset_token_expires_at, nil)
   end
 
-  defp get_password_reset_token_expiration_time do
+  defp_testable get_password_reset_token_expiration_time do
     Application.get_env(:malan, Malan.Accounts.User)[
       :default_password_reset_token_expiration_secs
     ]
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
   end
 
-  defp downcase_username(%Ecto.Changeset{changes: %{username: username}} = cs) do
+  defp_testable downcase_username(%Ecto.Changeset{changes: %{username: username}} = cs) do
     put_change(cs, :username, String.downcase(username))
   end
 
-  defp downcase_username(changeset), do: changeset
+  defp_testable downcase_username(changeset), do: changeset
 
-  defp downcase_email(%Ecto.Changeset{changes: %{email: email}} = cs) do
+  defp_testable downcase_email(%Ecto.Changeset{changes: %{email: email}} = cs) do
     put_change(cs, :email, String.downcase(email))
   end
 
-  defp downcase_email(changeset), do: changeset
+  defp_testable downcase_email(changeset), do: changeset
 end
