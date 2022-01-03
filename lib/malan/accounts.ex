@@ -1278,7 +1278,7 @@ defmodule Malan.Accounts do
       %{user_id: "user_id"}
   """
   def get_transaction_user(transaction_id) do
-    Utils.raise_if_nil("transaction_id", transaction_id)
+    Utils.raise_if_nil!("transaction_id", transaction_id)
 
     Repo.one(
       from t in Transaction,

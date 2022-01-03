@@ -18,12 +18,12 @@ defmodule Malan.CantBeNil do
   defexception [:message]
 
   def exception(opts) do
-    argv = Keyword.get(opts, :argv, "argv")
-    argn = Keyword.get(opts, :argn, "argn")
+    varname = Keyword.get(opts, :varname, nil)
 
-    msg = """
-    variable "#{argn}" was set to "#{argv}" but cannot be
-    """
+    msg = case varname do
+      nil -> "value was set to nil but cannot be"
+      _   -> "variable '#{varname}' was nil but cannot be"
+    end
 
     %__MODULE__{message: msg}
   end
