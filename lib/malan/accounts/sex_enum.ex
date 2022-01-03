@@ -13,7 +13,7 @@ defmodule Malan.Accounts.User.Sex do
 
   def valid?(i) when is_binary(i) do
     all_by_keyword()
-    |> Map.merge(all_by_keyword_normalized)
+    |> Map.merge(all_by_keyword_normalized())
     |> Map.has_key?(i)
   end
 

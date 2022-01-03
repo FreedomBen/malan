@@ -136,7 +136,7 @@ defmodule Malan.AuthController do
   def is_moderator_or_admin?(conn), do: !!(is_moderator?(conn) || is_admin?(conn))
   def is_admin_or_moderator?(conn), do: is_moderator_or_admin?(conn)
   def is_owner?(conn), do: is_owner?(conn, conn.params["user_id"])
-  def is_owner?(conn, "current"), do: true
+  def is_owner?(_conn, "current"), do: true
 
   def is_owner?(conn, user_id),
     do: conn.assigns.authed_user_id == user_id || conn.assigns.authed_username == user_id

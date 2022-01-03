@@ -543,9 +543,9 @@ defmodule MalanWeb.TransactionControllerTest do
     # end
   end
 
-  defp create_transaction(_) do
-    {:ok, user, session, transaction} = transaction_fixture()
-    conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
-    %{conn: conn, user: user, session: session, transaction: transaction}
-  end
+  #defp create_transaction(_) do
+  #  {:ok, user, session, transaction} = transaction_fixture()
+  #  conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+  #  %{conn: conn, user: user, session: session, transaction: transaction}
+  #end
 end

@@ -287,6 +287,9 @@ defmodule Malan.Accounts do
      do: {:ok, user}
   end
 
+  def update_user(%User{} = user, attrs),
+    do: update_usr(user, attrs)
+
   def update_user_password(%User{} = user, password),
     do: update_user(user, %{"password" => password})
 
@@ -352,30 +355,8 @@ defmodule Malan.Accounts do
     end
   end
 
-  @doc """
-    Returns:
-
-      {:ok, %User{}}
-      {:error, :missing_password_reset_token}
-      {:error, :invalid_password_reset_token}
-  """
   def reset_password_with_token(id, token, new_password),
     do: reset_password_with_token(get_user(id), token, new_password)
-
-  @doc """
-  Updates a user.
-
-  ## Examples
-
-      iex> update_user(user, %{field: new_value})
-      {:ok, %User{}}
-
-      iex> update_user(user, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_user(%User{} = user, attrs),
-    do: update_usr(user, attrs)
 
   # "private utility for the update_user funcs.  Use a public update_user()"
   defp update_usr(user, attrs) do
@@ -1121,15 +1102,6 @@ defmodule Malan.Accounts do
   """
   def list_transactions(%User{id: user_id}), do: list_transactions(user_id)
 
-  @doc """
-  Returns the list of transactions for the specified user
-
-  ## Examples
-
-      iex> list_transactions("user_id")
-      [%Transaction{}, ...]
-
-  """
   def list_transactions(user_id_or_username) do
     cond do
       user_id_or_username == nil ->
