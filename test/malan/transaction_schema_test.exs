@@ -148,8 +148,17 @@ defmodule Malan.TransactionSchemaTest do
       assert cs.valid?
     end
 
-    test "#create_changeset/2 requires who to point to a real user ID" do
-      cs = Transaction.create_changeset(%Transaction{who: Ecto.UUID.generate()}, %{})
+    test "#create_changeset/2 requires who to be a binary ID" do
+      cs =
+        Transaction.create_changeset(%Transaction{}, %{
+          user_id: "uid",
+          who: Ecto.UUID.generate(),
+          type: "users",
+          verb: "POST",
+          what: "what"
+        })
+
+      assert cs.valid?
     end
 
     test "#validate_username allows email addresses" do
