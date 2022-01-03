@@ -8,7 +8,6 @@ defmodule Malan.TransactionSchemaTest do
   alias Malan.Test.Utils, as: TestUtils
 
   describe "transactions" do
-
     def validate_property(validation_func, key, value, valid, err_msg_regex \\ "") do
       changeset =
         Ecto.Changeset.cast(%User{}, %{key => value}, [key])
@@ -95,6 +94,7 @@ defmodule Malan.TransactionSchemaTest do
 
     test "#put_default_when doesn't change if set in changes" do
       orig = Utils.DateTime.utc_now_trunc()
+
       changeset =
         Ecto.Changeset.cast(%Transaction{}, %{when: orig}, [:when])
         |> Transaction.put_default_when()
@@ -105,6 +105,7 @@ defmodule Malan.TransactionSchemaTest do
 
     test "#put_default_when doesn't get changed if already set" do
       orig = Utils.DateTime.utc_now_trunc()
+
       changeset =
         Ecto.Changeset.cast(%Transaction{when: orig}, %{}, [:when])
         |> Transaction.put_default_when()
@@ -122,17 +123,34 @@ defmodule Malan.TransactionSchemaTest do
     end
 
     test "#create_changeset/2 allows user id to be nil" do
-      cs = Transaction.create_changeset(%Transaction{}, %{})
+      cs =
+        Transaction.create_changeset(%Transaction{}, %{
+          sesson_id: "sid",
+          who: Ecto.UUID.generate(),
+          type: "users",
+          verb: "POST",
+          what: "what"
+        })
+
+      assert cs.valid?
     end
 
     test "#create_changeset/2 allows session id to be nil" do
-      cs = Transaction.create_changeset(%Transaction{}, %{})
+      cs =
+        Transaction.create_changeset(%Transaction{}, %{
+          user_id: "uid",
+          who: Ecto.UUID.generate(),
+          type: "users",
+          verb: "POST",
+          what: "what"
+        })
+
+      assert cs.valid?
     end
 
     test "#create_changeset/2 requires who to point to a real user ID" do
       cs = Transaction.create_changeset(%Transaction{who: Ecto.UUID.generate()}, %{})
     end
-
 
     test "#validate_username allows email addresses" do
       changeset =
