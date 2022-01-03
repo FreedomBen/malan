@@ -2,46 +2,11 @@ defmodule Malan.TransactionSchemaTest do
   use Malan.DataCase, async: true
 
   alias Malan.Utils
-  alias Malan.Accounts.User
   alias Malan.Accounts.Transaction
 
   alias Malan.Test.Utils, as: TestUtils
 
   describe "transactions" do
-    def validate_property(validation_func, key, value, valid, err_msg_regex \\ "") do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{key => value}, [key])
-        |> validation_func.()
-
-      assert changeset.valid? == valid
-
-      case valid do
-        false ->
-          Map.get(errors_on(changeset), key)
-          |> Enum.any?(fn x -> x =~ ~r/#{err_msg_regex}/ end)
-
-        true ->
-          true
-      end
-    end
-
-    def validate_email(email, valid, err_msg_regex \\ "") do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{email: email}, [:email])
-        |> User.validate_email()
-
-      assert changeset.valid? == valid
-
-      case valid do
-        false ->
-          assert errors_on(changeset).email
-                 |> Enum.any?(fn x -> x =~ ~r/#{err_msg_regex}/ end)
-
-        true ->
-          true
-      end
-    end
-
     test "#validate_type success" do
       changeset =
         Ecto.Changeset.cast(%Transaction{}, %{type: "users"}, [:type])
@@ -159,92 +124,6 @@ defmodule Malan.TransactionSchemaTest do
         })
 
       assert cs.valid?
-    end
-
-    test "#validate_username allows email addresses" do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{username: "hello-_=_+*&^world@example.com"}, [:username])
-        |> User.validate_username()
-
-      assert changeset.valid? == true
-    end
-
-    test "#validate_email correct emails 1" do
-      validate_email("bob@hotmail.com", true)
-    end
-
-    test "#validate_email correct emails 2" do
-      validate_email("v@mx.co", true)
-    end
-
-    test "#validate_email correct emails 3" do
-      validate_email("bob.zemeckis-hello+world74@hotmail.com", true)
-    end
-
-    test "#validate_email correct emails 4" do
-      validate_email("bob.1!#$%^&*@hotmail.seven.four.com", true)
-    end
-
-    test "#validate_email invalid emails 1" do
-      validate_email("bob@hotmail", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 2" do
-      validate_email("bob(hello@hotmail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 3" do
-      validate_email("bob@hello@hotmail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 4" do
-      validate_email("boblo@hot^mail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 5" do
-      validate_email(
-        "bob@hotmail.com#{String.duplicate("A", 25)}",
-        false,
-        "has invalid format"
-      )
-    end
-
-    test "#validate_email max length 1" do
-      validate_property(
-        &User.validate_email/1,
-        :email,
-        "#{String.duplicate("A", 101)}@hotmail.com",
-        false,
-        "should be at most"
-      )
-    end
-
-    test "#validate_email max length 2" do
-      validate_email(
-        "#{String.duplicate("A", 101)}bob@hotmail.com",
-        false,
-        "should be at most"
-      )
-    end
-
-    test "#validate_password invalid 1 because too short" do
-      validate_property(
-        &User.validate_password/1,
-        :password,
-        # "password1",
-        "pass",
-        false,
-        "Should be at least"
-      )
-    end
-
-    test "#validate_password valid 1" do
-      validate_property(
-        &User.validate_password/1,
-        :password,
-        "password10",
-        true
-      )
     end
   end
 
