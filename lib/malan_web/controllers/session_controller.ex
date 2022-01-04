@@ -17,6 +17,7 @@ defmodule MalanWeb.SessionController do
     session = Accounts.get_session!(id)
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
+      record_transaction(conn, session.user_id, "DELETE", "#SessionController.admin_delete/2")
       render(conn, "show.json", session: session)
     end
   end
@@ -31,6 +32,13 @@ defmodule MalanWeb.SessionController do
       }) do
     with {:ok, %Session{} = session} <-
            Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
+      record_transaction(
+        %Plug.Conn{assigns: %{authed_user_id: session.user_id, authed_session_id: session.id}},
+        session.user_id,
+        "POST",
+        "#SessionController.create/2"
+      )
+
       conn
       |> put_status(:created)
       |> render("show.json", session: session)
@@ -55,6 +63,7 @@ defmodule MalanWeb.SessionController do
     session = Accounts.get_session!(id)
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
+      record_transaction(conn, session.user_id, "DELETE", "#SessionController.delete/2")
       render(conn, "show.json", session: session)
     end
   end
@@ -63,8 +72,15 @@ defmodule MalanWeb.SessionController do
 
   def delete_all(conn, %{"user_id" => user_id}) do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
+      record_transaction(conn, user_id, "DELETE", "#SessionController.delete_all/2")
       render(conn, "delete_all.json", num_revoked: num_revoked)
     end
+  end
+
+  defp record_transaction(conn, who, verb, what) do
+    {user_id, session_id} = authed_user_and_session(conn)
+    Accounts.record_transaction(user_id, session_id, who, "sessions", verb, what)
+    conn
   end
 
   defp get_ip_addr(conn) do

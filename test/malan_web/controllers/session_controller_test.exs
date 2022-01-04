@@ -3,6 +3,7 @@ defmodule MalanWeb.SessionControllerTest do
 
   alias Malan.Utils
   alias Malan.Accounts
+  alias Malan.Accounts.{User, Session, Transaction}
 
   alias Malan.Test.Helpers
   alias Malan.Test.Utils, as: TestUtils
@@ -49,14 +50,14 @@ defmodule MalanWeb.SessionControllerTest do
 
       # When ToS and Privay Policy are required, uncomment the below
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
-      #conn = get(conn, Routes.session_path(conn, :admin_index))
-      #assert conn.status == 461
+      # conn = get(conn, Routes.session_path(conn, :admin_index))
+      # assert conn.status == 461
       ## Accept ToS
-      #{:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
-      #conn = get(conn, Routes.session_path(conn, :admin_index))
-      #assert conn.status == 462
+      # {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
+      # conn = get(conn, Routes.session_path(conn, :admin_index))
+      # assert conn.status == 462
       ## Accept Privacy Policy
-      #{:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
+      # {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
       conn = get(conn, Routes.session_path(conn, :admin_index))
       jr = json_response(conn, 200)["data"]
       assert length(jr) == 4
@@ -81,6 +82,34 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = delete(conn, Routes.session_path(conn, :admin_delete, rs.id))
       assert conn.status == 401
+    end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      {:ok, %User{id: user_id} = _ru, rs} = Helpers.Accounts.regular_user_with_session()
+
+      {:ok, conn, %User{id: admin_user_id} = _au, %Session{id: admin_session_id} = _as} =
+        Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = delete(conn, Routes.session_path(conn, :admin_delete, rs.id))
+      assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
+      {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+
+      assert [
+               %Transaction{
+                 user_id: ^admin_user_id,
+                 session_id: ^admin_session_id,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
     end
   end
 
@@ -400,6 +429,35 @@ defmodule MalanWeb.SessionControllerTest do
                DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
              )
     end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      assert [
+               %Transaction{
+                 user_id: ^user_id,
+                 session_id: ^id,
+                 type_enum: 1,
+                 verb_enum: 1,
+                 who: ^user_id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
+    end
   end
 
   describe "delete session" do
@@ -434,6 +492,29 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
       assert conn.status == 401
     end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = delete(conn, Routes.user_session_path(conn, :delete, user_id, session))
+      assert conn.status == 200
+
+      assert [
+               %Transaction{
+                 user_id: ^user_id,
+                 session_id: ^id,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
+    end
   end
 
   describe "delete current session" do
@@ -453,6 +534,29 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
       assert {:error, :revoked} = Accounts.validate_session(session.api_token)
+    end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} = Helpers.Accounts.regular_user_with_session()
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = delete(conn, Routes.session_path(conn, :delete_current))
+      assert conn.status == 200
+
+      assert [
+               %Transaction{
+                 user_id: ^user_id,
+                 session_id: ^id,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
     end
   end
 
@@ -523,48 +627,74 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
       assert conn.status == 401
     end
+
+    test "Creates a corresponding Transaction", %{conn: conn} do
+      {:ok, %User{id: user_id} = user, %Session{id: s1_id} = s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, _s2} = Helpers.Accounts.create_session(user)
+      {:ok, _s3} = Helpers.Accounts.create_session(user)
+      {:ok, _s4} = Helpers.Accounts.create_session(user)
+
+      conn = Helpers.Accounts.put_token(conn, s1.api_token)
+      _conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
+
+      assert [
+               %Transaction{
+                 user_id: ^user_id,
+                 session_id: ^s1_id,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(s1_id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
+    end
   end
 
-  #describe "show/valid session" do
-  #  test "shows session valid when valid", %{conn: conn} do
-  #    {:ok, conn, user, session} = Helpers.Accounts.regular_user_session_conn(conn)
-  #    id = session.id
-  #    user_id = user.id
-  #    conn = get(conn, Routes.user_session_path(conn, :show, user.id, session))
-  #    jr = json_response(conn, 200)["data"]
-  #    assert %{
-  #             "id" => ^id,
-  #             "user_id" => ^user_id,
-  #             "authenticated_at" => _authenticated_at,
-  #             "expires_at" => _expires_at,
-  #             "ip_address" => _ip,
-  #             "location" => nil,
-  #             "revoked_at" => nil
-  #           } = jr
-  #  end
+  # describe "show/valid session" do
+  #   test "shows session valid when valid", %{conn: conn} do
+  #     {:ok, conn, user, session} = Helpers.Accounts.regular_user_session_conn(conn)
+  #     id = session.id
+  #     user_id = user.id
+  #     conn = get(conn, Routes.user_session_path(conn, :show, user.id, session))
+  #     jr = json_response(conn, 200)["data"]
+  #     assert %{
+  #              "id" => ^id,
+  #              "user_id" => ^user_id,
+  #              "authenticated_at" => _authenticated_at,
+  #              "expires_at" => _expires_at,
+  #              "ip_address" => _ip,
+  #              "location" => nil,
+  #              "revoked_at" => nil
+  #            } = jr
+  #   end
 
-  #  test "Reports session not valid when invalid", %{conn: conn} do
-  #    {:ok, conn, user, session} = Helpers.Accounts.regular_user_session_conn(conn)
-  #    conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
-  #    assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
+  #   test "Reports session not valid when invalid", %{conn: conn} do
+  #     {:ok, conn, user, session} = Helpers.Accounts.regular_user_session_conn(conn)
+  #     conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
+  #     assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
 
-  #    id = session.id
-  #    user_id = user.id
-  #    conn = get(conn, Routes.user_session_path(conn, :show, user.id, session))
-  #    jr = json_response(conn, 200)["data"]
-  #    assert %{
-  #             "id" => ^id,
-  #             "user_id" => ^user_id,
-  #             "authenticated_at" => _authenticated_at,
-  #             "expires_at" => _expires_at,
-  #             "ip_address" => _ip,
-  #             "location" => nil,
-  #             "revoked_at" => ^revoked_at,
-  #           } = jr
-  #  end
+  #     id = session.id
+  #     user_id = user.id
+  #     conn = get(conn, Routes.user_session_path(conn, :show, user.id, session))
+  #     jr = json_response(conn, 200)["data"]
+  #     assert %{
+  #              "id" => ^id,
+  #              "user_id" => ^user_id,
+  #              "authenticated_at" => _authenticated_at,
+  #              "expires_at" => _expires_at,
+  #              "ip_address" => _ip,
+  #              "location" => nil,
+  #              "revoked_at" => ^revoked_at,
+  #            } = jr
+  #   end
 
-  #  test "non-owner cannot check session validitiy" do
+  #   test "non-owner cannot check session validitiy" do
 
-  #  end
-  #end
+  #   end
+  # end
 end

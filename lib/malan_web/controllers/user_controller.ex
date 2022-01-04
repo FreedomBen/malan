@@ -27,9 +27,9 @@ defmodule MalanWeb.UserController do
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{id: id} = user} <- Accounts.register_user(user_params) do
       conn
+      |> record_transaction(id, "POST", "#UserController.create/2")
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
-      |> record_transaction(id, "POST", "#UserController.create/2")
       |> render("show.json", user: user)
     end
   end
