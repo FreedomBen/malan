@@ -4,8 +4,8 @@ defmodule Malan.Repo.Migrations.CreateTransactions do
   def change do
     create table(:transactions, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :type_enum, :smallint, null: false
-      add :verb_enum, :smallint, null: false
+      add :type_enum, :integer, null: false
+      add :verb_enum, :integer, null: false
       add :when, :utc_datetime, null: false
       add :what, :string, null: false
       add :user_id, references(:users, on_delete: :nothing, type: :binary_id), null: true
