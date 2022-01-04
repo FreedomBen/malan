@@ -1311,8 +1311,7 @@ defmodule Malan.Accounts do
 
   defp report_transaction_error(changeset, user_id, session_id, who, verb, what) do
     # TODO: Report a failure in create_transaction to Sentry
-    # TODO: incorporate error message from changeset into log output
-    Logger.warning("Error recording transaction: user_id: #{user_id}, session_id: #{session_id}, who: #{who}, verb: #{verb}, what: #{what}")
+    Logger.warning("Error recording transaction: user_id: #{user_id}, session_id: #{session_id}, who: #{who}, verb: #{verb}, what: #{what} - #{Utils.Ecto.Changeset.errors_to_str(changeset)}")
     {:error, changeset}
   end
 
