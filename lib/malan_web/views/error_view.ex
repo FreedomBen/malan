@@ -37,6 +37,16 @@ defmodule MalanWeb.ErrorView do
     }
   end
 
+  def render("429.json", _assigns) do
+    %{
+      errors: %{
+        detail: "Too Many Requests",
+        message:
+          "You have exceeded the allowed number of requests.  Please cool off and try again later."
+      }
+    }
+  end
+
   def render("461.json", _assigns) do
     %{
       errors: %{

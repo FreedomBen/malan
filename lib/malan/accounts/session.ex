@@ -1,6 +1,4 @@
 defmodule Malan.Accounts.Session do
-  @compile if Mix.env() == :test, do: :export_all
-
   use Ecto.Schema
   import Ecto.Changeset
 
