@@ -313,4 +313,34 @@ defmodule Malan.Utils.Ecto.Changeset do
       false -> changeset
     end
   end
+
+  @doc ~S"""
+  Convert changeset errors into a list of `String`s
+
+  ## Examples
+
+      Malan.Utils.Ecto.Changeset.errors_to_str_list(changeset)
+      [who: {"who must be a valid ID of a user", []}]
+  """
+  def errors_to_str_list(%Ecto.Changeset{errors: errors}),
+    do: errors_to_str_list(errors)
+
+  def errors_to_str_list(errors) do
+    Enum.map(errors, fn 
+      {field, {err_msg, _attrs}} -> "#{field}: #{err_msg}"
+    end)
+  end
+
+  @doc ~S"""
+  Convert changeset errors into a `String`
+
+  ## Examples
+
+      Malan.Utils.Ecto.Changeset.errors_to_str_list(changeset)
+      [who: {"who must be a valid ID of a user", []}]
+  """
+  def errors_to_str(%Ecto.Changeset{} = changeset) do
+    errors_to_str_list(changeset)
+    |> Enum.join(", ")
+  end
 end
