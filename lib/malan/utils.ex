@@ -32,7 +32,7 @@ defmodule Malan.Utils do
       |> pry_pipe()
 
   """
-  def pry_pipe(retval) do
+  def pry_pipe(retval, arg1 \\ nil, arg2 \\ nil, arg3 \\ nil, arg4 \\ nil) do
     require IEx
     IEx.pry()
     retval

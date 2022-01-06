@@ -24,7 +24,7 @@ defmodule Malan.AccountsTest do
   }
   @update_attrs %{
     password: "some updated password",
-    preferences: %{theme: "light"},
+    preferences: %{theme: "dark", display_name_pref: "custom"},
     roles: [],
     sex: "other",
     gender: "male"
@@ -173,7 +173,7 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
       assert {:ok, %User{} = user} = Accounts.update_user(user, @update_attrs)
       assert user.password == "some updated password"
-      assert %{theme: "light", id: _} = user.preferences
+      assert %{theme: "dark", id: _, display_name_pref: "custom"} = user.preferences
 
       assert %{
                user
@@ -964,14 +964,15 @@ defmodule Malan.AccountsTest do
       update_user_prefs = %{
         preferences: %{
           invalid: "invalid",
-          theme: "dark"
+          theme: "dark",
+          display_name_pref: "full_name"
         }
       }
 
       assert {:ok, %Accounts.User{} = updated_user} =
                Accounts.update_user(user, update_user_prefs)
 
-      assert %{id: _, theme: "dark"} = updated_user.preferences
+      assert %{id: _, theme: "dark", display_name_pref: "full_name"} = updated_user.preferences
       assert false == Map.has_key?(updated_user.preferences, :invalid)
     end
 
@@ -990,32 +991,47 @@ defmodule Malan.AccountsTest do
              |> Enum.any?(fn x -> x =~ ~r/valid.themes.are/i end)
     end
 
-    test "update_user/2 overwrites old preferences" do
+    test "update_user/2 invalid display_name_pref is rejected" do
       user = user_fixture()
 
       update_user_prefs = %{
         preferences: %{
-          theme: "dark"
+          display_name_pref: "invalid"
+        }
+      }
+
+      assert {:error, changeset} = Accounts.update_user(user, update_user_prefs)
+
+      assert errors_on(changeset).preferences.display_name_pref
+             |> Enum.any?(fn x -> x =~ ~r/valid.display_name_prefs.are/i end)
+    end
+
+    test "update_user/2 overwrites old preferences and check default display_name_pref" do
+      user = user_fixture()
+
+      update_user_prefs = %{
+        preferences: %{
+          theme: "dark",
         }
       }
 
       assert {:ok, %Accounts.User{} = updated_user} =
                Accounts.update_user(user, update_user_prefs)
 
-      assert %{id: _, theme: "dark"} = updated_user.preferences
+      assert %{id: _, theme: "dark", display_name_pref: "nick_name"} = updated_user.preferences
       assert false == Map.has_key?(updated_user.preferences, :invalid)
 
       second_user_prefs = %{
         preferences: %{
           theme: "dark",
-          default_sans: "something"
+          display_name_pref: "full_name"
         }
       }
 
       assert {:ok, %Accounts.User{} = updated_user} =
                Accounts.update_user(user, second_user_prefs)
 
-      assert %{id: _, theme: "dark", default_sans: "something"} = updated_user.preferences
+      assert %{id: _, theme: "dark", display_name_pref: "full_name"} = updated_user.preferences
     end
 
     test "revoke_active_sessions/1 revokes all session for the user except non-expiring" do

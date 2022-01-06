@@ -21,7 +21,10 @@ defmodule Malan.Accounts.User do
     field :roles, {:array, :string} # admin, user, or moderator
     field :username, :string
     field :first_name, :string
+    field :middle_name, :string, null: false, default: ""
     field :last_name, :string
+    field :name_prefix, :string, null: false, default: ""
+    field :name_suffix, :string, null: false, default: ""
     field :nick_name, :string
     field :deleted_at, :utc_datetime
     field :latest_tos_accept_ver, :integer # nil means rejected
@@ -38,8 +41,8 @@ defmodule Malan.Accounts.User do
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
 
-    has_many :addresses, Malan.Accounts.Address, foreign_key: :user_id
-    has_many :phone_numbers, Malan.Accounts.PhoneNumber, foreign_key: :user_id
+    has_many :addresses, Accounts.Address, foreign_key: :user_id
+    has_many :phone_numbers, Accounts.PhoneNumber, foreign_key: :user_id
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
     timestamps(type: :utc_datetime)
@@ -87,9 +90,9 @@ defmodule Malan.Accounts.User do
     ])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
-    |> put_change(:preferences, %{theme: "light"})
-    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
-    |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
+    |> put_change(:preferences, Accounts.Preference.default_settings())
+    |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
+    |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
     |> downcase_email()
     |> validate_common()
@@ -112,9 +115,9 @@ defmodule Malan.Accounts.User do
       :height,
       :custom_attrs
     ])
-    |> cast_embed(:preferences)
-    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
-    |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
+    |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
+    |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
+    |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> put_accept_tos()
     |> put_accept_privacy_policy()
     |> validate_common()
@@ -143,9 +146,9 @@ defmodule Malan.Accounts.User do
       :height,
       :custom_attrs
     ])
-    |> cast_embed(:preferences)
-    |> cast_assoc(:addresses, with: &Malan.Accounts.Address.create_changeset_assoc/2)
-    |> cast_assoc(:phone_numbers, with: &Malan.Accounts.PhoneNumber.create_changeset_assoc/2)
+    |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
+    |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
+    |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
     |> downcase_email()
     |> put_reset_pass()
@@ -203,7 +206,7 @@ defmodule Malan.Accounts.User do
 
   defp_testable validate_roles(changeset) do
     changeset
-    #|> validate_subset(:roles, ["admin", "user", "moderator"])
+    # |> validate_subset(:roles, ["admin", "user", "moderator"])
   end
 
   defp_testable validate_username(changeset) do
@@ -248,7 +251,9 @@ defmodule Malan.Accounts.User do
   defp_testable current_tos_ver(false), do: nil
   defp_testable current_tos_ver(true), do: ToS.current_version()
 
-  defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset), do: changeset
+  defp_testable(put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset),
+    do: changeset
+  )
 
   defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: accept_tos}} = changeset) do
     new_tos_accept_events =
@@ -279,14 +284,16 @@ defmodule Malan.Accounts.User do
   defp_testable current_pp_ver(false), do: nil
   defp_testable current_pp_ver(true), do: PrivacyPolicy.current_version()
 
-  defp_testable put_accept_privacy_policy(
-         %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
-       ),
-       do: changeset
+  defp_testable(
+    put_accept_privacy_policy(
+      %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
+    ),
+    do: changeset
+  )
 
   defp_testable put_accept_privacy_policy(
-         %Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset
-       ) do
+                  %Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset
+                ) do
     new_pp_accept_events =
       prepend_accept_pp(
         changeset,
@@ -486,7 +493,7 @@ defmodule Malan.Accounts.User do
   end
 
   defp_testable get_password_reset_token_expiration_time do
-    Application.get_env(:malan, Malan.Accounts.User)[
+    Application.get_env(:malan, Accounts.User)[
       :default_password_reset_token_expiration_secs
     ]
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
