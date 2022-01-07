@@ -1,27 +1,29 @@
 defmodule Malan.Accounts.Preference do
   use Ecto.Schema
+
+  import Malan.Utils, only: [defp_testable: 2]
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
   embedded_schema do
-    field :theme, :string
-    field :display_name_pref, :string
+    field :theme, :string, default: "light"
+    field :display_name_pref, :string, default: "nick_name"
+    field :display_middle_initial_only, :boolean, default: true
   end
 
   def default_settings do
-    %{theme: "light", display_name_pref: "nick_name"}
+    %{theme: "light", display_name_pref: "nick_name", display_middle_initial_only: true}
   end
 
   def changeset(preferences, params) do
     preferences
-    |> cast(params, [:theme, :display_name_pref])
-    |> put_default_theme()
-    |> put_default_display_name_pref()
+    |> cast(params, [:theme, :display_name_pref, :display_middle_initial_only])
     |> validate_theme()
     |> validate_display_name_pref()
+    |> validate_display_middle_initial_only()
   end
 
-  defp validate_theme(changeset) do
+  defp_testable validate_theme(changeset) do
     case get_field(changeset, :theme) do
       "light" -> changeset
       "dark"  -> changeset
@@ -29,17 +31,7 @@ defmodule Malan.Accounts.Preference do
     end
   end
 
-  defp put_default_theme(changeset) do
-    cond do
-      get_field(changeset, :theme) == nil ->
-        put_change(changeset, :theme, "light")
-
-      true ->
-        changeset
-    end
-  end
-
-  defp validate_display_name_pref(changeset) do
+  defp_testable validate_display_name_pref(changeset) do
     case get_field(changeset, :display_name_pref) do
       "full_name" -> changeset
       "nick_name" -> changeset
@@ -53,13 +45,16 @@ defmodule Malan.Accounts.Preference do
     end
   end
 
-  defp put_default_display_name_pref(changeset) do
-    cond do
-      get_field(changeset, :display_name_pref) == nil ->
-        put_change(changeset, :display_name_pref, "nick_name")
-
-      true ->
-        changeset
+  defp_testable validate_display_middle_initial_only(changeset) do
+    case get_field(changeset, :display_middle_initial_only) do
+      false -> changeset
+      true -> changeset
+      _ ->
+        add_error(
+          changeset,
+          :display_middle_initial_only,
+          "Valid display_middle_initial_only are: true, false"
+        )
     end
   end
 end

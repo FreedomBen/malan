@@ -129,6 +129,45 @@ defmodule MalanWeb.UserControllerTest do
       assert Map.has_key?(jr, "addresses") == false
     end
 
+    test "allows setting preferences and middle name/display name in creation", %{conn: conn} do
+      %{preferences: preferences} =
+        create_attrs =
+        Map.merge(@create_attrs, %{
+          display_name: "Cool display name",
+          middle_name: "Von Daesterschpleck",
+          name_prefix: "The Honroable Good Doctor",
+          name_suffix: "PhD in Doctoral Studies",
+          preferences: %{
+            theme: "dark",
+            display_name_pref: "custom",
+            display_middle_initial_only: false
+          }
+        })
+
+      conn = post(conn, Routes.user_path(conn, :create), user: create_attrs)
+
+      # password should be included after creation
+      assert %{"id" => id, "username" => _username, "password" => password} =
+               user = json_response(conn, 201)["data"]
+
+      assert is_nil(password) == false
+
+      # This uses the returned password above to authenticate
+      {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
+      conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
+      jr = json_response(conn, 200)["data"]
+
+      preferences = Utils.map_atom_keys_to_strings(preferences)
+
+      assert %{
+               "id" => ^id,
+               "email" => "some@email.com",
+               "preferences" => ^preferences
+             } = jr
+    end
+
     test "renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}

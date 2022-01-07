@@ -173,7 +173,21 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
       assert {:ok, %User{} = user} = Accounts.update_user(user, @update_attrs)
       assert user.password == "some updated password"
-      assert %{theme: "dark", id: _, display_name_pref: "custom"} = user.preferences
+
+      assert %{
+               theme: "dark",
+               id: _,
+               display_name_pref: "custom",
+               display_middle_initial_only: true
+             } = user.preferences
+
+      %{
+        preferences: %{
+          theme: "dark",
+          display_name_pref: "custom",
+          display_middle_initial_only: true
+        }
+      } = retuser = Accounts.get_user!(user.id)
 
       assert %{
                user
@@ -182,8 +196,9 @@ defmodule Malan.AccountsTest do
                  sex_enum: 2,
                  gender: nil,
                  gender_enum: 50,
-                 custom_attrs: %{}
-             } == Accounts.get_user!(user.id)
+                 custom_attrs: %{},
+                 preferences: %{}
+             } == %{retuser | preferences: %{}}
 
       assert user.sex == "other"
     end
@@ -965,7 +980,8 @@ defmodule Malan.AccountsTest do
         preferences: %{
           invalid: "invalid",
           theme: "dark",
-          display_name_pref: "full_name"
+          display_name_pref: "full_name",
+          display_middle_initial_only: false
         }
       }
 
@@ -1011,20 +1027,27 @@ defmodule Malan.AccountsTest do
 
       update_user_prefs = %{
         preferences: %{
-          theme: "dark",
+          theme: "dark"
         }
       }
 
       assert {:ok, %Accounts.User{} = updated_user} =
                Accounts.update_user(user, update_user_prefs)
 
-      assert %{id: _, theme: "dark", display_name_pref: "nick_name"} = updated_user.preferences
+      assert %{
+               id: _,
+               theme: "dark",
+               display_name_pref: "nick_name",
+               display_middle_initial_only: true
+             } = updated_user.preferences
+
       assert false == Map.has_key?(updated_user.preferences, :invalid)
 
       second_user_prefs = %{
         preferences: %{
           theme: "dark",
-          display_name_pref: "full_name"
+          display_name_pref: "full_name",
+          display_middle_initial_only: true
         }
       }
 

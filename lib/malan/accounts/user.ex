@@ -21,11 +21,12 @@ defmodule Malan.Accounts.User do
     field :roles, {:array, :string} # admin, user, or moderator
     field :username, :string
     field :first_name, :string
-    field :middle_name, :string, null: false, default: ""
+    field :middle_name, :string
     field :last_name, :string
-    field :name_prefix, :string, null: false, default: ""
-    field :name_suffix, :string, null: false, default: ""
+    field :name_prefix, :string
+    field :name_suffix, :string
     field :nick_name, :string
+    field :display_name, :string
     field :deleted_at, :utc_datetime
     field :latest_tos_accept_ver, :integer # nil means rejected
     field :latest_pp_accept_ver, :integer  # nil means rejected
@@ -79,6 +80,10 @@ defmodule Malan.Accounts.User do
       :password,
       :first_name,
       :last_name,
+      :middle_name,
+      :name_suffix,
+      :name_prefix,
+      :display_name,
       :nick_name,
       :sex,
       :gender,
@@ -90,7 +95,8 @@ defmodule Malan.Accounts.User do
     ])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
-    |> put_change(:preferences, Accounts.Preference.default_settings())
+    |> put_initial_preferences() # required or the cast_embed will fail
+    |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
     |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
@@ -134,6 +140,10 @@ defmodule Malan.Accounts.User do
       :password,
       :first_name,
       :last_name,
+      :middle_name,
+      :name_suffix,
+      :name_prefix,
+      :display_name,
       :nick_name,
       :roles,
       :reset_password,
@@ -510,4 +520,11 @@ defmodule Malan.Accounts.User do
   end
 
   defp_testable downcase_email(changeset), do: changeset
+
+  defp_testable put_initial_preferences(changeset) do
+    case get_field(changeset, :preferences) do
+      nil -> put_change(changeset, :preferences, %{})
+      _ -> changeset
+    end
+  end
 end
