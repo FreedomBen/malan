@@ -244,7 +244,9 @@ defmodule Malan.Accounts.User do
     |> put_pass_hash()
   end
 
-  defp_testable validate_password(changeset), do: changeset
+  defp_testable validate_password(changeset) do
+    changeset
+  end
 
   defp_testable new_accept_tos(accept_tos, tos_version) do
     %{
@@ -258,12 +260,17 @@ defmodule Malan.Accounts.User do
     [new_tos | changeset.data.tos_accept_events]
   end
 
-  defp_testable current_tos_ver(false), do: nil
-  defp_testable current_tos_ver(true), do: ToS.current_version()
+  defp_testable current_tos_ver(false) do
+    nil
+  end
 
-  defp_testable(put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset),
-    do: changeset
-  )
+  defp_testable current_tos_ver(true) do
+    ToS.current_version()
+  end
+
+  defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: nil}} = changeset) do
+    changeset
+  end
 
   defp_testable put_accept_tos(%Ecto.Changeset{changes: %{accept_tos: accept_tos}} = changeset) do
     new_tos_accept_events =
@@ -277,7 +284,9 @@ defmodule Malan.Accounts.User do
     |> put_change(:latest_tos_accept_ver, current_tos_ver(accept_tos))
   end
 
-  defp_testable put_accept_tos(changeset), do: changeset
+  defp_testable put_accept_tos(changeset) do
+    changeset
+  end
 
   defp_testable new_accept_pp(accept_pp, pp_version) do
     %{
@@ -291,15 +300,19 @@ defmodule Malan.Accounts.User do
     [new_pp | changeset.data.privacy_policy_accept_events]
   end
 
-  defp_testable current_pp_ver(false), do: nil
-  defp_testable current_pp_ver(true), do: PrivacyPolicy.current_version()
+  defp_testable current_pp_ver(false) do
+    nil
+  end
 
-  defp_testable(
-    put_accept_privacy_policy(
-      %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
-    ),
-    do: changeset
-  )
+  defp_testable current_pp_ver(true) do
+    PrivacyPolicy.current_version()
+  end
+
+  defp_testable put_accept_privacy_policy(
+                  %Ecto.Changeset{changes: %{accept_privacy_policy: nil}} = changeset
+                ) do
+    changeset
+  end
 
   defp_testable put_accept_privacy_policy(
                   %Ecto.Changeset{changes: %{accept_privacy_policy: accept_pp}} = changeset
@@ -315,7 +328,9 @@ defmodule Malan.Accounts.User do
     |> put_change(:latest_pp_accept_ver, current_pp_ver(accept_pp))
   end
 
-  defp_testable put_accept_privacy_policy(changeset), do: changeset
+  defp_testable put_accept_privacy_policy(changeset) do
+    changeset
+  end
 
   defp_testable gender_to_i(changeset) do
     changeset
@@ -476,7 +491,9 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp_testable gen_reset_token(), do: Utils.Crypto.strong_random_string(65)
+  defp_testable gen_reset_token() do
+    Utils.Crypto.strong_random_string(65)
+  end
 
   defp_testable put_password_reset_token(changeset) do
     reset_token = gen_reset_token()
@@ -513,13 +530,17 @@ defmodule Malan.Accounts.User do
     put_change(cs, :username, String.downcase(username))
   end
 
-  defp_testable downcase_username(changeset), do: changeset
+  defp_testable downcase_username(changeset) do
+    changeset
+  end
 
   defp_testable downcase_email(%Ecto.Changeset{changes: %{email: email}} = cs) do
     put_change(cs, :email, String.downcase(email))
   end
 
-  defp_testable downcase_email(changeset), do: changeset
+  defp_testable downcase_email(changeset) do
+    changeset
+  end
 
   defp_testable put_initial_preferences(changeset) do
     case get_field(changeset, :preferences) do
