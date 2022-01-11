@@ -22,7 +22,7 @@ config :malan, Malan.Repo,
 # you can enable the server option below.
 config :malan, MalanWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "ixXd2PlIyhy7qTizETn03gLtW0t1QWERBWhDmLDUZLZH0S1WbNcyKKWxhQj/MTIE",
+  secret_key_base: "jhOV8WgGOt2XZ5iHeEKZ3/m2trLP5CJJSmZbaClcTXjquvkToAwRjaOET3zZhmho",
   server: false
 
 # In test we don't send emails.

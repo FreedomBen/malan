@@ -25,10 +25,9 @@ config :malan, Malan.Accounts.Session,
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
   url: [host: System.get_env("BIND_ADDR") || "127.0.0.1"],
-  secret_key_base: "FC5AU8NzrLTUTK3z70VVpDMKMYA9t3i4ptS94tW+N9+zZk0SdF26Dia44OEVkHWX",
-  render_errors: [view: MalanWeb.ErrorView, accepts: ~w(json), layout: false],
+  render_errors: [view: MalanWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Malan.PubSub,
-  live_view: [signing_salt: "r+pBeSoj"]
+  live_view: [signing_salt: "S5EXJrIi"]
 
 # Configures the mailer
 #
@@ -44,10 +43,10 @@ config :swoosh, :api_client, false
 
 # Configure esbuild (the version is required)
 config :esbuild,
-  version: "0.12.18",
+  version: "0.14.0",
   default: [
     args:
-      ~w(js/app.js --bundle --target=es2016 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
@@ -61,6 +60,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :plug, :statuses, %{
+  429 -> "Too Many Requests",
   461 => "Terms of Service Required",
   462 => "Privacy Policy Required"
 }
