@@ -51,6 +51,7 @@ metadata:
   namespace: malan-staging
 data:
   BIND_ADDR: '0.0.0.0'
+  POOL_SIZE: '3'
   DB_POOL_SIZE: '3'
 
 ---
