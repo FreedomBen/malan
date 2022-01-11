@@ -34,7 +34,7 @@ spec:
           - configMapRef:
               name: malan-migration-config
           - secretRef:
-              name: malan-secrets
+              name: malan-migration-secrets
         securityContext:
           allowPrivilegeEscalation: false
   ttlSecondsAfterFinished: 86400 # 24 hours
