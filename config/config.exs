@@ -60,7 +60,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :plug, :statuses, %{
-  429 -> "Too Many Requests",
+  429 => "Too Many Requests",
   461 => "Terms of Service Required",
   462 => "Privacy Policy Required"
 }
