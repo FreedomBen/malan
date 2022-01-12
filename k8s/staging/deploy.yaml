@@ -37,7 +37,8 @@ spec:
           - configMapRef:
               name: malan-web-config
           - secretRef:
-              name: malan-deploy-secrets
+              #name: malan-deploy-secrets
+              name: malan-migration-secrets
         securityContext:
           allowPrivilegeEscalation: false
 
