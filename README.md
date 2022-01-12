@@ -117,6 +117,25 @@ git tag "prod-$(date '+%Y-%m-%d-%H-%M-%S')"
 git push --tags
 ```
 
+### Configuring PostgreSQL users
+
+You should run the web application as a non-privileged user that cannot run DDL commands, and the migrations as a privileged user who can.
+
+```SQL
+CREATE ROLE malan WITH LOGIN PASSWORD '<somepassword>';
+GRANT CONNECT ON DATABASE malan_prod TO user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO malan;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE
+    malan
+  IN SCHEMA
+    public
+  GRANT
+    SELECT, INSERT, UPDATE, DELETE
+  ON TABLES TO
+    malan;
+```
+
 ## Helpful links regarding Phoenix
 
   * Official website: https://www.phoenixframework.org/

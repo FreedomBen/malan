@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+MALAN_HOST='https://malan-staging.ameelio.org'
+
 # Regular user
 NEW_EMAIL="TestUser1@example.com"
 NEW_USERNAME="TestUser1"
@@ -13,7 +15,7 @@ api_token="$(curl \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
                --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
-               http://localhost:4000/api/sessions/ \
+               "${MALAN_HOST}/api/sessions/" \
               | jq -r '.data.api_token')"
 
 # Now create the new user
@@ -23,5 +25,5 @@ curl \
   --header "Content-Type: application/json" \
   --header "Authorization: Bearer ${api_token}" \
   --data "{\"user\":{\"email\":\"${NEW_EMAIL}\",\"username\":\"${NEW_USERNAME}\",\"password\":\"${NEW_PASSWORD}\",\"first_name\":\"${NEW_FIRST_NAME}\",\"last_name\":\"${NEW_LAST_NAME}\"}}" \
-  http://localhost:4000/api/users/
+  "${MALAN_HOST}/api/users/"
 
