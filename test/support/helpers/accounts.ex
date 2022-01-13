@@ -98,7 +98,10 @@ defmodule Malan.Test.Helpers.Accounts do
     Accounts.create_session(
       user.username,
       user.password,
-      Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
+      Map.merge(
+        %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"},
+        session_attrs
+      )
     )
   end
 

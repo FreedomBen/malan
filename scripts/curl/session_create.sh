@@ -13,6 +13,7 @@ curl \
   --request POST \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
+  --header "CF-Connecting-IP: 127.0.1.1" \
   --data '{"session":{"email":"root@example.com","username":"root","password":"password10","never_expires":true}}' \
   http://localhost:4000/api/sessions/
 

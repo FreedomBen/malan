@@ -8,7 +8,7 @@ defmodule Malan.Repo.Migrations.CreateSessions do
       add :expires_at, :utc_datetime
       add :authenticated_at, :utc_datetime
       add :revoked_at, :utc_datetime
-      add :ip_address, :string
+      add :ip_address, :string, null: false
       add :location, :string
       add :user_id, references(:users, on_delete: :nothing, type: :binary_id)
 
