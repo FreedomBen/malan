@@ -618,7 +618,7 @@ defmodule Malan.Accounts do
   @doc """
   Create a new session for specified `username` if `pass` is correct.
 
-  `ip_addr` will be recorded in the DB if this attempt is successful
+  `ip_addr` will be recorded in the DB
 
   Returns {:ok, %Session{}} on success
       If unauthorized you'll get back {:error, :unauthorized}

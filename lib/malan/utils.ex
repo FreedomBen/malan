@@ -104,6 +104,8 @@ defmodule Malan.Utils do
 
   Check is done by simple regular expression and is not overly sophisticated.
 
+  Return true || false
+
   ## Examples
 
       iex> Malan.Utils.is_uuid?(nil)

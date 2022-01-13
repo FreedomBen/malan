@@ -17,10 +17,12 @@ defmodule MalanWeb.SessionControllerTest do
 
   def session_to_retval_map(session) do
     session
+    |> Map.put(:ip_address, session.real_ip_address)
     |> Utils.struct_to_map()
     |> Utils.map_atom_keys_to_strings()
     |> Enum.map(fn {k, v} -> {k, datetime_to_string(v)} end)
     |> Enum.reject(fn {k, _v} -> k == "expires_in_seconds" end)
+    |> Enum.reject(fn {k, _v} -> k == "real_ip_address" end)
     |> Enum.reject(fn {k, _v} -> k == "api_token_hash" end)
     |> Enum.reject(fn {k, _v} -> k == "never_expires" end)
     |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
@@ -166,7 +168,8 @@ defmodule MalanWeb.SessionControllerTest do
                "user_id" => ^user_id,
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
-               "ip_address" => "192.168.2.200",
+               #"ip_address" => "192.168.2.200",
+               #"real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -212,6 +215,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
+               #"real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -272,6 +276,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
+               #"real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -328,6 +333,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
+               #"real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -368,6 +374,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
+               #"real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -396,7 +403,9 @@ defmodule MalanWeb.SessionControllerTest do
             username: user.username,
             password: user.password,
             user_id: "ohia",
-            ip_address: "10.0.0.0"
+            # IP addresses should be ignored
+            ip_address: "10.0.0.0",
+            real_ip_address: "10.0.0.1"
           }
         )
 
@@ -413,6 +422,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
+               #"real_ip_address" => "10.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -668,6 +678,7 @@ defmodule MalanWeb.SessionControllerTest do
   #              "authenticated_at" => _authenticated_at,
   #              "expires_at" => _expires_at,
   #              "ip_address" => _ip,
+  #              #"real_ip_address" => _real_ip,
   #              "location" => nil,
   #              "revoked_at" => nil
   #            } = jr
@@ -688,6 +699,7 @@ defmodule MalanWeb.SessionControllerTest do
   #              "authenticated_at" => _authenticated_at,
   #              "expires_at" => _expires_at,
   #              "ip_address" => _ip,
+  #              #"real_ip_address" => _real_ip,
   #              "location" => nil,
   #              "revoked_at" => ^revoked_at,
   #            } = jr

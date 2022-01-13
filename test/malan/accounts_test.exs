@@ -774,7 +774,7 @@ defmodule Malan.AccountsTest do
         Accounts.create_session(
           user.username,
           user.password,
-          Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
+          Map.merge(%{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}, session_attrs)
         )
 
       session
@@ -804,12 +804,13 @@ defmodule Malan.AccountsTest do
       assert Accounts.get_session!(session.id) == %{session | api_token: nil}
     end
 
-    test "create_session/1 with valid data creates a session" do
+    test "create_session/3 with valid data creates a session" do
       user = user_fixture()
 
       assert {:ok, %Session{} = session} =
                Accounts.create_session(user.username, user.password, %{
-                 "ip_address" => "192.168.2.200"
+                 "ip_address" => "192.168.2.200",
+                 "real_ip_address" => "192.168.2.201"
                })
 
       # API token should be included after creation, but not after that
@@ -831,31 +832,32 @@ defmodule Malan.AccountsTest do
              )
 
       assert session.ip_address == "192.168.2.200"
+      assert session.real_ip_address == "192.168.2.201"
       assert session.revoked_at == nil
     end
 
-    test "create_session/1 with expires_never at true expires over 200 years from now" do
+    test "create_session/3 with expires_never at true expires over 200 years from now" do
       user = user_fixture()
 
       assert {:ok, %Session{} = session} =
                Accounts.create_session(
                  user.username,
                  user.password,
-                 %{"never_expires" => true, "ip_address" => "192.168.2.200"}
+                 %{"never_expires" => true, "ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
                )
 
       assert DateTime.diff(session.expires_at, DateTime.utc_now()) > 5_000_000_000
       assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
     end
 
-    test "create_session/1 with expires_in_seconds expires at specified time" do
+    test "create_session/3 with expires_in_seconds expires at specified time" do
       user = user_fixture()
 
       assert {:ok, %Session{} = session} =
                Accounts.create_session(
                  user.username,
                  user.password,
-                 %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200"}
+                 %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
                )
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
@@ -873,7 +875,8 @@ defmodule Malan.AccountsTest do
                  %{
                    "never_expires" => false,
                    "expires_in_seconds" => -120,
-                   "ip_address" => "192.168.2.200"
+                   "ip_address" => "192.168.2.200",
+                   "real_ip_address" => "192.168.2.201"
                  }
                )
 
@@ -889,7 +892,8 @@ defmodule Malan.AccountsTest do
       assert {:ok, session} =
                Accounts.create_session(user1.username, user1.password, %{
                  "user_id" => user2.id,
-                 "ip_address" => "192.168.2.200"
+                 "ip_address" => "192.168.2.200",
+                 "real_ip_address" => "192.168.2.201"
                })
 
       assert user2.id != user1.id
@@ -911,7 +915,8 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       assert {:error, :unauthorized} =
-               Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200")
+        Accounts.create_session(user.username, "nottherightpassword", %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"})
+               #Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200")
     end
 
     test "create_session/1 with non-existent user returns {:error, :not_a_user}" do
@@ -919,7 +924,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  "notarealusernameatall",
                  "nottherightpassword",
-                 "192.168.2.200"
+                 %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
                )
     end
 
