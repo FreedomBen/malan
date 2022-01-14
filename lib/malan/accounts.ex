@@ -615,6 +615,13 @@ defmodule Malan.Accounts do
     |> new_session()
   end
 
+  defp username_to_id(username) do
+    case Utils.is_uuid_or_nil?(username) do
+      true -> username
+      _ -> Repo.one(from u in User, select: u.id, where: u.username == ^username)
+    end
+  end
+
   @doc """
   Create a new session for specified `username` if `pass` is correct.
 
@@ -628,9 +635,61 @@ defmodule Malan.Accounts do
     # TODO: Record failed attempts somewhere.  At least logs
     case authenticate_by_username_pass(username, pass) do
       {:ok, user_id} -> new_session(user_id, attrs)
-      {:error, :unauthorized} -> {:error, :unauthorized}
-      {:error, :not_a_user} -> {:error, :not_a_user}
+      {:error, :unauthorized} -> record_create_session_unauthorized(username, attrs)
+      {:error, :not_a_user} -> record_create_session_not_a_user(username, attrs)
     end
+  end
+
+  @doc """
+  Record failed session creation attempt as unauthorized.
+
+  Returns {:error, :unauthorized}
+  """
+  def record_create_session_unauthorized(username_or_id, attrs, username \\ nil) do
+    case Utils.is_uuid_or_nil?(username_or_id) do
+      true ->
+        record_transaction(
+          username_or_id,
+          nil,
+          username_or_id,
+          username,
+          "sessions",
+          "POST",
+          "Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs)}"
+        )
+
+      # recursive
+      _ ->
+        record_create_session_unauthorized(username_to_id(username_or_id), attrs, username_or_id)
+    end
+
+    {:error, :unauthorized}
+  end
+
+  @doc """
+  Record failed session creation attempt as unauthorized.
+
+  Returns {:error, :not_a_user}
+  """
+  def record_create_session_not_a_user(username_or_id, attrs, username \\ nil) do
+    case Utils.is_uuid_or_nil?(username_or_id) do
+      true ->
+        record_transaction(
+          username_or_id,
+          nil,
+          username_or_id,
+          username,
+          "sessions",
+          "POST",
+          "Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs)}"
+        )
+
+      # recursive
+      _ ->
+        record_create_session_not_a_user(username_to_id(username_or_id), attrs, username_or_id)
+    end
+
+    {:error, :not_a_user}
   end
 
   @doc """
@@ -1302,16 +1361,22 @@ defmodule Malan.Accounts do
 
   Returns {:ok, transaction} on success or {:error, changeset} on failure
   """
-  def record_transaction(user_id, session_id, who, type, verb, what) do
-    case create_transaction(user_id, session_id, who, type, verb, what) do
-      {:ok, transaction} -> {:ok, transaction}
-      {:error, changeset} -> report_transaction_error(changeset, user_id, session_id, who, verb, what)
+  def record_transaction(user_id, session_id, who, who_username, type, verb, what) do
+    case create_transaction(user_id, session_id, who, who_username, type, verb, what) do
+      {:ok, transaction} ->
+        {:ok, transaction}
+
+      {:error, changeset} ->
+        report_transaction_error(changeset, user_id, session_id, who, who_username, verb, what)
     end
   end
 
-  defp report_transaction_error(changeset, user_id, session_id, who, verb, what) do
+  defp report_transaction_error(changeset, user_id, session_id, who, who_username, verb, what) do
     # TODO: Report a failure in create_transaction to Sentry
-    Logger.warning("Error recording transaction: user_id: #{user_id}, session_id: #{session_id}, who: #{who}, verb: #{verb}, what: #{what} - #{Utils.Ecto.Changeset.errors_to_str(changeset)}")
+    Logger.warning(
+      "Error recording transaction: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
+    )
+
     {:error, changeset}
   end
 
