@@ -34,11 +34,11 @@ defmodule Malan.AccountsFixtures do
   }
 
   def create_transaction(nil, user, session, attrs) do
-    Accounts.create_transaction(user.id, session.id, user.id, attrs)
+    Accounts.create_transaction(user.id, session.id, user.id, user.username, attrs)
   end
 
   def create_transaction(user_id, user, session, attrs),
-    do: Accounts.create_transaction(user_id, session.id, user.id, attrs)
+    do: Accounts.create_transaction(user_id, session.id, user.id, user.username, attrs)
 
   @doc """
   Creates a transaction using the specified attrs.  Supports specifying user_id in attrs

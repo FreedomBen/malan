@@ -79,7 +79,7 @@ defmodule MalanWeb.SessionController do
 
   defp record_transaction(conn, who, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
-    Accounts.record_transaction(user_id, session_id, who, "sessions", verb, what)
+    Accounts.record_transaction(user_id, session_id, who, nil, "sessions", verb, what)
     conn
   end
 
