@@ -1339,7 +1339,16 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_transaction(user_id, session_id, who_id, who_username, type, verb, what, when_utc \\ nil) do
+  def create_transaction(
+        user_id,
+        session_id,
+        who_id,
+        who_username,
+        type,
+        verb,
+        what,
+        when_utc \\ nil
+      ) do
     create_transaction(user_id, session_id, who_id, who_username, %{
       "type" => type,
       "verb" => verb,
@@ -1351,7 +1360,12 @@ defmodule Malan.Accounts do
   def create_transaction(user_id, session_id, who_id, who_username, attrs \\ %{}) do
     %Transaction{}
     |> Transaction.create_changeset(
-      Map.merge(attrs, %{"user_id" => user_id, "session_id" => session_id, "who" => who_id, "who_username" => who_username})
+      Map.merge(attrs, %{
+        "user_id" => user_id,
+        "session_id" => session_id,
+        "who" => who_id,
+        "who_username" => who_username
+      })
     )
     |> Repo.insert()
   end

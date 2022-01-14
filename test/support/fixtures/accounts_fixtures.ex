@@ -59,7 +59,6 @@ defmodule Malan.AccountsFixtures do
   end
 
   def transaction_fixture_to_retrieved(transaction) do
-    %{ transaction | type: nil, verb: nil }
+    %{transaction | type: nil, verb: nil}
   end
-
 end
