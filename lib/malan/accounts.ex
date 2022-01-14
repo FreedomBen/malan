@@ -655,7 +655,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs)}"
+          "Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}"
         )
 
       # recursive
@@ -681,7 +681,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs)}"
+          "Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}"
         )
 
       # recursive

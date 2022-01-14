@@ -39,6 +39,28 @@ defmodule Malan.UtilsTest do
         Utils.raise_if_nil!(nil)
       end
     end
+
+    test "#list_to_strings_and_atoms/1" do
+      assert [:circle, "circle"] == Utils.list_to_strings_and_atoms([:circle])
+      assert [:square, "square", :circle, "circle"] == Utils.list_to_strings_and_atoms([:circle, :square])
+
+      assert ["circle", :circle] == Utils.list_to_strings_and_atoms(["circle"])
+      assert ["square", :square, "circle", :circle] == Utils.list_to_strings_and_atoms(["circle", "square"])
+    end
+
+    test "#map_to_string/1" do
+      assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
+      assert "kitt: 'karr', michael: 'knight'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"})
+    end
+
+    test "#map_to_string/2 masks specified values" do
+      assert "kitt: '****', michael: 'knight'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
+      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
+      assert "carr: 'hart', kitt: '****', michael: '******'" == Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, ["kitt", "michael"])
+
+      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
+      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
+    end
   end
 
   describe "Crypto" do

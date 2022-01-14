@@ -5,7 +5,7 @@ defmodule Malan.Utils do
   See:  https://stackoverflow.com/a/47598190/2062384
   """
   defmacro defp_testable(head, body \\ nil) do
-    if Mix.env == :test do
+    if Mix.env() == :test do
       quote do
         def unquote(head) do
           unquote(body[:do])
@@ -38,7 +38,6 @@ defmodule Malan.Utils do
     retval
   end
 
-
   @doc ~S"""
   Convert a map with `String` keys into a map with `Atom` keys.
 
@@ -53,7 +52,6 @@ defmodule Malan.Utils do
       {String.to_atom(key), val}
     end
   end
-
 
   @doc ~S"""
   Convert a map with `String` keys into a map with `Atom` keys.
@@ -70,7 +68,6 @@ defmodule Malan.Utils do
     end
   end
 
-
   @doc ~S"""
   Converts a struct to a regular map by deleting the `:__meta__` key
 
@@ -85,7 +82,6 @@ defmodule Malan.Utils do
     |> Map.delete(:__meta__)
   end
 
-
   @doc ~S"""
   Generate a new UUIDv4
 
@@ -97,7 +93,6 @@ defmodule Malan.Utils do
   """
   def uuidgen(),
     do: Ecto.UUID.generate()
-
 
   @doc ~S"""
   Quick regex check to see if the supplied `string` is a valid UUID
@@ -117,6 +112,7 @@ defmodule Malan.Utils do
 
   """
   def is_uuid?(nil), do: false
+
   def is_uuid?(string),
     do: string =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
 
@@ -168,7 +164,6 @@ defmodule Malan.Utils do
     end
   end
 
-
   @doc """
   if `value` (value of the argument) is nil, this will raise `Malan.CantBeNil`
 
@@ -191,10 +186,65 @@ defmodule Malan.Utils do
     end
   end
 
-  def map_to_string(map) do
+  @doc """
+  Convert a map to a `String`, suitable for printing.
+
+  Optionally pass a list of keys to mask.
+
+  ## Examples
+
+      iex> map_to_string(%{michael: "knight"})
+      "michael: 'knight'"
+
+      iex> map_to_string(%{michael: "knight", kitt: "karr"})
+      "kitt: 'karr', michael: 'knight'"
+
+      iex> map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
+      "kitt: '****', michael: 'knight'"
+
+      iex> map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
+      "kitt: '****', michael: '******'"
+
+      iex> map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, ["kitt", "michael"])
+      "carr: 'hart', kitt: '****', michael: '******'"
+
+  """
+  def map_to_string(map, mask_keys \\ []) do
     Map.to_list(map)
+    |> Enum.map(fn {key, val} ->
+      case key in list_to_strings_and_atoms(mask_keys) do
+        true -> {key, String.replace(val, ~r/./, "*")}
+        _ -> {key, val}
+      end
+    end)
     |> Enum.map(fn {key, val} -> "#{key}: '#{val}'" end)
     |> Enum.join(", ")
+  end
+
+  defp atom_or_string_to_string_or_atom(atom) when is_atom(atom) do
+    Atom.to_string(atom)
+  end
+
+  defp atom_or_string_to_string_or_atom(string) when is_binary(string) do
+    String.to_atom(string)
+  end
+
+  @doc """
+  Takes a list of strings or atoms and returns a list with string and atoms.
+
+  ## Examples
+
+      iex> list_to_strings_and_atoms([:circle])
+      [:circle, "circle"]
+
+      iex> list_to_strings_and_atoms([:circle, :square])
+      [:square, "square", :circle, "circle"]
+
+      iex> list_to_strings_and_atoms(["circle", "square"])
+      ["square", :square, "circle", :circle]
+  """
+  def list_to_strings_and_atoms(list) do
+    Enum.reduce(list, [], fn l, acc -> [l | [atom_or_string_to_string_or_atom(l) | acc]] end)
   end
 end
 
@@ -320,7 +370,7 @@ defmodule Malan.Utils.Ecto.Changeset do
 
   def validate_not_format(changeset, property, regex) do
     case validate_not_format(Map.get(changeset.changes, property), regex) do
-      true  -> Ecto.Changeset.add_error(changeset, property, "has invalid format")
+      true -> Ecto.Changeset.add_error(changeset, property, "has invalid format")
       false -> changeset
     end
   end
@@ -337,7 +387,7 @@ defmodule Malan.Utils.Ecto.Changeset do
     do: errors_to_str_list(errors)
 
   def errors_to_str_list(errors) do
-    Enum.map(errors, fn 
+    Enum.map(errors, fn
       {field, {err_msg, _attrs}} -> "#{field}: #{err_msg}"
     end)
   end
