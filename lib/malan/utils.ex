@@ -120,6 +120,9 @@ defmodule Malan.Utils do
   def is_uuid?(string),
     do: string =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
 
+  def is_uuid_or_nil?(nil), do: true
+  def is_uuid_or_nil?(string), do: is_uuid?(string)
+
   # def nil_or_empty?(nil), do: true
   # def nil_or_empty?(str) when is_string(str), do: "" == str |> String.trim()
 
@@ -186,6 +189,12 @@ defmodule Malan.Utils do
       true -> raise Malan.CantBeNil
       false -> value
     end
+  end
+
+  def map_to_string(map) do
+    Map.to_list(map)
+    |> Enum.map(fn {key, val} -> "#{key}: '#{val}'" end)
+    |> Enum.join(", ")
   end
 end
 
