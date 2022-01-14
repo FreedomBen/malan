@@ -16,7 +16,8 @@ defmodule Malan.Accounts.Transaction do
     field :when, :utc_datetime, null: false   # When this change happened (may not match created_at)
     field :user_id, :binary_id, null: true    # User making change (owner of the token that changed something)
     field :session_id, :binary_id, null: true # Session making the change (session ownign the token that changed something)
-    field :who, :binary_id, null: false       # Which user was modified/changed/created/etc
+    field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
+    field :who_username, :string, null: true  # Which user was modified/changed/created/etc
 
     field :type, :string, virtual: true
     field :verb, :string, virtual: true
@@ -27,13 +28,15 @@ defmodule Malan.Accounts.Transaction do
   @doc false
   def create_changeset(transaction, attrs) do
     transaction
-    |> cast(attrs, [:user_id, :session_id, :who, :type, :verb, :when, :what])
+    |> cast(attrs, [:user_id, :session_id, :who, :who_username, :type, :verb, :when, :what])
     |> put_default_when()
-    |> validate_required([:who, :type, :verb, :when, :what])
+    |> validate_required([:type, :verb, :when, :what])
     |> validate_type()
     |> validate_verb()
-    |> validate_who_s_binary_id()
-    |> validate_required([:who, :type_enum, :verb_enum, :when, :what])
+    |> validate_who_is_binary_id_or_nil()
+    |> validate_required([:type_enum, :verb_enum, :when, :what])
+    |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:session_id)
     |> foreign_key_constraint(:who)
   end
 
@@ -98,8 +101,8 @@ defmodule Malan.Accounts.Transaction do
     |> Transaction.Verb.to_i()
   end
 
-  defp_testable validate_who_s_binary_id(changeset) do
-    case Utils.is_uuid?(get_change(changeset, :who)) do
+  defp_testable validate_who_is_binary_id_or_nil(changeset) do
+    case Utils.is_uuid_or_nil?(get_change(changeset, :who)) do
       true -> changeset
       false -> add_error(changeset, :who, "who must be a valid ID of a user")
     end

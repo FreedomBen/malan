@@ -10,7 +10,7 @@ defmodule Malan.Repo.Migrations.CreateTransactions do
       add :what, :string, null: false
       add :user_id, references(:users, on_delete: :nothing, type: :binary_id), null: true
       add :session_id, references(:sessions, on_delete: :nothing, type: :binary_id), null: true
-      add :who, references(:users, on_delete: :nothing, type: :binary_id), null: false
+      add :who, references(:users, on_delete: :nothing, type: :binary_id), null: true
 
       timestamps(type: :utc_datetime)
     end

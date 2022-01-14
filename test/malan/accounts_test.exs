@@ -1499,7 +1499,7 @@ defmodule Malan.AccountsTest do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
 
       assert {:ok, %Transaction{} = transaction} =
-               Accounts.create_transaction(user.id, session.id, user.id, valid_attrs)
+               Accounts.create_transaction(user.id, session.id, user.id, user.username, valid_attrs)
 
       assert transaction.type == "sessions"
       assert transaction.verb == "DELETE"
@@ -1509,7 +1509,7 @@ defmodule Malan.AccountsTest do
 
     test "create_transaction/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} =
-               Accounts.create_transaction(nil, nil, nil, @invalid_attrs)
+               Accounts.create_transaction(nil, nil, nil, nil, @invalid_attrs)
     end
 
     test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do

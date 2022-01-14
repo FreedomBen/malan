@@ -79,10 +79,10 @@ defmodule Malan.TransactionSchemaTest do
       assert changeset.changes == %{}
     end
 
-    test "#create_changeset/2 requires who, type, verb, what, sets when" do
+    test "#create_changeset/2 requires type, verb, what, sets when" do
       cs = Transaction.create_changeset(%Transaction{}, %{})
       errors = errors_on(cs)
-      assert Enum.all?([:who, :type, :verb, :what], fn e -> Map.has_key?(errors, e) end)
+      assert Enum.all?([:type, :verb, :what], fn e -> Map.has_key?(errors, e) end)
       assert !Map.has_key?(errors, :when)
       assert TestUtils.DateTime.within_last?(cs.changes.when, 2, :seconds)
     end

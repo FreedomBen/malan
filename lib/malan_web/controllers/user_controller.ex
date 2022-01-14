@@ -25,9 +25,9 @@ defmodule MalanWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
-    with {:ok, %User{id: id} = user} <- Accounts.register_user(user_params) do
+    with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
       conn
-      |> record_transaction(id, "POST", "#UserController.create/2")
+      |> record_transaction(id, username, "POST", "#UserController.create/2")
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
       |> render("show.json", user: user)
@@ -55,7 +55,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-        record_transaction(conn, user.id, "PUT", "#UserController.update/2")
+        record_transaction(conn, user.id, user.username, "PUT", "#UserController.update/2")
         render(conn, "show.json", user: user)
       end
     end
@@ -68,7 +68,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.admin_update_user(user, user_params) do
-        record_transaction(conn, user.id, "PUT", "#UserController.admin_update/2")
+        record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_update/2")
         render(conn, "show.json", user: user)
       end
     end
@@ -81,7 +81,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{}} <- Accounts.delete_user(user) do
-        record_transaction(conn, user.id, "DELETE", "#UserController.delete/2")
+        record_transaction(conn, user.id, user.username, "DELETE", "#UserController.delete/2")
         send_resp(conn, :no_content, "")
       end
     end
@@ -94,7 +94,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
-        record_transaction(conn, user.id, "PUT", "#UserController.admin_reset_password/2")
+        record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_reset_password/2")
         render_password_reset(conn, user)
       end
     end
@@ -140,7 +140,7 @@ defmodule MalanWeb.UserController do
 
   defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
     with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
-      record_transaction(conn, user.id, "PUT", "#UserController.admin_reset_password_token/3")
+      record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_reset_password_token/3")
       conn
       |> put_status(200)
       |> json(%{ok: true})
@@ -174,9 +174,9 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  defp record_transaction(conn, who, verb, what) do
+  defp record_transaction(conn, who, who_username, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
-    Accounts.record_transaction(user_id, session_id, who, "users", verb, what)
+    Accounts.record_transaction(user_id, session_id, who, who_username, "users", verb, what)
     conn
   end
 
