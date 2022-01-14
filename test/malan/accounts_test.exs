@@ -774,7 +774,10 @@ defmodule Malan.AccountsTest do
         Accounts.create_session(
           user.username,
           user.password,
-          Map.merge(%{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}, session_attrs)
+          Map.merge(
+            %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"},
+            session_attrs
+          )
         )
 
       session
@@ -843,7 +846,11 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  user.username,
                  user.password,
-                 %{"never_expires" => true, "ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
+                 %{
+                   "never_expires" => true,
+                   "ip_address" => "192.168.2.200",
+                   "real_ip_address" => "10.0.0.1"
+                 }
                )
 
       assert DateTime.diff(session.expires_at, DateTime.utc_now()) > 5_000_000_000
@@ -857,7 +864,11 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  user.username,
                  user.password,
-                 %{"expires_in_seconds" => -120, "ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
+                 %{
+                   "expires_in_seconds" => -120,
+                   "ip_address" => "192.168.2.200",
+                   "real_ip_address" => "10.0.0.1"
+                 }
                )
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
@@ -915,8 +926,10 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       assert {:error, :unauthorized} =
-        Accounts.create_session(user.username, "nottherightpassword", %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"})
-               #Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200")
+               Accounts.create_session(user.username, "nottherightpassword", %{
+                 "ip_address" => "192.168.2.200",
+                 "real_ip_address" => "10.0.0.1"
+               })
     end
 
     test "create_session/1 with non-existent user returns {:error, :not_a_user}" do
@@ -1499,7 +1512,13 @@ defmodule Malan.AccountsTest do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
 
       assert {:ok, %Transaction{} = transaction} =
-               Accounts.create_transaction(user.id, session.id, user.id, user.username, valid_attrs)
+               Accounts.create_transaction(
+                 user.id,
+                 session.id,
+                 user.id,
+                 user.username,
+                 valid_attrs
+               )
 
       assert transaction.type == "sessions"
       assert transaction.verb == "DELETE"

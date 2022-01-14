@@ -43,14 +43,14 @@ defmodule Malan.Accounts.Transaction do
   defp_testable put_default_when(changeset) do
     case get_change(changeset, :when, nil) do
       nil -> put_change(changeset, :when, Utils.DateTime.utc_now_trunc())
-      _   -> changeset
+      _ -> changeset
     end
   end
 
   defp_testable validate_type(changeset) do
     case get_change(changeset, :type, nil) do
       nil -> changeset
-      _   -> validate_and_put_type(changeset)
+      _ -> validate_and_put_type(changeset)
     end
   end
 
@@ -60,11 +60,11 @@ defmodule Malan.Accounts.Transaction do
         put_change(changeset, :type_enum, type_to_i(changeset))
 
       false ->
-         Ecto.Changeset.add_error(
-           changeset,
-           :type,
-           "type is invalid.  Should be one of: '#{Transaction.Type.valid_values_str()}'"
-         )
+        Ecto.Changeset.add_error(
+          changeset,
+          :type,
+          "type is invalid.  Should be one of: '#{Transaction.Type.valid_values_str()}'"
+        )
     end
   end
 
@@ -77,7 +77,7 @@ defmodule Malan.Accounts.Transaction do
   defp_testable validate_verb(changeset) do
     case get_change(changeset, :verb, nil) do
       nil -> changeset
-      _   -> validate_and_put_verb(changeset)
+      _ -> validate_and_put_verb(changeset)
     end
   end
 
@@ -87,11 +87,11 @@ defmodule Malan.Accounts.Transaction do
         put_change(changeset, :verb_enum, verb_to_i(changeset))
 
       false ->
-         Ecto.Changeset.add_error(
-           changeset,
-           :verb,
-           "verb is invalid.  Should be one of: '#{Transaction.Verb.valid_values_str()}'"
-         )
+        Ecto.Changeset.add_error(
+          changeset,
+          :verb,
+          "verb is invalid.  Should be one of: '#{Transaction.Verb.valid_values_str()}'"
+        )
     end
   end
 

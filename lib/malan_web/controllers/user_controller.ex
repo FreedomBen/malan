@@ -35,7 +35,7 @@ defmodule MalanWeb.UserController do
   end
 
   # Deprecated in favor of "current'
-  def me(conn, _params),      do: show(conn, %{"id" => conn.assigns.authed_user_id})
+  def me(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
   def current(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
   def show(conn, %{"id" => id, "abbr" => _}) do
@@ -94,7 +94,14 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
-        record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_reset_password/2")
+        record_transaction(
+          conn,
+          user.id,
+          user.username,
+          "PUT",
+          "#UserController.admin_reset_password/2"
+        )
+
         render_password_reset(conn, user)
       end
     end
@@ -140,7 +147,14 @@ defmodule MalanWeb.UserController do
 
   defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
     with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
-      record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_reset_password_token/3")
+      record_transaction(
+        conn,
+        user.id,
+        user.username,
+        "PUT",
+        "#UserController.admin_reset_password_token/3"
+      )
+
       conn
       |> put_status(200)
       |> json(%{ok: true})
