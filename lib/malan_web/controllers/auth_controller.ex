@@ -1,5 +1,6 @@
 defmodule Malan.AuthController do
   import Plug.Conn
+  import Malan.Utils.Phoenix.Controller
 
   require Logger
 
@@ -123,16 +124,6 @@ defmodule Malan.AuthController do
   end
 
   def halt_not_owner(conn), do: halt_status(conn, 401)
-
-  def halt_status(conn, status) do
-    Logger.debug("[halt_status]: status: #{status}")
-
-    conn
-    |> put_status(status)
-    |> Phoenix.Controller.put_view(MalanWeb.ErrorView)
-    |> Phoenix.Controller.render("#{status}.json")
-    |> halt()
-  end
 
   def is_admin?(conn), do: !!conn.assigns.authed_user_is_admin
   def is_moderator?(conn), do: !!conn.assigns.authed_user_is_moderator

@@ -30,6 +30,25 @@ defmodule Malan.CantBeNil do
   end
 end
 
+defmodule Malan.Pagination.PageOutOfBounds do
+  defexception [:message]
+
+  def exception(opts) do
+    table = Keyword.get(opts, :table, "(not specified)")
+    page_num = Keyword.get(opts, :page_num, "(not specified)")
+    page_size = Keyword.get(opts, :page_size, "(not specified)")
+
+    msg =
+      "Page specification was out of bounds. page_num: '#{page_num}', page_size: '#{page_size}', table: '#{table}'"
+
+    if !!table,
+      do:
+        msg = "#{msg} Max page_size for table is '#{Malan.Pagination.max_page_size(table)}'"
+
+    %__MODULE__{message: msg}
+  end
+end
+
 # Note:  This is the same code as Ecto.NoResultsError
 defmodule Malan.NoResultsError do
   defexception [:message]

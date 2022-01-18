@@ -37,6 +37,17 @@ defmodule MalanWeb.ErrorView do
     }
   end
 
+  def render("422.json", assigns) do
+    msg =
+      case assigns.pagination_error do
+        nil ->
+          "The request was syntactically correct, but some or all of the parameters failed validation"
+
+        _ ->
+          "One or both of the pagination parameters failed validation."
+      end
+  end
+
   def render("429.json", _assigns) do
     %{
       errors: %{

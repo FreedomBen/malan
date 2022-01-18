@@ -26,4 +26,12 @@ defmodule Malan.ExceptionsTest do
       end
     end
   end
+
+  describe "Malan.Pagination.PageOutOfBounds" do
+    test "can create and raise exception" do
+      assert_raise Malan.Pagination.PageOutOfBounds, fn ->
+        raise Malan.Pagination.PageOutOfBounds, table: :ohai, page_num: -2, page_size: 1000
+      end
+    end
+  end
 end

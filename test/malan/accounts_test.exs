@@ -305,7 +305,7 @@ defmodule Malan.AccountsTest do
     #   } == Accounts.get_user!(user.id)
     # end
 
-    test "is_admin/1 returns false when not an admin" do
+    test "#user_is_admin?/1 with user_id returns false when not an admin" do
       user = user_fixture()
       assert {:ok, false} = Accounts.user_is_admin?(user.id)
     end
