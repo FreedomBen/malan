@@ -17,10 +17,10 @@ defmodule Malan.Repo.Migrations.DowncaseEmailAndUsernamesChangeTypeToString do
     end)
 
     # Now change the column type to string instead of citext
-    #alter table("users") do
-    #  modify :email, :string, null: false
-    #  modify :username, :string, null: false
-    #end
+    # alter table("users") do
+    #   modify :email, :string, null: false
+    #   modify :username, :string, null: false
+    # end
   end
 
   def down do

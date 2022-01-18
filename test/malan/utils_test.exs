@@ -12,22 +12,24 @@ defmodule Malan.UtilsTest do
     end
 
     test "uuidgen/0" do
-      assert Utils.uuidgen() =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+      assert Utils.uuidgen() =~
+               ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
     end
 
     test "#is_uuid?/1" do
-      assert  Utils.is_uuid?(Ecto.UUID.generate())
+      assert Utils.is_uuid?(Ecto.UUID.generate())
       assert !Utils.is_uuid?(nil)
     end
 
     test "#nil_or_empty?" do
       assert false == Malan.Utils.nil_or_empty?("hello")
-      assert true  == Malan.Utils.nil_or_empty?("")
-      assert true  == Malan.Utils.nil_or_empty?(nil)
+      assert true == Malan.Utils.nil_or_empty?("")
+      assert true == Malan.Utils.nil_or_empty?(nil)
     end
 
     test "#raise_if_nil!/2" do
-      assert "lateralus" == Utils.raise_if_nil!("song",  "lateralus")
+      assert "lateralus" == Utils.raise_if_nil!("song", "lateralus")
+
       assert_raise Malan.CantBeNil, fn ->
         Utils.raise_if_nil!("song", nil)
       end
@@ -35,6 +37,7 @@ defmodule Malan.UtilsTest do
 
     test "#raise_if_nil!/1" do
       assert "lateralus" == Utils.raise_if_nil!("lateralus")
+
       assert_raise Malan.CantBeNil, fn ->
         Utils.raise_if_nil!(nil)
       end
@@ -42,24 +45,41 @@ defmodule Malan.UtilsTest do
 
     test "#list_to_strings_and_atoms/1" do
       assert [:circle, "circle"] == Utils.list_to_strings_and_atoms([:circle])
-      assert [:square, "square", :circle, "circle"] == Utils.list_to_strings_and_atoms([:circle, :square])
+
+      assert [:square, "square", :circle, "circle"] ==
+               Utils.list_to_strings_and_atoms([:circle, :square])
 
       assert ["circle", :circle] == Utils.list_to_strings_and_atoms(["circle"])
-      assert ["square", :square, "circle", :circle] == Utils.list_to_strings_and_atoms(["circle", "square"])
+
+      assert ["square", :square, "circle", :circle] ==
+               Utils.list_to_strings_and_atoms(["circle", "square"])
     end
 
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
-      assert "kitt: 'karr', michael: 'knight'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"})
+
+      assert "kitt: 'karr', michael: 'knight'" ==
+               Utils.map_to_string(%{michael: "knight", kitt: "karr"})
     end
 
     test "#map_to_string/2 masks specified values" do
-      assert "kitt: '****', michael: 'knight'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
-      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
-      assert "carr: 'hart', kitt: '****', michael: '******'" == Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, ["kitt", "michael"])
+      assert "kitt: '****', michael: 'knight'" ==
+               Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
 
-      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
-      assert "kitt: '****', michael: '******'" == Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
+      assert "kitt: '****', michael: '******'" ==
+               Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
+
+      assert "carr: 'hart', kitt: '****', michael: '******'" ==
+               Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, [
+                 "kitt",
+                 "michael"
+               ])
+
+      assert "kitt: '****', michael: '******'" ==
+               Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
+
+      assert "kitt: '****', michael: '******'" ==
+               Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
     end
   end
 
@@ -115,8 +135,8 @@ defmodule Malan.UtilsTest do
   describe "Enum" do
     test "#none?" do
       input = ["one", "two", "three"]
-      assert true  == Utils.Enum.none?(input, fn (i) -> i == "four" end)
-      assert false == Utils.Enum.none?(input, fn (i) -> i == "three" end)
+      assert true == Utils.Enum.none?(input, fn i -> i == "four" end)
+      assert false == Utils.Enum.none?(input, fn i -> i == "three" end)
     end
   end
 end

@@ -49,7 +49,14 @@ defmodule Malan.Accounts.Session do
   @doc "User login session"
   def create_changeset(session, attrs) do
     session
-    |> cast(attrs, [:user_id, :never_expires, :expires_in_seconds, :ip_address, :real_ip_address, :location])
+    |> cast(attrs, [
+      :user_id,
+      :never_expires,
+      :expires_in_seconds,
+      :ip_address,
+      :real_ip_address,
+      :location
+    ])
     |> put_api_token()
     |> set_expiration_time()
     |> put_authenticated_at()

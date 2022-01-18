@@ -146,9 +146,9 @@ defmodule MalanWeb.TransactionControllerTest do
       {:ok, _u2, s2, t2} = transaction_fixture()
 
       # make request as a user that has no transactions
-      #{:ok, conn, u3, _s3} = Helpers.Accounts.regular_user_session_conn(conn)
-      #conn = get(conn, Routes.user_transaction_path(conn, :user_index, "current"))
-      #assert json_response(conn, 200)["data"] == []
+      # {:ok, conn, u3, _s3} = Helpers.Accounts.regular_user_session_conn(conn)
+      # conn = get(conn, Routes.user_transaction_path(conn, :user_index, "current"))
+      # assert json_response(conn, 200)["data"] == []
 
       # Now make request as user 1
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
@@ -242,7 +242,6 @@ defmodule MalanWeb.TransactionControllerTest do
   end
 
   describe "show" do
-
     #
     # User version of endpoint
     #
@@ -258,7 +257,7 @@ defmodule MalanWeb.TransactionControllerTest do
                "type" => "users",
                "verb" => "GET",
                "what" => "some what",
-               "when" => when_str,
+               "when" => when_str
              } = json_response(conn, 200)["data"]
 
       assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
@@ -543,9 +542,9 @@ defmodule MalanWeb.TransactionControllerTest do
     # end
   end
 
-  #defp create_transaction(_) do
-  #  {:ok, user, session, transaction} = transaction_fixture()
-  #  conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
-  #  %{conn: conn, user: user, session: session, transaction: transaction}
-  #end
+  # defp create_transaction(_) do
+  #   {:ok, user, session, transaction} = transaction_fixture()
+  #   conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+  #   %{conn: conn, user: user, session: session, transaction: transaction}
+  # end
 end

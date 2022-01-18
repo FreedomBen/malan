@@ -114,14 +114,13 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, session} <- create_session(user, session_attrs),
          {:ok, _user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-     do: {:ok, conn, session}
+         do: {:ok, conn, session}
   end
 
   @doc "Returns: {:ok, user, session}"
   def admin_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- admin_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -139,8 +138,7 @@ defmodule Malan.Test.Helpers.Accounts do
   @doc "Returns: {:ok, user, session}"
   def regular_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- regular_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -151,8 +149,7 @@ defmodule Malan.Test.Helpers.Accounts do
   @doc "Returns: {:ok, user, session}"
   def moderator_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- moderator_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -165,7 +162,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- regular_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   @doc "Returns: {:ok, conn, user, session}"
@@ -173,7 +170,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- moderator_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   @doc "Returns: {:ok, conn, user, session}"
@@ -181,7 +178,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- admin_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   # This function can be used to get the specified number of users

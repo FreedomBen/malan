@@ -232,7 +232,7 @@ defmodule MalanWeb.AuthControllerTest do
 
   describe "#is_admin?/1" do
     test "works" do
-      assert true  == AuthController.is_admin?(%{assigns: %{authed_user_is_admin: true}})
+      assert true == AuthController.is_admin?(%{assigns: %{authed_user_is_admin: true}})
       assert false == AuthController.is_admin?(%{assigns: %{authed_user_is_admin: false}})
       assert false == AuthController.is_admin?(%{assigns: %{authed_user_is_admin: nil}})
     end
@@ -248,7 +248,7 @@ defmodule MalanWeb.AuthControllerTest do
 
   describe "#is_moderator?/1" do
     test "works" do
-      assert true  == AuthController.is_moderator?(%{assigns: %{authed_user_is_moderator: true}})
+      assert true == AuthController.is_moderator?(%{assigns: %{authed_user_is_moderator: true}})
       assert false == AuthController.is_moderator?(%{assigns: %{authed_user_is_moderator: false}})
       assert false == AuthController.is_moderator?(%{assigns: %{authed_user_is_moderator: nil}})
     end

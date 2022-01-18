@@ -22,14 +22,14 @@ defmodule MalanWeb.UserView do
     %{data: render_one(user, UserView, "user.json")}
   end
 
-  #def render("show.json", %{user: %User{phone_numbers: _} = user}) do
+  # def render("show.json", %{user: %User{phone_numbers: _} = user}) do
   def render("show.json", %{user: %User{} = user}) do
     %{data: render_one(user, UserView, "user_full.json")}
   end
 
-  #def render("show.json", %{user: user}) do
-  #  %{data: render_one(user, UserView, "user.json")}
-  #end
+  # def render("show.json", %{user: user}) do
+  #   %{data: render_one(user, UserView, "user.json")}
+  # end
 
   def render("user.json", %{user: user}) do
     # If password is non-nil, it is included.  This is needed for

@@ -3,10 +3,11 @@ defmodule Malan.Accounts.User.Race do
   def get(i) when is_binary(i), do: all_by_keyword_normalized()[normalize(i)]
 
   def to_a(nil), do: []
+
   def to_a(a) when is_list(a) do
     cond do
-      is_binary(List.first(a)) -> Enum.map(a, fn (s) -> to_i(s) end)
-      true                     -> Enum.map(a, fn (i) -> to_s(i) end)
+      is_binary(List.first(a)) -> Enum.map(a, fn s -> to_i(s) end)
+      true -> Enum.map(a, fn i -> to_s(i) end)
     end
   end
 

@@ -62,18 +62,18 @@ defmodule MalanWeb.AddressControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = get(conn, Routes.user_address_path(conn, :index, user.id))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.user_address_path(conn, :index, user.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = get(conn, Routes.user_address_path(conn, :index, user.id))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.user_address_path(conn, :index, user.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "show" do
@@ -104,22 +104,22 @@ defmodule MalanWeb.AddressControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  address = fixture(:address, user.id)
-    #  id = address.id
-    #  user_id = user.id
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   address = fixture(:address, user.id)
+    #   id = address.id
+    #   user_id = user.id
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
 
-    #  conn = get(conn, Routes.user_address_path(conn, :show, user.id, id))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    #   conn = get(conn, Routes.user_address_path(conn, :show, user.id, id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = get(conn, Routes.user_address_path(conn, :show, user.id, id))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.user_address_path(conn, :show, user.id, id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "create address" do
@@ -127,7 +127,8 @@ defmodule MalanWeb.AddressControllerTest do
       temp = @create_attrs
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       user_id = user.id
-      #conn = post(conn, Routes.user_address_path(conn, :create, user_id), address: @create_attrs)
+
+      # conn = post(conn, Routes.user_address_path(conn, :create, user_id), address: @create_attrs)
       conn = post(conn, Routes.user_address_path(conn, :create, user_id), address: temp)
       assert %{"id" => id} = json_response(conn, 201)["data"]
 
@@ -155,29 +156,29 @@ defmodule MalanWeb.AddressControllerTest do
     end
 
     # If regular users should be allowed to create a address, then remove this test
-    #test "won't work for regular user", %{conn: conn} do
-    #  {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-    #  conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
-    #  assert conn.status == 401
-    #end
+    # test "won't work for regular user", %{conn: conn} do
+    #   {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    #   conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
+    #   assert conn.status == 401
+    # end
 
     test "requires being authenticated", %{conn: conn} do
       conn = post(conn, Routes.user_address_path(conn, :create, "42"), address: @create_attrs)
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = post(conn, Routes.user_address_path(conn, :create, user.id), address: @create_attrs)
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "update address" do
@@ -221,11 +222,11 @@ defmodule MalanWeb.AddressControllerTest do
     end
 
     # If regular users should be allowed to create a address, then remove this test
-    #test "won't work for regular user", %{conn: conn, address: address} do
-    #  {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-    #  conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
-    #  assert conn.status == 401
-    #end
+    # test "won't work for regular user", %{conn: conn, address: address} do
+    #   {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    #   conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
+    #   assert conn.status == 401
+    # end
 
     test "requires being authenticated", %{conn: conn, address: _address} do
       conn =
@@ -234,18 +235,18 @@ defmodule MalanWeb.AddressControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn, address: address} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn, address: address} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = put(conn, Routes.user_address_path(conn, :update, user.id, address), address: @update_attrs)
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "delete address" do
@@ -267,24 +268,24 @@ defmodule MalanWeb.AddressControllerTest do
     end
 
     # If regular users should be allowed to create a address, then remove this test
-    #test "won't work for regular user", %{conn: conn, address: address} do
-    #  {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-    #  conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
-    #  assert conn.status == 401
-    #end
+    # test "won't work for regular user", %{conn: conn, address: address} do
+    #   {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    #   conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
+    #   assert conn.status == 401
+    # end
 
-    #test "requires accepting ToS and PP", %{conn: conn, address: address} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn, address: address} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   defp create_address(_) do

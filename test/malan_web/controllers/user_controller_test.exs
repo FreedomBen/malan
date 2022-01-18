@@ -1948,10 +1948,10 @@ defmodule MalanWeb.UserControllerTest do
     end
   end
 
-  #defp create_regular_user(_) do
-  #  {:ok, user} = Helpers.Accounts.regular_user()
-  #  %{user: user}
-  #end
+  # defp create_regular_user(_) do
+  #   {:ok, user} = Helpers.Accounts.regular_user()
+  #   %{user: user}
+  # end
 
   defp create_regular_user_with_session(_) do
     {:ok, user, session} = Helpers.Accounts.regular_user_with_session()

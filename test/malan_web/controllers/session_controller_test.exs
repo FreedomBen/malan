@@ -168,8 +168,8 @@ defmodule MalanWeb.SessionControllerTest do
                "user_id" => ^user_id,
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
-               #"ip_address" => "192.168.2.200",
-               #"real_ip_address" => "192.168.2.201",
+               # "ip_address" => "192.168.2.200",
+               # "real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -215,7 +215,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               #"real_ip_address" => "192.168.2.201",
+               # "real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -276,7 +276,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               #"real_ip_address" => "192.168.2.201",
+               # "real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -333,7 +333,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               #"real_ip_address" => "192.168.2.201",
+               # "real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -374,7 +374,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               #"real_ip_address" => "192.168.2.201",
+               # "real_ip_address" => "192.168.2.201",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -422,7 +422,7 @@ defmodule MalanWeb.SessionControllerTest do
                "authenticated_at" => authenticated_at,
                "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               #"real_ip_address" => "10.0.0.1",
+               # "real_ip_address" => "10.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
                "is_valid" => true
@@ -504,7 +504,9 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
-      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} =
+        Helpers.Accounts.regular_user_with_session()
+
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user_id, session))
       assert conn.status == 200
@@ -547,7 +549,9 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
-      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, %User{id: user_id} = _user, %Session{id: id} = session} =
+        Helpers.Accounts.regular_user_with_session()
+
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.session_path(conn, :delete_current))
       assert conn.status == 200
@@ -639,7 +643,9 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
-      {:ok, %User{id: user_id} = user, %Session{id: s1_id} = s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, %User{id: user_id} = user, %Session{id: s1_id} = s1} =
+        Helpers.Accounts.regular_user_with_session()
+
       {:ok, _s2} = Helpers.Accounts.create_session(user)
       {:ok, _s3} = Helpers.Accounts.create_session(user)
       {:ok, _s4} = Helpers.Accounts.create_session(user)

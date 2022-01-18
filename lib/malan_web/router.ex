@@ -128,17 +128,17 @@ defmodule MalanWeb.Router do
   scope "/api", MalanWeb do
     pipe_through :owner_api
 
-    #resources "/users", UserController, only: [] do
-    #  get "/objects", ObjectController, :user_index
-    #end
+    # resources "/users", UserController, only: [] do
+    #   get "/objects", ObjectController, :user_index
+    # end
   end
 
   scope "/api/moderator", MalanWeb do
     pipe_through :moderator_api
 
-    #resources "/users", UserController, only: [] do
-    #  get "/objects", ObjectController, :user_index
-    #end
+    # resources "/users", UserController, only: [] do
+    #   get "/objects", ObjectController, :user_index
+    # end
   end
 
   # scope "/api/admin", MalanWeb, as: :admin do

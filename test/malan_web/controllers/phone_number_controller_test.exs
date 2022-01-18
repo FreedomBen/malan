@@ -41,18 +41,18 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = get(conn, Routes.user_phone_number_path(conn, :index, user.id))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.user_phone_number_path(conn, :index, user.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = get(conn, Routes.user_phone_number_path(conn, :index, user.id))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.user_phone_number_path(conn, :index, user.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "show" do
@@ -80,7 +80,8 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     test "won't work for a non-owner regular user", %{conn: conn} do
       {:ok, user1, _session} = Helpers.Accounts.regular_user_with_session()
       {:ok, conn, _user2, _session} = Helpers.Accounts.regular_user_session_conn(conn)
-      #{:ok, conn, _user2, _session} = Helpers.Accounts.regular_user_session_conn(conn, %{username: "somerandomusername", email: "somerandomemail@exmaple.com"})
+
+      # {:ok, conn, _user2, _session} = Helpers.Accounts.regular_user_session_conn(conn, %{username: "somerandomusername", email: "somerandomemail@exmaple.com"})
       phone_number = fixture(:phone_number, user1.id)
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user1.id, phone_number.id))
       assert conn.status == 401
@@ -102,26 +103,28 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       id = phone_number.id
       user_id = user.id
       conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, id))
+
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
                "verified_at" => nil,
                "number" => "some number"
              } = json_response(conn, 200)["data"]
+
       assert user_id == user.id
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
     # end
   end
 
@@ -166,18 +169,18 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = post(conn, Routes.user_phone_number_path(conn, :create, user.id), phone_number: @create_attrs)
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   describe "update phone_number" do
@@ -229,17 +232,17 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn, phone_number: phone_number} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn, phone_number: phone_number} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number), phone_number: @update_attrs)
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
     # end
 
     test "User ID in attrs doesn't override the path param", %{
@@ -289,18 +292,18 @@ defmodule MalanWeb.PhoneNumberControllerTest do
       assert conn.status == 403
     end
 
-    #test "requires accepting ToS and PP", %{conn: conn, phone_number: phone_number} do
-    #  {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-    #  conn = Helpers.Accounts.put_token(conn, session.api_token)
-    #  conn = delete(conn, Routes.user_phone_number_path(conn, :delete, user.id, phone_number))
-    #  # We haven't accepted the terms of service yet so expect 461
-    #  assert conn.status == 461
+    # test "requires accepting ToS and PP", %{conn: conn, phone_number: phone_number} do
+    #   {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    #   conn = Helpers.Accounts.put_token(conn, session.api_token)
+    #   conn = delete(conn, Routes.user_phone_number_path(conn, :delete, user.id, phone_number))
+    #   # We haven't accepted the terms of service yet so expect 461
+    #   assert conn.status == 461
 
-    #  {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
-    #  conn = delete(conn, Routes.user_phone_number_path(conn, :delete, user.id, phone_number))
-    #  # We haven't accepted the PP yet so expect 462
-    #  assert conn.status == 462
-    #end
+    #   {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
+    #   conn = delete(conn, Routes.user_phone_number_path(conn, :delete, user.id, phone_number))
+    #   # We haven't accepted the PP yet so expect 462
+    #   assert conn.status == 462
+    # end
   end
 
   defp create_phone_number(_) do

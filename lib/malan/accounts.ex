@@ -282,9 +282,9 @@ defmodule Malan.Accounts do
 
   """
   def update_user(%User{} = user, %{"password" => _password} = attrs) do
-    with {:ok, user}         <- update_usr(user, attrs),
+    with {:ok, user} <- update_usr(user, attrs),
          {:ok, _num_revoked} <- revoke_active_sessions(user),
-     do: {:ok, user}
+         do: {:ok, user}
   end
 
   def update_user(%User{} = user, attrs),
@@ -345,10 +345,9 @@ defmodule Malan.Accounts do
       {:error, :invalid_password_reset_token}
   """
   def reset_password_with_token(%User{} = orig_user, token, new_password) do
-    with {:ok}                 <- validate_password_reset_token(orig_user, token),
-         {:ok, %User{}}        <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user} <- update_user_password(orig_user, new_password)
-    do
+    with {:ok} <- validate_password_reset_token(orig_user, token),
+         {:ok, %User{}} <- clear_password_reset_token(orig_user),
+         {:ok, %User{} = user} <- update_user_password(orig_user, new_password) do
       {:ok, user}
     else
       {:error, reason} -> {:error, reason}

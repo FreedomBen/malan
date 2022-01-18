@@ -26,16 +26,22 @@ defmodule Malan.Accounts.Preference do
   defp_testable validate_theme(changeset) do
     case get_field(changeset, :theme) do
       "light" -> changeset
-      "dark"  -> changeset
-      _       -> add_error(changeset, :theme, "Valid themes are: 'dark', 'light'")
+      "dark" -> changeset
+      _ -> add_error(changeset, :theme, "Valid themes are: 'dark', 'light'")
     end
   end
 
   defp_testable validate_display_name_pref(changeset) do
     case get_field(changeset, :display_name_pref) do
-      "full_name" -> changeset
-      "nick_name" -> changeset
-      "custom"    -> changeset
+      "full_name" ->
+        changeset
+
+      "nick_name" ->
+        changeset
+
+      "custom" ->
+        changeset
+
       _ ->
         add_error(
           changeset,
@@ -47,8 +53,12 @@ defmodule Malan.Accounts.Preference do
 
   defp_testable validate_display_middle_initial_only(changeset) do
     case get_field(changeset, :display_middle_initial_only) do
-      false -> changeset
-      true -> changeset
+      false ->
+        changeset
+
+      true ->
+        changeset
+
       _ ->
         add_error(
           changeset,

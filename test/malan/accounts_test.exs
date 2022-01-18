@@ -872,7 +872,7 @@ defmodule Malan.AccountsTest do
                )
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
-      assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
+      assert TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
       assert {:error, :expired} = Accounts.validate_session(session.api_token)
     end
 
@@ -892,7 +892,7 @@ defmodule Malan.AccountsTest do
                )
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
-      assert  TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
+      assert TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
       assert {:error, :expired} = Accounts.validate_session(session.api_token)
     end
 
@@ -1261,7 +1261,7 @@ defmodule Malan.AccountsTest do
       with {:ok, user} <- Helpers.Accounts.regular_user(),
            %{} = val_attrs <- Enum.into(attrs, @valid_attrs),
            {:ok, phone_number} <- Accounts.create_phone_number(user.id, val_attrs),
-       do: {:ok, user, phone_number}
+           do: {:ok, user, phone_number}
     end
 
     test "list_phone_numbers/0 returns all phone_numbers" do
@@ -1367,7 +1367,7 @@ defmodule Malan.AccountsTest do
       with {:ok, user} <- Helpers.Accounts.regular_user(),
            %{} = val_attrs <- Enum.into(attrs, @valid_attrs),
            {:ok, address} <- Accounts.create_address(user.id, val_attrs),
-       do: {:ok, user, address}
+           do: {:ok, user, address}
     end
 
     test "list_addresses/0 returns all addresses" do
@@ -1472,8 +1472,9 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction_by/1 raises if multiple results" do
-      {:ok,  u1, _s1, _t1} = transaction_fixture()
+      {:ok, u1, _s1, _t1} = transaction_fixture()
       {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+
       assert_raise Ecto.MultipleResultsError, fn ->
         Accounts.get_transaction_by(user_id: u1.id)
       end
@@ -1493,7 +1494,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "get_transaction_by!/1 raises if multiple results" do
-      {:ok,  u1, _s1, _t1} = transaction_fixture()
+      {:ok, u1, _s1, _t1} = transaction_fixture()
       {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
 
       assert_raise Ecto.MultipleResultsError, fn ->

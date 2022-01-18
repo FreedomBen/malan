@@ -12,12 +12,13 @@ defmodule Malan.AuthController do
   """
   def is_authenticated(conn, _opts) do
     Logger.debug("[is_authenticated]: Checking for authentication")
+
     case conn.assigns do
-      %{auth_error: nil}                  -> conn
-      %{auth_error: {:error, :expired}}   -> halt_status(conn, 401)
-      %{auth_error: {:error, :revoked}}   -> halt_status(conn, 401)
+      %{auth_error: nil} -> conn
+      %{auth_error: {:error, :expired}} -> halt_status(conn, 401)
+      %{auth_error: {:error, :revoked}} -> halt_status(conn, 401)
       %{auth_error: {:error, :not_found}} -> halt_status(conn, 403)
-       _                                  -> halt_status(conn, 403)
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -50,10 +51,11 @@ defmodule Malan.AuthController do
   """
   def is_admin(conn, _opts) do
     Logger.debug("[is_admin]:")
+
     case conn.assigns do
       %{authed_user_is_admin: true} -> conn
       %{auth_error: nil} -> halt_status(conn, 401)
-       _                 -> halt_status(conn, 403)
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -62,11 +64,12 @@ defmodule Malan.AuthController do
   """
   def is_moderator(conn, _opts) do
     Logger.debug("[is_moderator]:")
+
     case conn.assigns do
       %{authed_user_is_admin: true} -> conn
       %{authed_user_is_moderator: true} -> conn
       %{auth_error: nil} -> halt_status(conn, 401)
-       _                 -> halt_status(conn, 403)
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -179,7 +182,7 @@ defmodule Malan.AuthController do
   def retrieve_token(conn) do
     case parse_authorization(conn) do
       {"authorization", auth_string} -> extract_token(auth_string)
-      _                              -> {:error, :no_token}
+      _ -> {:error, :no_token}
     end
   end
 
@@ -189,7 +192,7 @@ defmodule Malan.AuthController do
   defp extract_token(auth_string) do
     case String.split(auth_string, " ") do
       [_, api_token] -> {:ok, api_token}
-       _             -> {:error, :malformed}
+      _ -> {:error, :malformed}
     end
   end
 

@@ -7,24 +7,24 @@ defmodule Malan.AccountsFixtures do
   alias Malan.Accounts
   alias Malan.Test.Helpers
 
-#  def address_fixture(attrs \\ %{}) do
-#    {:ok, address} =
-#      attrs
-#      |> Enum.into(%{
-#        "city" => "some city",
-#        "country" => "some country",
-#        "line_1" => "some line_1",
-#        "line_2" => "some line_2",
-#        "name" => "some name",
-#        "postal" => "some postal",
-#        "primary" => true,
-#        "state" => "some state",
-#        "verified_at" => ~U[2021-12-19 01:54:00Z]
-#      })
-#      |> Malan.Accounts.create_address()
-#
-#    address
-#  end
+  #  def address_fixture(attrs \\ %{}) do
+  #    {:ok, address} =
+  #      attrs
+  #      |> Enum.into(%{
+  #        "city" => "some city",
+  #        "country" => "some country",
+  #        "line_1" => "some line_1",
+  #        "line_2" => "some line_2",
+  #        "name" => "some name",
+  #        "postal" => "some postal",
+  #        "primary" => true,
+  #        "state" => "some state",
+  #        "verified_at" => ~U[2021-12-19 01:54:00Z]
+  #      })
+  #      |> Malan.Accounts.create_address()
+  #
+  #    address
+  #  end
 
   @transaction_valid_attrs %{
     "type" => "users",
