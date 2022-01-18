@@ -110,7 +110,28 @@ defmodule Malan.UtilsTest do
                Utils.DateTime.adjust_time(start_dt, 2, :weeks)
     end
 
-    test "expired?" do
+    test "#in_the_past?/{1,2}" do
+      cur_time = DateTime.utc_now()
+
+      assert_raise(ArgumentError, ~r/past_time.*must.not.be.nil/, fn ->
+        Utils.DateTime.in_the_past?(nil)
+      end)
+
+      assert false == Utils.DateTime.in_the_past?(Utils.DateTime.adjust_cur_time(1, :minutes))
+      assert true == Utils.DateTime.in_the_past?(Utils.DateTime.adjust_cur_time(-1, :minutes))
+      # exact same time shows as expired
+      assert true == Utils.DateTime.in_the_past?(cur_time)
+
+      assert true ==
+               Utils.DateTime.in_the_past?(cur_time, Utils.DateTime.adjust_cur_time(1, :minutes))
+
+      assert false ==
+               Utils.DateTime.in_the_past?(cur_time, Utils.DateTime.adjust_cur_time(-1, :minutes))
+
+      assert true == Utils.DateTime.in_the_past?(cur_time, cur_time)
+    end
+
+    test "#expired?/{1,2}" do
       cur_time = DateTime.utc_now()
 
       assert_raise(ArgumentError, ~r/expires_at.*must.not.be.nil/, fn ->
@@ -138,5 +159,8 @@ defmodule Malan.UtilsTest do
       assert true == Utils.Enum.none?(input, fn i -> i == "four" end)
       assert false == Utils.Enum.none?(input, fn i -> i == "three" end)
     end
+  end
+
+  describe "Phoenix.Controller" do
   end
 end

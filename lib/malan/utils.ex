@@ -301,6 +301,13 @@ defmodule Malan.Utils.DateTime do
   # def distant_future(),
   #   do: adjust_cur_time(200, :years)
 
+  @doc """
+  Add the specified number of units to the current time.
+
+  Supplying a negative number will adjust the time backwards by the
+  specified units, while supplying a positive will adjust the time
+  forwards by the specified units.
+  """
   def adjust_cur_time(num_years, :years),
     do: adjust_cur_time(round(num_years * 52.5), :weeks)
 
@@ -349,14 +356,49 @@ defmodule Malan.Utils.DateTime do
   def adjust_time(time, num_seconds, :seconds),
     do: DateTime.add(time, num_seconds, :second)
 
+  @doc "Check if `past_time` occurs before `current_time`.  Equal date returns true"
+  @spec in_the_past?(DateTime.t(), DateTime.t()) :: boolean()
+
+  def in_the_past?(past_time, current_time),
+    do: DateTime.compare(past_time, current_time) != :gt
+
+  @doc "Check if `past_time` occurs before the current time"
+  @spec in_the_past?(DateTime.t()) :: boolean()
+
+  def in_the_past?(nil),
+    do: raise(ArgumentError, message: "past_time time must not be nil!")
+
+  def in_the_past?(past_time),
+    do: in_the_past?(past_time, DateTime.utc_now())
+
   def expired?(expires_at, current_time),
-    do: DateTime.compare(expires_at, current_time) != :gt
+    do: in_the_past?(expires_at, current_time)
 
   def expired?(nil),
     do: raise(ArgumentError, message: "expires_at time must not be nil!")
 
   def expired?(expires_at),
-    do: expired?(expires_at, DateTime.utc_now())
+    do: in_the_past?(expires_at, DateTime.utc_now())
+end
+
+defmodule Malan.Utils.Phoenix.Controller do
+  import Plug.Conn, only: [halt: 1, put_status: 2]
+
+  require Logger
+
+  def halt_status(conn, status) do
+    Logger.debug("[halt_status]: status: #{status}")
+
+    conn
+    |> put_status(status)
+    |> Phoenix.Controller.put_view(MalanWeb.ErrorView)
+    |> Phoenix.Controller.render("#{status}.json")
+    |> halt()
+  end
+end
+
+defmodule Malan.Utils.Ecto.Query do
+  defguard valid_sort(sort) when is_atom(sort) and sort in [:asc, :desc]
 end
 
 defmodule Malan.Utils.Ecto.Changeset do
