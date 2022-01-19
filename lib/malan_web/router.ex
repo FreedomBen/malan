@@ -67,15 +67,6 @@ defmodule MalanWeb.Router do
     get "/readiness", HealthCheckController, :readiness
   end
 
-  scope "/", EhrmanBlogWeb do
-    pipe_through :browser
-
-    # live "/", PageLive.Index, :index
-
-    # Predefined pages
-    live "/dashboard", PageLive.Dashboard, :dashboard
-  end
-
   scope "/api", MalanWeb do
     pipe_through :unauthed_api
 
