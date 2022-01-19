@@ -1,13 +1,10 @@
 defmodule MalanWeb.PaginationControllerTest do
   use MalanWeb.ConnCase, async: true
 
-  # alias Malan.Accounts
-  # alias Malan.Accounts.{User, Session}
-
-  alias Malan.Test.Helpers
-  alias Malan.AuthController
   alias Malan.PaginationController
   alias Malan.PaginationFixtures
+
+  alias Malan.Test.Utils, as: TestUtils
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
@@ -86,9 +83,91 @@ defmodule MalanWeb.PaginationControllerTest do
   end
 
   describe "#require_pagination/2" do
+    test "defaults the page num and size" do
+      assert %{
+               assigns: %{pagination_error: nil, pagination_page_num: 0, pagination_page_size: 10}
+             } = PaginationController.require_pagination(%Plug.Conn{params: %{}})
+    end
+
     test "validates pagination and check that it is required", %{conn: conn} do
-      # TODO
-      # assert false
+      c1 = PaginationController.require_pagination(%Plug.Conn{params: %{"page_num" => 2}})
+
+      assert %{
+               assigns: %{pagination_error: nil, pagination_page_num: 2, pagination_page_size: 10}
+             } = c1
+
+      c2 = PaginationController.require_pagination(%Plug.Conn{params: %{"page_size" => 5}})
+
+      assert %{assigns: %{pagination_error: nil, pagination_page_num: 0, pagination_page_size: 5}} =
+               c2
+
+      c3 =
+        PaginationController.require_pagination(%Plug.Conn{
+          params: %{"page_num" => 6, "page_size" => 2}
+        })
+
+      assert %{assigns: %{pagination_error: nil, pagination_page_num: 6, pagination_page_size: 2}} =
+               c3
+
+      c4 =
+        PaginationController.require_pagination(
+          TestUtils.Controller.set_params(conn, %{
+            "page_num" => -7,
+            "page_size" => 2
+          })
+        )
+
+      assert %{
+               halted: true,
+               assigns: %{
+                 pagination_error: %Ecto.Changeset{
+                   errors: [page_num: {"must be greater than or equal to %{number}", _}]
+                 },
+                 pagination_page_num: nil,
+                 pagination_page_size: nil
+               }
+             } = c4
+
+      c5 =
+        PaginationController.require_pagination(
+          TestUtils.Controller.set_params(conn, %{
+            "page_num" => 7,
+            "page_size" => 200
+          })
+        )
+
+      assert %{
+               halted: true,
+               assigns: %{
+                 pagination_error: %Ecto.Changeset{
+                   errors: [page_size: {"must be less than or equal to %{number}", _}]
+                 },
+                 pagination_page_num: nil,
+                 pagination_page_size: nil
+               }
+             } = c5
+
+      c6 =
+        PaginationController.require_pagination(
+          TestUtils.Controller.set_params(conn, %{
+            "page_num" => -7,
+            "page_size" => 200
+          })
+        )
+
+      assert %{
+               halted: true,
+               assigns: %{
+                 pagination_error: %Ecto.Changeset{
+                   errors: [
+                     {:page_size, {"must be less than or equal to %{number}", _}},
+                     {:page_num, {"must be greater than or equal to %{number}", _}}
+                   ]
+                 },
+                 pagination_page_num: nil,
+                 pagination_page_size: nil
+               }
+             } = c6
     end
   end
 

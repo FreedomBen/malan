@@ -1,6 +1,18 @@
 defmodule Malan.Test.Utils do
 end
 
+defmodule Malan.Test.Utils.Controller do
+  def set_params(%Plug.Conn{params: params} = conn, new_params) do
+    conn
+    |> Map.put(:params, new_params)
+  end
+
+  def add_params(%Plug.Conn{params: params} = conn, new_params) do
+    conn
+    |> set_params(Map.merge(params, new_params))
+  end
+end
+
 defmodule Malan.Test.Utils.DateTime do
   defp inner_compare(dt1, dt2, range), do: Enum.member?(range, DateTime.diff(dt1, dt2, :second))
 

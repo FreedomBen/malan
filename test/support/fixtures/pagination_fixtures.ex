@@ -1,7 +1,4 @@
 defmodule Malan.PaginationFixtures do
-  alias Malan.Accounts
-  alias Malan.Test.Helpers
-
   def paginated_conn_fixture(%Plug.Conn{} = conn, params \\ %{}, assigns \\ %{}) do
     params =
       Map.merge(

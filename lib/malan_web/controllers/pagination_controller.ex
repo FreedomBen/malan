@@ -6,10 +6,7 @@ defmodule Malan.PaginationController do
 
   require Logger
 
-  alias Malan.Accounts
   alias Malan.Pagination
-  alias Malan.Accounts.PrivacyPolicy
-  alias Malan.Accounts.TermsOfService, as: ToS
 
   @doc """
   Validate that the current user is authenticated
@@ -32,6 +29,8 @@ defmodule Malan.PaginationController do
   2.  Extract the page parameters
   3.  If valid, add the page num and page size to conn.assigns
   4.  If invalid will halt the connection
+
+  Returns `conn`
   """
   def validate_pagination(conn, _opts) do
     with {:ok, page_num, page_size} <- extract_page_info(conn) do
@@ -52,13 +51,15 @@ defmodule Malan.PaginationController do
     end
   end
 
+  def require_pagination(conn), do: require_pagination(conn, nil)
+
   def require_pagination(conn, opts) do
     conn
     |> validate_pagination(opts)
     |> is_paginated(opts)
   end
 
-  def extract_page_info(%Plug.Conn{params: params} = conn) do
+  def extract_page_info(%Plug.Conn{params: params}) do
     extract_page_info(params)
   end
 
