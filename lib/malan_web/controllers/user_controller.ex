@@ -3,11 +3,14 @@ defmodule MalanWeb.UserController do
 
   require Logger
 
+  import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+
   alias Malan.Accounts
   alias Malan.Accounts.User
 
   action_fallback MalanWeb.FallbackController
 
+  plug :require_pagination when action in [:index]
   plug :is_self_or_admin
        when action not in [
               :index,
@@ -20,8 +23,10 @@ defmodule MalanWeb.UserController do
             ]
 
   def index(conn, _params) do
-    users = Accounts.list_users()
-    render(conn, "index.json", users: users)
+    #%{page_num: page_num, page_size: page_size} = pagination_info(conn)
+    #users = Accounts.list_users(page_num, page_size)
+    users = Accounts.list_users(0, 10)
+    render(conn, "index.json", users: users, page_num: 0, page_size: 10)
   end
 
   def create(conn, %{"user" => user_params}) do
