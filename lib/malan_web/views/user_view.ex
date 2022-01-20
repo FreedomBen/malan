@@ -10,8 +10,8 @@ defmodule MalanWeb.UserView do
   alias MalanWeb.AddressView
   alias MalanWeb.PhoneNumberView
 
-  def render("index.json", %{users: users}) do
-    %{data: render_many(users, UserView, "user.json")}
+  def render("index.json", %{users: users, page_num: page_num, page_size: page_size}) do
+    %{data: render_many(users, UserView, "user.json"), page_num: page_num, page_size: page_size}
   end
 
   def render("show.json", %{user: %User{addresses: %Ecto.Association.NotLoaded{}} = user}) do

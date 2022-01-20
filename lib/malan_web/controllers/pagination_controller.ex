@@ -69,4 +69,18 @@ defmodule Malan.PaginationController do
       {:error, changeset} -> {:error, changeset}
     end
   end
+
+  @doc """
+  Take a `%Plug.Conn{}` called `conn` and return a `%Malan.Pagination{}`
+  """
+  def pagination_info(conn) do
+    %{
+      assigns: %{
+        authed_user_id: _authed_user_id,
+        pagination_page_num: page_num,
+        pagination_page_size: page_size
+      }
+    } = conn
+    {page_num, page_size}
+  end
 end

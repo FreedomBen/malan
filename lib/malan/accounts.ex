@@ -6,6 +6,8 @@ defmodule Malan.Accounts do
   require Logger
 
   import Ecto.Query, warn: false
+  import Malan.Pagination, only: [valid_page: 2]
+
   alias Malan.Repo
 
   alias Malan.Accounts.User
@@ -20,8 +22,14 @@ defmodule Malan.Accounts do
       [%User{}, ...]
 
   """
-  def list_users do
-    Repo.all(User)
+  def list_users(page_num, page_size) when valid_page(page_num, page_size) do
+    from(
+      u in User,
+      select: u,
+      limit: ^page_size,
+      offset: ^(page_num * page_size)
+    )
+    |> Repo.all()
   end
 
   def get_user(id) do

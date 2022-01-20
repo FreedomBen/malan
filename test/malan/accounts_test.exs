@@ -51,14 +51,49 @@ defmodule Malan.AccountsTest do
     alias Malan.Accounts.User
     alias Malan.Accounts.PhoneNumber
 
-    test "list_users/0 returns all users" do
+    defp strip_user(user), do: %{user | password: nil}
+
+    defp norm_attrs(user) do
+      cond do
+        is_nil(user.custom_attrs) -> %{user | custom_attrs: %{}}
+        true -> user
+      end
+    end
+
+    def users_eq(u1, u2) do
+      u1 |> norm_attrs() |> strip_user() == u2 |> norm_attrs() |> strip_user()
+    end
+
+    def assert_list_users_eq(l1, l2) do
+      assert Enum.count(l1) == Enum.count(l2)
+
+      l1
+      |> Enum.with_index
+      |> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
+    end
+
+    test "list_users/2 returns all users" do
       user = %{user_fixture() | password: nil, custom_attrs: %{}}
       # password should be nil coming from database since that's a virtual field
-      users = Accounts.list_users()
+      users = Accounts.list_users(0, 10)
       assert is_list(users)
       assert Enum.member?(1..3, length(users))
       # assert(length(users) == 1 || length(users) == 3) # flakey based on seeds.exs adding 2
       assert Enum.any?(users, fn u -> user == u end)
+    end
+
+    test "list_users/2 paginates correctly"do
+      {:ok, u1} = Helpers.Accounts.regular_user()
+      {:ok, u2} = Helpers.Accounts.regular_user()
+      {:ok, u3} = Helpers.Accounts.regular_user()
+
+      [ _ | lu ] = Accounts.list_users(0, 10)
+      assert lu |> Enum.count() == 3
+      assert_list_users_eq(lu, [u1, u2, u3])
+
+      assert users_eq(u1, Accounts.list_users(1, 1) |> Enum.at(0))
+      assert users_eq(u2, Accounts.list_users(2, 1) |> Enum.at(0))
+      assert users_eq(u3, Accounts.list_users(3, 1) |> Enum.at(0))
     end
 
     test "get_user!/1 returns the user with given id" do
