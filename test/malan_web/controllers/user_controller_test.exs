@@ -30,6 +30,98 @@ defmodule MalanWeb.UserControllerTest do
     username: nil
   }
 
+  def returned_to_orig(ret_users) when is_list(ret_users) do
+    ret_users
+    |> Enum.map(fn u -> returned_to_orig(u) end)
+  end
+
+  def returned_to_orig(ret_user) do
+    ret_user
+    |> Utils.map_string_keys_to_atoms()
+    |> Enum.reject(fn {k, _v} -> k == "preferences" end)
+    |> Enum.reject(fn {k, _v} -> k == "password" end)
+    |> Enum.into(%{})
+  end
+
+  def orig_to_retval(orig_users) when is_list(orig_users) do
+    orig_users
+    |> Enum.map(fn u -> orig_to_retval(u) end)
+  end
+
+  def orig_to_retval(orig_user) do
+    orig_user
+    |> Utils.struct_to_map()
+    |> Utils.map_atom_keys_to_strings()
+    |> strip_user()
+  end
+
+
+  defp strip_user(user) do
+    user
+    |> Enum.reject(fn {k, _v} -> k == "race" end)
+    |> Enum.reject(fn {k, _v} -> k == "password" end)
+    |> Enum.reject(fn {k, _v} -> k == "addresses" end)
+    |> Enum.reject(fn {k, _v} -> k == "updated_at" end)
+    |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
+    |> Enum.reject(fn {k, _v} -> k == "preferences" end)
+    |> Enum.reject(fn {k, _v} -> k == "tos_accepted" end)
+    |> Enum.reject(fn {k, _v} -> k == "custom_attrs" end)
+    |> Enum.reject(fn {k, _v} -> k == "phone_numbers" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_hash" end)
+    |> Enum.reject(fn {k, _v} -> k == "privacy_policy_accepted" end)
+    |> Enum.reject(fn {k, _v} -> k == "accept_privacy_policy" end)
+    |> Enum.reject(fn {k, _v} -> k == "accept_tos" end)
+    |> Enum.reject(fn {k, _v} -> k == "deleted_at" end)
+    |> Enum.reject(fn {k, _v} -> k == "display_name" end)
+    |> Enum.reject(fn {k, _v} -> k == "ethnicity_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "gender_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "middle_name" end)
+    |> Enum.reject(fn {k, _v} -> k == "name_prefix" end)
+    |> Enum.reject(fn {k, _v} -> k == "name_suffix" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_expires_at" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_hash" end)
+    |> Enum.reject(fn {k, _v} -> k == "race_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "reset_password" end)
+    |> Enum.reject(fn {k, _v} -> k == "sex_enum" end)
+    |> Enum.into(%{})
+  end
+  # def users_eq(u1, u2) do
+  #   u1 |> norm_attrs() |> strip_user() == u2 |> norm_attrs() |> strip_user()
+  # end
+
+  def assert_list_users_eq(l1, l2) do
+    assert Enum.count(l1) == Enum.count(l2)
+
+    #fir = strip_user(Enum.at(l1, 0))
+    l1 = Enum.map(l1, fn u -> strip_user(u) end)
+    l2 = Enum.map(l2, fn u -> strip_user(u) end)
+
+    l1
+    |> Enum.with_index()
+    |> Enum.each(fn {u, i} -> assert u == Enum.at(l2, i) end)
+    #|> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
+  end
+
+  # def session_to_retval_map(session) do
+  #   session
+  #   |> Map.put(:ip_address, session.real_ip_address)
+  #   |> Utils.struct_to_map()
+  #   |> Utils.map_atom_keys_to_strings()
+  #   |> Enum.map(fn {k, v} -> {k, datetime_to_string(v)} end)
+  #   |> Enum.reject(fn {k, _v} -> k == "expires_in_seconds" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "real_ip_address" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "api_token_hash" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "never_expires" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "updated_at" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "api_token" end)
+  #   |> Enum.reject(fn {k, _v} -> k == "user" end)
+  #   |> List.insert_at(0, {"is_valid", true})
+  #   |> Enum.into(%{})
+  # end
+
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
@@ -78,6 +170,54 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = get(conn, Routes.user_path(conn, :index))
       assert conn.status == 401
+    end
+
+    test "Works with pagination (as admin)", %{conn: conn} do
+      #
+      # Note:  This is a little flakey D-:
+      # The return order is not totally deterministic due to race conditions
+      # and the fact that users controller index doesn't sort (ORDER BY) the
+      # results.
+      #
+      # As users don't have a good way to sort, may want to change the test
+      # to instead make sure that all 6 (8 including the root user and au)
+      # come back on different pages. Each page has unique users, no user
+      # shows up more than once.
+      #
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, u1} = Helpers.Accounts.regular_user()
+      {:ok, u2} = Helpers.Accounts.regular_user()
+      {:ok, u3} = Helpers.Accounts.regular_user()
+      {:ok, u4} = Helpers.Accounts.regular_user()
+      {:ok, u5} = Helpers.Accounts.regular_user()
+      {:ok, u6} = Helpers.Accounts.regular_user()
+
+      conn = get(conn, Routes.user_path(conn, :index), %{page_num: 1, page_size: 2})
+      resp = json_response(conn, 200)
+      assert 1 == resp["page_num"]
+      assert 2 == resp["page_size"]
+      assert_list_users_eq(orig_to_retval([u1, u2]), resp["data"])
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.user_path(conn, :index), %{page_num: 2, page_size: 2})
+      resp = json_response(conn, 200)
+      assert 2 == resp["page_num"]
+      assert 2 == resp["page_size"]
+      assert_list_users_eq(orig_to_retval([u3, u4]), resp["data"])
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.user_path(conn, :index), %{page_num: 3, page_size: 2})
+      resp = json_response(conn, 200)
+      assert 3 == resp["page_num"]
+      assert 2 == resp["page_size"]
+      assert_list_users_eq(orig_to_retval([u5, u6]), resp["data"])
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.user_path(conn, :index), %{page_num: 4, page_size: 2})
+      resp = json_response(conn, 200)
+      assert 4 == resp["page_num"]
+      assert 2 == resp["page_size"]
+      assert_list_users_eq(orig_to_retval([]), resp["data"])
     end
   end
 

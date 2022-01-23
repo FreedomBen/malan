@@ -10,7 +10,7 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination when action in [:index]
+  plug :require_pagination, [table: "users"] when action in [:index]
   plug :is_self_or_admin
        when action not in [
               :index,
@@ -23,10 +23,9 @@ defmodule MalanWeb.UserController do
             ]
 
   def index(conn, _params) do
-    #%{page_num: page_num, page_size: page_size} = pagination_info(conn)
-    #users = Accounts.list_users(page_num, page_size)
-    users = Accounts.list_users(0, 10)
-    render(conn, "index.json", users: users, page_num: 0, page_size: 10)
+    {page_num, page_size} = pagination_info(conn)
+    users = Accounts.list_users(page_num, page_size)
+    render(conn, "index.json", users: users, page_num: page_num, page_size: page_size)
   end
 
   def create(conn, %{"user" => user_params}) do
