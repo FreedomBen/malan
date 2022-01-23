@@ -832,9 +832,40 @@ defmodule Malan.AccountsTest do
       |> Map.merge(args)
     end
 
-    test "list_sessions/0 returns all sessions" do
+    def nillify_api_token(sessions) when is_list(sessions) do
+      sessions
+      |> Enum.map(fn s -> nillify_api_token(s) end)
+    end
+
+    def nillify_api_token(session) do
+      %{session | api_token: nil}
+    end
+
+    test "list_sessions/2 returns all sessions" do
       session = %{session_fixture() | api_token: nil}
-      assert Accounts.list_sessions() == [session]
+      assert Accounts.list_sessions(0, 10) == [session]
+      assert Accounts.list_sessions(1, 10) == []
+    end
+
+    test "list_sessions/2 returns all sessions paginated" do
+      {:ok, u1, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, s2} = Helpers.Accounts.create_session(u1)
+      {:ok, s3} = Helpers.Accounts.create_session(u1)
+      {:ok, s4} = Helpers.Accounts.create_session(u1)
+      {:ok, s5} = Helpers.Accounts.create_session(u1)
+      {:ok, s6} = Helpers.Accounts.create_session(u1)
+
+      assert Accounts.list_sessions(0, 10) == nillify_api_token([s1, s2, s3, s4, s5, s6])
+      assert Accounts.list_sessions(1, 10) == []
+
+      assert Accounts.list_sessions(0, 2) == nillify_api_token([s1, s2])
+      assert Accounts.list_sessions(1, 2) == nillify_api_token([s3, s4])
+      assert Accounts.list_sessions(2, 2) == nillify_api_token([s5, s6])
+      assert Accounts.list_sessions(3, 2) == nillify_api_token([])
+
+      assert Accounts.list_sessions(0, 4) == nillify_api_token([s1, s2, s3, s4])
+      assert Accounts.list_sessions(1, 4) == nillify_api_token([s5, s6])
+      assert Accounts.list_sessions(2, 4) == nillify_api_token([])
     end
 
     test "get_session!/1 returns the session with given id" do
