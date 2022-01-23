@@ -33,21 +33,17 @@ defmodule Malan.PaginationController do
   Returns `conn`
   """
   def validate_pagination(conn, _opts) do
-    with {:ok, page_num, page_size} <- extract_page_info(conn) do
+    with {:ok, pagination_info} <- extract_page_info(conn) do
       conn
       |> assign(:pagination_error, nil)
-      |> assign(:pagination_page_num, page_num)
-      |> assign(:pagination_page_size, page_size)
+      |> assign(:pagination_info, pagination_info)
     else
-      # {:error, :page_num} ->
-      # {:error, :page_size} ->
-      {:error, err} ->
-        Logger.info("[validate_pagination]: pagination error: #{err}")
+      {:error, changeset} ->
+        Logger.info("[validate_pagination]: pagination error: #{changeset}")
 
         conn
-        |> assign(:pagination_error, err)
-        |> assign(:pagination_page_num, nil)
-        |> assign(:pagination_page_size, nil)
+        |> assign(:pagination_error, changeset)
+        |> assign(:pagination_info, nil)
     end
   end
 
@@ -65,22 +61,15 @@ defmodule Malan.PaginationController do
 
   def extract_page_info(params) do
     case Pagination.changeset(%Pagination{}, params) |> apply_action(:update) do
-      {:ok, %Pagination{} = p} -> {:ok, p.page_num, p.page_size}
+      {:ok, %Pagination{} = p} -> {:ok, p}
       {:error, changeset} -> {:error, changeset}
     end
   end
 
   @doc """
-  Take a `%Plug.Conn{}` called `conn` and return a `%Malan.Pagination{}`
+  Take a `%Plug.Conn{}` called `conn` and return `{page_num, page_size}`
   """
   def pagination_info(conn) do
-    %{
-      assigns: %{
-        authed_user_id: _authed_user_id,
-        pagination_page_num: page_num,
-        pagination_page_size: page_size
-      }
-    } = conn
-    {page_num, page_size}
+    {conn.assigns.pagination_info.page_num, conn.assigns.pagination_info.page_size}
   end
 end
