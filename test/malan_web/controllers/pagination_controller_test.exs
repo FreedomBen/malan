@@ -64,7 +64,7 @@ defmodule MalanWeb.PaginationControllerTest do
             conn,
             %{"page_num" => 0, "page_size" => 106}
           ),
-          nil
+          []
         )
 
       assert %{
@@ -108,7 +108,7 @@ defmodule MalanWeb.PaginationControllerTest do
                }
              } = c1
 
-      c2 = PaginationController.require_pagination(%Plug.Conn{params: %{"page_size" => 5}})
+      c2 = PaginationController.require_pagination(%Plug.Conn{params: %{"page_size" => 5}}, [])
 
       assert %{
                assigns: %{
@@ -197,45 +197,45 @@ defmodule MalanWeb.PaginationControllerTest do
   describe "#extract_page_info/1" do
     test "#extract_page_info/1" do
       assert {:ok, %Pagination{page_num: 0, page_size: 10}} =
-               PaginationController.extract_page_info(%Plug.Conn{params: %{}})
+               PaginationController.extract_page_info(%Plug.Conn{params: %{}}, nil)
 
       assert {:ok, %Pagination{page_num: 2, page_size: 10}} =
-               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_num" => 2}})
+               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_num" => 2}}, nil)
 
       assert {:ok, %Pagination{page_num: 0, page_size: 5}} =
-               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_size" => 5}})
+               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_size" => 5}}, nil)
 
       assert {:ok, %Pagination{page_num: 6, page_size: 2}} =
                PaginationController.extract_page_info(%Plug.Conn{
                  params: %{"page_num" => 6, "page_size" => 2}
-               })
+               }, nil)
 
       assert {:error, %Ecto.Changeset{errors: [page_num: {_, _}]}} =
-               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_num" => -1}})
+               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_num" => -1}}, nil)
 
       assert {:error, %Ecto.Changeset{errors: [page_size: {_, _}]}} =
-               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_size" => -1}})
+               PaginationController.extract_page_info(%Plug.Conn{params: %{"page_size" => -1}}, nil)
 
       assert {:error, %Ecto.Changeset{errors: [{:page_size, _}, {:page_num, _}]}} =
                PaginationController.extract_page_info(%Plug.Conn{
                  params: %{"page_num" => -2, "page_size" => -1}
-               })
+               }, nil)
     end
 
     test "#extract_page_info/1 works" do
-      assert {:ok, %Pagination{page_num: 5, page_size: 5}} ==
-               PaginationController.extract_page_info(%{"page_num" => 5, "page_size" => 5})
+      assert {:ok, %Pagination{page_num: 5, page_size: 5, table: "users", max_page_size: 10}} ==
+        PaginationController.extract_page_info(%{"page_num" => 5, "page_size" => 5, "table" => "users"})
     end
 
     test "#extract_page_info/1 correct defaults when param not specified" do
-      assert {:ok, %Pagination{page_num: 5, page_size: 10}} ==
-               PaginationController.extract_page_info(%{"page_num" => "5"})
+      assert {:ok, %Pagination{page_num: 5, page_size: 10, max_page_size: 20, table: "sessions"}} ==
+        PaginationController.extract_page_info(%{"page_num" => "5", "table" => "sessions"})
 
-      assert {:ok, %Pagination{page_num: 0, page_size: 5}} ==
-               PaginationController.extract_page_info(%{"page_size" => "5"})
+      assert {:ok, %Pagination{page_num: 0, page_size: 5, table: "users"}} ==
+        PaginationController.extract_page_info(%{"page_size" => "5", "table" => "users"})
 
-      assert {:ok, %Pagination{page_num: 0, page_size: 10}} ==
-               PaginationController.extract_page_info(%{})
+      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: "users"}} ==
+        PaginationController.extract_page_info(%{"table" => "users"})
     end
   end
 end

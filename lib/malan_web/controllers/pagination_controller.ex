@@ -32,8 +32,14 @@ defmodule Malan.PaginationController do
 
   Returns `conn`
   """
-  def validate_pagination(conn, _opts) do
-    with {:ok, pagination_info} <- extract_page_info(conn) do
+  def validate_pagination(conn, opts \\ []) do
+    table =
+      cond do
+        is_list(opts) -> Keyword.get(opts, :table, nil)
+        true -> nil
+      end
+
+    with {:ok, pagination_info} <- extract_page_info(conn, table) do
       conn
       |> assign(:pagination_error, nil)
       |> assign(:pagination_info, pagination_info)
@@ -55,13 +61,15 @@ defmodule Malan.PaginationController do
     |> is_paginated(opts)
   end
 
-  def extract_page_info(%Plug.Conn{params: params}) do
-    extract_page_info(params)
+  def extract_page_info(%Plug.Conn{params: params}, table) do
+    params
+    |> Map.merge(%{"table" => table})
+    |> extract_page_info()
   end
 
   def extract_page_info(params) do
     case Pagination.changeset(%Pagination{}, params) |> apply_action(:update) do
-      {:ok, %Pagination{} = p} -> {:ok, p}
+      {:ok, pagination} -> {:ok, pagination}
       {:error, changeset} -> {:error, changeset}
     end
   end
