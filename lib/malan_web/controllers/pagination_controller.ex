@@ -78,6 +78,12 @@ defmodule Malan.PaginationController do
   Take a `%Plug.Conn{}` called `conn` and return `{page_num, page_size}`
   """
   def pagination_info(conn) do
-    {conn.assigns.pagination_info.page_num, conn.assigns.pagination_info.page_size}
+    case conn.assigns do
+      %{pagination_info: %{page_num: page_num, page_size: page_size}} ->
+        {page_num, page_size}
+
+      _ ->
+        {Pagination.default_page_num(), Pagination.default_page_size()}
+    end
   end
 end
