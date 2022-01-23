@@ -10,7 +10,7 @@ defmodule MalanWeb.SessionController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination, [table: "sessions"] when action in [:index]
+  plug :require_pagination, [table: "sessions"] when action in [:admin_index, :index]
 
   def admin_index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)

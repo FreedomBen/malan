@@ -31,6 +31,8 @@ defmodule Malan.CantBeNil do
 end
 
 defmodule Malan.Pagination.PageOutOfBounds do
+  alias Malan.Pagination
+
   defexception [:message]
 
   def exception(opts) do
@@ -41,9 +43,27 @@ defmodule Malan.Pagination.PageOutOfBounds do
     msg =
       "Page specification was out of bounds. page_num: '#{page_num}', page_size: '#{page_size}', table: '#{table}'"
 
-    if !!table,
-      do:
-        msg = "#{msg} Max page_size for table is '#{Malan.Pagination.max_page_size(table)}'"
+    msg = case !!table do
+            true -> "#{msg} Max page_size for table is '#{Pagination.max_page_size(table)}'"
+            false -> msg
+          end
+
+    %__MODULE__{message: msg}
+  end
+end
+
+defmodule Malan.Pagination.NotPaginated do
+  alias Malan.Utils
+
+  defexception [:message]
+
+  def exception(opts) do
+    assigns_str =
+      Keyword.get(opts, :conn, nil)
+        |> Map.get(:assigns, %{})
+        |> Utils.map_to_string()
+
+    msg = "conn was not paginated.  Assigns: #{assigns_str}"
 
     %__MODULE__{message: msg}
   end
