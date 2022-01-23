@@ -3,14 +3,19 @@ defmodule MalanWeb.SessionController do
 
   require Logger
 
+  import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+
   alias Malan.Accounts
   alias Malan.Accounts.Session
 
   action_fallback MalanWeb.FallbackController
 
+  plug :require_pagination, [table: "sessions"] when action in [:index]
+
   def admin_index(conn, _params) do
-    sessions = Accounts.list_sessions()
-    render(conn, "index.json", sessions: sessions)
+    {page_num, page_size} = pagination_info(conn)
+    sessions = Accounts.list_sessions(page_num, page_size)
+    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
   end
 
   def admin_delete(conn, %{"id" => id}) do
@@ -23,8 +28,9 @@ defmodule MalanWeb.SessionController do
   end
 
   def index(conn, %{"user_id" => user_id}) do
-    sessions = Accounts.list_sessions(user_id)
-    render(conn, "index.json", sessions: sessions)
+    {page_num, page_size} = pagination_info(conn)
+    sessions = Accounts.list_sessions(user_id, page_num, page_size)
+    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
   end
 
   def create(conn, %{

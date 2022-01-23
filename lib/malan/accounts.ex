@@ -424,28 +424,39 @@ defmodule Malan.Accounts do
       [%Session{}, ...]
 
   """
-  def list_sessions(%User{id: user_id}), do: list_sessions(user_id)
+  def list_sessions(%User{id: user_id}, page_num, page_size) do
+    list_sessions(user_id, page_num, page_size)
+  end
 
-  def list_sessions(user_id) do
+  def list_sessions(user_id, page_num, page_size) do
     Repo.all(
       from s in Session,
-        where: s.user_id == ^user_id
+        select: s,
+        where: s.user_id == ^user_id,
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
-  def list_sessions, do: Repo.all(Session)
+  def list_sessions(page_num, page_size) do
+    Repo.all(
+      from s in Session,
+        select: s,
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
+    )
+  end
 
-  # def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
+  ## TODO: test list_active_sessions/1
+  def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
 
-  # def list_active_session(user_id) do
-  #   Repo.all(
-  #     from s in Session,
-  #     where: s.user_id == ^user_id and s.kjll
-
-  #     from(s in Session, where: s.user_id == ^user_id),
-  #     set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
-  #   )
-  # end
+  def list_active_session(user_id) do
+    Repo.all(
+      from s in Session,
+        where: s.user_id == ^user_id,
+        where: is_nil(s.revoked_at) or s.expires_at < ^DateTime.utc_now()
+    )
+  end
 
   @doc """
   Returns the list of all user sessions.  Requires being an admin.
@@ -456,7 +467,9 @@ defmodule Malan.Accounts do
       [%Session{}, ...]
 
   """
-  def list_user_sessions(user_id), do: list_sessions(user_id)
+  def list_user_sessions(user_id, page_num, page_size) do
+    list_sessions(user_id, page_num, page_size)
+  end
 
   @doc """
   Gets a single session.
