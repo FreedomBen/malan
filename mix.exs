@@ -50,7 +50,9 @@ defmodule Malan.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:pbkdf2_elixir, "~> 1.2"}
+      {:pbkdf2_elixir, "~> 1.2"},
+      {:nimble_totp, "~> 0.1.0"},
+      {:eqrcode, "~> 0.1.10"}
     ]
   end
 
