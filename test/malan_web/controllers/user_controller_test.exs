@@ -2059,6 +2059,26 @@ defmodule MalanWeb.UserControllerTest do
     end
   end
 
+  describe "lock" do
+    test "Must be admin to access" do
+
+    end
+
+    test "Cannot log in while locked" do
+      
+    end
+
+    test "Revokes all outstanding tokens" do
+
+    end
+  end
+
+  describe "unlock" do
+    test "Must be admin to access" do
+
+    end
+  end
+
   # defp create_regular_user(_) do
   #   {:ok, user} = Helpers.Accounts.regular_user()
   #   %{user: user}

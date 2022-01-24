@@ -40,6 +40,8 @@ defmodule Malan.Accounts.User do
     field :sex_enum, :integer              # nil means not specified
     field :gender_enum, :integer           # nil means not specified
     field :custom_attrs, :map              # Free form JSON for dependent services to use
+    field :locked_at, :utc_datetime, default: nil  # nil means not locked
+    field :locked_by, :string, default: nil
     field :password_reset_token, :string, virtual: true
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
@@ -173,6 +175,19 @@ defmodule Malan.Accounts.User do
     |> cast(%{deleted_at: Utils.DateTime.utc_now_trunc()}, [:deleted_at])
     |> put_change(:email, email_to_deleted_email(user.email))
     |> put_change(:username, uname_to_deleted_uname(user.username))
+  end
+
+  def lock_changeset(user, locked_by) do
+    user
+    |> cast(%{
+      locked_at: Utils.DateTime.utc_now_trunc(),
+      locked_by: locked_by
+    }, [:locked_at, :locked_by])
+  end
+
+  def unlock_changeset(user) do
+    user
+    |> cast(%{locked_at: nil, locked_by: nil}, [:locked_at, :locked_by])
   end
 
   def password_reset_create_changeset(user) do

@@ -150,6 +150,9 @@ defmodule MalanWeb.Router do
     put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token_user
     put "/users/reset_password/:token", UserController, :admin_reset_password_token
 
+    put "/users/:id/lock", UserController, :lock
+    put "/users/:id/unlock", UserController, :unlock
+
     # Transactions can only be retreived (not created, updated, or deleted)
     # they are created as side effects of user/session operations and are immutable
     # Careful, returns a lot of records!

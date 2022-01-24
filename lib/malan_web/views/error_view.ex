@@ -46,6 +46,22 @@ defmodule MalanWeb.ErrorView do
         _ ->
           "One or both of the pagination parameters failed validation."
       end
+
+    %{
+      errors: %{
+        detail: "Unprocessable Entity",
+        message: msg
+      }
+    }
+  end
+
+  def render("423.json", _assigns) do
+    %{
+      errors: %{
+        detail: "Locked",
+        message: "The requested resource is locked.  Please contact an administrator"
+      }
+    }
   end
 
   def render("429.json", _assigns) do
