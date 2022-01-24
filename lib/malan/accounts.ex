@@ -412,6 +412,18 @@ defmodule Malan.Accounts do
     |> Repo.update()
   end
 
+  def lock_user(%User{} = user, locked_by_id) do
+    user
+    |> User.lock_changeset(locked_by_id)
+    |> Repo.update()
+  end
+
+  def unlock_user(%User{} = user) do
+    user
+    |> User.unlock_changeset()
+    |> Repo.update()
+  end
+
   alias Malan.Accounts.Session
 
   @doc """
