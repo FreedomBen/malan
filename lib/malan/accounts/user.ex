@@ -11,6 +11,8 @@ defmodule Malan.Accounts.User do
   alias Malan.Accounts.PrivacyPolicy
   alias Malan.Accounts.User
 
+  @prefix_deleted_user "|"
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "users" do
@@ -165,14 +167,14 @@ defmodule Malan.Accounts.User do
     |> validate_common()
   end
 
-  @doc false
   def delete_changeset(user) do
     # In the future once out of beta, anonymize the data instead of marking it deleted
     user
     |> cast(%{deleted_at: Utils.DateTime.utc_now_trunc()}, [:deleted_at])
+    |> put_change(:email, email_to_deleted_email(user.email))
+    |> put_change(:username, uname_to_deleted_uname(user.username))
   end
 
-  @doc false
   def password_reset_create_changeset(user) do
     user
     |> change()
@@ -224,6 +226,7 @@ defmodule Malan.Accounts.User do
     |> unique_constraint(:username)
     |> validate_length(:username, min: 3, max: 89)
     |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
+    |> validate_not_format(:username, ~r/^\|/)  # Doesn't start with a pipe |
   end
 
   defp_testable validate_email(changeset) do
@@ -234,7 +237,8 @@ defmodule Malan.Accounts.User do
       :email,
       ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/
     )
-    |> validate_not_format(:email, ~r/@.*@/)
+    |> validate_not_format(:email, ~r/@.*@/)  # Doesn't have more than one @
+    |> validate_not_format(:email, ~r/^\|/)   # Doesn't start with a pipe |
   end
 
   defp_testable validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
@@ -547,5 +551,21 @@ defmodule Malan.Accounts.User do
       nil -> put_change(changeset, :preferences, %{})
       _ -> changeset
     end
+  end
+
+  defp_testable deleted_email_to_email(deleted_email) do
+    String.replace_prefix(deleted_email, @prefix_deleted_user, "")
+  end
+
+  defp_testable email_to_deleted_email(email) do
+    @prefix_deleted_user <> email
+  end
+
+  defp_testable deleted_uname_to_uname(deleted_uname) do
+    String.replace_prefix(deleted_uname, @prefix_deleted_user, "")
+  end
+
+  defp_testable uname_to_deleted_uname(username) do
+    @prefix_deleted_user <> username
   end
 end

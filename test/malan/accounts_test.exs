@@ -507,6 +507,16 @@ defmodule Malan.AccountsTest do
       assert is_nil(Accounts.get_user(user.id))
     end
 
+    test "delete_user/1 changes username and email, sets deleted_at" do
+      get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
+      user = user_fixture()
+      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
+      retval = get_u.(user.id)
+      assert retval.email == "|#{user.email}"
+      assert retval.username == "|#{user.username}"
+    end
+
     test "Usernames must be unique on creation" do
       user1_attrs = %{@user1_attrs | username: "someusername"}
       user2_attrs = %{@user2_attrs | username: "someusername"}
