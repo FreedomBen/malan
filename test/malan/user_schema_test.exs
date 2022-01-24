@@ -94,6 +94,24 @@ defmodule Malan.UserSchemaTest do
       assert changeset.valid? == true
     end
 
+    # Our deleted_at prefix starts wth | so need to make sure that no
+    # usernames do
+    test "#validate_username rejects usernames starting with |" do
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "bobl|o"}, [:username])
+        |> User.validate_username()
+
+      assert changeset.valid? == true
+
+      changeset =
+        Ecto.Changeset.cast(%User{}, %{username: "|boblo"}, [:username])
+        |> User.validate_username()
+
+      assert changeset.valid? == false
+      assert errors_on(changeset).username
+             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
+    end
+
     test "#validate_email correct emails 1" do
       validate_email("bob@hotmail.com", true)
     end
@@ -132,6 +150,13 @@ defmodule Malan.UserSchemaTest do
         false,
         "has invalid format"
       )
+    end
+
+    # Our deleted_at prefix starts wth | so need to make sure that no
+    # emails do
+    test "#validate_email reject emails starting with |" do
+      validate_email("boblo@hotmail.com", true)
+      validate_email("|boblo@hotmail.com", false, "has invalid format")
     end
 
     test "#validate_email max length 1" do
