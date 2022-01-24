@@ -216,6 +216,7 @@ defmodule Malan.Accounts do
 
   """
   def get_user_by(params) do
+    # TODO: Don't return users where deleted_at is not nil
     Repo.get_by(User, params)
   end
 
@@ -227,6 +228,7 @@ defmodule Malan.Accounts do
 
   """
   def get_user_by!(params) do
+    # TODO: Don't return users where deleted_at is not nil
     Repo.get_by!(User, params)
   end
 
@@ -235,6 +237,7 @@ defmodule Malan.Accounts do
   end
 
   # def get_user_by(username: username) do
+  #   TODO: Don't return users where deleted_at is not nil
   #   Repo.one(
   #     from u in User,
   #     where: u.username == ^username
@@ -498,7 +501,8 @@ defmodule Malan.Accounts do
     Repo.one(
       from u in User,
         select: {u.id, u.password_hash},
-        where: u.username == ^username
+        where: u.username == ^username,
+        where: is_nil(u.deleted_at)
     )
   end
 
