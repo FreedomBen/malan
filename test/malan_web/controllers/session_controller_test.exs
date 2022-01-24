@@ -88,29 +88,29 @@ defmodule MalanWeb.SessionControllerTest do
       assert conn.status == 401
     end
 
-    test "Requires accepting ToS and PP", %{conn: conn} do
-      users = Helpers.Accounts.regular_users_with_session(3)
-      {:ok, _ru1, rs1} = List.first(users)
-      {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
+    # test "Requires accepting ToS and PP", %{conn: conn} do
+    #   users = Helpers.Accounts.regular_users_with_session(3)
+    #   {:ok, _ru1, rs1} = List.first(users)
+    #   {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
 
-      # When ToS and Privay Policy are required, uncomment the below
-      conn = Helpers.Accounts.put_token(conn, as.api_token)
-      conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 461
+    #   # When ToS and Privay Policy are required, uncomment the below
+    #   conn = Helpers.Accounts.put_token(conn, as.api_token)
+    #   conn = get(conn, Routes.session_path(conn, :admin_index))
+    #   assert conn.status == 461
 
-      # Accept ToS
-      {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
-      conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 462
+    #   # Accept ToS
+    #   {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
+    #   conn = get(conn, Routes.session_path(conn, :admin_index))
+    #   assert conn.status == 462
 
-      # Accept Privacy Policy
-      {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
-      conn = get(conn, Routes.session_path(conn, :admin_index))
-      jr = json_response(conn, 200)["data"]
-      assert length(jr) == 4
-      assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
-      assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
-    end
+    #   # Accept Privacy Policy
+    #   {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
+    #   conn = get(conn, Routes.session_path(conn, :admin_index))
+    #   jr = json_response(conn, 200)["data"]
+    #   assert length(jr) == 4
+    #   assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
+    #   assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
+    # end
 
     test "works with pagination", %{conn: conn} do
       {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
