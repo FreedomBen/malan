@@ -33,6 +33,11 @@ defmodule MalanWeb.SessionControllerTest do
     |> Enum.into(%{})
   end
 
+  def sessions_to_retval(sessions) when is_list(sessions) do
+    sessions
+    |> Enum.map(fn s -> session_to_retval_map(s) end)
+  end
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
@@ -54,10 +59,12 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       # conn = get(conn, Routes.session_path(conn, :admin_index))
       # assert conn.status == 461
+
       ## Accept ToS
       # {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
       # conn = get(conn, Routes.session_path(conn, :admin_index))
       # assert conn.status == 462
+
       ## Accept Privacy Policy
       # {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
       conn = get(conn, Routes.session_path(conn, :admin_index))
@@ -65,6 +72,69 @@ defmodule MalanWeb.SessionControllerTest do
       assert length(jr) == 4
       assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
       assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
+    end
+
+    test "Requires being authenticated", %{conn: conn} do
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      assert conn.status == 403
+    end
+
+    test "Requires being an admin", %{conn: conn} do
+      users = Helpers.Accounts.regular_users_with_session(3)
+      {:ok, _ru1, rs1} = List.first(users)
+
+      conn = Helpers.Accounts.put_token(conn, rs1.api_token)
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      assert conn.status == 401
+    end
+
+    test "Requires accepting ToS and PP", %{conn: conn} do
+      users = Helpers.Accounts.regular_users_with_session(3)
+      {:ok, _ru1, rs1} = List.first(users)
+      {:ok, au, as} = Helpers.Accounts.admin_user_with_session()
+
+      # When ToS and Privay Policy are required, uncomment the below
+      conn = Helpers.Accounts.put_token(conn, as.api_token)
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      assert conn.status == 461
+
+      # Accept ToS
+      {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      assert conn.status == 462
+
+      # Accept Privacy Policy
+      {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      jr = json_response(conn, 200)["data"]
+      assert length(jr) == 4
+      assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
+      assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
+    end
+
+    test "works with pagination", %{conn: conn} do
+      {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
+
+      {:ok, s3} = Helpers.Accounts.create_session(ru)
+      {:ok, s4} = Helpers.Accounts.create_session(ru)
+      {:ok, s5} = Helpers.Accounts.create_session(ru)
+      {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      conn = Helpers.Accounts.put_token(conn, s2.api_token)
+      conn = get(conn, Routes.session_path(conn, :admin_index))
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s1, s2, s3, s4, s5, s6])
+
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 0, page_size: 5)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s1, s2, s3, s4, s5])
+
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 1, page_size: 5)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s6])
     end
   end
 
@@ -148,6 +218,36 @@ defmodule MalanWeb.SessionControllerTest do
 
       c2 = get(c2, Routes.user_session_path(c2, :index, ru1.id))
       assert c2.status == 401
+    end
+
+    test "works with pagination", %{conn: conn} do
+      {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
+
+      {:ok, s3} = Helpers.Accounts.create_session(ru)
+      {:ok, s4} = Helpers.Accounts.create_session(ru)
+      {:ok, s5} = Helpers.Accounts.create_session(ru)
+      {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      conn = Helpers.Accounts.put_token(conn, s2.api_token)
+      conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 3)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s5, s4, s3])
+
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 1, page_size: 3)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s1])
+
+      conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      conn = get(conn, Routes.user_session_path(conn, :index, au.id), page_num: 0, page_size: 3)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s6, s2])
+
+      conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 5)
+      jr = json_response(conn, 200)["data"]
+      assert jr == sessions_to_retval([s5, s4, s3, s1])
     end
   end
 
