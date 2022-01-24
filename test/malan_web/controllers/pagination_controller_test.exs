@@ -62,7 +62,7 @@ defmodule MalanWeb.PaginationControllerTest do
         PaginationController.validate_pagination(
           PaginationFixtures.paginated_conn_fixture(
             conn,
-            %{"page_num" => 0, "page_size" => 106}
+            %{"page_num" => 0, "page_size" => Pagination.max_page_size() + 1}
           ),
           []
         )
