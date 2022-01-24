@@ -11,10 +11,6 @@ defmodule MalanWeb.UserControllerTest do
 
   @create_attrs %{
     email: "some@email.com",
-    # email_verified: "2010-04-17T14:00:00Z",
-    # password: "some password",
-    # preferences: %{},
-    # roles: [],
     username: "someusername",
     first_name: "Some",
     last_name: "cool User",
@@ -55,72 +51,47 @@ defmodule MalanWeb.UserControllerTest do
     |> strip_user()
   end
 
-
   defp strip_user(user) do
     user
     |> Enum.reject(fn {k, _v} -> k == "race" end)
     |> Enum.reject(fn {k, _v} -> k == "password" end)
+    |> Enum.reject(fn {k, _v} -> k == "sex_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "race_enum" end)
     |> Enum.reject(fn {k, _v} -> k == "addresses" end)
     |> Enum.reject(fn {k, _v} -> k == "updated_at" end)
-    |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
-    |> Enum.reject(fn {k, _v} -> k == "preferences" end)
-    |> Enum.reject(fn {k, _v} -> k == "tos_accepted" end)
-    |> Enum.reject(fn {k, _v} -> k == "custom_attrs" end)
-    |> Enum.reject(fn {k, _v} -> k == "phone_numbers" end)
-    |> Enum.reject(fn {k, _v} -> k == "password_hash" end)
-    |> Enum.reject(fn {k, _v} -> k == "privacy_policy_accepted" end)
-    |> Enum.reject(fn {k, _v} -> k == "accept_privacy_policy" end)
     |> Enum.reject(fn {k, _v} -> k == "accept_tos" end)
     |> Enum.reject(fn {k, _v} -> k == "deleted_at" end)
-    |> Enum.reject(fn {k, _v} -> k == "display_name" end)
-    |> Enum.reject(fn {k, _v} -> k == "ethnicity_enum" end)
     |> Enum.reject(fn {k, _v} -> k == "gender_enum" end)
     |> Enum.reject(fn {k, _v} -> k == "middle_name" end)
     |> Enum.reject(fn {k, _v} -> k == "name_prefix" end)
     |> Enum.reject(fn {k, _v} -> k == "name_suffix" end)
-    |> Enum.reject(fn {k, _v} -> k == "password_reset_token" end)
-    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_expires_at" end)
-    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_hash" end)
-    |> Enum.reject(fn {k, _v} -> k == "race_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
+    |> Enum.reject(fn {k, _v} -> k == "preferences" end)
+    |> Enum.reject(fn {k, _v} -> k == "display_name" end)
+    |> Enum.reject(fn {k, _v} -> k == "tos_accepted" end)
+    |> Enum.reject(fn {k, _v} -> k == "custom_attrs" end)
+    |> Enum.reject(fn {k, _v} -> k == "phone_numbers" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_hash" end)
+    |> Enum.reject(fn {k, _v} -> k == "ethnicity_enum" end)
     |> Enum.reject(fn {k, _v} -> k == "reset_password" end)
-    |> Enum.reject(fn {k, _v} -> k == "sex_enum" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token" end)
+    |> Enum.reject(fn {k, _v} -> k == "accept_privacy_policy" end)
+    |> Enum.reject(fn {k, _v} -> k == "privacy_policy_accepted" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_hash" end)
+    |> Enum.reject(fn {k, _v} -> k == "password_reset_token_expires_at" end)
     |> Enum.into(%{})
   end
-  # def users_eq(u1, u2) do
-  #   u1 |> norm_attrs() |> strip_user() == u2 |> norm_attrs() |> strip_user()
-  # end
 
   def assert_list_users_eq(l1, l2) do
     assert Enum.count(l1) == Enum.count(l2)
 
-    #fir = strip_user(Enum.at(l1, 0))
     l1 = Enum.map(l1, fn u -> strip_user(u) end)
     l2 = Enum.map(l2, fn u -> strip_user(u) end)
 
     l1
     |> Enum.with_index()
     |> Enum.each(fn {u, i} -> assert u == Enum.at(l2, i) end)
-    #|> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
   end
-
-  # def session_to_retval_map(session) do
-  #   session
-  #   |> Map.put(:ip_address, session.real_ip_address)
-  #   |> Utils.struct_to_map()
-  #   |> Utils.map_atom_keys_to_strings()
-  #   |> Enum.map(fn {k, v} -> {k, datetime_to_string(v)} end)
-  #   |> Enum.reject(fn {k, _v} -> k == "expires_in_seconds" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "real_ip_address" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "api_token_hash" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "never_expires" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "updated_at" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "api_token" end)
-  #   |> Enum.reject(fn {k, _v} -> k == "user" end)
-  #   |> List.insert_at(0, {"is_valid", true})
-  #   |> Enum.into(%{})
-  # end
-
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
