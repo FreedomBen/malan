@@ -2060,6 +2060,10 @@ defmodule MalanWeb.UserControllerTest do
   end
 
   describe "lock" do
+    test "works" do
+
+    end
+
     test "Must be admin to access" do
 
     end

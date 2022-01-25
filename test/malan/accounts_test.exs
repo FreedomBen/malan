@@ -807,6 +807,35 @@ defmodule Malan.AccountsTest do
         Accounts.get_user_full_by_id_or_username!("notavalididorusernameoremailaddress")
       end
     end
+
+    test "lock/2" do
+      u1 = user_fixture()
+      assert is_nil(u1.locked_at)
+      assert is_nil(u1.locked_by)
+
+      {:ok, u2} = Accounts.lock_user(u1, u1.id)
+      assert TestUtils.DateTime.within_last?(u2.locked_at, 2, :seconds)
+      assert u1.id == u2.locked_by
+
+      u3 = Accounts.get_user(u1.id)
+      assert TestUtils.DateTime.within_last?(u3.locked_at, 2, :seconds)
+      assert u1.id == u3.locked_by
+    end
+
+    test "unlock/1" do
+      u1 = user_fixture()
+      {:ok, u1} = Accounts.lock_user(u1, u1.id)
+      assert TestUtils.DateTime.within_last?(u1.locked_at, 2, :seconds)
+      assert u1.id == u1.locked_by
+
+      u1 = Accounts.get_user(u1.id)
+      assert TestUtils.DateTime.within_last?(u1.locked_at, 2, :seconds)
+      assert u1.id == u1.locked_by
+
+      {:ok, u2} = Accounts.unlock_user(u1)
+      assert is_nil(u2.locked_by)
+      assert is_nil(u2.locked_at)
+    end
   end
 
   describe "sessions" do
