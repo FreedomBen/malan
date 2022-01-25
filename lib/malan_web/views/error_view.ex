@@ -9,6 +9,15 @@ defmodule MalanWeb.ErrorView do
     }
   end
 
+  def render("401.json", %{invalid_credentials: true}) do
+    %{
+      errors: %{
+        detail: "Unauthorized",
+        message: "Username or password or both were invalid.  Please check the username and password and try again."
+      }
+    }
+  end
+
   def render("401.json", _assigns) do
     %{
       errors: %{

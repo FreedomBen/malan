@@ -413,9 +413,14 @@ defmodule Malan.Accounts do
   end
 
   def lock_user(%User{} = user, locked_by_id) do
-    user
-    |> User.lock_changeset(locked_by_id)
-    |> Repo.update()
+    with cs <- User.lock_changeset(user, locked_by_id),
+         {:ok, user} <- Repo.update(cs),
+         {:ok, _num_revoked} <- revoke_active_sessions(user) do
+      {:ok, user}
+    else
+      {:error, changeset} -> {:error, changeset}
+      err -> {:error, err}
+    end
   end
 
   def unlock_user(%User{} = user) do
@@ -508,11 +513,13 @@ defmodule Malan.Accounts do
   Returns [user_id, password_hash] if username is found, otherwise nil.
 
   username has unique index on it so should never have more than one result
+
+  Returns {user_id, password_hash, locked_at}
   """
   def get_user_id_pass_hash_by_username(username) do
     Repo.one(
       from u in User,
-        select: {u.id, u.password_hash},
+        select: {u.id, u.password_hash, u.locked_at},
         where: u.username == ^username,
         where: is_nil(u.deleted_at)
     )
@@ -530,23 +537,38 @@ defmodule Malan.Accounts do
     end
   end
 
+  @doc """
+  Verify password for a locked user.
+
+  If password is correct, returns {:error, :user_locked}
+  If password in incorrect, returns {:error, :unauthorized}
+  """
+  def verify_pass_locked(user_id, given_pass, password_hash, _locked_at) do
+    case verify_pass(user_id, given_pass, password_hash) do
+      {:ok, _user_id} -> {:error, :user_locked}
+      {:error, :unauthorized} -> {:error, :unauthorized}
+    end
+  end
+
   @doc "Pretend to be checking the password so timing attacks don't work"
-  def fake_pass_verify() do
+  def fake_pass_verify(error) do
     Utils.Crypto.fake_verify_password()
-    {:error, :not_a_user}
+    {:error, error}
   end
 
   @doc """
   Checks that the given_pass is correct for username.
 
   Returns {:ok, user_id} if given_pass is correct, or
+          {:error, :user_locked}
           {:error, :unauthorized}
           {:error, :not_a_user}
   """
   def authenticate_by_username_pass(username, given_pass) do
     case get_user_id_pass_hash_by_username(username) do
-      {user_id, password_hash} -> verify_pass(user_id, given_pass, password_hash)
-      nil -> fake_pass_verify()
+      {user_id, password_hash, nil} -> verify_pass(user_id, given_pass, password_hash)
+      {user_id, password_hash, locked_at} -> verify_pass_locked(user_id, given_pass, password_hash, locked_at)
+      nil -> fake_pass_verify(:not_a_user)
     end
   end
 
@@ -664,16 +686,43 @@ defmodule Malan.Accounts do
   `ip_addr` will be recorded in the DB
 
   Returns {:ok, %Session{}} on success
+      If user account is loked, you'll get back {:error, :user_locked}
       If unauthorized you'll get back {:error, :unauthorized}
       If user is not found, you'll get back {:error, :not_found}
   """
   def create_session(username, pass, attrs) do
-    # TODO: Record failed attempts somewhere.  At least logs
     case authenticate_by_username_pass(username, pass) do
       {:ok, user_id} -> new_session(user_id, attrs)
+      {:error, :user_locked} -> record_create_session_locked(username, attrs)
       {:error, :unauthorized} -> record_create_session_unauthorized(username, attrs)
       {:error, :not_a_user} -> record_create_session_not_a_user(username, attrs)
     end
+  end
+
+  @doc """
+  Record failed session creation attempt as unauthorized.
+
+  Returns {:error, :unauthorized}
+  """
+  def record_create_session_locked(username_or_id, attrs, username \\ nil) do
+    case Utils.is_uuid_or_nil?(username_or_id) do
+      true ->
+        record_transaction(
+          username_or_id,
+          nil,
+          username_or_id,
+          username,
+          "sessions",
+          "POST",
+          "Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
+        )
+
+      # recursive
+      _ ->
+        record_create_session_locked(username_to_id(username_or_id), attrs, username_or_id)
+    end
+
+    {:error, :user_locked}
   end
 
   @doc """

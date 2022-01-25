@@ -1325,7 +1325,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with new password to make sure it works
       conn =
@@ -1390,7 +1390,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} = json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Try to login with old password and ensure it works
       conn =
@@ -1441,7 +1441,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with new password to make sure it works
       conn =
@@ -1523,7 +1523,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1557,7 +1557,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Try to login with new password and ensure it works
       conn =
@@ -1610,7 +1610,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1675,7 +1675,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with new password to make sure it works
       conn =
@@ -1740,7 +1740,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} = json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Try to login with old password and ensure it works
       conn =
@@ -1793,7 +1793,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with new password to make sure it works
       conn =
@@ -1868,7 +1868,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1895,7 +1895,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Try to login with new password and ensure it works
       conn =
@@ -1946,7 +1946,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"invalid_credentials" => true} == json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
 
       # Now login with the old password to make sure it still works
       conn =

@@ -339,7 +339,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: "invalid username", password: "something wrong"}
         )
 
-      assert true == json_response(conn, 401)["invalid_credentials"]
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
     end
 
     test "invalid password", %{conn: conn} do
@@ -350,7 +350,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "incorrect password"}
         )
 
-      assert true == json_response(conn, 401)["invalid_credentials"]
+      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
