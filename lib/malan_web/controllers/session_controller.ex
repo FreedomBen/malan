@@ -8,6 +8,8 @@ defmodule MalanWeb.SessionController do
   alias Malan.Accounts
   alias Malan.Accounts.Session
 
+  alias MalanWeb.ErrorView
+
   action_fallback MalanWeb.FallbackController
 
   plug :require_pagination, [table: "sessions"] when action in [:admin_index, :index]
@@ -49,12 +51,19 @@ defmodule MalanWeb.SessionController do
       |> put_status(:created)
       |> render("show.json", session: session)
     else
+      {:error, :user_locked} ->
+        conn
+        |> put_status(423)
+        |> put_view(ErrorView)
+        |> render("423.json")
+
       # {:error, :not_a_user} ->
       # {:error, :unauthorized} ->
       _err ->
         conn
         |> put_status(401)
-        |> json(%{invalid_credentials: true})
+        |> put_view(ErrorView)
+        |> render("401.json", invalid_credentials: true)
     end
   end
 

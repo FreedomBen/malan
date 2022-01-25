@@ -820,6 +820,9 @@ defmodule Malan.AccountsTest do
       u3 = Accounts.get_user(u1.id)
       assert TestUtils.DateTime.within_last?(u3.locked_at, 2, :seconds)
       assert u1.id == u3.locked_by
+
+      # TODO: revokes all active sessions
+      # TODO: when locked, can't log in
     end
 
     test "unlock/1" do
@@ -1016,15 +1019,25 @@ defmodule Malan.AccountsTest do
       assert session.user_id == user1.id
     end
 
-    test "get_user_id_pass_hash_by_username/1 returns [user_id, password_hash] on success" do
+    test "get_user_id_pass_hash_by_username/1 returns {user_id, password_hash, locked_at} on success" do
       user = user_fixture()
-      assert {user_id, password_hash} = Accounts.get_user_id_pass_hash_by_username(user.username)
+      assert {user_id, password_hash, nil} = Accounts.get_user_id_pass_hash_by_username(user.username)
       assert user_id == user.id
       assert password_hash == user.password_hash
     end
 
     test "get_user_id_pass_hash_by_username/1 returns nil on username not found" do
       assert nil == Accounts.get_user_id_pass_hash_by_username("notarealusernameatall")
+    end
+
+    test "get_user_id_pass_hash_by_username/1 returns locked_at as datetime when user is locked" do
+      user = user_fixture()
+      assert {user_id, password_hash, nil} = Accounts.get_user_id_pass_hash_by_username(user.username)
+      assert user_id == user.id
+
+      {:ok, user} = Accounts.lock_user(user, nil)
+      assert {^user_id, ^password_hash, locked_at} = Accounts.get_user_id_pass_hash_by_username(user.username)
+      assert locked_at == user.locked_at
     end
 
     test "create_session/1 with incorrect pass returns {:error, :unauthorized}" do
