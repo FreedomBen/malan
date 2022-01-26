@@ -86,6 +86,7 @@ defmodule MalanWeb.Router do
 
     # Get or Delete the current session (the one belonging to the api_token in use)
     # Not piped through "owner" because no User ID is passed and it will only delete the current session
+    get "/sessions/active", SessionController, :index_active
     get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
 
@@ -98,6 +99,7 @@ defmodule MalanWeb.Router do
 
     resources "/users", UserController, only: [] do
       # Delete all active sessions for this user
+      get "/sessions/active", SessionController, :user_index_active
       delete "/sessions", SessionController, :delete_all
       resources "/sessions", SessionController, only: [:index, :show, :delete]
 

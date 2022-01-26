@@ -252,6 +252,71 @@ defmodule MalanWeb.SessionControllerTest do
     end
   end
 
+  describe "index_active and user_index_active" do
+    test "lists all active sessions for user and works with current", %{conn: conn} do
+      {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
+      {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
+
+      {:ok, s3} = Helpers.Accounts.create_session(ru)
+      {:ok, s4} = Helpers.Accounts.create_session(ru)
+      {:ok, s5} = Helpers.Accounts.create_session(ru)
+      {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      # page_num: 0 page_size: 3
+      c1 = c2 = c3 = Helpers.Accounts.put_token(conn, s1.api_token)
+      c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 3)
+      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 3)
+      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 3)
+      for c <- [c1, c2, c3],
+        do: assert json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3])
+
+      # page_num: 1 page_size: 3
+      c1 = c2 = c3 = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 1, page_size: 3)
+      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 1, page_size: 3)
+      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 1, page_size: 3)
+      for c <- [c1, c2, c3],
+        do: assert json_response(c, 200)["data"] == sessions_to_retval([s1])
+
+      # page_num: 0 page_size: 5
+      c1 = c2 = c3 = Helpers.Accounts.put_token(build_conn(), s1.api_token)
+      c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 5)
+      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 5)
+      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 5)
+      for c <- [c1, c2, c3],
+        do: assert json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3, s1])
+
+      # as admin.  page_num: 0 page_size: 3
+      c2 = c3 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, au.id), page_num: 0, page_size: 3)
+      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 3)
+      for c <- [c2, c3],
+        do: assert json_response(c, 200)["data"] == sessions_to_retval([s6, s2])
+
+      # as admin requesting regular user.  page_num: 0 page_size: 3
+      c1 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+      c1 = get(c1, Routes.user_session_path(c1, :user_index_active, ru.id), page_num: 0, page_size: 3)
+      assert json_response(c1, 200)["data"] == sessions_to_retval([s5, s4, s3])
+    end
+
+    test "Must be authenticated", %{conn: conn} do
+      conn = get(conn, Routes.session_path(conn, :index_active))
+      assert conn.status == 403
+      conn = get(conn, Routes.user_session_path(conn, :user_index_active, "current"))
+      assert conn.status == 403
+    end
+
+    test "can't be called by non-admin non-owner", %{conn: conn} do
+      users = Helpers.Accounts.regular_users_with_session(2)
+      {:ok, ru1, _rs1} = Enum.at(users, 0)
+      {:ok, _ru2, rs2} = Enum.at(users, 1)
+
+      c1 = Helpers.Accounts.put_token(conn, rs2.api_token)
+      c1 = get(c1, Routes.user_session_path(c1, :user_index_active, ru1.id), page_num: 0, page_size: 3)
+      assert c1.status == 401
+    end
+  end
+
   describe "get current session" do
     test "gets the current user session", %{conn: conn} do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()

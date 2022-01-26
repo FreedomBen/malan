@@ -467,13 +467,15 @@ defmodule Malan.Accounts do
     )
   end
 
-  def list_active_sessions(%User{id: id}), do: list_active_sessions(id)
+  def list_active_sessions(%User{id: id}, page_num, page_size), do: list_active_sessions(id, page_num, page_size)
 
-  def list_active_sessions(user_id) do
+  def list_active_sessions(user_id, page_num, page_size) do
     Repo.all(
       from s in Session,
         where: s.user_id == ^user_id,
-        where: is_nil(s.revoked_at) or s.expires_at < ^DateTime.utc_now()
+        where: is_nil(s.revoked_at) or s.expires_at < ^DateTime.utc_now(),
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
