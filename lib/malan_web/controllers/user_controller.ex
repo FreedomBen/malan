@@ -84,9 +84,9 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      with {:ok, %User{}} <- Accounts.lock_user(user, conn.assigns.authed_user_id) do
+      with {:ok, %User{} = user} <- Accounts.lock_user(user, conn.assigns.authed_user_id) do
         record_transaction(conn, user.id, user.username, "PUT", "#UserController.lock/2")
-        send_resp(conn, :no_content, "")
+        render(conn, "show.json", user: user)
       end
     end
   end
@@ -97,9 +97,9 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      with {:ok, %User{}} <- Accounts.unlock_user(user) do
+      with {:ok, %User{} = user} <- Accounts.unlock_user(user) do
         record_transaction(conn, user.id, user.username, "PUT", "#UserController.unlock/2")
-        send_resp(conn, :no_content, "")
+        render(conn, "show.json", user: user)
       end
     end
   end
