@@ -467,10 +467,9 @@ defmodule Malan.Accounts do
     )
   end
 
-  ## TODO: test list_active_sessions/1
-  def list_active_sessions(%User{id: user_id}), do: list_active_sessions(user_id)
+  def list_active_sessions(%User{id: id}), do: list_active_sessions(id)
 
-  def list_active_session(user_id) do
+  def list_active_sessions(user_id) do
     Repo.all(
       from s in Session,
         where: s.user_id == ^user_id,

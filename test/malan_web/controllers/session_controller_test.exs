@@ -174,6 +174,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 3,
                  who: ^user_id,
+                 who_username: nil,
                  when: when_utc
                } = tx
              ] = Accounts.list_transactions_by_who(user_id)
@@ -559,6 +560,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 1,
                  who: ^user_id,
+                 who_username: nil,
                  when: when_utc
                } = tx
              ] = Accounts.list_transactions_by_who(user_id)
@@ -566,6 +568,38 @@ defmodule MalanWeb.SessionControllerTest do
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [tx] == Accounts.list_transactions_by_user_id(user_id)
       assert [tx] == Accounts.list_transactions_by_session_id(id)
+      assert [tx] == Accounts.list_transactions_by_who(user_id)
+    end
+
+    test "Create session fails when user is locked; creates Transaction", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      {:ok, user} = Helpers.Accounts.lock_user(user)
+      user_id = user.id
+      username = user.username
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"detail" => "Locked"} = json_response(conn, 423)["errors"]
+
+      assert [
+               %Transaction{
+                 user_id: ^user_id,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 1,
+                 who: ^user_id,
+                 who_username: ^username,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil)
       assert [tx] == Accounts.list_transactions_by_who(user_id)
     end
   end
@@ -618,6 +652,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 3,
                  who: ^user_id,
+                 who_username: nil,
                  when: when_utc
                } = tx
              ] = Accounts.list_transactions_by_who(user_id)
@@ -648,7 +683,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert {:error, :revoked} = Accounts.validate_session(session.api_token)
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Delete Current creates a corresponding Transaction", %{conn: conn} do
       {:ok, %User{id: user_id} = _user, %Session{id: id} = session} =
         Helpers.Accounts.regular_user_with_session()
 
@@ -663,6 +698,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 3,
                  who: ^user_id,
+                 who_username: nil,
                  when: when_utc
                } = tx
              ] = Accounts.list_transactions_by_who(user_id)
@@ -760,6 +796,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 3,
                  who: ^user_id,
+                 who_username: nil,
                  when: when_utc
                } = tx
              ] = Accounts.list_transactions_by_who(user_id)

@@ -14,7 +14,8 @@ defmodule MalanWeb.UserControllerTest do
     username: "someusername",
     first_name: "Some",
     last_name: "cool User",
-    custom_attrs: %{"hereiam" => "rockyou", "likea" => "hurricane", "year" => 1986}
+    custom_attrs: %{"hereiam" => "rockyou", "likea" => "hurricane", "year" => 1986},
+    locked_at: "",  # Shouldn't make it through
   }
   @invalid_attrs %{
     email: nil,
@@ -193,7 +194,6 @@ defmodule MalanWeb.UserControllerTest do
   end
 
   describe "create user and get user details with returned password" do
-    # TODO: add captcha
     test "renders user when data is valid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
@@ -223,6 +223,8 @@ defmodule MalanWeb.UserControllerTest do
                "privacy_policy_accepted" => false,
                "username" => "someusername",
                "nick_name" => "",
+               "locked_at" => nil,
+               "locked_by" => nil,
                "custom_attrs" => %{
                  "hereiam" => "rockyou",
                  "likea" => "hurricane",
@@ -2059,27 +2061,139 @@ defmodule MalanWeb.UserControllerTest do
     end
   end
 
-  describe "lock" do
-    test "works" do
+  describe "locked" do
+    setup [:create_regular_user_with_session]
 
+    test "creates users unlocked", %{conn: conn, user: %User{id: id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+
+      assert %{
+               "locked_at" => nil,
+               "locked_by" => nil
+             } = json_response(conn, 200)["data"]
+
+      {:ok, conn, %User{id: admin_id}, as} =
+        Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+
+      check_response = fn conn ->
+        assert %{
+                 "id" => ^id,
+                 "locked_at" => locked_at,
+                 "locked_by" => ^admin_id
+               } = json_response(conn, 200)["data"]
+
+        for ts <- [locked_at] do
+          assert {:ok, ts, 0} = DateTime.from_iso8601(ts)
+          assert TestUtils.DateTime.within_last?(ts, 5, :seconds) == true
+        end
+      end
+
+      check_response.(conn)
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      check_response.(conn)
     end
 
-    test "Must be admin to access" do
-
+    test "Must be authenticated", %{conn: conn, user: %User{id: id}} do
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+      assert conn.status == 403
     end
 
-    test "Cannot log in while locked" do
-      
+    test "Must be admin to access", %{conn: conn, user: %User{id: id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+      assert conn.status == 401
     end
 
-    test "Revokes all outstanding tokens" do
+    test "Revokes all outstanding tokens", %{
+      conn: conn,
+      user: %User{id: id, username: username} = user,
+      session: session
+    } do
+      {:ok, _conn, %User{id: admin_id}, admin_session} =
+        Helpers.Accounts.admin_user_session_conn(conn)
 
+      sessions =
+        1..4
+        |> Enum.map(fn _ -> Helpers.Accounts.create_session(user) end)
+        |> Enum.map(fn {:ok, s} -> s end)
+
+      conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+
+      for s <- sessions do
+        assert {:ok, ^id, ^username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+      end
+      assert 5 == Accounts.list_active_sessions(user) |> Enum.count()
+
+      conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+
+      assert %{
+               "id" => ^id,
+               "locked_at" => _locked_at,
+               "locked_by" => ^admin_id
+             } = json_response(conn, 200)["data"]
+
+      # token should now be revoked
+      conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert conn.status == 403
+
+      for s <- sessions do
+        assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+      end
+      assert 0 == Accounts.list_active_sessions(user) |> Enum.count()
     end
   end
 
   describe "unlock" do
-    test "Must be admin to access" do
+    setup [:create_regular_user_with_session]
 
+    test "Works", %{conn: conn, user: %User{id: id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      {:ok, _conn, %User{id: admin_id}, admin_session} =
+        Helpers.Accounts.admin_user_session_conn(conn)
+
+      conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+
+      assert %{
+               "id" => ^id,
+               "locked_at" => locked_at,
+               "locked_by" => ^admin_id
+             } = json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{"id" => ^id, "locked_by" => ^admin_id, "locked_at" => ^locked_at} =
+        json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
+      conn = put(conn, Routes.user_path(conn, :unlock, id))
+      assert %{"id" => ^id, "locked_by" => nil, "locked_at" => nil} =
+        json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{"id" => ^id, "locked_by" => nil, "locked_at" => nil} =
+        json_response(conn, 200)["data"]
+    end
+
+    test "Must be authenticated", %{conn: conn, user: %User{id: id}} do
+      conn = put(conn, Routes.user_path(conn, :unlock, id))
+      assert conn.status == 403
+    end
+
+    test "Must be admin to access", %{conn: conn, user: %User{id: id}, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = put(conn, Routes.user_path(conn, :unlock, id))
+      assert conn.status == 401
     end
   end
 

@@ -74,6 +74,16 @@ defmodule Malan.Test.Helpers.Accounts do
   end
 
   @doc "Returns: {:ok, user}"
+  def lock_user(user, locked_by \\ nil) do
+    Accounts.lock_user(user, locked_by)
+  end
+
+  @doc "Returns: {:ok, user}"
+  def unlock_user(user) do
+    Accounts.unlock_user(user)
+  end
+
+  @doc "Returns: {:ok, user}"
   def admin_user(attrs \\ %{}) do
     {:ok, user} =
       attrs

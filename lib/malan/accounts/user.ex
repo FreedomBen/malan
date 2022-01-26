@@ -183,6 +183,7 @@ defmodule Malan.Accounts.User do
       locked_at: Utils.DateTime.utc_now_trunc(),
       locked_by: locked_by
     }, [:locked_at, :locked_by])
+    |> foreign_key_constraint(:locked_by)
   end
 
   def unlock_changeset(user) do
