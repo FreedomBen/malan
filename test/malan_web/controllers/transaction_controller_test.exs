@@ -1,5 +1,5 @@
 defmodule MalanWeb.TransactionControllerTest do
-  use MalanWeb.ConnCase
+  use MalanWeb.ConnCase, async: true
 
   import Malan.AccountsFixtures
 
