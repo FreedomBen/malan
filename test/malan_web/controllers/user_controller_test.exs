@@ -2129,7 +2129,7 @@ defmodule MalanWeb.UserControllerTest do
       for s <- sessions do
         assert {:ok, ^id, ^username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
       end
-      assert 5 == Accounts.list_active_sessions(user) |> Enum.count()
+      assert 5 == Accounts.list_active_sessions(user, 0, 10) |> Enum.count()
 
       conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
       conn = put(conn, Routes.user_path(conn, :lock, id))
@@ -2148,7 +2148,7 @@ defmodule MalanWeb.UserControllerTest do
       for s <- sessions do
         assert {:error, :revoked} = Accounts.validate_session(s.api_token)
       end
-      assert 0 == Accounts.list_active_sessions(user) |> Enum.count()
+      assert 0 == Accounts.list_active_sessions(user, 0, 10) |> Enum.count()
     end
   end
 

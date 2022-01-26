@@ -1,5 +1,5 @@
 defmodule MalanWeb.PageControllerTest do
-  use MalanWeb.ConnCase
+  use MalanWeb.ConnCase, async: true
 
   # test "GET /", %{conn: conn} do
   #   conn = get(conn, "/")
