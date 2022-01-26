@@ -12,7 +12,9 @@ defmodule MalanWeb.SessionController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination, [table: "sessions"] when action in [:admin_index, :index]
+  plug :require_pagination,
+       [table: "sessions"]
+       when action in [:admin_index, :index, :index_active, :user_index_active]
 
   def admin_index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
@@ -32,6 +34,19 @@ defmodule MalanWeb.SessionController do
   def index(conn, %{"user_id" => user_id}) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(user_id, page_num, page_size)
+    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
+  end
+
+  def index_active(conn, params) do
+    user_index_active(conn, Map.merge(params, %{"user_id" => conn.assigns.authed_user_id}))
+  end
+
+  def user_index_active(conn, %{"user_id" => "current"}),
+    do: user_index_active(conn, %{"user_id" => conn.assigns.authed_user_id})
+
+  def user_index_active(conn, %{"user_id" => user_id}) do
+    {page_num, page_size} = pagination_info(conn)
+    sessions = Accounts.list_active_sessions(user_id, page_num, page_size)
     render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
   end
 

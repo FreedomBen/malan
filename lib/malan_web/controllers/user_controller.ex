@@ -38,7 +38,7 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  # Deprecated in favor of "current'
+  # "me" is deprecated in favor of "current'
   def me(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
   def current(conn, _params), do: show(conn, %{"id" => conn.assigns.authed_user_id})
 
