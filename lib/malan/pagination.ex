@@ -48,10 +48,13 @@ defmodule Malan.Pagination do
     |> validate_page_size()
   end
 
+
+  def get_table(table \\ nil)
+
   def get_table(%Ecto.Changeset{} = cs), do: get_field(cs, :table)
   def get_table(table) when is_atom(table), do: get_table(Atom.to_string(table))
 
-  def get_table(table \\ nil) do
+  def get_table(table) do
     case valid_table?(table) do
       true -> Map.get(@valid_tables, table)
       false -> Map.get(@valid_tables, nil)
@@ -60,9 +63,10 @@ defmodule Malan.Pagination do
 
   def valid_table?(table), do: table in Map.keys(@valid_tables)
 
+  def max_page_size(table \\ nil)
   def max_page_size(table) when is_atom(table), do: max_page_size(Atom.to_string(table))
 
-  def max_page_size(table \\ nil) do
+  def max_page_size(table) do
     case valid_table?(table) do
       true -> get_table(table).max_page_size
       false -> @default_max_size

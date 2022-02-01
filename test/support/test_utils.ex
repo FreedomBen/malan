@@ -2,7 +2,7 @@ defmodule Malan.Test.Utils do
 end
 
 defmodule Malan.Test.Utils.Controller do
-  def set_params(%Plug.Conn{params: params} = conn, new_params) do
+  def set_params(%Plug.Conn{} = conn, new_params) do
     conn
     |> Map.put(:params, new_params)
   end
