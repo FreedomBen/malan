@@ -7,3 +7,6 @@ alias Malan.Accounts.User
 
 # Change user's password
 Accounts.update_user(user, %{"password" => "2YzMtYzdmN2"})
+
+# Lock the user's account
+Accounts.lock_user(user, nil)
