@@ -60,8 +60,9 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Supplement Plug's list of statuses
+# https://github.com/elixir-plug/plug/blob/master/lib/plug/conn/status.ex#L8-L72
 config :plug, :statuses, %{
-  429 => "Too Many Requests",
   461 => "Terms of Service Required",
   462 => "Privacy Policy Required"
 }
