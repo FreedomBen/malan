@@ -25,7 +25,8 @@ config :malan, Malan.Accounts.Session,
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
   url: [host: System.get_env("BIND_ADDR") || "127.0.0.1"],
-  render_errors: [view: MalanWeb.ErrorView, accepts: ~w(html json), layout: false],
+  # render_errors: [view: MalanWeb.ErrorView, accepts: ~w(html json), layout: false],
+  render_errors: [view: MalanWeb.ErrorView, accepts: ~w(json), layout: false],
   pubsub_server: Malan.PubSub,
   live_view: [signing_salt: "S5EXJrIi"]
 
