@@ -1,0 +1,3 @@
+<div>
+  <h1>Welcome to Ameelio, <%= @name %>!</h1>
+</div>

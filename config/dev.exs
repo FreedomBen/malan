@@ -83,3 +83,6 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Configure swoosh mailer to use the local in memory mailbox
+config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Local

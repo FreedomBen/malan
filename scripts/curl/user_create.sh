@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
 
-MALAN_HOST='https://malan-staging.ameelio.org'
+#MALAN_HOST='https://malan-staging.ameelio.org'
+MALAN_HOST='http://localhost:4000'
 
 # Regular user
-NEW_EMAIL="TestUser1@example.com"
-NEW_USERNAME="TestUser1"
+NEW_EMAIL="TestUser2@example.com"
+NEW_USERNAME="TestUser2"
 NEW_PASSWORD="Password1000"
 NEW_LAST_NAME="McTesterson"
 NEW_FIRST_NAME="Testy"
 
-# First get a token for the bootstrapped super user
-api_token="$(curl \
-               --request POST \
-               --header "Accept: application/json" \
-               --header "Content-Type: application/json" \
-               --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
-               "${MALAN_HOST}/api/sessions/" \
-              | jq -r '.data.api_token')"
 
 # Now create the new user
 curl \

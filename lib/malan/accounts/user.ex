@@ -11,6 +11,8 @@ defmodule Malan.Accounts.User do
   alias Malan.Accounts.PrivacyPolicy
   alias Malan.Accounts.User
 
+  @derive {Swoosh.Email.Recipient, name: :first_name, address: :email}
+
   @prefix_deleted_user "|"
 
   @primary_key {:id, :binary_id, autogenerate: true}

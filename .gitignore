@@ -34,3 +34,5 @@ pgdata/
 
 # Secrets files in k8s
 k8s/*/secrets.yaml
+
+node_modules
