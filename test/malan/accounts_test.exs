@@ -820,9 +820,6 @@ defmodule Malan.AccountsTest do
       u3 = Accounts.get_user(u1.id)
       assert TestUtils.DateTime.within_last?(u3.locked_at, 2, :seconds)
       assert u1.id == u3.locked_by
-
-      # TODO: revokes all active sessions
-      # TODO: when locked, can't log in
     end
 
     test "unlock/1" do
