@@ -19,7 +19,10 @@ defmodule MalanWeb.UserController do
               :me,
               :current,
               :admin_reset_password,
-              :admin_reset_password_token
+              :admin_reset_password_token,
+              :reset_password,
+              :reset_password_token_user,
+              :reset_password_token
             ]
 
   def index(conn, _params) do
@@ -30,6 +33,8 @@ defmodule MalanWeb.UserController do
 
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
+      #Malan.Accounts.UserEmail.password_reset(user)
+      #|> Malan.Mailer.deliver()
       conn
       |> record_transaction(id, username, "POST", "#UserController.create/2")
       |> put_status(:created)
@@ -117,6 +122,52 @@ defmodule MalanWeb.UserController do
     end
   end
 
+  def whoami(conn, _params) do
+    case conn_to_session_info(conn) do
+      {:ok, user_id, _username, session_id, user_roles, expires_at, tos, pp} ->
+        render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
+
+      # {:error, :revoked}
+      # {:error, :expired}
+      # {:error, :not_found}
+      {:error, _} ->
+        send_resp(conn, :not_found, "")
+    end
+  end
+
+  def reset_password(conn, %{"id" => id}) do
+    user = Accounts.get_user_by_id_or_username(id)
+
+    if is_nil(user) do
+      render_user(conn, user)
+    else
+      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
+        record_transaction(conn, user.id, user.username, "POST", "#UserController.reset_password/2")
+
+        #email_token_to_user()
+
+        conn
+        |> put_status(200)
+        |> json(%{ok: true})
+      end
+    end
+  end
+
+  def reset_password_token_user(conn, %{"id" => id, "token" => token, "new_password" => new_password}) do
+    user = Accounts.get_user_by_id_or_username(id)
+    reset_password_token_p(conn, user, token, new_password)
+  end
+
+  def reset_password_token(conn, %{"token" => token, "new_password" => new_password}) do
+    user = Accounts.get_user_by_password_reset_token(token)
+    reset_password_token_p(conn, user, token, new_password)
+  end
+
+  defp reset_password_token_p(conn, user, token, new_password) do
+    # TODO: Refactor to remove this function and rename admin_reset_password_token_p to reset_password_token_p
+    admin_reset_password_token_p(conn, user, token, new_password)
+  end
+
   def admin_reset_password(conn, %{"id" => id}) do
     user = Accounts.get_user_by_id_or_username(id)
 
@@ -128,25 +179,12 @@ defmodule MalanWeb.UserController do
           conn,
           user.id,
           user.username,
-          "PUT",
+          "POST",
           "#UserController.admin_reset_password/2"
         )
 
-        render_password_reset(conn, user)
+        render_admin_password_reset(conn, user)
       end
-    end
-  end
-
-  def whoami(conn, _params) do
-    case conn_to_session_info(conn) do
-      {:ok, user_id, _username, session_id, user_roles, expires_at, tos, pp} ->
-        render_whoami(conn, user_id, session_id, user_roles, expires_at, tos, pp)
-
-      # {:error, :revoked}
-      # {:error, :expired}
-      # {:error, :not_found}
-      {:error, _} ->
-        send_resp(conn, :not_found, "")
     end
   end
 
@@ -248,7 +286,7 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  defp render_password_reset(conn, user) do
+  defp render_admin_password_reset(conn, user) do
     render(
       conn,
       "password_reset.json",
