@@ -8,6 +8,6 @@ defmodule MalanWeb.UserNotifier do
     |> from("tony@stark.com")
     |> to(user.email)
     |> subject("Hello, Avengers!")
-    |> render_body("welcome.html", %{name: name})
+    |> render_body("welcome.html", %{name: user.name})
   end
 end
