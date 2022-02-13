@@ -7,6 +7,9 @@ defmodule MalanWeb.UserController do
 
   alias Malan.Accounts
   alias Malan.Accounts.User
+  alias Malan.Mailer
+
+  alias MalanWeb.UserNotifier
 
   action_fallback MalanWeb.FallbackController
 
@@ -33,8 +36,8 @@ defmodule MalanWeb.UserController do
 
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
-      #Malan.Accounts.UserEmail.password_reset(user)
-      #|> Malan.Mailer.deliver()
+      #UserNotifier.email_welcome_confirm(user)
+      #|> Mailer.deliver()
       conn
       |> record_transaction(id, username, "POST", "#UserController.create/2")
       |> put_status(:created)
@@ -144,7 +147,9 @@ defmodule MalanWeb.UserController do
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
         record_transaction(conn, user.id, user.username, "POST", "#UserController.reset_password/2")
 
-        #email_token_to_user()
+        # Send user the token through email
+        UserNotifier.password_reset_email(user)
+        |> Mailer.deliver()
 
         conn
         |> put_status(200)

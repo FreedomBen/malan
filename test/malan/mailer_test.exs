@@ -2,7 +2,6 @@ defmodule Malan.MailerTest do
   #use ExUnit.Case, async: false
   use Malan.DataCase, async: true
 
-  alias Malan.Accounts
   #alias Malan.Test.Utils, as: TestUtils
   alias Malan.Test.Helpers
   alias Malan.Mailer
@@ -10,7 +9,7 @@ defmodule Malan.MailerTest do
   describe "Malan.Pagination.PageOutOfBounds" do
     test "Sends mail" do
       {:ok, user} = Helpers.Accounts.regular_user()
-      email = Accounts.UserEmail.password_reset(user)
+      email = MalanWeb.UserNotifier.password_reset_email(user)
       #Swoosh.Adapters.Test.deliver(email, [])
       Mailer.deliver(email)
       Swoosh.TestAssertions.assert_email_sent(email)

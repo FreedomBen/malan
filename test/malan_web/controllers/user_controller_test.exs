@@ -1,6 +1,8 @@
 defmodule MalanWeb.UserControllerTest do
   use MalanWeb.ConnCase, async: true
 
+  # import Swoosh.TestAssertions, only: [assert_email_sent: 0, assert_email_sent: 1]
+
   alias Malan.Accounts
   alias Malan.Accounts.{User, Session, Transaction}
   alias Malan.Utils
@@ -8,6 +10,8 @@ defmodule MalanWeb.UserControllerTest do
 
   alias Malan.Test.Helpers
   alias Malan.Test.Utils, as: TestUtils
+
+  # alias MalanWeb.UserNotifier
 
   @create_attrs %{
     email: "some@email.com",
@@ -1283,8 +1287,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      password_reset_token = String.duplicate("A", 65)
-      # TODO
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1390,8 +1394,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      password_reset_token = String.duplicate("A", 65)
-      # TODO
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1456,8 +1460,9 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      password_reset_token_1 = String.duplicate("A", 65)
-      # TODO
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_1}}} =
+        assert_and_receive_email(user, "Password Reset Token")
+
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
       # Get a second password reset token
@@ -1467,7 +1472,9 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      password_reset_token_2 = String.duplicate("B", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_2}}} =
+        assert_and_receive_email(user, "Password Reset Token")
+
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
       # Now try to change password with token 1 and make sure it fails
@@ -1549,8 +1556,9 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      password_reset_token = String.duplicate("A", 65)
-      # TODO
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
+
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
       # Set the expiration time into the past so the token is expired
@@ -1609,8 +1617,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1669,8 +1677,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1719,12 +1727,12 @@ defmodule MalanWeb.UserControllerTest do
       # Second get a password reset token
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
-      assert %{"ok" => true} = json_response(conn, 200)["data"]
+      assert %{"ok" => true} = json_response(conn, 200)
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1786,8 +1794,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token_1 = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_1}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1798,8 +1806,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token_2 = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_2}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1869,8 +1877,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1908,8 +1916,7 @@ defmodule MalanWeb.UserControllerTest do
 
     test "Creates a corresponding transaction", %{
       conn: conn,
-      user: %User{id: id} = _user,
-      session: %Session{} = _session
+      user: %User{id: id} = user
     } do
       new_password = "bensonwinifredpayne"
 
@@ -1919,8 +1926,8 @@ defmodule MalanWeb.UserControllerTest do
 
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
-      # TODO
-      password_reset_token = String.duplicate("A", 65)
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Password Reset Token")
 
       assert %{"ok" => true} = json_response(conn, 200)
 
@@ -1941,9 +1948,9 @@ defmodule MalanWeb.UserControllerTest do
             user_id: nil,
             session_id: nil,
             type_enum: 0,
-            verb_enum: 2,
+            verb_enum: _,
             who: ^id,
-            what: "#UserController.reset_password_token/3",
+            what: _,
             when: when_utc
           } = t
 
@@ -2985,5 +2992,18 @@ defmodule MalanWeb.UserControllerTest do
   defp create_regular_user_with_session(_) do
     {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
     %{user: user, session: session}
+  end
+
+  defp assert_and_receive_email(user, subject) do
+    #assert_email_sent(to: {user.first_name, user.email})
+
+    receive do
+      {:email, email} ->
+        assert email.subject == subject
+        assert email.to == [{user.first_name, user.email}]
+        email
+    after
+      1_000 -> flunk("Email not received")
+    end
   end
 end
