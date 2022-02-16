@@ -1,4 +1,4 @@
-defmodule MalanWeb.UserLive.ResetPassword do
+defmodule MalanWeb.UserLive.ResetPasswordToken do
   use MalanWeb, :live_view
 
   @impl true
