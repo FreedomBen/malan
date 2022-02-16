@@ -17,6 +17,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
   end
 
   # # Render HTML to client
+  # # Leaving unimplemented so we render reset_password.html.heex
   # @impl true
   # def render(assigns) do
   #   Phoenix.View.render(MalanWeb.PageView, "reset_password.html", assigns)
