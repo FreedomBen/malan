@@ -65,8 +65,8 @@ defmodule MalanWeb.Router do
   scope "/", MalanWeb do
     pipe_through :browser
 
-    live "/users/reset_password", UserLive.ResetPassword
-    live "/users/reset_password/:token", UserLive.ResetPasswordToken
+    #live "/users/reset_password", UserLive.ResetPassword
+    #live "/users/reset_password/:token", UserLive.ResetPasswordToken
   end
 
   scope "/health_check", MalanWeb, log: false do
@@ -81,9 +81,9 @@ defmodule MalanWeb.Router do
     post "/sessions", SessionController, :create
     get "/users/whoami", UserController, :whoami
 
-    post "/users/:id/reset_password", UserController, :reset_password
-    put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
-    put "/users/reset_password/:token", UserController, :reset_password_token
+    #post "/users/:id/reset_password", UserController, :reset_password
+    #put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
+    #put "/users/reset_password/:token", UserController, :reset_password_token
   end
 
   scope "/api", MalanWeb do
