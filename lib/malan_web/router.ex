@@ -81,9 +81,9 @@ defmodule MalanWeb.Router do
     post "/sessions", SessionController, :create
     get "/users/whoami", UserController, :whoami
 
-    #post "/users/:id/reset_password", UserController, :reset_password
-    #put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
-    #put "/users/reset_password/:token", UserController, :reset_password_token
+    post "/users/:id/reset_password", UserController, :reset_password
+    put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
+    put "/users/reset_password/:token", UserController, :reset_password_token
   end
 
   scope "/api", MalanWeb do
