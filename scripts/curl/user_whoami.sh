@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-MALAN_ENDPOINT='https://malan.ameelio.org'
+#MALAN_ENDPOINT='http://localhost:4000'
+MALAN_ENDPOINT='https://malan-staging.ameelio.org'
+
+USERNAME='ben@ameelio.org'
+#USERNAME='root@example.com'
+#PASSWORD='password10'
+PASSWORD='Password1000'
 
 api_token="$(curl \
                --request POST \

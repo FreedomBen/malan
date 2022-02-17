@@ -17,7 +17,7 @@ defmodule MalanWeb.UserNotifier do
   def password_reset_email(user) do
     new()
     |> to(user)
-    |> from({"Ameelio", "noreply@ameelio.org"})
+    |> from({"Ameelio Support Team", "noreply@ameelio.org"})
     |> subject("Your requested password reset token")
     |> render_body("password_reset_email.html", %{
       user: user,
