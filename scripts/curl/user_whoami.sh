@@ -6,7 +6,7 @@ api_token="$(curl \
                --request POST \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
-               --data '{"session":{"email":"root@example.com","username":"root","password":"password10"}}' \
+               --data "{\"session\":{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}}" \
                "${MALAN_ENDPOINT}/api/sessions/" \
               | jq -r .data.api_token)"
 
