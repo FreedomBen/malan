@@ -53,6 +53,7 @@ data:
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '3'
   DB_POOL_SIZE: '3'
+  MAILGUN_DOMAIN: 'sandboxd0311bf768db4679945035aea547b6e7.mailgun.org'
 
 ---
 apiVersion: v1
