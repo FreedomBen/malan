@@ -4,14 +4,14 @@
 MALAN_ENDPOINT="https://malan-staging.ameelio.org"
 
 # Get this from the email
-RESET_TOKEN="Ce7h4bMl7vkMymKPvFt6ykVLNVXRW1u9KdvLICC1z3QflWSw5Aa0YCdTfq3on1sxS"
+RESET_TOKEN="vRZsBuKGp208bhNjOgNzPGCZlXbu2uY3lKqYtXCNaOyfRT579dz9UXAwZ0hBUC9zy"
 
 USERNAME='ben@ameelio.org'
 
 NEW_PASSWORD='floyvenmaven'
 
 curl \
-  --request POST \
+  --request PUT \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
   --data "{\"new_password\":\"${NEW_PASSWORD}\"}" \
