@@ -1288,7 +1288,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1395,7 +1395,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1461,7 +1461,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_1}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1473,7 +1473,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_2}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1557,7 +1557,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1618,7 +1618,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1678,7 +1678,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1732,7 +1732,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1795,7 +1795,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_1}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1807,7 +1807,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token_2}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token_2 =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1878,7 +1878,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
 
@@ -1927,7 +1927,7 @@ defmodule MalanWeb.UserControllerTest do
       # Retrieve the reset token from the email.
       # The database token is hashed so we can't get it from there.
       %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
-        assert_and_receive_email(user, "Password Reset Token")
+        assert_and_receive_email(user, "Your requested password reset token")
 
       assert %{"ok" => true} = json_response(conn, 200)
 
