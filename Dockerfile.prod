@@ -73,6 +73,7 @@ COPY --chown=docker:docker scripts /app/scripts
 COPY --chown=docker:docker priv /app/priv
 COPY --chown=docker:docker lib /app/lib
 COPY --chown=docker:docker test /app/test
+COPY --chown=docker:docker .iex.exs /app
 
 RUN mix compile
 
