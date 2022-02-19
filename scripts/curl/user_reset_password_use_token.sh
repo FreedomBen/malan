@@ -4,11 +4,11 @@
 MALAN_ENDPOINT="https://malan-staging.ameelio.org"
 
 # Get this from the email
-RESET_TOKEN="vRZsBuKGp208bhNjOgNzPGCZlXbu2uY3lKqYtXCNaOyfRT579dz9UXAwZ0hBUC9zy"
+RESET_TOKEN="5u0ODwJchD4yUuNCaVzbNfcD5Nonj8MKo6HvQa5gHNLRM2RpfVfR1pOZy01FY5BlK"
 
 USERNAME='ben@ameelio.org'
 
-NEW_PASSWORD='floyvenmaven'
+NEW_PASSWORD='password10'
 
 curl \
   --request PUT \

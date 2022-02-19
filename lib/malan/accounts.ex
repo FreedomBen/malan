@@ -467,7 +467,8 @@ defmodule Malan.Accounts do
     )
   end
 
-  def list_active_sessions(%User{id: id}, page_num, page_size), do: list_active_sessions(id, page_num, page_size)
+  def list_active_sessions(%User{id: id}, page_num, page_size),
+    do: list_active_sessions(id, page_num, page_size)
 
   def list_active_sessions(user_id, page_num, page_size) do
     Repo.all(
@@ -567,9 +568,14 @@ defmodule Malan.Accounts do
   """
   def authenticate_by_username_pass(username, given_pass) do
     case get_user_id_pass_hash_by_username(username) do
-      {user_id, password_hash, nil} -> verify_pass(user_id, given_pass, password_hash)
-      {user_id, password_hash, locked_at} -> verify_pass_locked(user_id, given_pass, password_hash, locked_at)
-      nil -> fake_pass_verify(:not_a_user)
+      {user_id, password_hash, nil} ->
+        verify_pass(user_id, given_pass, password_hash)
+
+      {user_id, password_hash, locked_at} ->
+        verify_pass_locked(user_id, given_pass, password_hash, locked_at)
+
+      nil ->
+        fake_pass_verify(:not_a_user)
     end
   end
 
@@ -1234,8 +1240,13 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
-  def list_transactions do
-    Repo.all(Transaction)
+  def list_transactions(page_num, page_size) do
+    from(t in Transaction,
+      select: t,
+      limit: ^page_size,
+      offset: ^(page_num * page_size)
+    )
+    |> Repo.all()
   end
 
   @doc """
@@ -1247,18 +1258,19 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
-  def list_transactions(%User{id: user_id}), do: list_transactions(user_id)
+  def list_transactions(%User{id: user_id}, page_num, page_size),
+    do: list_transactions(user_id, page_num, page_size)
 
-  def list_transactions(user_id_or_username) do
+  def list_transactions(user_id_or_username, page_num, page_size) do
     cond do
       user_id_or_username == nil ->
         []
 
       Utils.is_uuid?(user_id_or_username) ->
-        list_transactions_by_user_id(user_id_or_username)
+        list_transactions_by_user_id(user_id_or_username, page_num, page_size)
 
       true ->
-        list_transactions_by_username(user_id_or_username)
+        list_transactions_by_username(user_id_or_username, page_num, page_size)
     end
   end
 
@@ -1270,7 +1282,7 @@ defmodule Malan.Accounts do
   # SELECT t.* FROM transactions AS t JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
   # SELECT t.* FROM transactions AS t LEFT JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
   #
-  def list_transactions_by_username(username) do
+  def list_transactions_by_username(username, page_num, page_size) do
     # Initially attempted using a subquery in "where', but ran into a cast error.
     # Also found some docs that said that subqueries in ecto couldn't be used
     # in where clauses, but I don't think that's true anymore
@@ -1285,26 +1297,32 @@ defmodule Malan.Accounts do
     #     where: t.user_id == ^[subquery(user_id_q)]
     # )
 
+    from(t in Transaction,
+      select: t,
+      join: u in User,
+      on: u.username == ^username,
+      where: t.user_id == u.id,
+      limit: ^page_size,
+      offset: ^(page_num * page_size)
+    )
+    |> Repo.all()
+  end
+
+  def list_transactions_by_user_id(nil, page_num, page_size) do
     Repo.all(
       from t in Transaction,
-        select: t,
-        join: u in User,
-        on: u.username == ^username,
-        where: t.user_id == u.id
+        where: is_nil(t.user_id),
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
-  def list_transactions_by_user_id(nil) do
+  def list_transactions_by_user_id(user_id, page_num, page_size) do
     Repo.all(
       from t in Transaction,
-        where: is_nil(t.user_id)
-    )
-  end
-
-  def list_transactions_by_user_id(user_id) do
-    Repo.all(
-      from t in Transaction,
-        where: t.user_id == ^user_id
+        where: t.user_id == ^user_id,
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
@@ -1317,17 +1335,21 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
-  def list_transactions_by_session_id(nil) do
+  def list_transactions_by_session_id(nil, page_num, page_size) do
     Repo.all(
       from t in Transaction,
-        where: is_nil(t.session_id)
+        where: is_nil(t.session_id),
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
-  def list_transactions_by_session_id(session_id) do
+  def list_transactions_by_session_id(session_id, page_num, page_size) do
     Repo.all(
       from t in Transaction,
-        where: t.session_id == ^session_id
+        where: t.session_id == ^session_id,
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 
@@ -1340,10 +1362,12 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
-  def list_transactions_by_who(user_id) do
+  def list_transactions_by_who(user_id, page_num, page_size) do
     Repo.all(
       from t in Transaction,
-        where: t.who == ^user_id
+        where: t.who == ^user_id,
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
     )
   end
 

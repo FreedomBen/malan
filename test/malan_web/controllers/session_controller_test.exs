@@ -177,12 +177,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
   end
 
@@ -628,12 +628,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(id)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
 
     test "Create session fails when user is locked; creates Transaction", %{conn: conn} do
@@ -660,12 +660,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: ^username,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
   end
 
@@ -720,12 +720,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(id)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
   end
 
@@ -766,12 +766,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(id)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
   end
 
@@ -864,12 +864,12 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(user_id)
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(s1_id)
-      assert [tx] == Accounts.list_transactions_by_who(user_id)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(s1_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
 
     test "Does not change previously closed sessions", %{conn: conn} do

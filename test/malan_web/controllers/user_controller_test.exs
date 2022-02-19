@@ -537,12 +537,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 
@@ -886,12 +886,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(id)
-      assert [tx] == Accounts.list_transactions_by_session_id(session_id)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 
@@ -1086,12 +1086,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 
@@ -1128,12 +1128,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(id)
-      assert [tx] == Accounts.list_transactions_by_session_id(session_id)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 
@@ -1258,12 +1258,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 
@@ -1961,7 +1961,7 @@ defmodule MalanWeb.UserControllerTest do
         end
       end
 
-      trans_by_who = Accounts.list_transactions_by_who(id)
+      trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
       assert 2 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
@@ -1971,7 +1971,7 @@ defmodule MalanWeb.UserControllerTest do
                end
              end)
 
-      trans_by_user_id = Accounts.list_transactions_by_user_id(nil)
+      trans_by_user_id = Accounts.list_transactions_by_user_id(nil, 0, 10)
       assert 2 == length(trans_by_user_id)
 
       assert Enum.any?(trans_by_user_id, fn t ->
@@ -1981,7 +1981,7 @@ defmodule MalanWeb.UserControllerTest do
                end
              end)
 
-      trans_by_session_id = Accounts.list_transactions_by_session_id(nil)
+      trans_by_session_id = Accounts.list_transactions_by_session_id(nil, 0, 10)
       assert 2 == length(trans_by_session_id)
 
       assert Enum.any?(trans_by_session_id, fn t ->
@@ -2742,7 +2742,7 @@ defmodule MalanWeb.UserControllerTest do
         end
       end
 
-      trans_by_who = Accounts.list_transactions_by_who(id)
+      trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
       assert 2 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
@@ -2752,7 +2752,7 @@ defmodule MalanWeb.UserControllerTest do
                end
              end)
 
-      trans_by_user_id = Accounts.list_transactions_by_user_id(admin_user_id)
+      trans_by_user_id = Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
       assert 2 == length(trans_by_user_id)
 
       assert Enum.any?(trans_by_user_id, fn t ->
@@ -2762,7 +2762,7 @@ defmodule MalanWeb.UserControllerTest do
                end
              end)
 
-      trans_by_session_id = Accounts.list_transactions_by_session_id(admin_session_id)
+      trans_by_session_id = Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
       assert 2 == length(trans_by_session_id)
 
       assert Enum.any?(trans_by_session_id, fn t ->
@@ -2839,12 +2839,12 @@ defmodule MalanWeb.UserControllerTest do
                  who: ^id,
                  when: when_utc
                } = tx
-             ] = Accounts.list_transactions_by_who(id)
+             ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id)
-      assert [tx] == Accounts.list_transactions_by_who(id)
+      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
   end
 

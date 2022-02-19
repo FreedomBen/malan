@@ -1559,13 +1559,13 @@ defmodule Malan.AccountsTest do
 
     test "list_transactions/0 returns all transactions" do
       {:ok, _user, _session, transaction} = transaction_fixture()
-      assert Accounts.list_transactions() == [transaction_fixture_to_retrieved(transaction)]
+      assert Accounts.list_transactions(0, 10) == [transaction_fixture_to_retrieved(transaction)]
     end
 
     test "list_transactions/1 returns all transactions for user" do
       {:ok, u1, _s1, t1} = transaction_fixture()
       {:ok, _u2, _s2, _t2} = transaction_fixture()
-      assert Accounts.list_transactions(u1.id) == [transaction_fixture_to_retrieved(t1)]
+      assert Accounts.list_transactions(u1.id, 0, 10) == [transaction_fixture_to_retrieved(t1)]
     end
 
     test "get_transaction!/1 returns the transaction with given id" do

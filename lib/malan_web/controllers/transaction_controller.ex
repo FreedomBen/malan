@@ -1,11 +1,23 @@
 defmodule MalanWeb.TransactionController do
   use MalanWeb, :controller
 
+  import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+
   alias Malan.Accounts
 
   action_fallback MalanWeb.FallbackController
 
   plug :is_transaction_user_or_admin when action in [:show]
+
+  plug :require_pagination,
+       [table: "transactions"]
+       when action in [
+              :user_index,
+              :admin_index,
+              :users,
+              :sessions,
+              :who
+            ]
 
   # User ID of the user who made the change (token owner).
   # Must be the same as the user_id of the event for it to be returned
@@ -14,8 +26,14 @@ defmodule MalanWeb.TransactionController do
   end
 
   def user_index(conn, %{"user_id" => user_id_or_username}) do
-    transactions = Accounts.list_transactions(user_id_or_username)
-    render(conn, "index.json", transactions: transactions)
+    {page_num, page_size} = pagination_info(conn)
+    transactions = Accounts.list_transactions(user_id_or_username, page_num, page_size)
+
+    render(conn, "index.json",
+      transactions: transactions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   # No user_id specified
@@ -24,27 +42,51 @@ defmodule MalanWeb.TransactionController do
   end
 
   def admin_index(conn, _params) do
-    transactions = Accounts.list_transactions()
-    render(conn, "index.json", transactions: transactions)
+    {page_num, page_size} = pagination_info(conn)
+    transactions = Accounts.list_transactions(page_num, page_size)
+
+    render(conn, "index.json",
+      transactions: transactions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   # User ID of the user who made the change (token owner) (Admin endpoint)
   def users(conn, %{"user_id" => user_id}) do
+    {page_num, page_size} = pagination_info(conn)
     user = Accounts.get_user_by_id_or_username(user_id)
-    transactions = Accounts.list_transactions(user)
-    render(conn, "index.json", transactions: transactions)
+    transactions = Accounts.list_transactions(user, page_num, page_size)
+
+    render(conn, "index.json",
+      transactions: transactions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   # Session ID of session who made the change
   def sessions(conn, %{"session_id" => session_id}) do
-    transactions = Accounts.list_transactions_by_session_id(session_id)
-    render(conn, "index.json", transactions: transactions)
+    {page_num, page_size} = pagination_info(conn)
+    transactions = Accounts.list_transactions_by_session_id(session_id, page_num, page_size)
+
+    render(conn, "index.json",
+      transactions: transactions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   # User ID of target/who was modified
   def who(conn, %{"user_id" => user_id}) do
-    transactions = Accounts.list_transactions_by_who(user_id)
-    render(conn, "index.json", transactions: transactions)
+    {page_num, page_size} = pagination_info(conn)
+    transactions = Accounts.list_transactions_by_who(user_id, page_num, page_size)
+
+    render(conn, "index.json",
+      transactions: transactions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   # Transaction ID
