@@ -721,7 +721,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
         )
 
       # recursive
@@ -747,7 +747,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}"
         )
 
       # recursive
@@ -773,7 +773,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}"
         )
 
       # recursive
