@@ -642,8 +642,26 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       {:ok, user} = Helpers.Accounts.lock_user(user)
+
       user_id = user.id
       username = user.username
+
+      # Check that a transaction was created when we revoked all active sessions,
+      # which happened because we locked the user
+      assert [
+               %Transaction{
+                 success: true,
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 who_username: nil,
+                 when: when_utc
+               } = tx_locked
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
 
       conn =
         post(conn, Routes.session_path(conn, :create),
@@ -653,6 +671,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{"detail" => "Locked"} = json_response(conn, 423)["errors"]
 
       assert [
+               ^tx_locked,
                %Transaction{
                  success: false,
                  user_id: ^user_id,
@@ -662,13 +681,13 @@ defmodule MalanWeb.SessionControllerTest do
                  who: ^user_id,
                  who_username: ^username,
                  when: when_utc
-               } = tx
+               } = tx,
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [tx_locked, tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
   end
 
@@ -859,8 +878,20 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(conn, s1.api_token)
       _conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
 
+      # :delete_all triggers revoking of all sessions which creates a transaction
       assert [
                %Transaction{
+                 success: true,
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^user_id,
+                 who_username: nil,
+                 when: when_utc_locked
+               } = tx_locked,
+               %Transaction{
+                 success: true,
                  user_id: ^user_id,
                  session_id: ^s1_id,
                  type_enum: 1,
@@ -871,10 +902,11 @@ defmodule MalanWeb.SessionControllerTest do
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
+      assert true == TestUtils.DateTime.within_last?(when_utc_locked, 2, :seconds)
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
       assert [tx] == Accounts.list_transactions_by_session_id(s1_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
     end
 
     test "Does not change previously closed sessions", %{conn: conn} do
