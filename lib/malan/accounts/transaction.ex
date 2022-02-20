@@ -19,6 +19,7 @@ defmodule Malan.Accounts.Transaction do
     field :session_id, :binary_id, null: true # Session making the change (session ownign the token that changed something)
     field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
     field :who_username, :string, null: true  # Which user was modified/changed/created/etc
+    field :changeset, :map, default: %{}      # If applicable, the changeset involved
 
     field :type, :string, virtual: true
     field :verb, :string, virtual: true
@@ -38,7 +39,8 @@ defmodule Malan.Accounts.Transaction do
       :type,
       :verb,
       :when,
-      :what
+      :what,
+      :changeset
     ])
     |> put_default_when()
     |> validate_required([:success, :type, :verb, :when, :what])

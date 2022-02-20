@@ -37,11 +37,13 @@ defmodule MalanWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
+    changeset = User.registration_changeset(%User{}, user_params)
+
     with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
       # UserNotifier.email_welcome_confirm(user)
       # |> Mailer.deliver()
       conn
-      |> record_transaction(true, id, username, "POST", "#UserController.create/2")
+      |> record_transaction(true, id, username, "POST", "#UserController.create/2", changeset)
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
       |> render("show.json", user: user)
@@ -55,7 +57,8 @@ defmodule MalanWeb.UserController do
           nil,
           user_params["username"],
           "POST",
-          "#UserController.create/2 - User account creation failed: #{err_str}"
+          "#UserController.create/2 - User account creation failed: #{err_str}",
+          changeset
         )
 
         {:error, err}
@@ -82,8 +85,9 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.update_changeset(user, user_params)
       with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.update/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.update/2", changeset)
         render(conn, "show.json", user: user)
       else
         {:error, err} ->
@@ -95,7 +99,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "PUT",
-            "#UserController.update/2 - User update failed: #{err_str}"
+            "#UserController.update/2 - User update failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -109,6 +114,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.admin_changeset(user, user_params)
       with {:ok, %User{} = user} <- Accounts.admin_update_user(user, user_params) do
         record_transaction(
           conn,
@@ -116,7 +122,8 @@ defmodule MalanWeb.UserController do
           user.id,
           user.username,
           "PUT",
-          "#UserController.admin_update/2"
+          "#UserController.admin_update/2",
+          changeset
         )
 
         render(conn, "show.json", user: user)
@@ -130,7 +137,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "PUT",
-            "#UserController.admin_update/2 - User update by admin failed: #{err_str}"
+            "#UserController.admin_update/2 - User update by admin failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -144,8 +152,9 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.lock_changeset(user, conn.assigns.authed_user_id)
       with {:ok, %User{} = user} <- Accounts.lock_user(user, conn.assigns.authed_user_id) do
-        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.lock/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.lock/2", changeset)
         render(conn, "show.json", user: user)
       else
         {:error, %Ecto.Changeset{} = cs} ->
@@ -157,7 +166,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "PUT",
-            "#UserController.lock/2 - User lock failed: #{err_str}"
+            "#UserController.lock/2 - User lock failed: #{err_str}",
+            changeset
           )
 
           {:error, cs}
@@ -169,7 +179,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "PUT",
-            "#UserController.lock/2 - User lock failed: #{Kernel.inspect(err)}"
+            "#UserController.lock/2 - User lock failed: #{Kernel.inspect(err)}",
+            changeset
           )
 
           {:error, err}
@@ -183,8 +194,9 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.unlock_changeset(user)
       with {:ok, %User{} = user} <- Accounts.unlock_user(user) do
-        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.unlock/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.unlock/2", changeset)
         render(conn, "show.json", user: user)
       else
         {:error, err} ->
@@ -196,7 +208,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "PUT",
-            "#UserController.unlock/2 - User unlock failed: #{err_str}"
+            "#UserController.unlock/2 - User unlock failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -210,6 +223,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.delete_changeset(user)
       with {:ok, %User{}} <- Accounts.delete_user(user) do
         record_transaction(
           conn,
@@ -217,7 +231,8 @@ defmodule MalanWeb.UserController do
           user.id,
           user.username,
           "DELETE",
-          "#UserController.delete/2"
+          "#UserController.delete/2",
+          changeset
         )
 
         send_resp(conn, :no_content, "")
@@ -231,7 +246,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "DELETE",
-            "#UserController.delete/2 - User delete failed: #{err_str}"
+            "#UserController.delete/2 - User delete failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -258,6 +274,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.password_reset_create_changeset()
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
         record_transaction(
           conn,
@@ -265,7 +282,8 @@ defmodule MalanWeb.UserController do
           user.id,
           user.username,
           "POST",
-          "#UserController.reset_password/2"
+          "#UserController.reset_password/2",
+          changeset
         )
 
         # Send user the token through email
@@ -285,7 +303,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "POST",
-            "#UserController.reset_password/2 - User reset password failed: #{err_str}"
+            "#UserController.reset_password/2 - User reset password failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -318,6 +337,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
+      changeset = User.password_reset_create_changeset(user)
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
         record_transaction(
           conn,
@@ -325,7 +345,8 @@ defmodule MalanWeb.UserController do
           user.id,
           user.username,
           "POST",
-          "#UserController.admin_reset_password/2"
+          "#UserController.admin_reset_password/2",
+          changeset
         )
 
         render_admin_password_reset(conn, user)
@@ -339,7 +360,8 @@ defmodule MalanWeb.UserController do
             user.id,
             user.username,
             "POST",
-            "#UserController.admin_reset_password/2 - User admin reset password failed: #{err_str}"
+            "#UserController.admin_reset_password/2 - User admin reset password failed: #{err_str}",
+            changeset
           )
 
           {:error, err}
@@ -373,6 +395,8 @@ defmodule MalanWeb.UserController do
     do: render_user(conn, nil)
 
   defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
+    changeset = User.update_changeset(user, %{"password" => Utils.masK_str(new_password)})
+
     with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
       record_transaction(
         conn,
@@ -380,7 +404,8 @@ defmodule MalanWeb.UserController do
         user.id,
         user.username,
         "PUT",
-        "#UserController.admin_reset_password_token/3"
+        "#UserController.admin_reset_password_token/3",
+        changeset
       )
 
       conn
@@ -389,7 +414,7 @@ defmodule MalanWeb.UserController do
     else
       {:error, :missing_password_reset_token = err} ->
         conn
-        |> record_tx_admin_reset_password_token_fail(user, err)
+        |> record_tx_admin_reset_password_token_fail(user, err, changeset)
         |> put_status(401)
         |> json(%{
           ok: false,
@@ -399,7 +424,7 @@ defmodule MalanWeb.UserController do
 
       {:error, :invalid_password_reset_token = err} ->
         conn
-        |> record_tx_admin_reset_password_token_fail(user, err)
+        |> record_tx_admin_reset_password_token_fail(user, err, changeset)
         |> put_status(401)
         |> json(%{
           ok: false,
@@ -409,7 +434,7 @@ defmodule MalanWeb.UserController do
 
       {:error, :expired_password_reset_token = err} ->
         conn
-        |> record_tx_admin_reset_password_token_fail(user, err)
+        |> record_tx_admin_reset_password_token_fail(user, err, changeset)
         |> put_status(401)
         |> json(%{
           ok: false,
@@ -419,20 +444,21 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  defp record_tx_admin_reset_password_token_fail(conn, user, err) do
+  defp record_tx_admin_reset_password_token_fail(conn, user, err, changeset) do
     record_transaction(
       conn,
       false,
       user.id,
       user.username,
       "PUT",
-      "#UserController.admin_reset_password_token/3 - Err: #{err}"
+      "#UserController.admin_reset_password_token/3 - Err: #{err}",
+      changeset
     )
 
     conn
   end
 
-  defp record_transaction(conn, success?, who, who_username, verb, what) do
+  defp record_transaction(conn, success?, who, who_username, verb, what, changeset) do
     {user_id, session_id} = authed_user_and_session(conn)
 
     Accounts.record_transaction(
@@ -443,7 +469,8 @@ defmodule MalanWeb.UserController do
       who_username,
       "users",
       verb,
-      what
+      what,
+      changeset
     )
 
     conn

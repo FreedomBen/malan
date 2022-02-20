@@ -15,6 +15,7 @@ defmodule MalanWeb.TransactionView do
   def render("transaction.json", %{transaction: transaction}) do
     %{
       id: transaction.id,
+      success: transaction.success,
       type: Transaction.Type.to_s(transaction.type_enum),
       verb: Transaction.Verb.to_s(transaction.verb_enum),
       when: transaction.when,

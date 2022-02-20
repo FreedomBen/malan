@@ -722,7 +722,8 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}",
+          %{}
         )
 
       # recursive
@@ -749,7 +750,8 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}",
+          %{}
         )
 
       # recursive
@@ -776,7 +778,8 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}"
+          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}",
+          %{}
         )
 
       # recursive
@@ -955,7 +958,8 @@ defmodule Malan.Accounts do
       nil,
       "sessions",
       "DELETE",
-      "#Accounts.revoke_active_sessions/1 - Revoked #{num_revoked} active sessions for user #{user_id}"
+      "#Accounts.revoke_active_sessions/1 - Revoked #{num_revoked} active sessions for user #{user_id}",
+      %{}
     )
 
     {:ok, num_revoked}
@@ -1484,9 +1488,10 @@ defmodule Malan.Accounts do
         type,
         verb,
         what,
+        changeset,
         when_utc \\ nil
       ) do
-    create_transaction(success?, user_id, session_id, who_id, who_username, %{
+    create_transaction(success?, user_id, session_id, who_id, who_username, changeset, %{
       "success" => success?,
       "type" => type,
       "verb" => verb,
@@ -1495,7 +1500,15 @@ defmodule Malan.Accounts do
     })
   end
 
-  def create_transaction(success?, user_id, session_id, who_id, who_username, attrs \\ %{}) do
+  def create_transaction(
+        success?,
+        user_id,
+        session_id,
+        who_id,
+        who_username,
+        changeset,
+        attrs \\ %{}
+      ) do
     %Transaction{}
     |> Transaction.create_changeset(
       Map.merge(attrs, %{
@@ -1503,7 +1516,8 @@ defmodule Malan.Accounts do
         "user_id" => user_id,
         "session_id" => session_id,
         "who" => who_id,
-        "who_username" => who_username
+        "who_username" => who_username,
+        "changeset" => changeset
       })
     )
     |> Repo.insert()
@@ -1514,8 +1528,8 @@ defmodule Malan.Accounts do
 
   Returns {:ok, transaction} on success or {:error, changeset} on failure
   """
-  def record_transaction(success?, user_id, session_id, who, who_username, type, verb, what) do
-    case create_transaction(success?, user_id, session_id, who, who_username, type, verb, what) do
+  def record_transaction(success?, user_id, session_id, who, who_username, type, verb, what, changeset) do
+    case create_transaction(success?, user_id, session_id, who, who_username, type, verb, what, changeset) do
       {:ok, transaction} ->
         {:ok, transaction}
 
