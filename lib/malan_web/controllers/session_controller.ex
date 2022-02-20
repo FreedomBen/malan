@@ -5,7 +5,7 @@ defmodule MalanWeb.SessionController do
 
   import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
 
-  alias Malan.Accounts
+  alias Malan.{Accounts, Utils}
   alias Malan.Accounts.Session
 
   alias MalanWeb.ErrorView
@@ -35,6 +35,19 @@ defmodule MalanWeb.SessionController do
       )
 
       render(conn, "show.json", session: session)
+    else
+      {:error, err} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+        record_transaction(
+          conn,
+          false,
+          session.user_id,
+          "DELETE",
+          "#SessionController.admin_delete/2 - Session admin deletion failed: #{err_str}"
+        )
+
+        {:error, err}
     end
   end
 
@@ -74,6 +87,8 @@ defmodule MalanWeb.SessionController do
       |> put_status(:created)
       |> render("show.json", session: session)
     else
+      # Logging of failed login attemps (aka session creation) currently happens
+      # in accounts.ex
       {:error, :user_locked} ->
         conn
         |> put_status(423)
@@ -103,6 +118,19 @@ defmodule MalanWeb.SessionController do
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
       record_transaction(conn, true, session.user_id, "DELETE", "#SessionController.delete/2")
       render(conn, "show.json", session: session)
+    else
+      {:error, err} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+        record_transaction(
+          conn,
+          false,
+          session.user_id,
+          "DELETE",
+          "#SessionController.delete/2 - Session deletion failed: #{err_str}"
+        )
+
+        {:error, err}
     end
   end
 
@@ -112,6 +140,19 @@ defmodule MalanWeb.SessionController do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
       record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2")
       render(conn, "delete_all.json", num_revoked: num_revoked)
+    else
+      {:error, err} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+        record_transaction(
+          conn,
+          false,
+          user_id,
+          "DELETE",
+          "#SessionController.delete_all/2 - Session delete all active failed: #{err_str}"
+        )
+
+        {:error, err}
     end
   end
 
