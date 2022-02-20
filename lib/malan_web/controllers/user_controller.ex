@@ -8,6 +8,7 @@ defmodule MalanWeb.UserController do
   alias Malan.Accounts
   alias Malan.Accounts.User
   alias Malan.Mailer
+  alias Malan.Utils
 
   alias MalanWeb.UserNotifier
 
@@ -36,13 +37,26 @@ defmodule MalanWeb.UserController do
 
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
-      #UserNotifier.email_welcome_confirm(user)
-      #|> Mailer.deliver()
+      # UserNotifier.email_welcome_confirm(user)
+      # |> Mailer.deliver()
       conn
       |> record_transaction(id, username, "POST", "#UserController.create/2")
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
       |> render("show.json", user: user)
+    else
+      {:error, err} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+        record_transaction(
+          conn,
+          nil,
+          user_params["username"],
+          "POST",
+          "#UserController.create/2 - User account creation failed: #{err_str}"
+        )
+
+        {:error, err}
     end
   end
 
