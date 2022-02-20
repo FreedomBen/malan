@@ -41,7 +41,7 @@ defmodule MalanWeb.UserController do
       # UserNotifier.email_welcome_confirm(user)
       # |> Mailer.deliver()
       conn
-      |> record_transaction(id, username, "POST", "#UserController.create/2")
+      |> record_transaction(true, id, username, "POST", "#UserController.create/2")
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
       |> render("show.json", user: user)
@@ -51,6 +51,7 @@ defmodule MalanWeb.UserController do
 
         record_transaction(
           conn,
+          false,
           nil,
           user_params["username"],
           "POST",
@@ -82,7 +83,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-        record_transaction(conn, user.id, user.username, "PUT", "#UserController.update/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.update/2")
         render(conn, "show.json", user: user)
       end
     end
@@ -95,7 +96,15 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.admin_update_user(user, user_params) do
-        record_transaction(conn, user.id, user.username, "PUT", "#UserController.admin_update/2")
+        record_transaction(
+          conn,
+          true,
+          user.id,
+          user.username,
+          "PUT",
+          "#UserController.admin_update/2"
+        )
+
         render(conn, "show.json", user: user)
       end
     end
@@ -108,7 +117,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.lock_user(user, conn.assigns.authed_user_id) do
-        record_transaction(conn, user.id, user.username, "PUT", "#UserController.lock/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.lock/2")
         render(conn, "show.json", user: user)
       end
     end
@@ -121,7 +130,7 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.unlock_user(user) do
-        record_transaction(conn, user.id, user.username, "PUT", "#UserController.unlock/2")
+        record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.unlock/2")
         render(conn, "show.json", user: user)
       end
     end
@@ -134,7 +143,15 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{}} <- Accounts.delete_user(user) do
-        record_transaction(conn, user.id, user.username, "DELETE", "#UserController.delete/2")
+        record_transaction(
+          conn,
+          true,
+          user.id,
+          user.username,
+          "DELETE",
+          "#UserController.delete/2"
+        )
+
         send_resp(conn, :no_content, "")
       end
     end
@@ -162,6 +179,7 @@ defmodule MalanWeb.UserController do
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
         record_transaction(
           conn,
+          true,
           user.id,
           user.username,
           "POST",
@@ -207,6 +225,7 @@ defmodule MalanWeb.UserController do
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
         record_transaction(
           conn,
+          true,
           user.id,
           user.username,
           "POST",
@@ -247,6 +266,7 @@ defmodule MalanWeb.UserController do
     with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
       record_transaction(
         conn,
+        true,
         user.id,
         user.username,
         "PUT",
@@ -286,9 +306,20 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  defp record_transaction(conn, who, who_username, verb, what) do
+  defp record_transaction(conn, success?, who, who_username, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
-    Accounts.record_transaction(user_id, session_id, who, who_username, "users", verb, what)
+
+    Accounts.record_transaction(
+      success?,
+      user_id,
+      session_id,
+      who,
+      who_username,
+      "users",
+      verb,
+      what
+    )
+
     conn
   end
 

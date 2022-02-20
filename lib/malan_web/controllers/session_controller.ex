@@ -26,7 +26,14 @@ defmodule MalanWeb.SessionController do
     session = Accounts.get_session!(id)
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
-      record_transaction(conn, session.user_id, "DELETE", "#SessionController.admin_delete/2")
+      record_transaction(
+        conn,
+        true,
+        session.user_id,
+        "DELETE",
+        "#SessionController.admin_delete/2"
+      )
+
       render(conn, "show.json", session: session)
     end
   end
@@ -57,6 +64,7 @@ defmodule MalanWeb.SessionController do
            Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
       record_transaction(
         %Plug.Conn{assigns: %{authed_user_id: session.user_id, authed_session_id: session.id}},
+        true,
         session.user_id,
         "POST",
         "#SessionController.create/2"
@@ -93,7 +101,7 @@ defmodule MalanWeb.SessionController do
     session = Accounts.get_session!(id)
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
-      record_transaction(conn, session.user_id, "DELETE", "#SessionController.delete/2")
+      record_transaction(conn, true, session.user_id, "DELETE", "#SessionController.delete/2")
       render(conn, "show.json", session: session)
     end
   end
@@ -102,14 +110,14 @@ defmodule MalanWeb.SessionController do
 
   def delete_all(conn, %{"user_id" => user_id}) do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
-      record_transaction(conn, user_id, "DELETE", "#SessionController.delete_all/2")
+      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2")
       render(conn, "delete_all.json", num_revoked: num_revoked)
     end
   end
 
-  defp record_transaction(conn, who, verb, what) do
+  defp record_transaction(conn, success?, who, verb, what) do
     {user_id, session_id} = authed_user_and_session(conn)
-    Accounts.record_transaction(user_id, session_id, who, nil, "sessions", verb, what)
+    Accounts.record_transaction(success?, user_id, session_id, who, nil, "sessions", verb, what)
     conn
   end
 

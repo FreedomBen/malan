@@ -1629,6 +1629,7 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, %Transaction{} = transaction} =
                Accounts.create_transaction(
+                 true,
                  user.id,
                  session.id,
                  user.id,

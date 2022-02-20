@@ -90,6 +90,7 @@ defmodule Malan.TransactionSchemaTest do
     test "#create_changeset/2 allows user id to be nil" do
       cs =
         Transaction.create_changeset(%Transaction{}, %{
+          success: true,
           sesson_id: "sid",
           who: Ecto.UUID.generate(),
           type: "users",
@@ -103,6 +104,7 @@ defmodule Malan.TransactionSchemaTest do
     test "#create_changeset/2 allows session id to be nil" do
       cs =
         Transaction.create_changeset(%Transaction{}, %{
+          success: false,
           user_id: "uid",
           who: Ecto.UUID.generate(),
           type: "users",
@@ -116,6 +118,7 @@ defmodule Malan.TransactionSchemaTest do
     test "#create_changeset/2 requires who to be a binary ID" do
       cs =
         Transaction.create_changeset(%Transaction{}, %{
+          success: true,
           user_id: "uid",
           who: Ecto.UUID.generate(),
           type: "users",
