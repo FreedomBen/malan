@@ -1997,7 +1997,7 @@ defmodule MalanWeb.UserControllerTest do
       end
 
       trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
-      assert 2 == length(trans_by_who)
+      assert 3 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
                case match_transaction_extract_when.(t) do
@@ -2007,7 +2007,7 @@ defmodule MalanWeb.UserControllerTest do
              end)
 
       trans_by_user_id = Accounts.list_transactions_by_user_id(nil, 0, 10)
-      assert 2 == length(trans_by_user_id)
+      assert 3 == length(trans_by_user_id)
 
       assert Enum.any?(trans_by_user_id, fn t ->
                case match_transaction_extract_when.(t) do
@@ -2017,7 +2017,7 @@ defmodule MalanWeb.UserControllerTest do
              end)
 
       trans_by_session_id = Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert 2 == length(trans_by_session_id)
+      assert 3 == length(trans_by_session_id)
 
       assert Enum.any?(trans_by_session_id, fn t ->
                case match_transaction_extract_when.(t) do
@@ -2779,7 +2779,7 @@ defmodule MalanWeb.UserControllerTest do
       end
 
       trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
-      assert 2 == length(trans_by_who)
+      assert 3 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
                case match_transaction_extract_when.(t) do
