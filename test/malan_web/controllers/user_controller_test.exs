@@ -545,6 +545,35 @@ defmodule MalanWeb.UserControllerTest do
       assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
       assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
+
+    test "Creates a transaction when create fails. Can't create user with a username that is already taken", %{conn: conn} do
+      #{:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      {:ok, %{username: username} = _user} = Helpers.Accounts.regular_user()
+
+      duplicate_username_attrs = Map.merge(@create_attrs, %{username: username})
+
+      conn = post(conn, Routes.user_path(conn, :create), user: duplicate_username_attrs)
+      # password should be included after creation
+      assert 422 == conn.status
+
+      assert [
+               %Transaction{
+                 success: false,
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 0,
+                 verb_enum: 1,
+                 who: nil,
+                 who_username: ^username,
+                 when: when_utc
+               } = tx
+             ] = Accounts.list_transactions_by_who(nil, 0, 10)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(nil, 0, 10)
+    end
   end
 
   describe "update user" do

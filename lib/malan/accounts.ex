@@ -1376,6 +1376,15 @@ defmodule Malan.Accounts do
       [%Transaction{}, ...]
 
   """
+  def list_transactions_by_who(nil, page_num, page_size) do
+    Repo.all(
+      from t in Transaction,
+        where: is_nil(t.who),
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
+    )
+  end
+
   def list_transactions_by_who(user_id, page_num, page_size) do
     Repo.all(
       from t in Transaction,
