@@ -169,6 +169,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
                  type_enum: 1,
@@ -620,6 +621,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^user_id,
                  session_id: ^id,
                  type_enum: 1,
@@ -652,6 +654,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert [
                %Transaction{
+                 success: false,
                  user_id: ^user_id,
                  session_id: nil,
                  type_enum: 1,
@@ -712,6 +715,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^user_id,
                  session_id: ^id,
                  type_enum: 1,
@@ -758,6 +762,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^user_id,
                  session_id: ^id,
                  type_enum: 1,
