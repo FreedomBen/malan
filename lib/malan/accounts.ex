@@ -947,6 +947,17 @@ defmodule Malan.Accounts do
         set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
       )
 
+    record_transaction(
+      true,
+      nil,
+      nil,
+      user_id,
+      nil,
+      "sessions",
+      "DELETE",
+      "#Accounts.revoke_active_sessions/1 - Revoked #{num_revoked} active sessions for user #{user_id}"
+    )
+
     {:ok, num_revoked}
   end
 
