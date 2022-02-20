@@ -254,6 +254,7 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
+               "success" => true,
                "type" => "users",
                "verb" => "GET",
                "what" => "some what",
@@ -301,6 +302,7 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
+               "success" => true,
                "type" => "users",
                "verb" => "GET",
                "what" => "some what",
@@ -323,6 +325,7 @@ defmodule MalanWeb.TransactionControllerTest do
 
       assert %{
                "id" => ^id,
+               "success" => true,
                "type" => "users",
                "verb" => "GET",
                "what" => "some what",

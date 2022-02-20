@@ -25,13 +25,16 @@ defmodule MalanWeb.SessionController do
   def admin_delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
 
+    changeset = Session.revoke_changeset(session, %{revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)})
+
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
       record_transaction(
         conn,
         true,
         session.user_id,
         "DELETE",
-        "#SessionController.admin_delete/2"
+        "#SessionController.admin_delete/2",
+        changeset
       )
 
       render(conn, "show.json", session: session)
@@ -44,7 +47,8 @@ defmodule MalanWeb.SessionController do
           false,
           session.user_id,
           "DELETE",
-          "#SessionController.admin_delete/2 - Session admin deletion failed: #{err_str}"
+          "#SessionController.admin_delete/2 - Session admin deletion failed: #{err_str}",
+          changeset
         )
 
         {:error, err}
@@ -80,7 +84,8 @@ defmodule MalanWeb.SessionController do
         true,
         session.user_id,
         "POST",
-        "#SessionController.create/2"
+        "#SessionController.create/2",
+        %{}
       )
 
       conn
@@ -115,8 +120,9 @@ defmodule MalanWeb.SessionController do
   def delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
 
+    changeset = Session.revoke_changeset(session, %{revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)})
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
-      record_transaction(conn, true, session.user_id, "DELETE", "#SessionController.delete/2")
+      record_transaction(conn, true, session.user_id, "DELETE", "#SessionController.delete/2", changeset)
       render(conn, "show.json", session: session)
     else
       {:error, err} ->
@@ -127,7 +133,8 @@ defmodule MalanWeb.SessionController do
           false,
           session.user_id,
           "DELETE",
-          "#SessionController.delete/2 - Session deletion failed: #{err_str}"
+          "#SessionController.delete/2 - Session deletion failed: #{err_str}",
+          changeset
         )
 
         {:error, err}
@@ -138,7 +145,7 @@ defmodule MalanWeb.SessionController do
 
   def delete_all(conn, %{"user_id" => user_id}) do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
-      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2")
+      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2", %{num_revoked: num_revoked})
       render(conn, "delete_all.json", num_revoked: num_revoked)
     else
       {:error, err} ->
@@ -149,16 +156,17 @@ defmodule MalanWeb.SessionController do
           false,
           user_id,
           "DELETE",
-          "#SessionController.delete_all/2 - Session delete all active failed: #{err_str}"
+          "#SessionController.delete_all/2 - Session delete all active failed: #{err_str}",
+          err
         )
 
         {:error, err}
     end
   end
 
-  defp record_transaction(conn, success?, who, verb, what) do
+  defp record_transaction(conn, success?, who, verb, what, changeset) do
     {user_id, session_id} = authed_user_and_session(conn)
-    Accounts.record_transaction(success?, user_id, session_id, who, nil, "sessions", verb, what)
+    Accounts.record_transaction(success?, user_id, session_id, who, nil, "sessions", verb, what, changeset)
     conn
   end
 

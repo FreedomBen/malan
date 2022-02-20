@@ -186,6 +186,9 @@ defmodule Malan.Utils do
     end
   end
 
+  def masK_str(str), do: String.replace(str, ~r/./, "*")
+
+
   @doc """
   Convert a map to a `String`, suitable for printing.
 
@@ -213,7 +216,7 @@ defmodule Malan.Utils do
     Map.to_list(map)
     |> Enum.map(fn {key, val} ->
       case key in list_to_strings_and_atoms(mask_keys) do
-        true -> {key, String.replace(val, ~r/./, "*")}
+        true -> {key, masK_str(val)}
         _ -> {key, val}
       end
     end)
