@@ -530,6 +530,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: nil,
                  session_id: nil,
                  type_enum: 0,
@@ -879,6 +880,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^id,
                  session_id: ^session_id,
                  type_enum: 0,
@@ -1079,6 +1081,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
                  type_enum: 0,
@@ -1121,6 +1124,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^id,
                  session_id: ^session_id,
                  type_enum: 0,
@@ -1251,6 +1255,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: nil,
                  session_id: nil,
                  type_enum: 0,
@@ -1945,6 +1950,7 @@ defmodule MalanWeb.UserControllerTest do
       match_transaction_extract_when = fn t ->
         try do
           %Transaction{
+            success: true,
             user_id: nil,
             session_id: nil,
             type_enum: 0,
@@ -2726,6 +2732,7 @@ defmodule MalanWeb.UserControllerTest do
       match_transaction_extract_when = fn t ->
         try do
           %Transaction{
+            success: true,
             user_id: ^admin_user_id,
             session_id: ^admin_session_id,
             type_enum: 0,
@@ -2832,6 +2839,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert [
                %Transaction{
+                 success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
                  type_enum: 0,
