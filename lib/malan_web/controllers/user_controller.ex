@@ -85,6 +85,20 @@ defmodule MalanWeb.UserController do
       with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
         record_transaction(conn, true, user.id, user.username, "PUT", "#UserController.update/2")
         render(conn, "show.json", user: user)
+      else
+        {:error, err} ->
+          err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+          record_transaction(
+            conn,
+            false,
+            nil,
+            user_params["username"],
+            "POST",
+            "#UserController.create/2 - User account creation failed: #{err_str}"
+          )
+
+          {:error, err}
       end
     end
   end
