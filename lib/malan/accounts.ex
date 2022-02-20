@@ -715,6 +715,7 @@ defmodule Malan.Accounts do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
+          false,
           username_or_id,
           nil,
           username_or_id,
@@ -741,6 +742,7 @@ defmodule Malan.Accounts do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
+          false,
           username_or_id,
           nil,
           username_or_id,
@@ -767,6 +769,7 @@ defmodule Malan.Accounts do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
+          false,
           username_or_id,
           nil,
           username_or_id,
@@ -1434,6 +1437,7 @@ defmodule Malan.Accounts do
   Creates a transaction.  A transaction is immutable once it is created, so it
   cannot be updated later.  Make sure you have all the info you need now!
 
+  `success?` is whether the operation being logged was successful
   `user_id` is the user owning the session that made the change
   `session_id` is the session that made the change
   `who_id` is the user id of the user being changed
@@ -1452,6 +1456,7 @@ defmodule Malan.Accounts do
 
   """
   def create_transaction(
+        success?,
         user_id,
         session_id,
         who_id,
@@ -1461,7 +1466,8 @@ defmodule Malan.Accounts do
         what,
         when_utc \\ nil
       ) do
-    create_transaction(user_id, session_id, who_id, who_username, %{
+    create_transaction(success?, user_id, session_id, who_id, who_username, %{
+      "success" => success?,
       "type" => type,
       "verb" => verb,
       "what" => what,
@@ -1469,10 +1475,11 @@ defmodule Malan.Accounts do
     })
   end
 
-  def create_transaction(user_id, session_id, who_id, who_username, attrs \\ %{}) do
+  def create_transaction(success?, user_id, session_id, who_id, who_username, attrs \\ %{}) do
     %Transaction{}
     |> Transaction.create_changeset(
       Map.merge(attrs, %{
+        "success" => success?,
         "user_id" => user_id,
         "session_id" => session_id,
         "who" => who_id,
@@ -1487,8 +1494,8 @@ defmodule Malan.Accounts do
 
   Returns {:ok, transaction} on success or {:error, changeset} on failure
   """
-  def record_transaction(user_id, session_id, who, who_username, type, verb, what) do
-    case create_transaction(user_id, session_id, who, who_username, type, verb, what) do
+  def record_transaction(success?, user_id, session_id, who, who_username, type, verb, what) do
+    case create_transaction(success?, user_id, session_id, who, who_username, type, verb, what) do
       {:ok, transaction} ->
         {:ok, transaction}
 

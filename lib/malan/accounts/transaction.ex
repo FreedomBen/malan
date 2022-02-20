@@ -10,6 +10,7 @@ defmodule Malan.Accounts.Transaction do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "transactions" do
+    field :success, :boolean, null: false     # Was the operation successful?
     field :type_enum, :integer, null: false   # Enum:  users || sessions
     field :verb_enum, :integer, null: false   # Action:  GET || POST || PUT || DELETE
     field :what, :string, null: false         # What was done (Human readable string)
@@ -28,13 +29,23 @@ defmodule Malan.Accounts.Transaction do
   @doc false
   def create_changeset(transaction, attrs) do
     transaction
-    |> cast(attrs, [:user_id, :session_id, :who, :who_username, :type, :verb, :when, :what])
+    |> cast(attrs, [
+      :success,
+      :user_id,
+      :session_id,
+      :who,
+      :who_username,
+      :type,
+      :verb,
+      :when,
+      :what
+    ])
     |> put_default_when()
-    |> validate_required([:type, :verb, :when, :what])
+    |> validate_required([:success, :type, :verb, :when, :what])
     |> validate_type()
     |> validate_verb()
     |> validate_who_is_binary_id_or_nil()
-    |> validate_required([:type_enum, :verb_enum, :when, :what])
+    |> validate_required([:success, :type_enum, :verb_enum, :when, :what])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:session_id)
     |> foreign_key_constraint(:who)
