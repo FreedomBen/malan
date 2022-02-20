@@ -15,6 +15,7 @@ defmodule MalanWeb.UserController do
   action_fallback MalanWeb.FallbackController
 
   plug :require_pagination, [table: "users"] when action in [:index]
+
   plug :is_self_or_admin
        when action not in [
               :index,
@@ -159,7 +160,13 @@ defmodule MalanWeb.UserController do
       render_user(conn, user)
     else
       with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
-        record_transaction(conn, user.id, user.username, "POST", "#UserController.reset_password/2")
+        record_transaction(
+          conn,
+          user.id,
+          user.username,
+          "POST",
+          "#UserController.reset_password/2"
+        )
 
         # Send user the token through email
         UserNotifier.password_reset_email(user)
@@ -172,7 +179,11 @@ defmodule MalanWeb.UserController do
     end
   end
 
-  def reset_password_token_user(conn, %{"id" => id, "token" => token, "new_password" => new_password}) do
+  def reset_password_token_user(conn, %{
+        "id" => id,
+        "token" => token,
+        "new_password" => new_password
+      }) do
     user = Accounts.get_user_by_id_or_username(id)
     reset_password_token_p(conn, user, token, new_password)
   end
