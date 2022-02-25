@@ -63,6 +63,7 @@ defmodule Malan.Accounts.User do
     field :ethnicity, :string, virtual: true
 
     embeds_many :tos_accept_events, TosAcceptEvent, on_replace: :raise do
+      @derive {Jason.Encoder, except: [:__meta__]}
       # true == accept, false == reject
       field :accept, :boolean
       field :tos_version, :integer
@@ -70,6 +71,7 @@ defmodule Malan.Accounts.User do
     end
 
     embeds_many :privacy_policy_accept_events, PrivacyPolicyAcceptEvent, on_replace: :raise do
+      @derive {Jason.Encoder, except: [:__meta__]}
       # true == accept, false == reject
       field :accept, :boolean
       field :privacy_policy_version, :integer

@@ -1488,10 +1488,10 @@ defmodule Malan.Accounts do
         type,
         verb,
         what,
-        changeset,
+        tx_changeset,
         when_utc \\ nil
       ) do
-    create_transaction(success?, user_id, session_id, who_id, who_username, changeset, %{
+    create_transaction(success?, user_id, session_id, who_id, who_username, tx_changeset, %{
       "success" => success?,
       "type" => type,
       "verb" => verb,
@@ -1506,7 +1506,7 @@ defmodule Malan.Accounts do
         session_id,
         who_id,
         who_username,
-        changeset,
+        tx_changeset,
         attrs \\ %{}
       ) do
     %Transaction{}
@@ -1517,7 +1517,7 @@ defmodule Malan.Accounts do
         "session_id" => session_id,
         "who" => who_id,
         "who_username" => who_username,
-        "changeset" => changeset
+        "changeset" => tx_changeset
       })
     )
     |> Repo.insert()
@@ -1528,8 +1528,28 @@ defmodule Malan.Accounts do
 
   Returns {:ok, transaction} on success or {:error, changeset} on failure
   """
-  def record_transaction(success?, user_id, session_id, who, who_username, type, verb, what, changeset) do
-    case create_transaction(success?, user_id, session_id, who, who_username, type, verb, what, changeset) do
+  def record_transaction(
+        success?,
+        user_id,
+        session_id,
+        who,
+        who_username,
+        type,
+        verb,
+        what,
+        tx_changeset
+      ) do
+    case create_transaction(
+           success?,
+           user_id,
+           session_id,
+           who,
+           who_username,
+           type,
+           verb,
+           what,
+           tx_changeset
+         ) do
       {:ok, transaction} ->
         {:ok, transaction}
 

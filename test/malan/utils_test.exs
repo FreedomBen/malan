@@ -3,6 +3,8 @@ defmodule Malan.UtilsTest do
 
   use ExUnit.Case, async: true
 
+  defmodule TestStruct, do: defstruct([:one, :two, :three])
+
   describe "main" do
     test "nil_or_empty?/1" do
       assert true == Utils.nil_or_empty?(nil)
@@ -80,6 +82,34 @@ defmodule Malan.UtilsTest do
 
       assert "kitt: '****', michael: '******'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
+    end
+
+    test "mask_str/1 nil returns nil" do
+      assert is_nil(Utils.mask_str(nil))
+    end
+
+    test "mask_str/1 masks the str" do
+      assert "*****" == Utils.mask_str("hello")
+    end
+
+    test "mask_str/1 converts non-binary to binary and masks the str" do
+      assert "**" == Utils.mask_str(89)
+      assert "*****" == Utils.mask_str(1.456)
+    end
+
+    test "#remove_not_loaded/1" do
+      before = %{
+        one: "one",
+        two: "two",
+        three: %Ecto.Association.NotLoaded{}
+      }
+
+      after_removed = %{
+        one: "one",
+        two: "two"
+      }
+
+      assert after_removed == Utils.remove_not_loaded(before)
     end
   end
 
@@ -162,5 +192,21 @@ defmodule Malan.UtilsTest do
   end
 
   describe "Phoenix.Controller" do
+  end
+
+  describe "Ecto.Changeset" do
+    test "#convert_changes/1" do
+      ts = %TestStruct{one: "one", two: "two"}
+      cs = Ecto.Changeset.change({ts, %{one: :string, two: :string}})
+      assert %{ts | three: ts} ==
+               Utils.Ecto.Changeset.convert_changes(%{ts | three: cs})
+    end
+
+    test "#convert_changes/1 handles arrays" do
+      ts = %TestStruct{one: "one", two: "two"}
+      cs = Ecto.Changeset.change({ts, %{one: :string, two: :string}})
+      assert %{ts | three: [ts, ts]} ==
+               Utils.Ecto.Changeset.convert_changes(%{ts | three: [cs, cs]})
+    end
   end
 end
