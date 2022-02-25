@@ -33,12 +33,12 @@ defmodule Malan.AccountsFixtures do
     "when" => nil
   }
 
-  def create_transaction(success?, nil, user, session, attrs) do
-    Accounts.create_transaction(success?, user.id, session.id, user.id, user.username, attrs)
+  def create_transaction(success?, nil, user, session, cs, attrs) do
+    Accounts.create_transaction(success?, user.id, session.id, user.id, user.username, cs, attrs)
   end
 
-  def create_transaction(success?, user_id, user, session, attrs) do
-    Accounts.create_transaction(success?, user_id, session.id, user.id, user.username, attrs)
+  def create_transaction(success?, user_id, user, session, cs, attrs) do
+    Accounts.create_transaction(success?, user_id, session.id, user.id, user.username, cs, attrs)
   end
 
   @doc """
@@ -55,6 +55,7 @@ defmodule Malan.AccountsFixtures do
              Map.get(attrs, "user_id"),
              user,
              session,
+             %{},
              val_attrs
            ),
          do: {:ok, user, session, transaction}

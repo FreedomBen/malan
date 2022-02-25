@@ -4,6 +4,7 @@ defmodule Malan.Accounts.Preference do
   import Malan.Utils, only: [defp_testable: 2]
   import Ecto.Changeset
 
+  @derive Jason.Encoder
   @primary_key {:id, :binary_id, autogenerate: true}
   embedded_schema do
     field :theme, :string, default: "light"

@@ -68,7 +68,7 @@ defmodule Malan.AccountsTest do
       assert Enum.count(l1) == Enum.count(l2)
 
       l1
-      |> Enum.with_index
+      |> Enum.with_index()
       |> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
     end
 
@@ -82,12 +82,12 @@ defmodule Malan.AccountsTest do
       assert Enum.any?(users, fn u -> user == u end)
     end
 
-    test "list_users/2 paginates correctly"do
+    test "list_users/2 paginates correctly" do
       {:ok, u1} = Helpers.Accounts.regular_user()
       {:ok, u2} = Helpers.Accounts.regular_user()
       {:ok, u3} = Helpers.Accounts.regular_user()
 
-      [ _ | lu ] = Accounts.list_users(0, 10)
+      [_ | lu] = Accounts.list_users(0, 10)
       assert lu |> Enum.count() == 3
       assert_list_users_eq(lu, [u1, u2, u3])
 
@@ -1018,7 +1018,10 @@ defmodule Malan.AccountsTest do
 
     test "get_user_id_pass_hash_by_username/1 returns {user_id, password_hash, locked_at} on success" do
       user = user_fixture()
-      assert {user_id, password_hash, nil} = Accounts.get_user_id_pass_hash_by_username(user.username)
+
+      assert {user_id, password_hash, nil} =
+               Accounts.get_user_id_pass_hash_by_username(user.username)
+
       assert user_id == user.id
       assert password_hash == user.password_hash
     end
@@ -1029,11 +1032,17 @@ defmodule Malan.AccountsTest do
 
     test "get_user_id_pass_hash_by_username/1 returns locked_at as datetime when user is locked" do
       user = user_fixture()
-      assert {user_id, password_hash, nil} = Accounts.get_user_id_pass_hash_by_username(user.username)
+
+      assert {user_id, password_hash, nil} =
+               Accounts.get_user_id_pass_hash_by_username(user.username)
+
       assert user_id == user.id
 
       {:ok, user} = Accounts.lock_user(user, nil)
-      assert {^user_id, ^password_hash, locked_at} = Accounts.get_user_id_pass_hash_by_username(user.username)
+
+      assert {^user_id, ^password_hash, locked_at} =
+               Accounts.get_user_id_pass_hash_by_username(user.username)
+
       assert locked_at == user.locked_at
     end
 
@@ -1634,6 +1643,7 @@ defmodule Malan.AccountsTest do
                  session.id,
                  user.id,
                  user.username,
+                 %{},
                  valid_attrs
                )
 
@@ -1645,7 +1655,7 @@ defmodule Malan.AccountsTest do
 
     test "create_transaction/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} =
-               Accounts.create_transaction(nil, nil, nil, nil, @invalid_attrs)
+               Accounts.create_transaction(nil, nil, nil, nil, nil, @invalid_attrs)
     end
 
     test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do

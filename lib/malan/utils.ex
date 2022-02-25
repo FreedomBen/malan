@@ -77,9 +77,32 @@ defmodule Malan.Utils do
       %{hello: "world"}
 
   """
-  def struct_to_map(struct) do
+  def struct_to_map(struct, mask_keys \\ []) do
     Map.from_struct(struct)
     |> Map.delete(:__meta__)
+    |> mask_map_key_values(mask_keys)
+  end
+
+  @doc ~S"""
+  Takes a map and a list of keys whose values should be masked
+
+  ## Examples
+
+      iex> Malan.Utils.mask_map_key_values(%{name: "Ben, title: "Lord"}, [:title])
+      %{name: "Ben", title: "****"}
+
+      iex> Malan.Utils.mask_map_key_values(%{name: "Ben, age: 39}, [:age])
+      %{name: "Ben", age: "**"}
+  """
+  def mask_map_key_values(map, mask_keys) do
+    map
+    |> Enum.map(fn {key, val} ->
+      case key in list_to_strings_and_atoms(mask_keys) do
+        true -> {key, mask_str(val)}
+        _ -> {key, val}
+      end
+    end)
+    |> Enum.into(%{})
   end
 
   @doc ~S"""
@@ -186,8 +209,15 @@ defmodule Malan.Utils do
     end
   end
 
-  def masK_str(str), do: String.replace(str, ~r/./, "*")
+  @doc ~S"""
+  Replaces the caracters in `str` with asterisks `"*"`, thus "masking" the value.
 
+  If argument is `nil` nothing will change `nil` will be returned.
+  If argument is not a `binary()`, it will be coerced to a binary then masked.
+  """
+  def mask_str(nil), do: nil
+  def mask_str(str) when is_binary(str), do: String.replace(str, ~r/./, "*")
+  def mask_str(val), do: Kernel.inspect(val) |> mask_str()
 
   @doc """
   Convert a map to a `String`, suitable for printing.
@@ -216,7 +246,7 @@ defmodule Malan.Utils do
     Map.to_list(map)
     |> Enum.map(fn {key, val} ->
       case key in list_to_strings_and_atoms(mask_keys) do
-        true -> {key, masK_str(val)}
+        true -> {key, mask_str(val)}
         _ -> {key, val}
       end
     end)
@@ -248,6 +278,24 @@ defmodule Malan.Utils do
   """
   def list_to_strings_and_atoms(list) do
     Enum.reduce(list, [], fn l, acc -> [l | [atom_or_string_to_string_or_atom(l) | acc]] end)
+  end
+
+  @doc ~S"""
+  If any of the top-level properties are `Ecto.Association.NotLoaded`, remove them.
+
+  Note that if `map` is actually a `struct` this won't work.  You should first convert
+  it to a map:
+
+  ```
+  Map.from_struct(struct)
+  ```
+  """
+  def remove_not_loaded(map) do
+    Enum.filter(map, fn
+      {_k, %Ecto.Association.NotLoaded{} = _v} -> false
+      {_k, _v} -> true
+    end)
+    |> Enum.into(%{})
   end
 end
 
@@ -426,6 +474,7 @@ defmodule Malan.Utils.Ecto.Changeset do
   ## Examples
 
       Malan.Utils.Ecto.Changeset.errors_to_str_list(changeset)
+      # TODO example needs updated
       [who: {"who must be a valid ID of a user", []}]
   """
   def errors_to_str_list(%Ecto.Changeset{errors: errors}),
@@ -443,10 +492,50 @@ defmodule Malan.Utils.Ecto.Changeset do
   ## Examples
 
       Malan.Utils.Ecto.Changeset.errors_to_str_list(changeset)
+      # TODO example needs updated
       [who: {"who must be a valid ID of a user", []}]
   """
   def errors_to_str(%Ecto.Changeset{} = changeset) do
     errors_to_str_list(changeset)
     |> Enum.join(", ")
   end
+
+  @doc ~S"""
+  If any of the top-level keys in `data` are `Ecto.Changeset`s, apply their changes.
+
+  This is not recursive.  It onliy does the top level.  Also changes are applied
+  whether they are valid or not, so consider whether that's the behavior you want.
+  """
+  def convert_changes(%Ecto.Changeset{changes: changes}), do: convert_changes(changes)
+
+  def convert_changes(%{__struct__: struct_type} = data) do
+    data
+    |> Map.from_struct()
+    |> convert_changes(struct_type)
+  end
+
+  def convert_changes(data, struct_type) do
+    struct(struct_type, convert_changes(data))
+  end
+
+  def convert_changes(%{} = data) do
+    data
+    |> Enum.map(fn
+      {k, %Ecto.Changeset{} = v} ->
+        {k, Ecto.Changeset.apply_changes(v)}
+
+      {k, va} when is_list(va) ->
+        {k,
+         Enum.map(va, fn
+           %Ecto.Changeset{} = v -> Ecto.Changeset.apply_changes(v)
+           v -> v
+         end)}
+
+      {k, v} ->
+        {k, v}
+    end)
+    |> Enum.into(%{})
+  end
+
+  def convert_changes(data), do: data
 end

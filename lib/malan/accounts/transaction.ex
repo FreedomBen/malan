@@ -6,6 +6,7 @@ defmodule Malan.Accounts.Transaction do
 
   alias Malan.Utils
   alias Malan.Accounts.Transaction
+  alias Malan.Accounts.Transaction.Changes
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -19,12 +20,27 @@ defmodule Malan.Accounts.Transaction do
     field :session_id, :binary_id, null: true # Session making the change (session ownign the token that changed something)
     field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
     field :who_username, :string, null: true  # Which user was modified/changed/created/etc
-    field :changeset, :map, default: %{}      # If applicable, the changeset involved
+
+    # Important Note:  This is often not the exact changeset that was involved,
+    # particularly in the case of a successful change.  It will take some
+    # refactoring to make that happen.  When successful, the changesets
+    # here are often very similar (same field values except for ttimetampes) 
+    # but not identical.  With error changesets most of them are identical
+    # If applicable, the changeset involved
+    embeds_one :changeset, Transaction.Changes, on_replace: :update
 
     field :type, :string, virtual: true
     field :verb, :string, virtual: true
 
     timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def create_changeset(transaction, %{"changeset" => %Ecto.Changeset{}} = attrs) do
+    create_changeset(
+      transaction,
+      Map.update!(attrs, "changeset", fn cs -> Changes.map_from_changeset(cs) end)
+    )
   end
 
   @doc false
@@ -39,9 +55,9 @@ defmodule Malan.Accounts.Transaction do
       :type,
       :verb,
       :when,
-      :what,
-      :changeset
+      :what
     ])
+    |> cast_embed(:changeset, with: &Transaction.Changes.changeset/2)
     |> put_default_when()
     |> validate_required([:success, :type, :verb, :when, :what])
     |> validate_type()
