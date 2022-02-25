@@ -109,7 +109,7 @@ defmodule Malan.Test.Helpers.Accounts do
       user.username,
       user.password,
       Map.merge(
-        %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"},
+        %{"ip_address" => "192.168.2.200"},
         session_attrs
       )
     )

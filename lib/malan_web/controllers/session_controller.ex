@@ -206,17 +206,17 @@ defmodule MalanWeb.SessionController do
     |> to_string()
   end
 
-  # Get Cloudflare Real IP from request header: https://developers.cloudflare.com/fundamentals/get-started/http-request-headers
-  defp get_cf_real_ip_addr(conn) do
-    case get_req_header(conn, "cf-connecting-ip") do
-      [real_ip] when is_binary(real_ip) -> real_ip
-      _ -> nil
-    end
-  end
+  # # Get Cloudflare Real IP from request header: https://developers.cloudflare.com/fundamentals/get-started/http-request-headers
+  # defp get_cf_real_ip_addr(conn) do
+  #   case get_req_header(conn, "cf-connecting-ip") do
+  #     [real_ip] when is_binary(real_ip) -> real_ip
+  #     _ -> nil
+  #   end
+  # end
 
   defp put_ip_addr(session_params, conn) do
     session_params
     |> Map.put("ip_address", get_ip_addr(conn))
-    |> Map.put("real_ip_address", get_cf_real_ip_addr(conn))
+    # |> Map.put("real_ip_address", get_cf_real_ip_addr(conn))
   end
 end

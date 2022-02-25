@@ -849,7 +849,7 @@ defmodule Malan.AccountsTest do
           user.username,
           user.password,
           Map.merge(
-            %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"},
+            %{"ip_address" => "192.168.2.200"},
             session_attrs
           )
         )
@@ -917,8 +917,7 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, %Session{} = session} =
                Accounts.create_session(user.username, user.password, %{
-                 "ip_address" => "192.168.2.200",
-                 "real_ip_address" => "192.168.2.201"
+                 "ip_address" => "192.168.2.200"
                })
 
       # API token should be included after creation, but not after that
@@ -940,7 +939,6 @@ defmodule Malan.AccountsTest do
              )
 
       assert session.ip_address == "192.168.2.200"
-      assert session.real_ip_address == "192.168.2.201"
       assert session.revoked_at == nil
     end
 
@@ -953,8 +951,7 @@ defmodule Malan.AccountsTest do
                  user.password,
                  %{
                    "never_expires" => true,
-                   "ip_address" => "192.168.2.200",
-                   "real_ip_address" => "10.0.0.1"
+                   "ip_address" => "192.168.2.200"
                  }
                )
 
@@ -971,8 +968,7 @@ defmodule Malan.AccountsTest do
                  user.password,
                  %{
                    "expires_in_seconds" => -120,
-                   "ip_address" => "192.168.2.200",
-                   "real_ip_address" => "10.0.0.1"
+                   "ip_address" => "192.168.2.200"
                  }
                )
 
@@ -991,8 +987,7 @@ defmodule Malan.AccountsTest do
                  %{
                    "never_expires" => false,
                    "expires_in_seconds" => -120,
-                   "ip_address" => "192.168.2.200",
-                   "real_ip_address" => "192.168.2.201"
+                   "ip_address" => "192.168.2.200"
                  }
                )
 
@@ -1008,8 +1003,7 @@ defmodule Malan.AccountsTest do
       assert {:ok, session} =
                Accounts.create_session(user1.username, user1.password, %{
                  "user_id" => user2.id,
-                 "ip_address" => "192.168.2.200",
-                 "real_ip_address" => "192.168.2.201"
+                 "ip_address" => "192.168.2.200"
                })
 
       assert user2.id != user1.id
@@ -1051,8 +1045,7 @@ defmodule Malan.AccountsTest do
 
       assert {:error, :unauthorized} =
                Accounts.create_session(user.username, "nottherightpassword", %{
-                 "ip_address" => "192.168.2.200",
-                 "real_ip_address" => "10.0.0.1"
+                 "ip_address" => "192.168.2.200"
                })
     end
 
@@ -1061,7 +1054,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  "notarealusernameatall",
                  "nottherightpassword",
-                 %{"ip_address" => "192.168.2.200", "real_ip_address" => "10.0.0.1"}
+                 %{"ip_address" => "192.168.2.200"}
                )
     end
 

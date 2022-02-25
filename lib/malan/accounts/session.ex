@@ -12,7 +12,6 @@ defmodule Malan.Accounts.Session do
     field :authenticated_at, :utc_datetime
     field :expires_at, :utc_datetime
     field :ip_address, :string
-    field :real_ip_address, :string
     field :location, :string
     field :revoked_at, :utc_datetime
     belongs_to :user, User
@@ -33,7 +32,6 @@ defmodule Malan.Accounts.Session do
       :authenticated_at,
       :revoked_at,
       :ip_address,
-      :real_ip_address,
       :location
     ])
     |> validate_required([
@@ -54,7 +52,6 @@ defmodule Malan.Accounts.Session do
       :never_expires,
       :expires_in_seconds,
       :ip_address,
-      :real_ip_address,
       :location
     ])
     |> put_api_token()
