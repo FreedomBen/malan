@@ -5,7 +5,7 @@ defmodule Malan.TransactionChangesSchemaTest do
   alias Malan.Accounts.{Session, Transaction}
 
   def session_changeset_fixture(initial_attrs \\ %{}, change_attrs \\ %{}) do
-    %Session{location: "location", real_ip_address: "real_ip_address"}
+    %Session{location: "location"}
     |> Map.merge(initial_attrs)
     |> Session.create_changeset(
       %{
