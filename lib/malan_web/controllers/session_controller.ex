@@ -208,7 +208,7 @@ defmodule MalanWeb.SessionController do
 
   # Get Cloudflare Real IP from request header: https://developers.cloudflare.com/fundamentals/get-started/http-request-headers
   defp get_cf_real_ip_addr(conn) do
-    case get_req_header(conn, "cf-connecting_ip") do
+    case get_req_header(conn, "cf-connecting-ip") do
       [real_ip] when is_binary(real_ip) -> real_ip
       _ -> nil
     end
