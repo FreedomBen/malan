@@ -7,10 +7,16 @@ defmodule MalanWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_malan_key",
-    signing_salt: "36hUTpHh"
+    signing_salt: "36hUTpHh",
+    encryption_salt: "3043FHjkW"
   ]
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+
+  # If running behind CLoudflare, read the CF-Connection-IP header
+  # and use that for `conn.remote_ip`
+  # https://github.com/c-rack/plug_cloudflare
+  plug Plug.CloudFlare
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -19,7 +25,7 @@ defmodule MalanWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :malan,
-    gzip: false,
+    gzip: true,
     only: ~w(assets fonts images favicon.ico robots.txt)
 
   # Code reloading can be explicitly enabled under the
