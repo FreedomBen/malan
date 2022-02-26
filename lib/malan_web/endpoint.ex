@@ -16,7 +16,7 @@ defmodule MalanWeb.Endpoint do
   # If running behind CLoudflare, read the CF-Connection-IP header
   # and use that for `conn.remote_ip`
   # https://github.com/c-rack/plug_cloudflare
-  plug Plug.CloudFlare
+  #plug Plug.CloudFlare
 
   # Serve at "/" the static files from "priv/static" directory.
   #
