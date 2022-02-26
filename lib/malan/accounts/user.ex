@@ -14,6 +14,7 @@ defmodule Malan.Accounts.User do
   @derive {Swoosh.Email.Recipient, name: :first_name, address: :email}
 
   @prefix_deleted_user "|"
+  @valid_roles ["admin", "user", "moderator"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -47,6 +48,7 @@ defmodule Malan.Accounts.User do
     field :password_reset_token, :string, virtual: true
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
+    field :authorized_ips, {:array, :string}, null: false, default: []
 
     has_many :addresses, Accounts.Address, foreign_key: :user_id
     has_many :phone_numbers, Accounts.PhoneNumber, foreign_key: :user_id
@@ -99,7 +101,8 @@ defmodule Malan.Accounts.User do
       :ethnicity,
       :birthday,
       :weight,
-      :custom_attrs
+      :custom_attrs,
+      :authorized_ips
     ])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
@@ -127,9 +130,11 @@ defmodule Malan.Accounts.User do
       :birthday,
       :weight,
       :height,
-      :custom_attrs
+      :custom_attrs,
+      :authorized_ips
     ])
     |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
+    |> cast_embed(:authorized_ip, with: &Accounts.AuthorizedIps.changeset/2)
     |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> put_accept_tos()
@@ -162,9 +167,11 @@ defmodule Malan.Accounts.User do
       :birthday,
       :weight,
       :height,
-      :custom_attrs
+      :custom_attrs,
+      :authorized_ips
     ])
     |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
+    |> cast_embed(:authorized_ip, with: &Accounts.AuthorizedIps.changeset/2)
     |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> downcase_username()
@@ -225,6 +232,7 @@ defmodule Malan.Accounts.User do
     |> validate_birthday()
     |> validate_weight()
     |> validate_height()
+    |> validate_authorized_ips()
     |> validate_required([
       :username,
       :password_hash,
@@ -238,20 +246,19 @@ defmodule Malan.Accounts.User do
 
   defp_testable validate_roles(changeset) do
     changeset
-    # |> validate_subset(:roles, ["admin", "user", "moderator"])
+    # |> validate_subset(:roles, @valid_roles)
   end
 
   defp_testable validate_username(changeset) do
     changeset
-    |> unique_constraint(:username)
     |> validate_length(:username, min: 3, max: 89)
     |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
     |> validate_not_format(:username, ~r/^\|/)  # Doesn't start with a pipe |
+    |> unique_constraint(:username)
   end
 
   defp_testable validate_email(changeset) do
     changeset
-    |> unique_constraint(:email)
     |> validate_length(:email, min: 6, max: 100)
     |> validate_format(
       :email,
@@ -259,6 +266,7 @@ defmodule Malan.Accounts.User do
     )
     |> validate_not_format(:email, ~r/@.*@/)  # Doesn't have more than one @
     |> validate_not_format(:email, ~r/^\|/)   # Doesn't start with a pipe |
+    |> unique_constraint(:email)
   end
 
   defp_testable validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
@@ -414,6 +422,33 @@ defmodule Malan.Accounts.User do
     case get_change(changeset, :race) do
       nil -> changeset
       _ -> validate_and_put_races(changeset)
+    end
+  end
+
+  defp_testable all_ips_valid?(changeset) do
+    changeset
+    |> get_change(:authorized_ips)
+    |> Enum.all?(fn ip -> Iptools.is_ipv4?(ip) end)
+  end
+
+  defp_testable validate_and_put_authorized_ips(changeset) do
+    cond do
+      all_ips_valid?(changeset) ->
+        changeset
+
+      true ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :authorized_ips,
+          "authorized_ips contains an invalid selection.  Should be valid IPv4 or IPv6 address"
+        )
+    end
+  end
+
+  defp validate_authorized_ips(changeset) do
+    case get_change(changeset, :authorized_ips) do
+      nil -> changeset
+      _ -> validate_and_put_authorized_ips(changeset)
     end
   end
 
