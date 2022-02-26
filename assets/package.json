@@ -15,7 +15,7 @@
     "@tailwindcss/forms": "^0.3.4",
     "alpinejs": "^3.9.0",
     "autoprefixer": "^10.4.2",
-    "postcss": "^8.4.6",
+    "postcss": "^8.4.7",
     "postcss-import": "^14.0.2",
     "prettier": "2.4.1",
     "tailwindcss": "^2.2.19"
