@@ -56,7 +56,9 @@ defmodule Malan.MixProject do
       {:eqrcode, "~> 0.1.10"},
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.17"},
-      {:plug_cloudflare, "~> 1.2.1"}
+      {:plug_cloudflare, "~> 1.2.1"},
+      #{:iptools, "~> 0.0.2"},
+      {:iptools_fb, "~> 0.0.3"}
     ]
   end
 
