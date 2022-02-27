@@ -251,7 +251,7 @@ defmodule MalanWeb.SessionControllerTest do
     end
   end
 
-  describe "index_active and user_index_active" do
+  describe "index_active and user_index_active paginated" do
     test "lists all active sessions for user and works with current", %{conn: conn} do
       {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()

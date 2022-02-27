@@ -68,7 +68,7 @@ defmodule MalanWeb.UserView do
       custom_attrs: user.custom_attrs,
       locked_at: user.locked_at,
       locked_by: user.locked_by,
-      authorized_ips: user.authorized_ips
+      approved_ips: user.approved_ips
     }
     |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
     |> Enum.into(%{})

@@ -18,8 +18,8 @@ defmodule Malan.Repo.Migrations.CreateUsers do
       add :preferences, :map, null: false, default: %{}
       add :latest_tos_accept_ver, :smallint, null: true, default: nil
       add :latest_pp_accept_ver, :smallint, null: true, default: nil
-      add :tos_accept_events, :map, null: false, default: []
-      add :privacy_policy_accept_events, :map, null: false, default: []
+      add :tos_accept_events, {:array, :map}, null: false, default: []
+      add :privacy_policy_accept_events, {:array, :map}, null: false, default: []
       add :deleted_at, :utc_datetime, null: true, default: nil
       add :birthday, :utc_datetime, null: true, default: nil
       add :weight, :decimal, null: true, default: nil

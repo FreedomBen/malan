@@ -197,7 +197,7 @@ defmodule MalanWeb.UserControllerTest do
     end
   end
 
-  describe "create user and get user details with returned password" do
+  describe "create" do
     test "renders user when data is valid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
@@ -574,6 +574,38 @@ defmodule MalanWeb.UserControllerTest do
       assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
       assert [tx] == Accounts.list_transactions_by_who(nil, 0, 10)
     end
+
+    test "Accepts approved_ips", %{conn: conn} do
+      %{approved_ips: ips} = approved_ips = %{
+        approved_ips: [
+          "127.0.0.1",
+          "192.168.1.1"
+        ]
+      }
+      create_attrs = Map.merge(@create_attrs, approved_ips)
+
+      conn =
+        post(conn, Routes.user_path(conn, :create), user: create_attrs)
+
+      # password should be included after creation
+      assert %{"id" => id, "username" => _username, "password" => _password} =
+               user = json_response(conn, 201)["data"]
+
+      # This uses the returned password above to authenticate
+      {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
+      conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "email" => "some@email.com",
+               "email_verified" => nil,
+               "approved_ips" => ^ips
+             } = jr
+
+    end
   end
 
   describe "update user" do
@@ -862,6 +894,33 @@ defmodule MalanWeb.UserControllerTest do
                |> Enum.map(fn phx -> phx["number"] end)
                |> Enum.member?(ph["number"])
              end)
+    end
+
+    test "Accepts approved_ips", %{conn: conn, user: %User{} = user} do
+      %{approved_ips: ips} = approved_ips = %{
+        approved_ips: [
+          "127.0.0.1",
+          "192.168.1.1"
+        ]
+      }
+
+      email = user.email
+
+      {:ok, session} = Helpers.Accounts.create_session(user)
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      #conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
+      conn = put(conn, Routes.user_path(conn, :update, user), user: approved_ips)
+
+      assert %{"id" => id} = json_response(conn, 200)["data"]
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "email" => ^email,
+               "approved_ips" => ^ips
+             } = jr
     end
 
     test "disallows setting roles", %{conn: conn, user: %User{} = user, session: session} do
