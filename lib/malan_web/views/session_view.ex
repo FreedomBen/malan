@@ -24,7 +24,8 @@ defmodule MalanWeb.SessionView do
       revoked_at: session.revoked_at,
       ip_address: session.ip_address,
       location: session.location,
-      is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at)
+      is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at),
+      valid_only_for_ip: session.valid_only_for_ip
     }
     |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
     |> Enum.into(%{})
