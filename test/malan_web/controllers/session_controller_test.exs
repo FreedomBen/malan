@@ -1,6 +1,9 @@
 defmodule MalanWeb.SessionControllerTest do
   use MalanWeb.ConnCase, async: true
 
+  require Ecto.Query
+  import Ecto.Query, only: [from: 2]
+
   alias Malan.Utils
   alias Malan.Accounts
   alias Malan.Accounts.{User, Session, Transaction}
@@ -381,7 +384,8 @@ defmodule MalanWeb.SessionControllerTest do
                "ip_address" => "127.0.0.1",
                "location" => nil,
                "revoked_at" => nil,
-               "is_valid" => true
+               "is_valid" => true,
+               "valid_only_for_ip" => false
              } = jr
 
       assert false == Map.has_key?(jr, "api_token")
@@ -679,6 +683,36 @@ defmodule MalanWeb.SessionControllerTest do
       assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
       assert [tx_locked, tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
       assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+    end
+
+    test "Create session allows requiring same IP", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, valid_only_for_ip: true}
+        )
+
+      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "authenticated_at" => authenticated_at,
+               "expires_at" => expires_at,
+               "ip_address" => "127.0.0.1",
+               "location" => nil,
+               "revoked_at" => nil,
+               "is_valid" => true,
+               "valid_only_for_ip" => true
+             } = jr
     end
   end
 
