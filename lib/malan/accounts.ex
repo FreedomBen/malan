@@ -862,6 +862,8 @@ defmodule Malan.Accounts do
           session_id: s.id,
           expires_at: s.expires_at,
           revoked_at: s.revoked_at,
+          ip_address: s.ip_address,
+          valid_only_for_ip: s.valid_only_for_ip,
           roles: u.roles,
           latest_tos_accept_ver: u.latest_tos_accept_ver,
           latest_pp_accept_ver: u.latest_pp_accept_ver
@@ -870,7 +872,7 @@ defmodule Malan.Accounts do
     )
   end
 
-  def session_valid?(nil) do
+  def session_valid?(nil, _) do
     {:error, :not_found}
   end
 
@@ -880,9 +882,10 @@ defmodule Malan.Accounts do
 
   Returns
 
-    {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+    {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     {:error, :revoked}
     {:error, :expired}
+    {:error, :ip_addr}
   """
   def session_valid?(%{
         user_id: user_id,
@@ -890,10 +893,12 @@ defmodule Malan.Accounts do
         session_id: session_id,
         expires_at: expires_at,
         revoked_at: revoked_at,
+        ip_address: ip_address,
+        valid_only_for_ip: valid_only_for_ip,
         roles: roles,
         latest_tos_accept_ver: latest_tos_accept_ver,
         latest_pp_accept_ver: latest_pp_accept_ver
-      }) do
+      }, remote_ip) do
     cond do
       !!revoked_at ->
         {:error, :revoked}
@@ -901,21 +906,27 @@ defmodule Malan.Accounts do
       DateTime.compare(expires_at, DateTime.utc_now()) == :lt ->
         {:error, :expired}
 
+      valid_only_for_ip && ip_address != remote_ip ->
+        {:error, :ip_addr}
+
       true ->
-        {:ok, user_id, username, session_id, roles, expires_at, latest_tos_accept_ver,
-         latest_pp_accept_ver}
+        {:ok, user_id, username, session_id, ip_address, valid_only_for_ip,
+          roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
     end
   end
 
-  def session_valid?(user_id, username, session_id, expires_at, revoked_at, roles) do
-    session_valid?([user_id, username, session_id, expires_at, revoked_at, roles])
-  end
+  # def session_valid?(user_id, username, session_id, expires_at, revoked_at, ip_addr, roles, remote_ip) do
+  #   session_valid?([user_id, username, session_id, expires_at, revoked_at, ip_addr, roles], remote_ip)
+  # end
 
   def session_revoked?(revoked_at), do: !!revoked_at
 
   def session_expired?(expires_at),
     do: DateTime.compare(expires_at, DateTime.utc_now()) == :lt
 
+  @doc ~S"""
+  This is a very *simple* check for validity that returns a boolean.  This should **NOT** be relied on for security!  It only considers expiration and revocation, and does not consider other important things like IP address of the requester.
+  """
   def session_valid_bool?(expires_at, revoked_at),
     do: !session_revoked?(revoked_at) && !session_expired?(expires_at)
 
@@ -933,11 +944,11 @@ defmodule Malan.Accounts do
     assert {:error, :expired} = validate_session(api_token)
     assert {:error, :not_found} = validate_session(api_token)
   """
-  def validate_session(api_token) do
+  def validate_session(api_token, remote_ip) do
     api_token
     |> Utils.Crypto.hash_token()
     |> get_session_expires_revoked_by_token()
-    |> session_valid?()
+    |> session_valid?(remote_ip)
   end
 
   def revoke_active_sessions(%User{id: user_id}),

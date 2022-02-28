@@ -86,6 +86,8 @@ defmodule MalanWeb.UserView do
   def render("whoami.json", %{
         user_id: user_id,
         session_id: session_id,
+        ip_address: ip_address,
+        valid_only_for_ip: valid_only_for_ip,
         user_roles: user_roles,
         expires_at: expires_at,
         tos: tos,
@@ -95,6 +97,8 @@ defmodule MalanWeb.UserView do
       data: %{
         user_id: user_id,
         session_id: session_id,
+        ip_address: ip_address,
+        valid_only_for_ip: valid_only_for_ip,
         user_roles: user_roles,
         expires_at: expires_at,
         terms_of_service: tos,
