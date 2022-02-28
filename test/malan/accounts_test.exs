@@ -1114,10 +1114,9 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 returns properly when remote IP matches" do
       session =
-        session_fixture(%{
-          username: "randomusername2",
-          ip_address: "1.1.1.1",
-          valid_only_for_ip: true
+        session_fixture(%{username: "randomusername2"}, %{
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_ip" => true
         })
 
       assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, _roles, exp,
@@ -1133,10 +1132,10 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 returns an error when remote IP doesn't match" do
       session =
-        session_fixture(%{
-          username: "randomusername2",
-          ip_address: "1.1.1.1",
-          valid_only_for_ip: true
+        session_fixture(%{}, %{
+          "username" => "randomusername2",
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_ip" => true
         })
 
       assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "127.0.0.1")

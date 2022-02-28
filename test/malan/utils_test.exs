@@ -198,6 +198,7 @@ defmodule Malan.UtilsTest do
     test "#convert_changes/1" do
       ts = %TestStruct{one: "one", two: "two"}
       cs = Ecto.Changeset.change({ts, %{one: :string, two: :string}})
+
       assert %{ts | three: ts} ==
                Utils.Ecto.Changeset.convert_changes(%{ts | three: cs})
     end
@@ -205,8 +206,16 @@ defmodule Malan.UtilsTest do
     test "#convert_changes/1 handles arrays" do
       ts = %TestStruct{one: "one", two: "two"}
       cs = Ecto.Changeset.change({ts, %{one: :string, two: :string}})
+
       assert %{ts | three: [ts, ts]} ==
                Utils.Ecto.Changeset.convert_changes(%{ts | three: [cs, cs]})
+    end
+  end
+
+  describe "IPv4" do
+    test "works" do
+      assert "1.1.1.1" == Utils.IPv4.to_s({1, 1, 1, 1})
+      assert "127.0.0.1" == Utils.IPv4.to_s({127, 0, 0, 1})
     end
   end
 end

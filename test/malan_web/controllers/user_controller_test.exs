@@ -546,8 +546,9 @@ defmodule MalanWeb.UserControllerTest do
       assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
     end
 
-    test "Creates a transaction when create fails. Can't create user with a username that is already taken", %{conn: conn} do
-      #{:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+    test "Creates a transaction when create fails. Can't create user with a username that is already taken",
+         %{conn: conn} do
+      # {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       {:ok, %{username: username} = _user} = Helpers.Accounts.regular_user()
 
       duplicate_username_attrs = Map.merge(@create_attrs, %{username: username})
@@ -576,16 +577,17 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "Accepts approved_ips", %{conn: conn} do
-      %{approved_ips: ips} = approved_ips = %{
-        approved_ips: [
-          "127.0.0.1",
-          "192.168.1.1"
-        ]
-      }
+      %{approved_ips: ips} =
+        approved_ips = %{
+          approved_ips: [
+            "127.0.0.1",
+            "192.168.1.1"
+          ]
+        }
+
       create_attrs = Map.merge(@create_attrs, approved_ips)
 
-      conn =
-        post(conn, Routes.user_path(conn, :create), user: create_attrs)
+      conn = post(conn, Routes.user_path(conn, :create), user: create_attrs)
 
       # password should be included after creation
       assert %{"id" => id, "username" => _username, "password" => _password} =
@@ -604,7 +606,6 @@ defmodule MalanWeb.UserControllerTest do
                "email_verified" => nil,
                "approved_ips" => ^ips
              } = jr
-
     end
   end
 
@@ -897,18 +898,19 @@ defmodule MalanWeb.UserControllerTest do
     end
 
     test "Accepts approved_ips", %{conn: conn, user: %User{} = user} do
-      %{approved_ips: ips} = approved_ips = %{
-        approved_ips: [
-          "127.0.0.1",
-          "192.168.1.1"
-        ]
-      }
+      %{approved_ips: ips} =
+        approved_ips = %{
+          approved_ips: [
+            "127.0.0.1",
+            "192.168.1.1"
+          ]
+        }
 
       email = user.email
 
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
-      #conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
+      # conn = put(conn, Routes.user_path(conn, :update, user), user: phone_numbers)
       conn = put(conn, Routes.user_path(conn, :update, user), user: approved_ips)
 
       assert %{"id" => id} = json_response(conn, 200)["data"]
@@ -1417,7 +1419,7 @@ defmodule MalanWeb.UserControllerTest do
       conn: conn,
       user: %User{id: user_id}
     } do
-      #conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+      # conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
 
       conn =
         put(conn, Routes.user_path(conn, :reset_password_token_user, user_id, "abcde"),
@@ -1426,6 +1428,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} =
                json_response(conn, 401)
+
       assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} =
                json_response(conn, 401)
     end
@@ -3010,8 +3013,10 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
       for s <- sessions do
-        assert {:ok, ^id, ^username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, ^id, ^username, _, _, _, _, _, _, _} =
+                 Accounts.validate_session(s.api_token, nil)
       end
+
       assert 5 == Accounts.list_active_sessions(user, 0, 10) |> Enum.count()
 
       conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
@@ -3029,8 +3034,9 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 403
 
       for s <- sessions do
-        assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+        assert {:error, :revoked} = Accounts.validate_session(s.api_token, nil)
       end
+
       assert 0 == Accounts.list_active_sessions(user, 0, 10) |> Enum.count()
     end
   end
@@ -3040,6 +3046,7 @@ defmodule MalanWeb.UserControllerTest do
 
     test "Works", %{conn: conn, user: %User{id: id}, session: session} do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
+
       {:ok, _conn, %User{id: admin_id}, admin_session} =
         Helpers.Accounts.admin_user_session_conn(conn)
 
@@ -3054,18 +3061,21 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{"id" => ^id, "locked_by" => ^admin_id, "locked_at" => ^locked_at} =
-        json_response(conn, 200)["data"]
+               json_response(conn, 200)["data"]
 
       conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
       conn = put(conn, Routes.user_path(conn, :unlock, id))
+
       assert %{"id" => ^id, "locked_by" => nil, "locked_at" => nil} =
-        json_response(conn, 200)["data"]
+               json_response(conn, 200)["data"]
 
       conn = Helpers.Accounts.put_token(build_conn(), admin_session.api_token)
       conn = get(conn, Routes.user_path(conn, :show, id))
+
       assert %{"id" => ^id, "locked_by" => nil, "locked_at" => nil} =
-        json_response(conn, 200)["data"]
+               json_response(conn, 200)["data"]
     end
 
     test "Must be authenticated", %{conn: conn, user: %User{id: id}} do
@@ -3091,7 +3101,7 @@ defmodule MalanWeb.UserControllerTest do
   end
 
   defp assert_and_receive_email(user, subject) do
-    #assert_email_sent(to: {user.first_name, user.email})
+    # assert_email_sent(to: {user.first_name, user.email})
 
     receive do
       {:email, email} ->

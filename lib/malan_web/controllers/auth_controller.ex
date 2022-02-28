@@ -4,6 +4,7 @@ defmodule Malan.AuthController do
 
   require Logger
 
+  alias Malan.Utils
   alias Malan.Accounts
   alias Malan.Accounts.PrivacyPolicy
   alias Malan.Accounts.TermsOfService, as: ToS
@@ -85,8 +86,9 @@ defmodule Malan.AuthController do
   """
   def validate_token(conn, _opts) do
     with {:ok, api_token} <- retrieve_token(conn),
-         {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} <-
-           Accounts.validate_session(api_token, conn.remote_ip),
+         {:ok, user_id, username, session_id, ip_addr, valid_ip_only, user_roles, expires_at, tos,
+          pp} <-
+           Accounts.validate_session(api_token, Utils.IPv4.to_s(conn)),
          {:ok, accepted_tos} <- accepted_latest_tos?(tos),
          {:ok, accepted_pp} <- accepted_latest_pp?(pp),
          {:ok, is_admin} <- Accounts.user_is_admin?(user_roles),
@@ -102,6 +104,8 @@ defmodule Malan.AuthController do
       |> assign(:authed_user_accepted_pp, accepted_pp)
       |> assign(:authed_user_accepted_tos, accepted_tos)
       |> assign(:authed_user_is_moderator, is_moderator)
+      |> assign(:authed_session_ip_address, ip_addr)
+      |> assign(:authed_session_valid_only_for_ip, valid_ip_only)
     else
       # {:error, :no_token} ->
       # {:error, :not_found} ->
@@ -120,6 +124,8 @@ defmodule Malan.AuthController do
         |> assign(:authed_user_accepted_pp, false)
         |> assign(:authed_user_accepted_tos, false)
         |> assign(:authed_user_is_moderator, false)
+        |> assign(:authed_session_ip_address, nil)
+        |> assign(:authed_session_valid_only_for_ip, nil)
     end
   end
 
