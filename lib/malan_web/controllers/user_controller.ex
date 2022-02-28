@@ -289,8 +289,19 @@ defmodule MalanWeb.UserController do
 
   def whoami(conn, _params) do
     case conn_to_session_info(conn) do
-      {:ok, user_id, _username, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp} ->
-        render_whoami(conn, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp)
+      {:ok, user_id, _username, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos,
+       pp} ->
+        render_whoami(
+          conn,
+          user_id,
+          session_id,
+          ip_addr,
+          valid_only_ip,
+          user_roles,
+          expires_at,
+          tos,
+          pp
+        )
 
       # {:error, :revoked}
       # {:error, :expired}
@@ -518,7 +529,17 @@ defmodule MalanWeb.UserController do
     conn
   end
 
-  defp render_whoami(conn, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp) do
+  defp render_whoami(
+         conn,
+         user_id,
+         session_id,
+         ip_addr,
+         valid_only_ip,
+         user_roles,
+         expires_at,
+         tos,
+         pp
+       ) do
     render(
       conn,
       "whoami.json",

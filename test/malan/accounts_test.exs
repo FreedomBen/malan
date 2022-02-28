@@ -1070,8 +1070,8 @@ defmodule Malan.AccountsTest do
     test "validate_session/2 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{username: "randomusername1"})
       # TODO Unused
-      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos, pp} =
-               Accounts.validate_session(session.api_token, "1.1.1.1")
+      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos,
+              pp} = Accounts.validate_session(session.api_token, "1.1.1.1")
 
       assert user_id == session.user_id
       assert username == "randomusername1"
@@ -1113,9 +1113,15 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_session/2 returns properly when remote IP matches" do
-      session = session_fixture(%{username: "randomusername2", ip_address: "1.1.1.1", valid_only_for_ip: true})
-      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, _roles, exp, _tos, _pp} =
-        Accounts.validate_session(session.api_token, "1.1.1.1")
+      session =
+        session_fixture(%{
+          username: "randomusername2",
+          ip_address: "1.1.1.1",
+          valid_only_for_ip: true
+        })
+
+      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, _roles, exp,
+              _tos, _pp} = Accounts.validate_session(session.api_token, "1.1.1.1")
 
       assert exp == session.expires_at
       assert user_id == session.user_id
@@ -1126,7 +1132,13 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_session/2 returns an error when remote IP doesn't match" do
-      session = session_fixture(%{username: "randomusername2", ip_address: "1.1.1.1", valid_only_for_ip: true})
+      session =
+        session_fixture(%{
+          username: "randomusername2",
+          ip_address: "1.1.1.1",
+          valid_only_for_ip: true
+        })
+
       assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "127.0.0.1")
     end
 
@@ -1225,7 +1237,9 @@ defmodule Malan.AccountsTest do
         end)
 
       {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
-      assert {:ok, _, _, _, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token, nil)
+
+      assert {:ok, _, _, _, _, _, _, exp, _, _} =
+               Accounts.validate_session(forever_session.api_token, nil)
 
       assert DateTime.compare(
                Utils.DateTime.adjust_cur_time(36500, :days),
@@ -1233,7 +1247,9 @@ defmodule Malan.AccountsTest do
              ) == :lt
 
       Enum.each(sessions, fn s ->
-        assert {:ok, user_id, _username, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token, nil)
+        assert {:ok, user_id, _username, _, _, _, _, _, _, _} =
+                 Accounts.validate_session(s.api_token, nil)
+
         assert user_id == user.id
       end)
 
@@ -1257,7 +1273,10 @@ defmodule Malan.AccountsTest do
 
     test "session_valid?/2 with map revoked tokens always shows revoked" do
       assert {:error, :revoked} =
-               Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now()}), nil)
+               Accounts.session_valid?(
+                 session_valid_fixture(%{revoked_at: DateTime.utc_now()}),
+                 nil
+               )
 
       assert {:error, :revoked} =
                Accounts.session_valid?(
@@ -1295,8 +1314,9 @@ defmodule Malan.AccountsTest do
           latest_pp_accept_ver: "13"
         }
 
-      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^ip_address, ^valid_only_for_ip, ^roles, ^expires_at,
-              ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args, nil)
+      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^ip_address, ^valid_only_for_ip,
+              ^roles, ^expires_at, ^latest_tos_accept_ver,
+              ^latest_pp_accept_ver} = Accounts.session_valid?(args, nil)
     end
 
     test "session_valid?/2 with map expired but not revoked is expired" do

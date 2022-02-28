@@ -887,18 +887,21 @@ defmodule Malan.Accounts do
     {:error, :expired}
     {:error, :ip_addr}
   """
-  def session_valid?(%{
-        user_id: user_id,
-        username: username,
-        session_id: session_id,
-        expires_at: expires_at,
-        revoked_at: revoked_at,
-        ip_address: ip_address,
-        valid_only_for_ip: valid_only_for_ip,
-        roles: roles,
-        latest_tos_accept_ver: latest_tos_accept_ver,
-        latest_pp_accept_ver: latest_pp_accept_ver
-      }, remote_ip) do
+  def session_valid?(
+        %{
+          user_id: user_id,
+          username: username,
+          session_id: session_id,
+          expires_at: expires_at,
+          revoked_at: revoked_at,
+          ip_address: ip_address,
+          valid_only_for_ip: valid_only_for_ip,
+          roles: roles,
+          latest_tos_accept_ver: latest_tos_accept_ver,
+          latest_pp_accept_ver: latest_pp_accept_ver
+        },
+        remote_ip
+      ) do
     cond do
       !!revoked_at ->
         {:error, :revoked}
@@ -910,8 +913,8 @@ defmodule Malan.Accounts do
         {:error, :ip_addr}
 
       true ->
-        {:ok, user_id, username, session_id, ip_address, valid_only_for_ip,
-          roles, expires_at, latest_tos_accept_ver, latest_pp_accept_ver}
+        {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, expires_at,
+         latest_tos_accept_ver, latest_pp_accept_ver}
     end
   end
 
