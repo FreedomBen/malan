@@ -447,7 +447,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: "invalid username", password: "something wrong"}
         )
 
-      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
     end
 
     test "invalid password", %{conn: conn} do
@@ -458,7 +458,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "incorrect password"}
         )
 
-      assert %{"errors" => %{"detail" => "Unauthorized"}} = json_response(conn, 401)
+      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
@@ -794,6 +794,21 @@ defmodule MalanWeb.SessionControllerTest do
       # Make sure the token now doesn't work
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+      assert 403 == conn.status
+    end
+
+    test "Create session fails if IP isn't approved for user", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["1.1.1.1"]})
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password
+          }
+        )
+
       assert 403 == conn.status
     end
   end

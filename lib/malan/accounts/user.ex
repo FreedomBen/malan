@@ -14,7 +14,7 @@ defmodule Malan.Accounts.User do
   @derive {Swoosh.Email.Recipient, name: :first_name, address: :email}
 
   @prefix_deleted_user "|"
-  @valid_roles ["admin", "user", "moderator"]
+  # @valid_roles ["admin", "user", "moderator"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -188,10 +188,13 @@ defmodule Malan.Accounts.User do
 
   def lock_changeset(user, locked_by) do
     user
-    |> cast(%{
-      locked_at: Utils.DateTime.utc_now_trunc(),
-      locked_by: locked_by
-    }, [:locked_at, :locked_by])
+    |> cast(
+      %{
+        locked_at: Utils.DateTime.utc_now_trunc(),
+        locked_by: locked_by
+      },
+      [:locked_at, :locked_by]
+    )
     |> foreign_key_constraint(:locked_by)
   end
 

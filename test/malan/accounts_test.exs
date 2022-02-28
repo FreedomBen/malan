@@ -132,7 +132,10 @@ defmodule Malan.AccountsTest do
       user1 = Map.put(@user1_attrs, :password, "examplepassword")
       assert {:ok, %User{} = user} = Accounts.register_user(user1)
       assert user.password == "examplepassword"
-      {:ok, user_id} = Accounts.authenticate_by_username_pass(user.username, user.password)
+
+      {:ok, user_id} =
+        Accounts.authenticate_by_username_pass(user.username, user.password, "192.168.2.200")
+
       assert user_id == user.id
     end
 
@@ -194,10 +197,15 @@ defmodule Malan.AccountsTest do
 
     test "admin can trigger a password reset with random value" do
       assert {:ok, ru} = Helpers.Accounts.regular_user()
-      assert {:ok, user_id} = Accounts.authenticate_by_username_pass(ru.username, ru.password)
+
+      assert {:ok, user_id} =
+               Accounts.authenticate_by_username_pass(ru.username, ru.password, "192.168.2.200")
+
       assert {:ok, user} = Accounts.admin_update_user(ru, %{password_reset: true})
       assert user.password =~ ~r/[A-Za-z0-9]{10}/
-      assert {:ok, ^user_id} = Accounts.authenticate_by_username_pass(ru.username, ru.password)
+
+      assert {:ok, ^user_id} =
+               Accounts.authenticate_by_username_pass(ru.username, ru.password, "192.168.2.200")
     end
 
     test "register_user/1 with invalid data returns error changeset" do
@@ -848,6 +856,7 @@ defmodule Malan.AccountsTest do
         Accounts.create_session(
           user.username,
           user.password,
+          "192.168.2.200",
           Map.merge(
             %{"ip_address" => "192.168.2.200"},
             session_attrs
@@ -918,7 +927,7 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       assert {:ok, %Session{} = session} =
-               Accounts.create_session(user.username, user.password, %{
+               Accounts.create_session(user.username, user.password, "192.168.2.200", %{
                  "ip_address" => "192.168.2.200"
                })
 
@@ -951,6 +960,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  user.username,
                  user.password,
+                 "192.168.2.200",
                  %{
                    "never_expires" => true,
                    "ip_address" => "192.168.2.200"
@@ -968,6 +978,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  user.username,
                  user.password,
+                 "192.168.2.200",
                  %{
                    "expires_in_seconds" => -120,
                    "ip_address" => "192.168.2.200"
@@ -986,6 +997,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  user.username,
                  user.password,
+                 "192.168.2.200",
                  %{
                    "never_expires" => false,
                    "expires_in_seconds" => -120,
@@ -1003,10 +1015,15 @@ defmodule Malan.AccountsTest do
       user2 = user_fixture(%{username: "username2", email: "username2@example.com"})
 
       assert {:ok, session} =
-               Accounts.create_session(user1.username, user1.password, %{
-                 "user_id" => user2.id,
-                 "ip_address" => "192.168.2.200"
-               })
+               Accounts.create_session(
+                 user1.username,
+                 user1.password,
+                 "192.168.2.200",
+                 %{
+                   "user_id" => user2.id,
+                   "ip_address" => "192.168.2.200"
+                 }
+               )
 
       assert user2.id != user1.id
       assert session.user_id == user1.id
@@ -1015,7 +1032,7 @@ defmodule Malan.AccountsTest do
     test "get_user_id_pass_hash_by_username/1 returns {user_id, password_hash, locked_at} on success" do
       user = user_fixture()
 
-      assert {user_id, password_hash, nil} =
+      assert {user_id, password_hash, nil, []} =
                Accounts.get_user_id_pass_hash_by_username(user.username)
 
       assert user_id == user.id
@@ -1029,14 +1046,14 @@ defmodule Malan.AccountsTest do
     test "get_user_id_pass_hash_by_username/1 returns locked_at as datetime when user is locked" do
       user = user_fixture()
 
-      assert {user_id, password_hash, nil} =
+      assert {user_id, password_hash, nil, []} =
                Accounts.get_user_id_pass_hash_by_username(user.username)
 
       assert user_id == user.id
 
       {:ok, user} = Accounts.lock_user(user, nil)
 
-      assert {^user_id, ^password_hash, locked_at} =
+      assert {^user_id, ^password_hash, locked_at, []} =
                Accounts.get_user_id_pass_hash_by_username(user.username)
 
       assert locked_at == user.locked_at
@@ -1046,7 +1063,7 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       assert {:error, :unauthorized} =
-               Accounts.create_session(user.username, "nottherightpassword", %{
+               Accounts.create_session(user.username, "nottherightpassword", "192.168.2.200", %{
                  "ip_address" => "192.168.2.200"
                })
     end
@@ -1056,6 +1073,7 @@ defmodule Malan.AccountsTest do
                Accounts.create_session(
                  "notarealusernameatall",
                  "nottherightpassword",
+                 "192.168.2.200",
                  %{"ip_address" => "192.168.2.200"}
                )
     end

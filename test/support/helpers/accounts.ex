@@ -104,12 +104,13 @@ defmodule Malan.Test.Helpers.Accounts do
   end
 
   @doc "Returns: {:ok, session}"
-  def create_session(user, session_attrs \\ %{}) do
+  def create_session(user, session_attrs \\ %{}, remote_ip \\ "192.168.2.200") do
     Accounts.create_session(
       user.username,
       user.password,
+      remote_ip,
       Map.merge(
-        %{"ip_address" => "192.168.2.200"},
+        %{"ip_address" => remote_ip},
         session_attrs
       )
     )

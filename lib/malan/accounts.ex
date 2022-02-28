@@ -521,7 +521,7 @@ defmodule Malan.Accounts do
   def get_user_id_pass_hash_by_username(username) do
     Repo.one(
       from u in User,
-        select: {u.id, u.password_hash, u.locked_at},
+        select: {u.id, u.password_hash, u.locked_at, u.approved_ips},
         where: u.username == ^username,
         where: is_nil(u.deleted_at)
     )
@@ -532,6 +532,17 @@ defmodule Malan.Accounts do
 
   Returns {:ok, user_id} if given_pass is correct.  Otherwise {:error, :unauthorized}
   """
+  def verify_pass(user_id, given_pass, password_hash, [] = _approved_ips, _remote_ip) do
+    verify_pass(user_id, given_pass, password_hash)
+  end
+
+  def verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip) do
+    cond do
+      remote_ip in approved_ips -> verify_pass(user_id, given_pass, password_hash)
+      true -> {:error, :unauthorized}
+    end
+  end
+
   def verify_pass(user_id, given_pass, password_hash) do
     cond do
       Utils.Crypto.verify_password(given_pass, password_hash) -> {:ok, user_id}
@@ -566,12 +577,12 @@ defmodule Malan.Accounts do
           {:error, :unauthorized}
           {:error, :not_a_user}
   """
-  def authenticate_by_username_pass(username, given_pass) do
+  def authenticate_by_username_pass(username, given_pass, remote_ip) do
     case get_user_id_pass_hash_by_username(username) do
-      {user_id, password_hash, nil} ->
-        verify_pass(user_id, given_pass, password_hash)
+      {user_id, password_hash, nil, approved_ips} ->
+        verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
 
-      {user_id, password_hash, locked_at} ->
+      {user_id, password_hash, locked_at, _} ->
         verify_pass_locked(user_id, given_pass, password_hash, locked_at)
 
       nil ->
@@ -697,8 +708,8 @@ defmodule Malan.Accounts do
       If unauthorized you'll get back {:error, :unauthorized}
       If user is not found, you'll get back {:error, :not_found}
   """
-  def create_session(username, pass, attrs) do
-    case authenticate_by_username_pass(username, pass) do
+  def create_session(username, pass, remote_ip, attrs) do
+    case authenticate_by_username_pass(username, pass, remote_ip) do
       {:ok, user_id} -> new_session(user_id, attrs)
       {:error, :user_locked} -> record_create_session_locked(username, attrs)
       {:error, :unauthorized} -> record_create_session_unauthorized(username, attrs)
