@@ -267,37 +267,72 @@ defmodule MalanWeb.SessionControllerTest do
       # page_num: 0 page_size: 3
       c1 = c2 = c3 = Helpers.Accounts.put_token(conn, s1.api_token)
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 3)
-      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 3)
-      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 3)
+
+      c2 =
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 3)
+
+      c3 =
+        get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
+          page_num: 0,
+          page_size: 3
+        )
+
       for c <- [c1, c2, c3],
-        do: assert json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3])
+          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3]))
 
       # page_num: 1 page_size: 3
       c1 = c2 = c3 = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 1, page_size: 3)
-      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 1, page_size: 3)
-      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 1, page_size: 3)
+
+      c2 =
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 1, page_size: 3)
+
+      c3 =
+        get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
+          page_num: 1,
+          page_size: 3
+        )
+
       for c <- [c1, c2, c3],
-        do: assert json_response(c, 200)["data"] == sessions_to_retval([s1])
+          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s1]))
 
       # page_num: 0 page_size: 5
       c1 = c2 = c3 = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 5)
-      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 5)
-      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 5)
+
+      c2 =
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 5)
+
+      c3 =
+        get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
+          page_num: 0,
+          page_size: 5
+        )
+
       for c <- [c1, c2, c3],
-        do: assert json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3, s1])
+          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3, s1]))
 
       # as admin.  page_num: 0 page_size: 3
       c2 = c3 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
-      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, au.id), page_num: 0, page_size: 3)
-      c3 = get(c3, Routes.user_session_path(c3, :user_index_active, "current"), page_num: 0, page_size: 3)
+
+      c2 =
+        get(c2, Routes.user_session_path(c2, :user_index_active, au.id), page_num: 0, page_size: 3)
+
+      c3 =
+        get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
+          page_num: 0,
+          page_size: 3
+        )
+
       for c <- [c2, c3],
-        do: assert json_response(c, 200)["data"] == sessions_to_retval([s6, s2])
+          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s6, s2]))
 
       # as admin requesting regular user.  page_num: 0 page_size: 3
       c1 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
-      c1 = get(c1, Routes.user_session_path(c1, :user_index_active, ru.id), page_num: 0, page_size: 3)
+
+      c1 =
+        get(c1, Routes.user_session_path(c1, :user_index_active, ru.id), page_num: 0, page_size: 3)
+
       assert json_response(c1, 200)["data"] == sessions_to_retval([s5, s4, s3])
     end
 
@@ -314,7 +349,13 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, _ru2, rs2} = Enum.at(users, 1)
 
       c1 = Helpers.Accounts.put_token(conn, rs2.api_token)
-      c1 = get(c1, Routes.user_session_path(c1, :user_index_active, ru1.id), page_num: 0, page_size: 3)
+
+      c1 =
+        get(c1, Routes.user_session_path(c1, :user_index_active, ru1.id),
+          page_num: 0,
+          page_size: 3
+        )
+
       assert c1.status == 401
     end
   end
@@ -568,7 +609,7 @@ defmodule MalanWeb.SessionControllerTest do
             password: user.password,
             user_id: "ohia",
             # IP addresses should be ignored
-            ip_address: "10.0.0.0",
+            ip_address: "10.0.0.0"
           }
         )
 
@@ -676,7 +717,7 @@ defmodule MalanWeb.SessionControllerTest do
                  who: ^user_id,
                  who_username: ^username,
                  when: when_utc
-               } = tx,
+               } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
@@ -739,16 +780,16 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{
                "id" => ^id,
                "ip_address" => "127.0.0.1",
-               "valid_only_for_ip" => true
-               "is_valid" => true,
+               "valid_only_for_ip" => true,
+               "is_valid" => true
              } = jr
 
       # Change the session's IP address so it won't match
       assert {1, nil} =
-        Malan.Repo.update_all(
-          from(s in Session, where: s.id == ^id),
-          set: [ip_address: "1.1.1.1"]
-        )
+               Malan.Repo.update_all(
+                 from(s in Session, where: s.id == ^id),
+                 set: [ip_address: "1.1.1.1"]
+               )
 
       # Make sure the token now doesn't work
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
