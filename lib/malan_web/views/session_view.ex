@@ -24,6 +24,7 @@ defmodule MalanWeb.SessionView do
       revoked_at: session.revoked_at,
       ip_address: session.ip_address,
       valid_only_for_ip: session.valid_only_for_ip,
+      valid_only_for_approved_ips: session.valid_only_for_approved_ips,
       location: session.location,
       is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at)
     }

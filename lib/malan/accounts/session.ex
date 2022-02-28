@@ -15,6 +15,8 @@ defmodule Malan.Accounts.Session do
     field :location, :string
     field :revoked_at, :utc_datetime
     field :valid_only_for_ip, :boolean, default: false
+    # This is not yet used but will be in #78
+    field :valid_only_for_approved_ips, :boolean, default: false
     belongs_to :user, User
 
     field :api_token, :string, virtual: true
@@ -34,7 +36,8 @@ defmodule Malan.Accounts.Session do
       :revoked_at,
       :ip_address,
       :location,
-      :valid_only_for_ip
+      :valid_only_for_ip,
+      :valid_only_for_approved_ips
     ])
     |> validate_required([
       :api_token,
@@ -55,7 +58,8 @@ defmodule Malan.Accounts.Session do
       :expires_in_seconds,
       :ip_address,
       :location,
-      :valid_only_for_ip
+      :valid_only_for_ip,
+      :valid_only_for_approved_ips
     ])
     |> put_api_token()
     |> set_expiration_time()
