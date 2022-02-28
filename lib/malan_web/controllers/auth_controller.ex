@@ -86,7 +86,7 @@ defmodule Malan.AuthController do
   def validate_token(conn, _opts) do
     with {:ok, api_token} <- retrieve_token(conn),
          {:ok, user_id, username, session_id, user_roles, expires_at, tos, pp} <-
-           Accounts.validate_session(api_token),
+           Accounts.validate_session(api_token, conn.remote_ip),
          {:ok, accepted_tos} <- accepted_latest_tos?(tos),
          {:ok, accepted_pp} <- accepted_latest_pp?(pp),
          {:ok, is_admin} <- Accounts.user_is_admin?(user_roles),

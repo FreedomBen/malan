@@ -864,6 +864,8 @@ defmodule Malan.AccountsTest do
         session_id: "session_id",
         expires_at: Utils.DateTime.adjust_cur_time(7, :days),
         revoked_at: nil,
+        ip_address: "127.0.0.1",
+        valid_only_for_ip: false,
         roles: ["user"],
         latest_tos_accept_ver: "1",
         latest_pp_accept_ver: "2"
@@ -956,7 +958,7 @@ defmodule Malan.AccountsTest do
                )
 
       assert DateTime.diff(session.expires_at, DateTime.utc_now()) > 5_000_000_000
-      assert {:ok, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token)
+      assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token, nil)
     end
 
     test "create_session/3 with expires_in_seconds expires at specified time" do
@@ -974,7 +976,7 @@ defmodule Malan.AccountsTest do
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
-      assert {:error, :expired} = Accounts.validate_session(session.api_token)
+      assert {:error, :expired} = Accounts.validate_session(session.api_token, nil)
     end
 
     test "create_session/1 never_expire set to 'false' doesn't affect stuff" do
@@ -993,7 +995,7 @@ defmodule Malan.AccountsTest do
 
       assert !TestUtils.DateTime.within_last?(session.expires_at, 119, :seconds)
       assert TestUtils.DateTime.within_last?(session.expires_at, 125, :seconds)
-      assert {:error, :expired} = Accounts.validate_session(session.api_token)
+      assert {:error, :expired} = Accounts.validate_session(session.api_token, nil)
     end
 
     test "create_session/1 doesn't allow specifying user ID" do
@@ -1065,16 +1067,18 @@ defmodule Malan.AccountsTest do
       assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), sesh.revoked_at, :second))
     end
 
-    test "validate_session/1 returns a user id, roles, and expires_at when the session is valid" do
+    test "validate_session/2 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{username: "randomusername1"})
       # TODO Unused
-      assert {:ok, user_id, username, session_id, roles, exp, tos, pp} =
-               Accounts.validate_session(session.api_token)
+      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos, pp} =
+               Accounts.validate_session(session.api_token, "1.1.1.1")
 
       assert user_id == session.user_id
       assert username == "randomusername1"
       assert session_id == session.id
       assert roles == ["user"]
+      assert ip_address == session.ip_address
+      assert valid_only_for_ip == session.valid_only_for_ip
 
       assert TestUtils.DateTime.first_after_second_within?(
                Utils.DateTime.adjust_cur_time(1, :weeks),
@@ -1087,25 +1091,43 @@ defmodule Malan.AccountsTest do
       assert is_nil(pp)
     end
 
-    test "validate_session/1 return an error when the session is revoked" do
+    test "validate_session/2 return an error when the session is revoked" do
       session = session_fixture(%{username: "randomusername2"})
       assert {:ok, %Session{}} = Accounts.delete_session(session)
-      assert {:error, :revoked} = Accounts.validate_session(session.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
-    test "validate_session/1 return an error when the session is revoked even when token expires infinitely" do
+    test "validate_session/2 return an error when the session is revoked even when token expires infinitely" do
       session = session_fixture(%{username: "randomusername2"}, %{"never_expires" => false})
       assert {:ok, %Session{}} = Accounts.delete_session(session)
-      assert {:error, :revoked} = Accounts.validate_session(session.api_token)
+      assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
-    test "validate_session/1 return an error when the session is expired" do
+    test "validate_session/2 return an error when the session is expired" do
       session = session_fixture(%{username: "randomusername3"}, %{"expires_in_seconds" => -5})
-      assert {:error, :expired} = Accounts.validate_session(session.api_token)
+      assert {:error, :expired} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
-    test "validate_session/1 return an error when the session token does not exist" do
-      assert {:error, :not_found} = Accounts.validate_session("notavalidtoken")
+    test "validate_session/2 return an error when the session token does not exist" do
+      assert {:error, :not_found} = Accounts.validate_session("notavalidtoken", "1.1.1.1")
+    end
+
+    test "validate_session/2 returns properly when remote IP matches" do
+      session = session_fixture(%{username: "randomusername2", ip_address: "1.1.1.1", valid_only_for_ip: true})
+      assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, _roles, exp, _tos, _pp} =
+        Accounts.validate_session(session.api_token, "1.1.1.1")
+
+      assert exp == session.expires_at
+      assert user_id == session.user_id
+      assert username == "randomusername2"
+      assert session_id == session.id
+      assert ip_address == session.ip_address
+      assert valid_only_for_ip == session.valid_only_for_ip
+    end
+
+    test "validate_session/2 returns an error when remote IP doesn't match" do
+      session = session_fixture(%{username: "randomusername2", ip_address: "1.1.1.1", valid_only_for_ip: true})
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "127.0.0.1")
     end
 
     test "update_user/2 can be used to update user preferences" do
@@ -1203,7 +1225,7 @@ defmodule Malan.AccountsTest do
         end)
 
       {:ok, forever_session} = Helpers.Accounts.create_session(user, %{"never_expires" => true})
-      assert {:ok, _, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token)
+      assert {:ok, _, _, _, _, _, _, exp, _, _} = Accounts.validate_session(forever_session.api_token, nil)
 
       assert DateTime.compare(
                Utils.DateTime.adjust_cur_time(36500, :days),
@@ -1211,14 +1233,14 @@ defmodule Malan.AccountsTest do
              ) == :lt
 
       Enum.each(sessions, fn s ->
-        assert {:ok, user_id, _username, _, _, _, _, _} = Accounts.validate_session(s.api_token)
+        assert {:ok, user_id, _username, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token, nil)
         assert user_id == user.id
       end)
 
       Accounts.revoke_active_sessions(user)
 
       Enum.each(sessions, fn s ->
-        assert {:error, :revoked} = Accounts.validate_session(s.api_token)
+        assert {:error, :revoked} = Accounts.validate_session(s.api_token, nil)
       end)
     end
 
@@ -1229,24 +1251,25 @@ defmodule Malan.AccountsTest do
       assert {:ok, true} = Accounts.user_is_admin?(user.id)
     end
 
-    test "session_valid?/1 with nil returns error not found" do
-      assert {:error, :not_found} = Accounts.session_valid?(nil)
+    test "session_valid?/2 with nil returns error not found" do
+      assert {:error, :not_found} = Accounts.session_valid?(nil, nil)
     end
 
-    test "session_valid?/1 with map revoked tokens always shows revoked" do
+    test "session_valid?/2 with map revoked tokens always shows revoked" do
       assert {:error, :revoked} =
-               Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now()}))
+               Accounts.session_valid?(session_valid_fixture(%{revoked_at: DateTime.utc_now()}), nil)
 
       assert {:error, :revoked} =
                Accounts.session_valid?(
                  session_valid_fixture(%{
                    expires_at: Utils.DateTime.adjust_cur_time(-2, :hours),
                    revoked_at: DateTime.utc_now()
-                 })
+                 }),
+                 nil
                )
     end
 
-    test "session_valid?/1 returns expected structure when valid" do
+    test "session_valid?/2 returns expected structure when valid" do
       args =
         %{
           user_id: user_id,
@@ -1254,6 +1277,8 @@ defmodule Malan.AccountsTest do
           session_id: session_id,
           expires_at: expires_at,
           revoked_at: _revoked_at,
+          ip_address: ip_address,
+          valid_only_for_ip: valid_only_for_ip,
           roles: roles,
           latest_tos_accept_ver: latest_tos_accept_ver,
           latest_pp_accept_ver: latest_pp_accept_ver
@@ -1263,32 +1288,62 @@ defmodule Malan.AccountsTest do
           session_id: "abc",
           expires_at: Utils.DateTime.adjust_cur_time(2, :days),
           revoked_at: nil,
+          ip_address: "127.0.0.1",
+          valid_only_for_ip: false,
           roles: ["user"],
           latest_tos_accept_ver: "12",
           latest_pp_accept_ver: "13"
         }
 
-      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^roles, ^expires_at,
-              ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args)
+      assert {:ok, ^user_id, "fakeusername1", ^session_id, ^ip_address, ^valid_only_for_ip, ^roles, ^expires_at,
+              ^latest_tos_accept_ver, ^latest_pp_accept_ver} = Accounts.session_valid?(args, nil)
     end
 
-    test "session_valid?/1 with map expired but not revoked is expired" do
+    test "session_valid?/2 with map expired but not revoked is expired" do
       assert {:error, :expired} =
                Accounts.session_valid?(
                  session_valid_fixture(%{
                    expires_at: Utils.DateTime.adjust_cur_time(-2, :hours),
                    revoked_at: nil
-                 })
+                 }),
+                 nil
                )
     end
 
-    test "session_valid?/1 with forever token is valid" do
-      assert {:ok, _, _, _, _, _, _, _} =
+    test "session_valid?/2 with forever token is valid" do
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
                Accounts.session_valid?(
                  session_valid_fixture(%{
                    expires_at: Utils.DateTime.distant_future(),
                    revoked_at: nil
-                 })
+                 }),
+                 nil
+               )
+    end
+
+    test "session_valid?/2 validates for correct IP address" do
+      assert {:ok, _, _, _, "1.1.1.1", true, _, _, _, _} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   ip_address: "1.1.1.1",
+                   valid_only_for_ip: true,
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "1.1.1.1"
+               )
+    end
+
+    test "session_valid?/2 rejects for incorrect IP address" do
+      assert {:error, :ip_addr} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   ip_address: "1.1.1.1",
+                   valid_only_for_ip: true,
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "127.0.0.1"
                )
     end
   end

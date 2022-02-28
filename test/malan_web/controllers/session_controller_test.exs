@@ -692,7 +692,11 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn =
         post(conn, Routes.session_path(conn, :create),
-          session: %{username: user.username, password: user.password, valid_only_for_ip: true}
+          session: %{
+            username: user.username,
+            password: user.password,
+            valid_only_for_ip: true
+          }
         )
 
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
@@ -705,14 +709,51 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{
                "id" => ^id,
                "user_id" => ^user_id,
-               "authenticated_at" => authenticated_at,
-               "expires_at" => expires_at,
                "ip_address" => "127.0.0.1",
-               "location" => nil,
-               "revoked_at" => nil,
                "is_valid" => true,
                "valid_only_for_ip" => true
              } = jr
+    end
+
+    test "Created session is invalid if token comes from different IP", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            valid_only_for_ip: true
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
+
+      # Make sure the token works
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "ip_address" => "127.0.0.1",
+               "valid_only_for_ip" => true
+               "is_valid" => true,
+             } = jr
+
+      # Change the session's IP address so it won't match
+      assert {1, nil} =
+        Malan.Repo.update_all(
+          from(s in Session, where: s.id == ^id),
+          set: [ip_address: "1.1.1.1"]
+        )
+
+      # Make sure the token now doesn't work
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+      assert 403 == conn.status
     end
   end
 
