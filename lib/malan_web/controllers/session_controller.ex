@@ -200,12 +200,6 @@ defmodule MalanWeb.SessionController do
     conn
   end
 
-  defp get_ip_addr(conn) do
-    conn.remote_ip
-    |> :inet_parse.ntoa()
-    |> to_string()
-  end
-
   # # Get Cloudflare Real IP from request header: https://developers.cloudflare.com/fundamentals/get-started/http-request-headers
   # defp get_cf_real_ip_addr(conn) do
   #   case get_req_header(conn, "cf-connecting-ip") do
@@ -216,7 +210,7 @@ defmodule MalanWeb.SessionController do
 
   defp put_ip_addr(session_params, conn) do
     session_params
-    |> Map.put("ip_address", get_ip_addr(conn))
+    |> Map.put("ip_address", Utils.IPv4.to_s(conn))
     # |> Map.put("real_ip_address", get_cf_real_ip_addr(conn))
   end
 end

@@ -21,6 +21,8 @@ defmodule MalanWeb.AuthControllerTest do
       authed_user_accepted_pp: false,
       authed_user_accepted_tos: false,
       authed_user_is_moderator: false,
+      authed_session_ip_address: nil,
+      authed_session_valid_only_for_ip: nil,
       authed_user_roles: [],
       auth_expires_at: nil,
       auth_error: auth_error
@@ -96,7 +98,7 @@ defmodule MalanWeb.AuthControllerTest do
     test "Handles malformed token", %{conn: conn} do
       conn =
         Plug.Conn.put_req_header(conn, "authorization", "Bearer invalidapitoken")
-        |> AuthController.validate_token(conn)
+        |> AuthController.validate_token(nil)
 
       assert conn.assigns == conn_assigns_for_invalid_token(:not_found)
     end
@@ -104,15 +106,61 @@ defmodule MalanWeb.AuthControllerTest do
     test "Handles empty token", %{conn: conn} do
       conn =
         Plug.Conn.put_req_header(conn, "authorization", "Bearer")
-        |> AuthController.validate_token(conn)
+        |> AuthController.validate_token(nil)
 
       assert conn.assigns == conn_assigns_for_invalid_token(:malformed)
 
       conn =
         Plug.Conn.put_req_header(conn, "authorization", "")
-        |> AuthController.validate_token(conn)
+        |> AuthController.validate_token(nil)
 
       assert conn.assigns == conn_assigns_for_invalid_token(:malformed)
+    end
+
+    test "Adds IP address and valid_only_for_ip", %{conn: conn} do
+      {:ok, user, session} =
+        Helpers.Accounts.regular_user_with_session(%{}, %{
+          "ip_address" => "127.0.0.1",
+          "valid_only_for_ip" => true
+        })
+
+      conn =
+        Plug.Conn.put_req_header(conn, "authorization", "Bearer #{session.api_token}")
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns.auth_error == nil
+      assert conn.assigns.authed_user_id == user.id
+      assert conn.assigns.authed_username == user.username
+      assert conn.assigns.authed_user_roles == ["user"]
+      assert conn.assigns.authed_user_is_admin == false
+      assert conn.assigns.authed_user_accepted_pp == false
+      assert conn.assigns.authed_user_accepted_tos == false
+      assert conn.assigns.authed_user_is_moderator == false
+      assert conn.assigns.authed_session_ip_address == "127.0.0.1"
+      assert conn.assigns.authed_session_valid_only_for_ip == true
+    end
+
+    test "Invalid and adds IP address and valid_only_for_ip when IP is wrong", %{conn: conn} do
+      {:ok, _user, session} =
+        Helpers.Accounts.regular_user_with_session(%{}, %{
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_ip" => true
+        })
+
+      conn =
+        Plug.Conn.put_req_header(conn, "authorization", "Bearer #{session.api_token}")
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns.auth_error == :ip_addr
+      assert conn.assigns.authed_user_id == nil
+      assert conn.assigns.authed_username == nil
+      assert conn.assigns.authed_user_roles == []
+      assert conn.assigns.authed_user_is_admin == false
+      assert conn.assigns.authed_user_accepted_pp == false
+      assert conn.assigns.authed_user_accepted_tos == false
+      assert conn.assigns.authed_user_is_moderator == false
+      assert conn.assigns.authed_session_ip_address == nil
+      assert conn.assigns.authed_session_valid_only_for_ip == nil
     end
   end
 

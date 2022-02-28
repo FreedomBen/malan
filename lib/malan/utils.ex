@@ -539,3 +539,13 @@ defmodule Malan.Utils.Ecto.Changeset do
 
   def convert_changes(data), do: data
 end
+
+defmodule Malan.Utils.IPv4 do
+  def to_s(%Plug.Conn{} = conn), do: to_s(conn.remote_ip)
+
+  def to_s(ip_tuple) do
+    ip_tuple
+    |> :inet_parse.ntoa()
+    |> Kernel.to_string()
+  end
+end

@@ -590,7 +590,7 @@ defmodule MalanWeb.UserController do
   defp conn_to_session_info(conn) do
     with {:ok, api_token} <- retrieve_token(conn),
          {:ok, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp} <-
-           Accounts.validate_session(api_token, conn.remote_ip) do
+           Accounts.validate_session(api_token, Utils.IPv4.to_s(conn)) do
       {:ok, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp}
     end
   end
