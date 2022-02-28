@@ -446,6 +446,8 @@ defmodule Malan.Utils.Phoenix.Controller do
     |> Phoenix.Controller.render("#{status}.json")
     |> halt()
   end
+
+  def remote_ip_s(conn), do: Malan.Utils.IPv4.to_s(conn.remote_ip)
 end
 
 defmodule Malan.Utils.Ecto.Query do
@@ -514,10 +516,6 @@ defmodule Malan.Utils.Ecto.Changeset do
     |> convert_changes(struct_type)
   end
 
-  def convert_changes(data, struct_type) do
-    struct(struct_type, convert_changes(data))
-  end
-
   def convert_changes(%{} = data) do
     data
     |> Enum.map(fn
@@ -538,6 +536,10 @@ defmodule Malan.Utils.Ecto.Changeset do
   end
 
   def convert_changes(data), do: data
+
+  def convert_changes(data, struct_type) do
+    struct(struct_type, convert_changes(data))
+  end
 end
 
 defmodule Malan.Utils.IPv4 do

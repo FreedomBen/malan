@@ -4,6 +4,7 @@ defmodule MalanWeb.SessionController do
   require Logger
 
   import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+  import Malan.Utils.Phoenix.Controller, only: [remote_ip_s: 1]
 
   alias Malan.{Accounts, Utils}
   alias Malan.Accounts.Session
@@ -81,7 +82,12 @@ defmodule MalanWeb.SessionController do
         "session" => %{"username" => username, "password" => password} = session_opts
       }) do
     with {:ok, %Session{} = session} <-
-           Accounts.create_session(username, password, put_ip_addr(session_opts, conn)) do
+           Accounts.create_session(
+             username,
+             password,
+             remote_ip_s(conn),
+             put_ip_addr(session_opts, conn)
+           ) do
       record_transaction(
         %Plug.Conn{assigns: %{authed_user_id: session.user_id, authed_session_id: session.id}},
         true,
@@ -107,9 +113,9 @@ defmodule MalanWeb.SessionController do
       # {:error, :unauthorized} ->
       _err ->
         conn
-        |> put_status(401)
+        |> put_status(403)
         |> put_view(ErrorView)
-        |> render("401.json", invalid_credentials: true)
+        |> render("403.json", invalid_credentials: true)
     end
   end
 
