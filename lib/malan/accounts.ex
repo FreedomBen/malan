@@ -734,9 +734,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          Utils.trunc_str(
-            "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
-          ),
+          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password])}",
           %{}
         )
 
@@ -769,9 +767,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          Utils.trunc_str(
-            "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password])}"
-          ),
+          "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password])}",
           %{}
         )
 
@@ -804,9 +800,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          Utils.trunc_str(
-            "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}"
-          ),
+          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
           %{}
         )
 
@@ -839,9 +833,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          Utils.trunc_str(
-            "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}"
-          ),
+          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
           %{}
         )
 
