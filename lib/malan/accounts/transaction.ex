@@ -17,7 +17,7 @@ defmodule Malan.Accounts.Transaction do
     field :what, :string, null: false         # What was done (Human readable string)
     field :when, :utc_datetime, null: false   # When this change happened (may not match created_at)
     field :user_id, :binary_id, null: true    # User making change (owner of the token that changed something)
-    field :session_id, :binary_id, null: true # Session making the change (session ownign the token that changed something)
+    field :session_id, :binary_id, null: true # Session making the change (session owning the token that changed something)
     field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
     field :who_username, :string, null: true  # Which user was modified/changed/created/etc
 

@@ -539,7 +539,7 @@ defmodule Malan.Accounts do
   def verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip) do
     cond do
       remote_ip in approved_ips -> verify_pass(user_id, given_pass, password_hash)
-      true -> {:error, :unauthorized}
+      true -> {:error, :ip_addr}
     end
   end
 
@@ -711,9 +711,10 @@ defmodule Malan.Accounts do
   def create_session(username, pass, remote_ip, attrs) do
     case authenticate_by_username_pass(username, pass, remote_ip) do
       {:ok, user_id} -> new_session(user_id, attrs)
-      {:error, :user_locked} -> record_create_session_locked(username, attrs)
-      {:error, :unauthorized} -> record_create_session_unauthorized(username, attrs)
-      {:error, :not_a_user} -> record_create_session_not_a_user(username, attrs)
+      {:error, :user_locked} -> record_create_session_locked(username, remote_ip, attrs)
+      {:error, :ip_addr} -> record_create_session_bad_ip(username, remote_ip, attrs)
+      {:error, :unauthorized} -> record_create_session_unauthorized(username, remote_ip, attrs)
+      {:error, :not_a_user} -> record_create_session_not_a_user(username, remote_ip, attrs)
     end
   end
 
@@ -722,7 +723,7 @@ defmodule Malan.Accounts do
 
   Returns {:error, :unauthorized}
   """
-  def record_create_session_locked(username_or_id, attrs, username \\ nil) do
+  def record_create_session_locked(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
@@ -733,13 +734,20 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed because user account is locked:  #{Utils.map_to_string(attrs, [:password])}",
+          Utils.trunc_str(
+            "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password])}"
+          ),
           %{}
         )
 
       # recursive
       _ ->
-        record_create_session_locked(username_to_id(username_or_id), attrs, username_or_id)
+        record_create_session_locked(
+          username_to_id(username_or_id),
+          remote_ip,
+          attrs,
+          username_or_id
+        )
     end
 
     {:error, :user_locked}
@@ -750,7 +758,7 @@ defmodule Malan.Accounts do
 
   Returns {:error, :unauthorized}
   """
-  def record_create_session_unauthorized(username_or_id, attrs, username \\ nil) do
+  def record_create_session_bad_ip(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
@@ -761,13 +769,55 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed:  #{Utils.map_to_string(attrs, [:password])}",
+          Utils.trunc_str(
+            "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password])}"
+          ),
           %{}
         )
 
       # recursive
       _ ->
-        record_create_session_unauthorized(username_to_id(username_or_id), attrs, username_or_id)
+        record_create_session_bad_ip(
+          username_to_id(username_or_id),
+          remote_ip,
+          attrs,
+          username_or_id
+        )
+    end
+
+    {:error, :unauthorized}
+  end
+
+  @doc """
+  Record failed session creation attempt as unauthorized.
+
+  Returns {:error, :unauthorized}
+  """
+  def record_create_session_unauthorized(username_or_id, remote_ip, attrs, username \\ nil) do
+    case Utils.is_uuid_or_nil?(username_or_id) do
+      true ->
+        record_transaction(
+          false,
+          username_or_id,
+          nil,
+          username_or_id,
+          username,
+          "sessions",
+          "POST",
+          Utils.trunc_str(
+            "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}"
+          ),
+          %{}
+        )
+
+      # recursive
+      _ ->
+        record_create_session_unauthorized(
+          username_to_id(username_or_id),
+          remote_ip,
+          attrs,
+          username_or_id
+        )
     end
 
     {:error, :unauthorized}
@@ -778,7 +828,7 @@ defmodule Malan.Accounts do
 
   Returns {:error, :not_a_user}
   """
-  def record_create_session_not_a_user(username_or_id, attrs, username \\ nil) do
+  def record_create_session_not_a_user(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
         record_transaction(
@@ -789,13 +839,20 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist):  #{Utils.map_to_string(attrs, [:password])}",
+          Utils.trunc_str(
+            "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}"
+          ),
           %{}
         )
 
       # recursive
       _ ->
-        record_create_session_not_a_user(username_to_id(username_or_id), attrs, username_or_id)
+        record_create_session_not_a_user(
+          username_to_id(username_or_id),
+          remote_ip,
+          attrs,
+          username_or_id
+        )
     end
 
     {:error, :not_a_user}
