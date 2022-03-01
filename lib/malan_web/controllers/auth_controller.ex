@@ -110,7 +110,10 @@ defmodule Malan.AuthController do
       # {:error, :no_token} ->
       # {:error, :not_found} ->
       # {:error, :malformed} ->
+      # {:error, :ip_addr} ->
       {:error, err} ->
+        # In the future, we may wish to log this further by creating
+        # a Transaction, or by sending it to an audit logging service
         Logger.info("[validate_token]: API token error: #{err}")
 
         conn
