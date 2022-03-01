@@ -932,13 +932,9 @@ defmodule Malan.Accounts do
     )
   end
 
-  def session_valid?(nil, _) do
-    {:error, :not_found}
-  end
-
   @doc """
   Checks the validity of the specified session (looking at
-  expiration and revocation).
+  expiration and revocation).  Token failures will be logged.
 
   Returns
 
@@ -947,6 +943,10 @@ defmodule Malan.Accounts do
     {:error, :expired}
     {:error, :ip_addr}
   """
+  def session_valid?(nil, _) do
+    {:error, :not_found}
+  end
+
   def session_valid?(
         %{
           user_id: user_id,
@@ -964,12 +964,21 @@ defmodule Malan.Accounts do
       ) do
     cond do
       !!revoked_at ->
+        Logger.info("[session_valid?]: A revoked API token was used.  Revoked at: #{revoked_at}")
         {:error, :revoked}
 
       DateTime.compare(expires_at, DateTime.utc_now()) == :lt ->
+        Logger.info(
+          "[session_valid?]: An expired API token was used.  Expired at: '#{expires_at}'"
+        )
+
         {:error, :expired}
 
       valid_only_for_ip && ip_address != remote_ip ->
+        Logger.info(
+          "[session_valid?]: A token was used from the wrong ip address. valid ip: '#{ip_address}', remote_ip: '#{remote_ip}"
+        )
+
         {:error, :ip_addr}
 
       true ->
@@ -977,10 +986,6 @@ defmodule Malan.Accounts do
          latest_tos_accept_ver, latest_pp_accept_ver}
     end
   end
-
-  # def session_valid?(user_id, username, session_id, expires_at, revoked_at, ip_addr, roles, remote_ip) do
-  #   session_valid?([user_id, username, session_id, expires_at, revoked_at, ip_addr, roles], remote_ip)
-  # end
 
   def session_revoked?(revoked_at), do: !!revoked_at
 
