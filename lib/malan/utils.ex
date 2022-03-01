@@ -297,6 +297,8 @@ defmodule Malan.Utils do
     end)
     |> Enum.into(%{})
   end
+
+  def trunc_str(str, length \\ 255), do: String.slice(str, 0, length)
 end
 
 defmodule Malan.Utils.Enum do
