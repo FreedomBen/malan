@@ -1590,6 +1590,13 @@ defmodule MalanWeb.UserControllerTest do
 
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
+      # Clear rate limit bucket so we can request a new token without waiting
+      # To avoid rate limit you can delete the bucket with Hammer.delete_bucket()
+      assert {:ok, _} =
+        user_id
+        |> Malan.Config.User.pw_reset_rl_bucket()
+        |> Hammer.delete_buckets()
+
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
@@ -1665,6 +1672,35 @@ defmodule MalanWeb.UserControllerTest do
         )
 
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "password reset endpoint rate limits requests", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
+      # First login with password to make sure it works
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Get a password reset token
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Get a second password reset token.  This should get rate limited
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"errors" => %{"detail" => "Too Many Requests"}} = json_response(conn, 429)
+
+      # Try a third time.  Still rate limited
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"errors" => %{"detail" => "Too Many Requests"}} = json_response(conn, 429)
     end
 
     test "can't use token after expiration", %{
@@ -1923,6 +1959,12 @@ defmodule MalanWeb.UserControllerTest do
         assert_and_receive_email(user, "Your requested password reset token")
 
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
+
+      # Clear rate limit bucket so we can request a new token without waiting
+      assert {:ok, _} =
+        user_id
+        |> Malan.Config.User.pw_reset_rl_bucket()
+        |> Hammer.delete_buckets()
 
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))

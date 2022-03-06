@@ -219,6 +219,13 @@ defmodule Malan.Accounts.User do
   end
 
   @doc false
+  def password_reset_rate_limit_changeset(user) do
+    user
+    |> change()
+    |> put_change(:password_reset_token, nil)
+  end
+
+  @doc false
   def validate_common(changeset) do
     changeset
     |> validate_required([:username, :email])

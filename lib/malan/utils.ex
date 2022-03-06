@@ -514,6 +514,10 @@ defmodule Malan.Utils.Ecto.Changeset do
     |> Enum.join(", ")
   end
 
+  def errors_to_str(:too_many_requests) do
+    "Rate limit exceeded"
+  end
+
   @doc ~S"""
   If any of the top-level keys in `data` are `Ecto.Changeset`s, apply their changes.
 
