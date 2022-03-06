@@ -697,7 +697,7 @@ defmodule MalanWeb.SessionControllerTest do
                  who: ^user_id,
                  who_username: nil,
                  when: when_utc,
-                 remote_ip: ^remote_ip,
+                 remote_ip: ^remote_ip
                } = tx_locked
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 

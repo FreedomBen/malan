@@ -317,7 +317,10 @@ defmodule Malan.AccountsTest do
 
     test "update_user/2 with invalid gender returns error changeset" do
       user = user_fixture()
-      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{"gender" => "Y"})
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.update_user(user, %{"gender" => "Y"})
+
       assert changeset.valid? == false
 
       assert errors_on(changeset).gender

@@ -57,7 +57,7 @@ defmodule Malan.MixProject do
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.17"},
       {:plug_cloudflare, "~> 1.2.1"},
-      #{:iptools, "~> 0.0.4"},
+      # {:iptools, "~> 0.0.4"},
       {:iptools_fb, "~> 0.0.6"}
     ]
   end

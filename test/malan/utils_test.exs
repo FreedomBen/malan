@@ -215,16 +215,22 @@ defmodule Malan.UtilsTest do
       types = %{one: :string, two: :string, three: :string}
       ts = %TestStruct{one: "one", two: "two"}
 
-      cs = Ecto.Changeset.change({ts, types}, %{three: "1.1.1.1"})
-      |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      cs =
+        Ecto.Changeset.change({ts, types}, %{three: "1.1.1.1"})
+        |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+
       assert cs.valid?
 
-      cs = Ecto.Changeset.change({ts, types}, %{three: "127.0.0.1"})
-           |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      cs =
+        Ecto.Changeset.change({ts, types}, %{three: "127.0.0.1"})
+        |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+
       assert cs.valid?
 
-      cs = Ecto.Changeset.change({ts, types}, %{three: "255.255.255.255"})
-             |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      cs =
+        Ecto.Changeset.change({ts, types}, %{three: "255.255.255.255"})
+        |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+
       assert cs.valid?
     end
 

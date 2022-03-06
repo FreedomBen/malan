@@ -474,8 +474,11 @@ defmodule Malan.Utils.Ecto.Changeset do
 
   def validate_ip_addr(changeset, property) do
     case Iptools.is_ipv4?(Ecto.Changeset.get_change(changeset, property)) do
-      true -> changeset
-      false -> Ecto.Changeset.add_error(changeset, property, "#{property} must be a valid IPv4 address")
+      true ->
+        changeset
+
+      false ->
+        Ecto.Changeset.add_error(changeset, property, "#{property} must be a valid IPv4 address")
     end
   end
 

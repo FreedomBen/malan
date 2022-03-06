@@ -8,7 +8,7 @@ defmodule Malan.Repo.Migrations.AddRemoteIpToTransaction do
     alter table(:transactions) do
       add :remote_ip, :string, default: "", null: false
     end
-  
+
     # Modify column to have a default of "nil" (basically removing the default)
     alter table(:transactions) do
       modify :remote_ip, :string, default: nil, null: false

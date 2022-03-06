@@ -35,11 +35,29 @@ defmodule Malan.AccountsFixtures do
   }
 
   def create_transaction(success?, nil, user, session, rip, cs, attrs) do
-    Accounts.create_transaction(success?, user.id, session.id, user.id, user.username, rip, cs, attrs)
+    Accounts.create_transaction(
+      success?,
+      user.id,
+      session.id,
+      user.id,
+      user.username,
+      rip,
+      cs,
+      attrs
+    )
   end
 
   def create_transaction(success?, user_id, user, session, rip, cs, attrs) do
-    Accounts.create_transaction(success?, user_id, session.id, user.id, user.username, rip, cs, attrs)
+    Accounts.create_transaction(
+      success?,
+      user_id,
+      session.id,
+      user.id,
+      user.username,
+      rip,
+      cs,
+      attrs
+    )
   end
 
   @doc """
