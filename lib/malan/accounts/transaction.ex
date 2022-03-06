@@ -8,6 +8,10 @@ defmodule Malan.Accounts.Transaction do
   alias Malan.Accounts.Transaction
   alias Malan.Accounts.Transaction.Changes
 
+  @dummy_ip "255.255.255.255"
+
+  def dummy_ip, do: @dummy_ip
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "transactions" do
@@ -20,6 +24,7 @@ defmodule Malan.Accounts.Transaction do
     field :session_id, :binary_id, null: true # Session making the change (session owning the token that changed something)
     field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
     field :who_username, :string, null: true  # Which user was modified/changed/created/etc
+    field :remote_ip, :string, null: false    # Remote IP of user who did this thing
 
     # Important Note:  This is often not the exact changeset that was involved,
     # particularly in the case of a successful change.  It will take some
@@ -55,15 +60,17 @@ defmodule Malan.Accounts.Transaction do
       :type,
       :verb,
       :when,
-      :what
+      :what,
+      :remote_ip
     ])
     |> cast_embed(:changeset, with: &Transaction.Changes.changeset/2)
     |> put_default_when()
-    |> validate_required([:success, :type, :verb, :when, :what])
+    |> validate_required([:success, :type, :verb, :when, :what, :remote_ip])
     |> validate_type()
     |> validate_verb()
     |> validate_who_is_binary_id_or_nil()
-    |> validate_required([:success, :type_enum, :verb_enum, :when, :what])
+    |> validate_remote_ip()
+    |> validate_required([:success, :type_enum, :verb_enum, :when, :what, :remote_ip])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:session_id)
     |> foreign_key_constraint(:who)
@@ -134,6 +141,13 @@ defmodule Malan.Accounts.Transaction do
     case Utils.is_uuid_or_nil?(get_change(changeset, :who)) do
       true -> changeset
       false -> add_error(changeset, :who, "who must be a valid ID of a user")
+    end
+  end
+
+  defp_testable validate_remote_ip(changeset) do
+    case Iptools.is_ipv4?(get_change(changeset, :remote_ip)) do
+      true -> changeset
+      false -> add_error(changeset, :remote_ip, "remote_ip must be valid IPv4 address")
     end
   end
 end

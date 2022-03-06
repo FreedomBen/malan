@@ -210,6 +210,32 @@ defmodule Malan.UtilsTest do
       assert %{ts | three: [ts, ts]} ==
                Utils.Ecto.Changeset.convert_changes(%{ts | three: [cs, cs]})
     end
+
+    test "#validate_ip_addr/2 allows valid address through" do
+      types = %{one: :string, two: :string, three: :string}
+      ts = %TestStruct{one: "one", two: "two"}
+
+      cs = Ecto.Changeset.change({ts, types}, %{three: "1.1.1.1"})
+      |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      assert cs.valid?
+
+      cs = Ecto.Changeset.change({ts, types}, %{three: "127.0.0.1"})
+           |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      assert cs.valid?
+
+      cs = Ecto.Changeset.change({ts, types}, %{three: "255.255.255.255"})
+             |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+      assert cs.valid?
+    end
+
+    test "#validate_ip_addr/2 adds error to changeset when not valid" do
+      types = %{one: :string, two: :string, three: :string}
+      ts = %TestStruct{one: "one", two: "two"}
+      cs = Ecto.Changeset.change({ts, types}, %{three: "1.1.1"})
+      assert cs.valid?
+      cs = Utils.Ecto.Changeset.validate_ip_addr(cs, :three)
+      assert not cs.valid?
+    end
   end
 
   describe "IPv4" do

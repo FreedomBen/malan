@@ -4,6 +4,7 @@ defmodule MalanWeb.UserController do
   require Logger
 
   import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+  import Malan.Utils.Phoenix.Controller, only: [remote_ip_s: 1]
 
   alias Malan.Accounts
   alias Malan.Accounts.User
@@ -43,7 +44,7 @@ defmodule MalanWeb.UserController do
       # UserNotifier.email_welcome_confirm(user)
       # |> Mailer.deliver()
       conn
-      |> record_transaction(true, id, username, "POST", "#UserController.create/2", changeset)
+      |> record_transaction(true, id, username, "POST", "#UserController.create/2", remote_ip_s(conn), changeset)
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
       |> render("show.json", user: user)
@@ -58,6 +59,7 @@ defmodule MalanWeb.UserController do
           user_params["username"],
           "POST",
           "#UserController.create/2 - User account creation failed: #{err_str}",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -95,6 +97,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "PUT",
           "#UserController.update/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -110,6 +113,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.update/2 - User update failed: #{err_str}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -134,6 +138,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "PUT",
           "#UserController.admin_update/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -149,6 +154,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.admin_update/2 - User update by admin failed: #{err_str}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -173,6 +179,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "PUT",
           "#UserController.lock/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -188,6 +195,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.lock/2 - User lock failed: #{err_str}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -201,6 +209,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.lock/2 - User lock failed: #{Kernel.inspect(err)}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -225,6 +234,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "PUT",
           "#UserController.unlock/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -240,6 +250,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.unlock/2 - User unlock failed: #{err_str}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -264,6 +275,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "DELETE",
           "#UserController.delete/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -279,6 +291,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "DELETE",
             "#UserController.delete/2 - User delete failed: #{err_str}",
+            remote_ip_s(conn),
             changeset
           )
 
@@ -331,6 +344,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "POST",
           "#UserController.reset_password/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -352,6 +366,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "POST",
             "#UserController.reset_password/2 - User reset password failed: #{err_str}",
+            remote_ip_s(conn),
             err_cs
           )
 
@@ -399,6 +414,7 @@ defmodule MalanWeb.UserController do
           user.username,
           "POST",
           "#UserController.admin_reset_password/2",
+          remote_ip_s(conn),
           changeset
         )
 
@@ -414,6 +430,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "POST",
             "#UserController.admin_reset_password/2 - User admin reset password failed: #{err_str}",
+            remote_ip_s(conn),
             err_cs
           )
 
@@ -458,6 +475,7 @@ defmodule MalanWeb.UserController do
         user.username,
         "PUT",
         "#UserController.admin_reset_password_token/3",
+        remote_ip_s(conn),
         tx_changeset
       )
 
@@ -505,13 +523,14 @@ defmodule MalanWeb.UserController do
       user.username,
       "PUT",
       "#UserController.admin_reset_password_token/3 - Err: #{err}",
+      remote_ip_s(conn),
       tx_changeset
     )
 
     conn
   end
 
-  defp record_transaction(conn, success?, who, who_username, verb, what, tx_changeset) do
+  defp record_transaction(conn, success?, who, who_username, verb, what, remote_ip, tx_changeset) do
     {user_id, session_id} = authed_user_and_session(conn)
 
     Accounts.record_transaction(
@@ -523,6 +542,7 @@ defmodule MalanWeb.UserController do
       "users",
       verb,
       what,
+      remote_ip,
       tx_changeset
     )
 

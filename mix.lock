@@ -20,7 +20,7 @@
   "html_entities": {:hex, :html_entities, "0.5.2", "9e47e70598da7de2a9ff6af8758399251db6dbb7eebe2b013f2bbd2515895c3c", [:mix], [], "hexpm", "c53ba390403485615623b9531e97696f076ed415e8d8058b1dbaa28181f4fdcc"},
   "idna": {:hex, :idna, "6.1.1", "8a63070e9f7d0c62eb9d9fcb360a7de382448200fbbd1b106cc96d3d8099df8d", [:rebar3], [{:unicode_util_compat, "~>0.7.0", [hex: :unicode_util_compat, repo: "hexpm", optional: false]}], "hexpm", "92376eb7894412ed19ac475e4a86f7b413c1b9fbb5bd16dccd57934157944cea"},
   "iptools": {:hex, :iptools, "0.0.2", "cd7673c4ae9063e4d3e7368a4f94d59c5b3fc79de0a0f3f2ca4b5015b1e4ddec", [:mix], [], "hexpm", "33bf27bc72094bbc4e67c664c979e5cebfe17c5369c91fc2e2610cc726b252db"},
-  "iptools_fb": {:hex, :iptools_fb, "0.0.3", "34aa4917dd61c59cfe19752b07e0bb2722a8ab3bd61ea406befee75fcd245a06", [:mix], [], "hexpm", "b62783c1eb25d7e36a980b0780bf5fd404d87f36cdf594db53d00e5ef657cba5"},
+  "iptools_fb": {:hex, :iptools_fb, "0.0.6", "af76b1820615550dc08e23e433c8e1bf03de2a1fb6b46d1ebea8caedc5b6fb9d", [:mix], [], "hexpm", "3f45019a07be559cd44c7f352d86ef15da06897fc170b1b99cf02fb14a1cf76d"},
   "jason": {:hex, :jason, "1.2.2", "ba43e3f2709fd1aa1dce90aaabfd039d000469c05c56f0b8e31978e03fa39052", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "18a228f5f0058ee183f29f9eae0805c6e59d61c3b006760668d8d18ff0d12179"},
   "metrics": {:hex, :metrics, "1.0.1", "25f094dea2cda98213cecc3aeff09e940299d950904393b2a29d191c346a8486", [:rebar3], [], "hexpm", "69b09adddc4f74a40716ae54d140f93beb0fb8978d8636eaded0c31b6f099f16"},
   "mime": {:hex, :mime, "2.0.2", "0b9e1a4c840eafb68d820b0e2158ef5c49385d17fb36855ac6e7e087d4b1dcc5", [:mix], [], "hexpm", "e6a3f76b4c277739e36c2e21a2c640778ba4c3846189d5ab19f97f126df5f9b7"},

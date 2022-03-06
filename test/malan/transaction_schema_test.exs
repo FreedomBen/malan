@@ -95,7 +95,8 @@ defmodule Malan.TransactionSchemaTest do
           who: Ecto.UUID.generate(),
           type: "users",
           verb: "POST",
-          what: "what"
+          what: "what",
+          remote_ip: "1.1.1.1"
         })
 
       assert cs.valid?
@@ -109,7 +110,8 @@ defmodule Malan.TransactionSchemaTest do
           who: Ecto.UUID.generate(),
           type: "users",
           verb: "POST",
-          what: "what"
+          what: "what",
+          remote_ip: "1.1.1.1"
         })
 
       assert cs.valid?
@@ -123,7 +125,8 @@ defmodule Malan.TransactionSchemaTest do
           who: Ecto.UUID.generate(),
           type: "users",
           verb: "POST",
-          what: "what"
+          what: "what",
+          remote_ip: "1.1.1.1"
         })
 
       assert cs.valid?
