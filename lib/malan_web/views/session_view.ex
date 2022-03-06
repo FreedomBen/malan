@@ -2,7 +2,6 @@ defmodule MalanWeb.SessionView do
   use MalanWeb, :view
 
   alias Malan.Accounts
-  alias Malan.Accounts.Session
 
   alias MalanWeb.SessionView
 

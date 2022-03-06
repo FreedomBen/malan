@@ -12,6 +12,13 @@ config :malan,
   generators: [binary_id: true]
 
 config :malan, Malan.Accounts.User,
+  # One password reset per 3 minutes
+  password_reset_limit_count:
+    System.get_env("PASSWORD_RESET_LIMIT_COUNT") ||
+      "1" |> String.to_integer(),
+  password_reset_period_msecs:
+    System.get_env("PASSWORD_RESET_PERIOD_MSECS") ||
+      Integer.to_string(180_000) |> String.to_integer(),
   # 24 hours
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
@@ -66,6 +73,8 @@ config :plug, :statuses, %{
   461 => "Terms of Service Required",
   462 => "Privacy Policy Required"
 }
+
+# Known Plug Statuses:  https://hexdocs.pm/plug/Plug.Conn.Status.html#code/1-known-status-codes
 
 config :hammer,
   backend: {

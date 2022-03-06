@@ -11,7 +11,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
 
   # Handle URI and query params
   @impl true
-  def handle_params(params, _url, socket) do
+  def handle_params(_params, _url, socket) do
     #{:noreply, apply_action(socket, socket.assigns.live_action, params)}
     {:noreply, socket}
   end

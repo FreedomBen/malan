@@ -317,9 +317,31 @@ defmodule Malan.Accounts do
   @doc """
   Generates a password reset token that can then be used to reset the user's password.
 
-  Returns {:ok, %User{}} on success
+  Requests are rate-limited based on `user.id` unless :no_rate_limit is passed
+
+  Returns {:ok, %User{}} on success or
+          {:error, changeset} on failure
+          {:error, :too_many_requests} on hitting rate limit
   """
   def generate_password_reset(%User{} = user) do
+    {period_msecs, count} = Malan.Config.User.password_reset_limit()
+
+    case Hammer.check_rate(Malan.Config.User.pw_reset_rl_bucket(user.id), period_msecs, count) do
+      {:allow, _count} ->
+        generate_password_reset(user, :no_rate_limit)
+
+      {:deny, _limit} ->
+        {:error, :too_many_requests}
+    end
+  end
+
+  @doc ~S"""
+  Generates a password reset token that can then be used to reset the user's password.
+
+  Returns {:ok, %User{}} on success or
+          {:error, changeset} on failure
+  """
+  def generate_password_reset(%User{} = user, :no_rate_limit) do
     user
     |> User.password_reset_create_changeset()
     |> Repo.update()

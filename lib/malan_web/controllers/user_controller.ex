@@ -343,8 +343,15 @@ defmodule MalanWeb.UserController do
         |> put_status(200)
         |> json(%{ok: true})
       else
+        # {:error, :too_many_requests}
+        # {:error, changeset}
         {:error, err_cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
+
+          cs_or_atom = case err_cs do
+                         :too_many_requests -> changeset
+                         _ -> err_cs
+                       end
 
           record_transaction(
             conn,
@@ -353,7 +360,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "POST",
             "#UserController.reset_password/2 - User reset password failed: #{err_str}",
-            err_cs
+            cs_or_atom
           )
 
           {:error, err_cs}
@@ -387,7 +394,9 @@ defmodule MalanWeb.UserController do
       # setting the transaction changeset to nil
       changeset = User.password_reset_create_changeset(user)
 
-      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
+      # As an admin endpoint we don't rate limit this specifically (although
+      # there is a general rate limit)
+      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user, :no_rate_limit) do
         record_transaction(
           conn,
           true,
