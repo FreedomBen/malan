@@ -478,7 +478,7 @@ defmodule Malan.Utils.Ecto.Changeset do
         changeset
 
       false ->
-        Ecto.Changeset.add_error(changeset, property, "#{property} must be a valid IPv4 address")
+        Ecto.Changeset.add_error(changeset, property, "#{property} must be a valid IPv4 or IPv6 address")
     end
   end
 
