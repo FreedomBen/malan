@@ -38,7 +38,6 @@ defmodule MalanWeb.SessionController do
         session.user_id,
         "DELETE",
         "#SessionController.admin_delete/2",
-        remote_ip_s(conn),
         tx_changeset
       )
 
@@ -53,7 +52,6 @@ defmodule MalanWeb.SessionController do
           session.user_id,
           "DELETE",
           "#SessionController.admin_delete/2 - Session admin deletion failed: #{err_str}",
-        remote_ip_s(conn),
           err_cs
         )
 
@@ -91,12 +89,11 @@ defmodule MalanWeb.SessionController do
              put_ip_addr(session_opts, conn)
            ) do
       record_transaction(
-        %Plug.Conn{assigns: %{authed_user_id: session.user_id, authed_session_id: session.id}},
+        Map.update(conn, :assigns, %{}, fn a -> Map.merge(a, %{authed_user_id: session.user_id, authed_session_id: session.id}) end),
         true,
         session.user_id,
         "POST",
         "#SessionController.create/2",
-        remote_ip_s(conn),
         nil
       )
 
@@ -144,7 +141,6 @@ defmodule MalanWeb.SessionController do
         session.user_id,
         "DELETE",
         "#SessionController.delete/2",
-        remote_ip_s(conn),
         changeset
       )
 
@@ -159,7 +155,6 @@ defmodule MalanWeb.SessionController do
           session.user_id,
           "DELETE",
           "#SessionController.delete/2 - Session deletion failed: #{err_str}",
-        remote_ip_s(conn),
           changeset
         )
 
@@ -171,7 +166,7 @@ defmodule MalanWeb.SessionController do
 
   def delete_all(conn, %{"user_id" => user_id}) do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
-      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2", remote_ip_s(conn), %{
+      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2", %{
         num_revoked: num_revoked
       })
 
@@ -186,7 +181,6 @@ defmodule MalanWeb.SessionController do
           user_id,
           "DELETE",
           "#SessionController.delete_all/2 - Session delete all active failed: #{err_str}",
-        remote_ip_s(conn),
           err
         )
 
@@ -194,7 +188,7 @@ defmodule MalanWeb.SessionController do
     end
   end
 
-  defp record_transaction(conn, success?, who, verb, what, remote_ip, changeset) do
+  defp record_transaction(conn, success?, who, verb, what, changeset) do
     {user_id, session_id} = authed_user_and_session(conn)
 
     Accounts.record_transaction(
@@ -206,7 +200,7 @@ defmodule MalanWeb.SessionController do
       "sessions",
       verb,
       what,
-      remote_ip,
+      remote_ip_s(conn),
       changeset
     )
 
