@@ -375,11 +375,6 @@ defmodule MalanWeb.UserController do
     reset_password_token_p(conn, user, token, new_password)
   end
 
-  defp reset_password_token_p(conn, user, token, new_password) do
-    # TODO: Refactor to remove this function and rename admin_reset_password_token_p to reset_password_token_p
-    admin_reset_password_token_p(conn, user, token, new_password)
-  end
-
   def admin_reset_password(conn, %{"id" => id}) do
     user = Accounts.get_user_by_id_or_username(id)
 
@@ -429,7 +424,7 @@ defmodule MalanWeb.UserController do
         "new_password" => new_password
       }),
       do:
-        admin_reset_password_token_p(
+        reset_password_token_p(
           conn,
           Accounts.get_user_by_id_or_username(id),
           token,
@@ -438,17 +433,17 @@ defmodule MalanWeb.UserController do
 
   def admin_reset_password_token(conn, %{"token" => token, "new_password" => new_password}),
     do:
-      admin_reset_password_token_p(
+      reset_password_token_p(
         conn,
         Accounts.get_user_by_password_reset_token(token),
         token,
         new_password
       )
 
-  defp admin_reset_password_token_p(conn, nil, _token, _new_password),
+  defp reset_password_token_p(conn, nil, _token, _new_password),
     do: render_user(conn, nil)
 
-  defp admin_reset_password_token_p(conn, %User{} = user, token, new_password) do
+  defp reset_password_token_p(conn, %User{} = user, token, new_password) do
     tx_changeset = User.update_changeset(user, %{"password" => Utils.mask_str(new_password)})
 
     with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
