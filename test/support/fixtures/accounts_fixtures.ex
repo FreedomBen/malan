@@ -30,15 +30,16 @@ defmodule Malan.AccountsFixtures do
     "type" => "users",
     "verb" => "GET",
     "what" => "some what",
-    "when" => nil
+    "when" => nil,
+    "remote_ip" => "1.1.1.1"
   }
 
-  def create_transaction(success?, nil, user, session, cs, attrs) do
-    Accounts.create_transaction(success?, user.id, session.id, user.id, user.username, cs, attrs)
+  def create_transaction(success?, nil, user, session, rip, cs, attrs) do
+    Accounts.create_transaction(success?, user.id, session.id, user.id, user.username, rip, cs, attrs)
   end
 
-  def create_transaction(success?, user_id, user, session, cs, attrs) do
-    Accounts.create_transaction(success?, user_id, session.id, user.id, user.username, cs, attrs)
+  def create_transaction(success?, user_id, user, session, rip, cs, attrs) do
+    Accounts.create_transaction(success?, user_id, session.id, user.id, user.username, rip, cs, attrs)
   end
 
   @doc """
@@ -55,6 +56,7 @@ defmodule Malan.AccountsFixtures do
              Map.get(attrs, "user_id"),
              user,
              session,
+             "1.1.1.1",
              %{},
              val_attrs
            ),

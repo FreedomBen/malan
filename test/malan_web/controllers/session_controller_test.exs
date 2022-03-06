@@ -177,7 +177,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 3,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -664,7 +665,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 1,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -681,6 +683,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       user_id = user.id
       username = user.username
+      remote_ip = Transaction.dummy_ip()
 
       # Check that a transaction was created when we revoked all active sessions,
       # which happened because we locked the user
@@ -693,7 +696,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 3,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: ^remote_ip,
                } = tx_locked
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -716,7 +720,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 1,
                  who: ^user_id,
                  who_username: ^username,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -863,7 +868,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 3,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -910,7 +916,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 3,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 
@@ -1020,7 +1027,8 @@ defmodule MalanWeb.SessionControllerTest do
                  verb_enum: 3,
                  who: ^user_id,
                  who_username: nil,
-                 when: when_utc
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
                } = tx
              ] = Accounts.list_transactions_by_who(user_id, 0, 10)
 

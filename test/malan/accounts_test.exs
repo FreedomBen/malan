@@ -9,33 +9,33 @@ defmodule Malan.AccountsTest do
   alias Malan.Test.Helpers
 
   @user1_attrs %{
-    email: "user1@email.com",
-    username: "someusername1",
-    first_name: "First Name1",
-    last_name: "Last Name1",
-    nick_name: "user nick1"
+    "email" => "user1@email.com",
+    "username" => "someusername1",
+    "first_name" => "First Name1",
+    "last_name" => "Last Name1",
+    "nick_name" => "user nick1"
   }
   @user2_attrs %{
-    email: "user2@email.com",
-    username: "someusername2",
-    first_name: "First Name2",
-    last_name: "Last Name2",
-    nick_name: "user nick2"
+    "email" => "user2@email.com",
+    "username" => "someusername2",
+    "first_name" => "First Name2",
+    "last_name" => "Last Name2",
+    "nick_name" => "user nick2"
   }
   @update_attrs %{
-    password: "some updated password",
-    preferences: %{theme: "dark", display_name_pref: "custom"},
-    roles: [],
-    sex: "other",
-    gender: "male"
+    "password" => "some updated password",
+    "preferences" => %{"theme" => "dark", "display_name_pref" => "custom"},
+    "roles" => [],
+    "sex" => "other",
+    "gender" => "male"
   }
   @invalid_attrs %{
-    email: nil,
-    email_verified: nil,
-    password: nil,
-    preferences: nil,
-    roles: nil,
-    username: nil
+    "email" => nil,
+    "email_verified" => nil,
+    "password" => nil,
+    "preferences" => nil,
+    "roles" => nil,
+    "username" => nil
   }
 
   def user_fixture(attrs \\ %{}) do
@@ -129,7 +129,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "register_user/1 can have password specified" do
-      user1 = Map.put(@user1_attrs, :password, "examplepassword")
+      user1 = Map.put(@user1_attrs, "password", "examplepassword")
       assert {:ok, %User{} = user} = Accounts.register_user(user1)
       assert user.password == "examplepassword"
 
@@ -140,16 +140,16 @@ defmodule Malan.AccountsTest do
     end
 
     test "register_user/1 can have sex specified" do
-      user1 = Map.put(@user1_attrs, :sex, "female")
+      user1 = Map.put(@user1_attrs, "sex", "female")
       assert {:ok, %User{} = user} = Accounts.register_user(user1)
       assert user.sex == "female"
       assert user.sex_enum == Malan.Accounts.User.Sex.to_i(user.sex)
       assert user.sex_enum == 1
 
-      user2 = Map.put(@user2_attrs, :sex, "incorrect")
+      user2 = Map.put(@user2_attrs, "sex", "incorrect")
       assert {:error, %Ecto.Changeset{}} = Accounts.register_user(user2)
 
-      user2 = Map.put(@user2_attrs, :sex, "male")
+      user2 = Map.put(@user2_attrs, "sex", "male")
       assert {:ok, %User{} = user} = Accounts.register_user(user2)
       assert user.sex == "male"
       assert user.sex_enum == Malan.Accounts.User.Sex.to_i(user.sex)
@@ -157,16 +157,16 @@ defmodule Malan.AccountsTest do
     end
 
     test "register_user/1 can have ethnicity specified" do
-      user1 = Map.put(@user1_attrs, :ethnicity, "Hispanic or Latinx")
+      user1 = Map.put(@user1_attrs, "ethnicity", "Hispanic or Latinx")
       assert {:ok, %User{} = user} = Accounts.register_user(user1)
       assert user.ethnicity == "Hispanic or Latinx"
       assert user.ethnicity_enum == Malan.Accounts.User.Ethnicity.to_i(user.ethnicity)
       assert user.ethnicity_enum == 0
 
-      user2 = Map.put(@user2_attrs, :ethnicity, "incorrect")
+      user2 = Map.put(@user2_attrs, "ethnicity", "incorrect")
       assert {:error, %Ecto.Changeset{}} = Accounts.register_user(user2)
 
-      user2 = Map.put(@user2_attrs, :ethnicity, "not hispanic or latinx")
+      user2 = Map.put(@user2_attrs, "ethnicity", "not hispanic or latinx")
       assert {:ok, %User{} = user} = Accounts.register_user(user2)
       assert user.ethnicity == "not hispanic or latinx"
       assert user.ethnicity_enum == Malan.Accounts.User.Ethnicity.to_i(user.ethnicity)
@@ -174,12 +174,12 @@ defmodule Malan.AccountsTest do
     end
 
     test "register_user/1 can have gender specified" do
-      user1 = Map.put(@user1_attrs, :gender, "female")
+      user1 = Map.put(@user1_attrs, "gender", "female")
       assert {:ok, %User{} = user} = Accounts.register_user(user1)
       assert user.gender == "female"
       assert user.gender_enum == Malan.Accounts.User.Gender.to_i(user.gender)
       assert user.gender_enum == 51
-      user2 = Map.put(@user2_attrs, :gender, "male")
+      user2 = Map.put(@user2_attrs, "gender", "male")
       assert {:ok, %User{} = user} = Accounts.register_user(user2)
       assert user.gender == "male"
       assert user.gender_enum == Malan.Accounts.User.Gender.to_i(user.gender)
@@ -187,7 +187,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "register_user/1 rejects invalid gender" do
-      user1 = Map.put(@user1_attrs, :gender, "fake")
+      user1 = Map.put(@user1_attrs, "gender", "fake")
       assert {:error, %Ecto.Changeset{} = changeset} = Accounts.register_user(user1)
       assert changeset.valid? == false
 
@@ -263,8 +263,8 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, %User{} = user} =
                Accounts.update_user(uf, %{
-                 email: "shineshine@hushhush.com",
-                 username: "TooShyShy"
+                 "email" => "shineshine@hushhush.com",
+                 "username" => "TooShyShy"
                })
 
       assert user.email == "user1@email.com"
@@ -280,8 +280,8 @@ defmodule Malan.AccountsTest do
 
       assert {:ok, %User{} = user} =
                Accounts.update_user(uf, %{
-                 email_verified: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC"),
-                 tos_accept_events: DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC")
+                 "email_verified" => DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC"),
+                 "tos_accept_events" => DateTime.from_naive!(~N[2011-05-18T15:01:01Z], "Etc/UTC")
                })
 
       assert user.email_verified == nil
@@ -305,7 +305,7 @@ defmodule Malan.AccountsTest do
 
     test "update_user/2 with invalid sex returns error changeset" do
       user = user_fixture()
-      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{sex: "Y"})
+      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{"sex" => "Y"})
       assert changeset.valid? == false
 
       assert errors_on(changeset).sex
@@ -317,7 +317,7 @@ defmodule Malan.AccountsTest do
 
     test "update_user/2 with invalid gender returns error changeset" do
       user = user_fixture()
-      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{gender: "Y"})
+      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.update_user(user, %{"gender" => "Y"})
       assert changeset.valid? == false
 
       assert errors_on(changeset).gender
@@ -501,7 +501,7 @@ defmodule Malan.AccountsTest do
       assert user.roles == ["user"]
 
       assert {:ok, %Accounts.User{} = updated_user} =
-               Accounts.update_user(user, %{roles: ["admin", "moderator"]})
+               Accounts.update_user(user, %{"roles" => ["admin", "moderator"]})
 
       assert updated_user.roles == ["user"]
     end
@@ -526,8 +526,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "Usernames must be unique on creation" do
-      user1_attrs = %{@user1_attrs | username: "someusername"}
-      user2_attrs = %{@user2_attrs | username: "someusername"}
+      user1_attrs = %{@user1_attrs | "username" => "someusername"}
+      user2_attrs = %{@user2_attrs | "username" => "someusername"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.username == "someusername"
       assert user1.email == "user1@email.com"
@@ -538,8 +538,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "Usernames must be unique and case insensitive" do
-      user1_attrs = %{@user1_attrs | username: "someusername"}
-      user2_attrs = %{@user2_attrs | username: "SoMeUsErNAmE"}
+      user1_attrs = %{@user1_attrs | "username" => "someusername"}
+      user2_attrs = %{@user2_attrs | "username" => "SoMeUsErNAmE"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.username == "someusername"
       assert user1.email == "user1@email.com"
@@ -550,8 +550,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "Email must be unique on creation" do
-      user1_attrs = %{@user1_attrs | email: "some@email.com"}
-      user2_attrs = %{@user2_attrs | email: "some@email.com"}
+      user1_attrs = %{@user1_attrs | "email" => "some@email.com"}
+      user2_attrs = %{@user2_attrs | "email" => "some@email.com"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.email == "some@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
@@ -561,8 +561,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "Email must be unique on creation and case insensitive" do
-      user1_attrs = %{@user1_attrs | email: "some@email.com"}
-      user2_attrs = %{@user2_attrs | email: "SOME@email.com"}
+      user1_attrs = %{@user1_attrs | "email" => "some@email.com"}
+      user2_attrs = %{@user2_attrs | "email" => "SOME@email.com"}
       assert {:ok, %User{} = user1} = Accounts.register_user(user1_attrs)
       assert user1.email == "some@email.com"
       assert {:error, changeset} = Accounts.register_user(user2_attrs)
@@ -574,7 +574,7 @@ defmodule Malan.AccountsTest do
     test "Can set arbitrary JSON on a user" do
       custom_attrs = %{"some_val" => "some_val", "second" => %{"third" => "third"}}
       uf = user_fixture()
-      assert {:ok, %User{} = user} = Accounts.update_user(uf, %{custom_attrs: custom_attrs})
+      assert {:ok, %User{} = user} = Accounts.update_user(uf, %{"custom_attrs" => custom_attrs})
       assert %{"some_val" => "some_val", "second" => %{"third" => "third"}} = user.custom_attrs
       assert %{user | password: nil} == Accounts.get_user!(user.id)
     end
@@ -696,7 +696,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "when creating users the username and email are lowercased" do
-      uf = user_fixture(%{username: "CaPitAlUsername", email: "CaPitALaddr@example.COM"})
+      uf = user_fixture(%{"username" => "CaPitAlUsername", "email" => "CaPitALaddr@example.COM"})
       assert uf.email == "capitaladdr@example.com"
       assert uf.username == "capitalusername"
 
@@ -709,7 +709,7 @@ defmodule Malan.AccountsTest do
     test "getting a user with capitals by username returns the correct" do
       orig_email = "CaPitALaddr@example.COM"
       orig_username = "CaPitAlUsername"
-      %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+      %User{id: user_id} = user_fixture(%{"username" => orig_username, "email" => orig_email})
 
       assert %User{
                id: ^user_id,
@@ -721,7 +721,7 @@ defmodule Malan.AccountsTest do
     test "getting a user with capitals by email returns the correct" do
       orig_email = "CaPitALaddr@example.COM"
       orig_username = "CaPitAlUsername"
-      %User{id: user_id} = user_fixture(%{username: orig_username, email: orig_email})
+      %User{id: user_id} = user_fixture(%{"username" => orig_username, "email" => orig_email})
 
       assert %User{
                id: ^user_id,
@@ -733,7 +733,7 @@ defmodule Malan.AccountsTest do
     test "get_user_full/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
-      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      %User{id: user_id, username: username} = user_fixture(%{"phone_numbers" => phone_numbers})
 
       assert %User{
                id: ^user_id,
@@ -749,7 +749,7 @@ defmodule Malan.AccountsTest do
     test "get_user_full!/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
-      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      %User{id: user_id, username: username} = user_fixture(%{"phone_numbers" => phone_numbers})
 
       assert %User{
                id: ^user_id,
@@ -765,7 +765,7 @@ defmodule Malan.AccountsTest do
     test "get_user_full_by_id_or_username/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
-      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      %User{id: user_id, username: username} = user_fixture(%{"phone_numbers" => phone_numbers})
 
       assert %User{
                id: ^user_id,
@@ -791,7 +791,7 @@ defmodule Malan.AccountsTest do
     test "get_user_full_by_id_or_username!/1 works" do
       number = "123456789"
       phone_numbers = [%{number: number}]
-      %User{id: user_id, username: username} = user_fixture(%{phone_numbers: phone_numbers})
+      %User{id: user_id, username: username} = user_fixture(%{"phone_numbers" => phone_numbers})
 
       assert %User{
                id: ^user_id,
@@ -1011,8 +1011,8 @@ defmodule Malan.AccountsTest do
     end
 
     test "create_session/1 doesn't allow specifying user ID" do
-      user1 = user_fixture(%{username: "username1"})
-      user2 = user_fixture(%{username: "username2", email: "username2@example.com"})
+      user1 = user_fixture(%{"username" => "username1"})
+      user2 = user_fixture(%{"username" => "username2", "email" => "username2@example.com"})
 
       assert {:ok, session} =
                Accounts.create_session(
@@ -1086,7 +1086,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_session/2 returns a user id, roles, and expires_at when the session is valid" do
-      session = session_fixture(%{username: "randomusername1"})
+      session = session_fixture(%{"username" => "randomusername1"})
       # TODO Unused
       assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos,
               pp} = Accounts.validate_session(session.api_token, "1.1.1.1")
@@ -1110,19 +1110,19 @@ defmodule Malan.AccountsTest do
     end
 
     test "validate_session/2 return an error when the session is revoked" do
-      session = session_fixture(%{username: "randomusername2"})
+      session = session_fixture(%{"username" => "randomusername2"})
       assert {:ok, %Session{}} = Accounts.delete_session(session)
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
     test "validate_session/2 return an error when the session is revoked even when token expires infinitely" do
-      session = session_fixture(%{username: "randomusername2"}, %{"never_expires" => false})
+      session = session_fixture(%{"username" => "randomusername2"}, %{"never_expires" => false})
       assert {:ok, %Session{}} = Accounts.delete_session(session)
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
     test "validate_session/2 return an error when the session is expired" do
-      session = session_fixture(%{username: "randomusername3"}, %{"expires_in_seconds" => -5})
+      session = session_fixture(%{"username" => "randomusername3"}, %{"expires_in_seconds" => -5})
       assert {:error, :expired} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
@@ -1132,7 +1132,7 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 returns properly when remote IP matches" do
       session =
-        session_fixture(%{username: "randomusername2"}, %{
+        session_fixture(%{"username" => "randomusername2"}, %{
           "ip_address" => "1.1.1.1",
           "valid_only_for_ip" => true
         })
@@ -1163,11 +1163,11 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       update_user_prefs = %{
-        preferences: %{
-          invalid: "invalid",
-          theme: "dark",
-          display_name_pref: "full_name",
-          display_middle_initial_only: false
+        "preferences" => %{
+          "invalid" => "invalid",
+          "theme" => "dark",
+          "display_name_pref" => "full_name",
+          "display_middle_initial_only" => false
         }
       }
 
@@ -1182,8 +1182,8 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       update_user_prefs = %{
-        preferences: %{
-          theme: "invalid"
+        "preferences" => %{
+          "theme" => "invalid"
         }
       }
 
@@ -1197,8 +1197,8 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       update_user_prefs = %{
-        preferences: %{
-          display_name_pref: "invalid"
+        "preferences" => %{
+          "display_name_pref" => "invalid"
         }
       }
 
@@ -1212,8 +1212,8 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
 
       update_user_prefs = %{
-        preferences: %{
-          theme: "dark"
+        "preferences" => %{
+          "theme" => "dark"
         }
       }
 
@@ -1230,10 +1230,10 @@ defmodule Malan.AccountsTest do
       assert false == Map.has_key?(updated_user.preferences, :invalid)
 
       second_user_prefs = %{
-        preferences: %{
-          theme: "dark",
-          display_name_pref: "full_name",
-          display_middle_initial_only: true
+        "preferences" => %{
+          "theme" => "dark",
+          "display_name_pref" => "full_name",
+          "display_middle_initial_only" => true
         }
       }
 
@@ -1728,6 +1728,7 @@ defmodule Malan.AccountsTest do
                  session.id,
                  user.id,
                  user.username,
+                 "1.1.1.1",
                  %{},
                  valid_attrs
                )
@@ -1740,7 +1741,7 @@ defmodule Malan.AccountsTest do
 
     test "create_transaction/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} =
-               Accounts.create_transaction(nil, nil, nil, nil, nil, @invalid_attrs)
+               Accounts.create_transaction(nil, nil, nil, nil, nil, nil, @invalid_attrs)
     end
 
     test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do

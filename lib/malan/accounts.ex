@@ -7,6 +7,7 @@ defmodule Malan.Accounts do
 
   import Ecto.Query, warn: false
   import Malan.Pagination, only: [valid_page: 2]
+  import Malan.Accounts.Transaction, only: [dummy_ip: 0]
 
   alias Malan.Repo
 
@@ -292,21 +293,25 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_user(%User{} = user, %{"password" => _password} = attrs) do
-    with {:ok, user} <- update_usr(user, attrs),
-         {:ok, _num_revoked} <- revoke_active_sessions(user),
+  def update_user(user, attrs, remote_ip \\ dummy_ip())
+
+  def update_user(%User{} = user, %{"password" => _password} = attrs, rip) do
+    with {:ok, user} <- update_usr(user, attrs, rip),
+         {:ok, _num_revoked} <- revoke_active_sessions(user, rip),
          do: {:ok, user}
   end
 
-  def update_user(%User{} = user, attrs),
-    do: update_usr(user, attrs)
+  def update_user(%User{} = user, attrs, rip),
+    do: update_usr(user, attrs, rip)
 
-  def update_user_password(%User{} = user, password),
-    do: update_user(user, %{"password" => password})
+  def update_user_password(user, password, remote_ip \\ dummy_ip())
 
-  def update_user_password(user_id, password) do
+  def update_user_password(%User{} = user, password, rip),
+    do: update_user(user, %{"password" => password}, rip)
+
+  def update_user_password(user_id, password, rip) do
     get_user(user_id)
-    |> update_user_password(password)
+    |> update_user_password(password, rip)
   end
 
   @doc """
@@ -355,23 +360,25 @@ defmodule Malan.Accounts do
       {:error, :missing_password_reset_token}
       {:error, :invalid_password_reset_token}
   """
-  def reset_password_with_token(%User{} = orig_user, token, new_password) do
+  def reset_password_with_token(user, token, new_password, remote_ip \\ dummy_ip())
+
+  def reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user} <- update_user_password(orig_user, new_password) do
+         {:ok, %User{} = user} <- update_user_password(orig_user, new_password, rip) do
       {:ok, user}
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  def reset_password_with_token(id, token, new_password),
-    do: reset_password_with_token(get_user(id), token, new_password)
+  def reset_password_with_token(id, token, new_password, rip),
+    do: reset_password_with_token(get_user(id), token, new_password, rip)
 
   # "private utility for the update_user funcs.  Use a public update_user()"
-  defp update_usr(user, attrs) do
+  defp update_usr(user, attrs, remote_ip) do
     user
-    |> User.update_changeset(attrs)
+    |> User.update_changeset(Map.merge(attrs, %{"remote_ip" => remote_ip}))
     |> Repo.update()
   end
 
@@ -412,10 +419,10 @@ defmodule Malan.Accounts do
     |> Repo.update()
   end
 
-  def lock_user(%User{} = user, locked_by_id) do
+  def lock_user(%User{} = user, locked_by_id, remote_ip \\ dummy_ip()) do
     with cs <- User.lock_changeset(user, locked_by_id),
          {:ok, user} <- Repo.update(cs),
-         {:ok, _num_revoked} <- revoke_active_sessions(user) do
+         {:ok, _num_revoked} <- revoke_active_sessions(user, remote_ip) do
       {:ok, user}
     else
       {:error, changeset} -> {:error, changeset}
@@ -657,7 +664,7 @@ defmodule Malan.Accounts do
     # TODO don't retrieve the entire user.
     # Just generate update sql that replaces only the part we want to replace
     get_user!(user_id)
-    |> update_user(%{accept_tos: accept_tos})
+    |> update_user(%{"accept_tos" => accept_tos})
   end
 
   @doc "Accepts the Terms of Service for the user.  Returns {:ok, user}"
@@ -670,7 +677,7 @@ defmodule Malan.Accounts do
     # TODO don't retrieve the entire user.
     # Just generate update sql that replaces only the part we want to replace
     get_user!(user_id)
-    |> update_user(%{accept_privacy_policy: accept_privacy_policy})
+    |> update_user(%{"accept_privacy_policy" => accept_privacy_policy})
   end
 
   def user_accept_privacy_policy(user_id),
@@ -685,9 +692,10 @@ defmodule Malan.Accounts do
     |> Repo.insert()
   end
 
-  def new_session(user_id, attrs) do
+  def new_session(user_id, remote_ip, attrs) do
     attrs
     |> Map.put("user_id", user_id)
+    |> Map.put("remote_ip", remote_ip)
     |> new_session()
   end
 
@@ -710,7 +718,7 @@ defmodule Malan.Accounts do
   """
   def create_session(username, pass, remote_ip, attrs) do
     case authenticate_by_username_pass(username, pass, remote_ip) do
-      {:ok, user_id} -> new_session(user_id, attrs)
+      {:ok, user_id} -> new_session(user_id, remote_ip, attrs)
       {:error, :user_locked} -> record_create_session_locked(username, remote_ip, attrs)
       {:error, :ip_addr} -> record_create_session_bad_ip(username, remote_ip, attrs)
       {:error, :unauthorized} -> record_create_session_unauthorized(username, remote_ip, attrs)
@@ -735,6 +743,7 @@ defmodule Malan.Accounts do
           "sessions",
           "POST",
           "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password])}",
+          remote_ip,
           %{}
         )
 
@@ -768,6 +777,7 @@ defmodule Malan.Accounts do
           "sessions",
           "POST",
           "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password])}",
+          remote_ip,
           %{}
         )
 
@@ -801,6 +811,7 @@ defmodule Malan.Accounts do
           "sessions",
           "POST",
           "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
+          remote_ip,
           %{}
         )
 
@@ -834,6 +845,7 @@ defmodule Malan.Accounts do
           "sessions",
           "POST",
           "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
+          remote_ip,
           %{}
         )
 
@@ -1019,10 +1031,12 @@ defmodule Malan.Accounts do
     |> session_valid?(remote_ip)
   end
 
-  def revoke_active_sessions(%User{id: user_id}),
-    do: revoke_active_sessions(user_id)
+  def revoke_active_sessions(user, remote_ip \\ dummy_ip())
 
-  def revoke_active_sessions(user_id) do
+  def revoke_active_sessions(%User{id: user_id}, remote_ip),
+    do: revoke_active_sessions(user_id, remote_ip)
+
+  def revoke_active_sessions(user_id, remote_ip) do
     {num_revoked, nil} =
       Repo.update_all(
         from(s in Session, where: s.user_id == ^user_id and is_nil(s.revoked_at)),
@@ -1038,6 +1052,7 @@ defmodule Malan.Accounts do
       "sessions",
       "DELETE",
       "#Accounts.revoke_active_sessions/1 - Revoked #{num_revoked} active sessions for user #{user_id}",
+      remote_ip,
       %{}
     )
 
@@ -1567,10 +1582,11 @@ defmodule Malan.Accounts do
         type,
         verb,
         what,
+        remote_ip,
         tx_changeset,
         when_utc \\ nil
       ) do
-    create_transaction(success?, user_id, session_id, who_id, who_username, tx_changeset, %{
+    create_transaction(success?, user_id, session_id, who_id, who_username, remote_ip, tx_changeset, %{
       "success" => success?,
       "type" => type,
       "verb" => verb,
@@ -1585,6 +1601,7 @@ defmodule Malan.Accounts do
         session_id,
         who_id,
         who_username,
+        remote_ip,
         tx_changeset,
         attrs \\ %{}
       ) do
@@ -1596,6 +1613,7 @@ defmodule Malan.Accounts do
         "session_id" => session_id,
         "who" => who_id,
         "who_username" => who_username,
+        "remote_ip" => remote_ip,
         "changeset" => tx_changeset
       })
     )
@@ -1616,6 +1634,7 @@ defmodule Malan.Accounts do
         type,
         verb,
         what,
+        remote_ip,
         tx_changeset
       ) do
     case create_transaction(
@@ -1627,6 +1646,7 @@ defmodule Malan.Accounts do
            type,
            verb,
            what,
+           remote_ip,
            tx_changeset
          ) do
       {:ok, transaction} ->
