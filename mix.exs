@@ -58,7 +58,9 @@ defmodule Malan.MixProject do
       {:hackney, "~> 1.17"},
       {:plug_cloudflare, "~> 1.2.1"},
       # {:iptools, "~> 0.0.4"},
-      {:iptools_fb, "~> 0.0.6"}
+      {:iptools_fb, "~> 0.0.7"},
+      {:hammer, "~> 6.0"},
+      {:hammer_backend_redis, "~> 6.1"}
     ]
   end
 
