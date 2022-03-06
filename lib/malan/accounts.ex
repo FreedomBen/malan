@@ -315,6 +315,17 @@ defmodule Malan.Accounts do
   end
 
   @doc """
+  Generates a password reset token that can then be used to reset the user's password.
+
+  Returns {:ok, %User{}} on success
+  """
+  def generate_password_reset(%User{} = user) do
+    user
+    |> User.password_reset_create_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
   Checks if the provided password reset token in valid.  If it is, returns {:ok}.
 
   If not returns {:error, :missing_password_reset_token} if the user does not have a valid reset token issued or {:error, :invalid_password_reset_token} if the password reset token is incorrect.
@@ -379,17 +390,6 @@ defmodule Malan.Accounts do
   defp update_usr(user, attrs, remote_ip) do
     user
     |> User.update_changeset(Map.merge(attrs, %{"remote_ip" => remote_ip}))
-    |> Repo.update()
-  end
-
-  @doc """
-  Generates a password reset token that can then be used to reset the user's password.
-
-  Returns {:ok, %User{}} on success
-  """
-  def generate_password_reset(%User{} = user) do
-    user
-    |> User.password_reset_create_changeset()
     |> Repo.update()
   end
 
