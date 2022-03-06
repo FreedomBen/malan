@@ -1586,13 +1586,22 @@ defmodule Malan.Accounts do
         tx_changeset,
         when_utc \\ nil
       ) do
-    create_transaction(success?, user_id, session_id, who_id, who_username, remote_ip, tx_changeset, %{
-      "success" => success?,
-      "type" => type,
-      "verb" => verb,
-      "what" => what,
-      "when" => when_utc
-    })
+    create_transaction(
+      success?,
+      user_id,
+      session_id,
+      who_id,
+      who_username,
+      remote_ip,
+      tx_changeset,
+      %{
+        "success" => success?,
+        "type" => type,
+        "verb" => verb,
+        "what" => what,
+        "when" => when_utc
+      }
+    )
   end
 
   def create_transaction(

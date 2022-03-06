@@ -89,7 +89,9 @@ defmodule MalanWeb.SessionController do
              put_ip_addr(session_opts, conn)
            ) do
       record_transaction(
-        Map.update(conn, :assigns, %{}, fn a -> Map.merge(a, %{authed_user_id: session.user_id, authed_session_id: session.id}) end),
+        Map.update(conn, :assigns, %{}, fn a ->
+          Map.merge(a, %{authed_user_id: session.user_id, authed_session_id: session.id})
+        end),
         true,
         session.user_id,
         "POST",
