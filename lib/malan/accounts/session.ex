@@ -133,7 +133,7 @@ defmodule Malan.Accounts.Session do
   end
 
   defp set_expiration_time(changeset) do
-    num_secs = Application.get_env(:malan, Malan.Accounts.Session)[:default_token_expiration_secs]
+    num_secs = Malan.Config.Session.default_token_expiration_secs()
     set_expiration_time(changeset, num_secs, :seconds)
   end
 end

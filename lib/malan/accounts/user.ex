@@ -580,9 +580,7 @@ defmodule Malan.Accounts.User do
   end
 
   defp_testable get_password_reset_token_expiration_time do
-    Application.get_env(:malan, Accounts.User)[
-      :default_password_reset_token_expiration_secs
-    ]
+    Malan.Config.User.default_password_reset_token_expiration_secs()
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
   end
 
