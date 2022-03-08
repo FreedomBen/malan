@@ -324,9 +324,8 @@ defmodule Malan.Accounts do
           {:error, :too_many_requests} on hitting rate limit
   """
   def generate_password_reset(%User{} = user) do
-    {period_msecs, count} = Malan.Config.User.password_reset_limit()
-
-    case Hammer.check_rate(Malan.Config.User.pw_reset_rl_bucket(user.id), period_msecs, count) do
+    # case Malan.RateLimits.PasswordReset.LowerLimit.check_rate(user.id) do
+    case Malan.RateLimits.PasswordReset.check_rate(user.id) do
       {:allow, _count} ->
         generate_password_reset(user, :no_rate_limit)
 

@@ -1591,11 +1591,7 @@ defmodule MalanWeb.UserControllerTest do
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
       # Clear rate limit bucket so we can request a new token without waiting
-      # To avoid rate limit you can delete the bucket with Hammer.delete_bucket()
-      assert {:ok, _} =
-        user_id
-        |> Malan.Config.User.pw_reset_rl_bucket()
-        |> Hammer.delete_buckets()
+      Malan.RateLimits.PasswordReset.clear(user_id)
 
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
@@ -1961,10 +1957,7 @@ defmodule MalanWeb.UserControllerTest do
       assert password_reset_token_1 =~ ~r/[A-Za-z0-9]{65}/
 
       # Clear rate limit bucket so we can request a new token without waiting
-      assert {:ok, _} =
-        user_id
-        |> Malan.Config.User.pw_reset_rl_bucket()
-        |> Hammer.delete_buckets()
+      Malan.RateLimits.PasswordReset.clear(user_id)
 
       # Get a second password reset token
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
