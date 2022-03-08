@@ -12,17 +12,23 @@ config :malan,
   generators: [binary_id: true]
 
 config :malan, Malan.Accounts.User,
-  # One password reset per 3 minutes
-  password_reset_limit_count:
-    System.get_env("PASSWORD_RESET_LIMIT_COUNT") ||
-      "1" |> String.to_integer(),
-  password_reset_period_msecs:
-    System.get_env("PASSWORD_RESET_PERIOD_MSECS") ||
-      Integer.to_string(180_000) |> String.to_integer(),
-  # 24 hours
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
-      "86400" |> String.to_integer()
+      "86400" |> String.to_integer() # 24 hours
+
+config :malan, Malan.Config.RateLimits,
+  password_reset_lower_limit_msecs:
+    System.get_env("PASSWORD_RESET_LOWER_LIMIT_MSECS") ||
+      "180000" |> String.to_integer(), # 3 minutes (180 seconds)
+  password_reset_lower_limit_count:
+    System.get_env("PASSWORD_RESET_LOWER_LIMIT_COUNT") ||
+      "1" |> String.to_integer(), # 1 per period
+  password_reset_upper_limit_msecs:
+    System.get_env("PASSWORD_RESET_UPPER_LIMIT_MSECS") ||
+      "86400000" |> String.to_integer(), # 24 hours (86,400 seconds)
+  password_reset_upper_limit_count:
+    System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
+      "1" |> String.to_integer() # 1 per period
 
 config :malan, Malan.Accounts.Session,
   # One week

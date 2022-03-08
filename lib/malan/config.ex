@@ -13,27 +13,39 @@ defmodule Malan.Config do
         :default_password_reset_token_expiration_secs
       ]
     end
+  end
 
-    def password_reset_limit_count do
-      Application.get_env(:malan, Malan.Accounts.User)[
-        :password_reset_limit_count
+  defmodule RateLimit do
+    def password_reset_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_lower_limit_msecs
       ]
     end
 
-    def password_reset_period_msecs do
-      Application.get_env(:malan, Malan.Accounts.User)[
-        :password_reset_period_msecs
+    def password_reset_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_lower_limit_count
       ]
     end
 
-    def password_reset_limit do
-      {password_reset_period_msecs(), password_reset_limit_count()}
+    def password_reset_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_upper_limit_msecs
+      ]
     end
 
-    @doc "Bucket name for Hammer rate limiting tracking"
-    @spec pw_reset_rl_bucket(String.t()) :: String.t()
-    def pw_reset_rl_bucket(user_id) do
-      "generate_password_reset:#{user_id}"
+    def password_reset_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_upper_limit_count
+      ]
+    end
+
+    def password_reset_lower_limit do
+      {password_reset_lower_limit_msecs(), password_reset_lower_limit_count()}
+    end
+
+    def password_reset_upper_limit do
+      {password_reset_upper_limit_msecs(), password_reset_upper_limit_count()}
     end
   end
 end
