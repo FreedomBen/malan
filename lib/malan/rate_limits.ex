@@ -1,11 +1,13 @@
 defmodule Malan.RateLimits do
   @spec check_rate(bucket :: String.t(), scale_ms :: integer, limit :: integer) ::
     {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
   def check_rate(bucket, msecs, count) do
     Hammer.check_rate(bucket, msecs, count)
   end
 
   @spec clear(bucket :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+
   def clear(bucket) do
     Hammer.delete_buckets(bucket)
   end
@@ -19,8 +21,9 @@ defmodule Malan.RateLimits do
     If approved, returns {:allow, count}
     If unapproved, returns {:deny, limit}
     """
-    @spec check_rate(bucket :: String.t()) ::
+    @spec check_rate(user_id :: String.t()) ::
       {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
     def check_rate(user_id) do
       # check upper limit rate first, then lower limit rate
       # For example, check daily limit first, then per minute limit
@@ -31,15 +34,19 @@ defmodule Malan.RateLimits do
     end
 
     @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+
     def clear(user_id) do
       with {:ok, _c1} <- UpperLimit.clear(user_id),
            {:ok,  c2} <- LowerLimit.clear(user_id) do
-        {:allow, c2}
+        {:ok, c2}
       end
     end
 
     defmodule LowerLimit do
       def bucket(user_id), do: "generate_password_reset_lower_limit:#{user_id}"
+
+      @spec check_rate(user_id :: String.t()) ::
+        {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
       def check_rate(user_id) do
         {msecs, count} = Malan.Config.RateLimit.password_reset_lower_limit()
@@ -48,6 +55,8 @@ defmodule Malan.RateLimits do
         |> bucket()
         |> Malan.RateLimits.check_rate(msecs, count)
       end
+
+      @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
 
       def clear(user_id) do
         user_id
@@ -59,6 +68,9 @@ defmodule Malan.RateLimits do
     defmodule UpperLimit do
       def bucket(user_id), do: "generate_password_reset_upper_limit:#{user_id}"
 
+      @spec check_rate(user_id :: String.t()) ::
+        {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
       def check_rate(user_id) do
         {msecs, count} = Malan.Config.RateLimit.password_reset_upper_limit()
 
@@ -66,6 +78,8 @@ defmodule Malan.RateLimits do
         |> bucket()
         |> Malan.RateLimits.check_rate(msecs, count)
       end
+
+      @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
 
       def clear(user_id) do
         user_id

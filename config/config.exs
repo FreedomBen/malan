@@ -28,7 +28,7 @@ config :malan, Malan.Config.RateLimits,
       "86400000" |> String.to_integer(), # 24 hours (86,400 seconds)
   password_reset_upper_limit_count:
     System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
-      "1" |> String.to_integer() # 1 per period
+      "3" |> String.to_integer() # 1 per period
 
 config :malan, Malan.Accounts.Session,
   # One week
