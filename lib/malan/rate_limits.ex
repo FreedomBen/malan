@@ -1,6 +1,6 @@
 defmodule Malan.RateLimits do
   @spec check_rate(bucket :: String.t(), scale_ms :: integer, limit :: integer) ::
-    {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+          {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
   def check_rate(bucket, msecs, count) do
     Hammer.check_rate(bucket, msecs, count)
@@ -22,7 +22,7 @@ defmodule Malan.RateLimits do
     If unapproved, returns {:deny, limit}
     """
     @spec check_rate(user_id :: String.t()) ::
-      {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+            {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
     def check_rate(user_id) do
       # check upper limit rate first, then lower limit rate
@@ -46,7 +46,7 @@ defmodule Malan.RateLimits do
       def bucket(user_id), do: "generate_password_reset_lower_limit:#{user_id}"
 
       @spec check_rate(user_id :: String.t()) ::
-        {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
       def check_rate(user_id) do
         {msecs, count} = Malan.Config.RateLimit.password_reset_lower_limit()
@@ -69,7 +69,7 @@ defmodule Malan.RateLimits do
       def bucket(user_id), do: "generate_password_reset_upper_limit:#{user_id}"
 
       @spec check_rate(user_id :: String.t()) ::
-        {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
       def check_rate(user_id) do
         {msecs, count} = Malan.Config.RateLimit.password_reset_upper_limit()
