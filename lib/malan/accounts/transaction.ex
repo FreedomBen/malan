@@ -1,5 +1,6 @@
 defmodule Malan.Accounts.Transaction do
   import Malan.Utils, only: [defp_testable: 2]
+  import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -69,7 +70,7 @@ defmodule Malan.Accounts.Transaction do
     |> validate_type()
     |> validate_verb()
     |> validate_who_is_binary_id_or_nil()
-    |> validate_remote_ip()
+    |> validate_ip_addr(:remote_ip)
     |> validate_required([:success, :type_enum, :verb_enum, :when, :what, :remote_ip])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:session_id)
@@ -141,13 +142,6 @@ defmodule Malan.Accounts.Transaction do
     case Utils.is_uuid_or_nil?(get_change(changeset, :who)) do
       true -> changeset
       false -> add_error(changeset, :who, "who must be a valid ID of a user")
-    end
-  end
-
-  defp_testable validate_remote_ip(changeset) do
-    case Iptools.is_ipv4?(get_change(changeset, :remote_ip)) do
-      true -> changeset
-      false -> add_error(changeset, :remote_ip, "remote_ip must be valid IPv4 address")
     end
   end
 end
