@@ -1,6 +1,8 @@
 defmodule Malan.Accounts.Session do
   use Ecto.Schema
+
   import Ecto.Changeset
+  # import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
   alias Malan.Accounts.User
   alias Malan.Utils
@@ -65,6 +67,7 @@ defmodule Malan.Accounts.Session do
     |> set_expiration_time()
     |> put_authenticated_at()
     |> validate_required([:api_token_hash, :expires_at, :authenticated_at, :ip_address])
+    # |> validate_ip_addr(:ip_address)
   end
 
   @doc "Revoke user session"
