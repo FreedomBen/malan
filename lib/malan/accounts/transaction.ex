@@ -70,7 +70,7 @@ defmodule Malan.Accounts.Transaction do
     |> validate_type()
     |> validate_verb()
     |> validate_who_is_binary_id_or_nil()
-    |> validate_ip_addr(:remote_ip)
+    # |> validate_ip_addr(:remote_ip)
     |> validate_required([:success, :type_enum, :verb_enum, :when, :what, :remote_ip])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:session_id)
