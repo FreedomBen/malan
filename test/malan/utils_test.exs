@@ -1,7 +1,8 @@
 defmodule Malan.UtilsTest do
   alias Malan.Utils
 
-  use ExUnit.Case, async: true
+  # use ExUnit.Case, async: true
+  use Malan.DataCase, async: true
 
   defmodule TestStruct, do: defstruct([:one, :two, :three])
 
@@ -241,6 +242,23 @@ defmodule Malan.UtilsTest do
       assert cs.valid?
       cs = Utils.Ecto.Changeset.validate_ip_addr(cs, :three)
       assert not cs.valid?
+    end
+
+    test "#validate_ip_addr/3 accepts empty when flagged" do
+      types = %{one: :string, two: :string, three: :string}
+      ts = %TestStruct{one: "one", two: "two"}
+
+      cs =
+        Ecto.Changeset.change({ts, types}, %{three: ""})
+        |> Utils.Ecto.Changeset.validate_ip_addr(:three, true)
+
+      assert cs.valid?
+
+      cs =
+        Ecto.Changeset.change({ts, types}, %{three: ""})
+        |> Utils.Ecto.Changeset.validate_ip_addr(:three)
+
+      assert errors_on(cs).three == ["three must be a valid IPv4 or IPv6 address"]
     end
   end
 
