@@ -60,7 +60,8 @@ defmodule Malan.MixProject do
       # {:iptools, "~> 0.0.4"},
       {:iptools_fb, "~> 0.0.7"},
       {:hammer, "~> 6.0"},
-      {:hammer_backend_redis, "~> 6.1"}
+      {:hammer_backend_redis, "~> 6.1"},
+      {:unplug, "~> 0.2.1"}
     ]
   end
 
