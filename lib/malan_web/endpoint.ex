@@ -41,16 +41,19 @@ defmodule MalanWeb.Endpoint do
     param_key: "request_logger",
     cookie_key: "request_logger"
 
-  plug Plug.RequestId
-
   # The "log: false" in scope "/health_check", MalanWeb, log: false int he router
   # does not work.  Because of that, the health checks are logged everytime.
   # This causes the logs to be filled to the point of uselessness with health checks.
   # In order to silence the health check logs we use Unplug to conditionally
   # include them:  https://github.com/akoutmos/unplug
+  # Health Checks are on /health_check/readiness and /health_check/liveness
   plug Unplug,
-    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/healthcheck"]},
+    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/"]},
     do: {Plug.Telemetry, event_prefix: [:phoenix, :endpoint]}
+
+  plug Unplug,
+    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/"]},
+    do: Plug.RequestId
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
