@@ -52,7 +52,8 @@ defmodule Malan.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:pbkdf2_elixir, "~> 1.2"},
       {:nimble_totp, "~> 0.1.0"},
-      {:eqrcode, "~> 0.1.10"}
+      {:eqrcode, "~> 0.1.10"},
+      {:unplug, "~> 0.2.1"}
     ]
   end
 
