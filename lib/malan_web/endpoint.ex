@@ -48,11 +48,11 @@ defmodule MalanWeb.Endpoint do
   # include them:  https://github.com/akoutmos/unplug
   # Health Checks are on /health_check/readiness and /health_check/liveness
   plug Unplug,
-    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/"]},
+    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
     do: {Plug.Telemetry, event_prefix: [:phoenix, :endpoint]}
 
   plug Unplug,
-    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/"]},
+    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
     do: Plug.RequestId
 
   plug Plug.Parsers,
