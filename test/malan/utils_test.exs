@@ -21,7 +21,22 @@ defmodule Malan.UtilsTest do
 
     test "#is_uuid?/1" do
       assert Utils.is_uuid?(Ecto.UUID.generate())
-      assert !Utils.is_uuid?(nil)
+      assert not Utils.is_uuid?(nil)
+
+      # Strings with a UUID in them aren't valid UUIDs!
+      assert not Utils.is_uuid?(Ecto.UUID.generate() <> "ab")
+      assert not Utils.is_uuid?("ab" <> Ecto.UUID.generate())
+      assert not Utils.is_uuid?("ab" <> Ecto.UUID.generate() <> "ab")
+    end
+
+    test "#is_uuid_or_nil?/1" do
+      assert Utils.is_uuid_or_nil?(Ecto.UUID.generate())
+      assert Utils.is_uuid_or_nil?(nil)
+
+      # Strings with a UUID in them aren't valid UUIDs!
+      assert not Utils.is_uuid?(Ecto.UUID.generate() <> "ab")
+      assert not Utils.is_uuid?("ab" <> Ecto.UUID.generate())
+      assert not Utils.is_uuid?("ab" <> Ecto.UUID.generate() <> "ab")
     end
 
     test "#nil_or_empty?" do

@@ -732,9 +732,11 @@ defmodule MalanWeb.SessionControllerTest do
     end
 
     test "Create session fails when user doesn't exist; creates Transaction", %{conn: conn} do
+      bad_user_name = "hp" <> Utils.uuidgen()
+
       conn =
         post(conn, Routes.session_path(conn, :create),
-          session: %{username: "fakeusername", password: "fakeusernamespassword"}
+          session: %{username: bad_user_name, password: "fakeusernamespassword"}
         )
 
       assert %{"detail" => "Forbidden"} = json_response(conn, 403)["errors"]
@@ -747,7 +749,7 @@ defmodule MalanWeb.SessionControllerTest do
                  type_enum: 1,
                  verb_enum: 1,
                  who: nil,
-                 who_username: "fakeusername",
+                 who_username: ^bad_user_name,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
                } = tx

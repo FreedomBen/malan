@@ -137,7 +137,7 @@ defmodule Malan.Utils do
   def is_uuid?(nil), do: false
 
   def is_uuid?(string),
-    do: string =~ ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+    do: string =~ ~r/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
   def is_uuid_or_nil?(nil), do: true
   def is_uuid_or_nil?(string), do: is_uuid?(string)
