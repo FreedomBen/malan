@@ -651,6 +651,70 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{"detail" => "Locked"} = json_response(conn, 423)["errors"]
 
       assert [
+               ^tx_locked,
+               %Transaction{
+                 success: false,
+                 user_id: ^user_id,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 1,
+                 who: ^user_id,
+                 who_username: ^username,
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
+               } = tx
+             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
+      assert [tx_locked, tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+    end
+
+    test "Create session fails when user doesn't exist; creates Transaction", %{conn: conn} do
+      bad_user_name = "hp" <> Utils.uuidgen()
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: bad_user_name, password: "fakeusernamespassword"}
+        )
+
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)["errors"]
+
+      assert [
+               %Transaction{
+                 success: false,
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 1,
+                 who: nil,
+                 who_username: ^bad_user_name,
+                 when: when_utc,
+                 remote_ip: "127.0.0.1"
+               } = tx
+             ] = Accounts.list_transactions_by_who(nil, 0, 10)
+
+      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
+      assert [tx] == Accounts.list_transactions_by_who(nil, 0, 10)
+    end
+
+    test "Create session fails when user password is wrong; creates Transaction", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+      username = user.username
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: "fakeusernamespassword"}
+        )
+
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)["errors"]
+
+      assert [
                %Transaction{
                  user_id: ^user_id,
                  session_id: nil,
