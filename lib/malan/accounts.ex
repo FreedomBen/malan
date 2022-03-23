@@ -1474,10 +1474,24 @@ defmodule Malan.Accounts do
   end
 
   defp report_transaction_error(changeset, user_id, session_id, who, who_username, verb, what) do
-    # TODO: Report a failure in create_transaction to Sentry
-    Logger.warning(
+    msg =
       "Error recording transaction: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
-    )
+
+    opts = %{
+      errors_to_str: Utils.Ecto.Changeset.errors_to_str(changeset),
+      user_id: user_id,
+      session_id: session_id,
+      who: who,
+      who_username: who_username,
+      verb: verb,
+      what: what
+    }
+
+    # In envs with Sentry, this will cause a double message to sentry
+    # because we enabled the Sentry Logger backend.  The Sentry call
+    # provides better info, but only works if the DSN is setup
+    Logger.warning(msg, opts)
+    Sentry.capture_message(msg, opts)
 
     {:error, changeset}
   end
