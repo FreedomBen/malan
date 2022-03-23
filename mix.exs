@@ -54,6 +54,7 @@ defmodule Malan.MixProject do
       {:nimble_totp, "~> 0.1.0"},
       {:eqrcode, "~> 0.1.10"},
       {:sentry, "~> 8.0"},
+      {:hackney, "~> 1.17"},
       {:unplug, "~> 0.2.1"}
     ]
   end
