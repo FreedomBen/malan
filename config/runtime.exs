@@ -74,4 +74,7 @@ if config_env() == :prod do
     domain: System.get_env("MAILGUN_DOMAIN")
 
   config :swoosh, :api_client, Swoosh.ApiClient.Hackney
+
+  config :sentry, dsn: System.get_env("SENTRY_DSN")
+
 end
