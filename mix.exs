@@ -53,6 +53,7 @@ defmodule Malan.MixProject do
       {:pbkdf2_elixir, "~> 1.2"},
       {:nimble_totp, "~> 0.1.0"},
       {:eqrcode, "~> 0.1.10"},
+      {:sentry, "~> 8.0"},
       {:unplug, "~> 0.2.1"}
     ]
   end
