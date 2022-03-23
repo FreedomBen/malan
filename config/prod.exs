@@ -18,6 +18,8 @@ config :logger, level: :info
 
 
 # Sentry config.  DSN is runtime env var
+# This handles most exceptions and Plug events
+# https://hexdocs.pm/sentry/Sentry.html#content
 config :sentry,
   environment_name: :prod,
   enable_source_code_context: true,
@@ -26,6 +28,19 @@ config :sentry,
     env: "production"
   },
   included_environments: [:prod]
+
+# Sentry Logger backend catches things that may get missed
+# by plug if out of process, or just log messages for example.
+# https://hexdocs.pm/sentry/Sentry.LoggerBackend.html
+config :logger, Sentry.LoggerBackend,
+  # Also send warn messages
+  level: :warn,
+  # Send messages from Plug/Cowboy
+  excluded_domains: [],
+  # Include metadata added with `Logger.metadata([foo_bar: "value"])`
+  metadata: [:foo_bar],
+  # Send messages like `Logger.error("error")` to Sentry
+  capture_log_messages: true
 
 
 # ## SSL Support
