@@ -91,6 +91,34 @@ config :hammer,
     ]
   }
 
+# Sentry config.  DSN is runtime env var
+# This handles most exceptions and Plug events
+# https://hexdocs.pm/sentry/Sentry.html#content
+config :sentry,
+  filter: Malan.SentryEventFilter,
+  environment_name: config_env(),
+  enable_source_code_context: true,
+  root_source_code_path: File.cwd!(),
+  tags: %{
+    env: config_env(),
+    version: System.get_env("RELEASE_VERSION"), # set at buildtime by CI script
+    compiled_at: DateTime.utc_now() |> DateTime.to_string()
+  },
+  included_environments: [:prod, :staging]
+
+# Sentry Logger backend catches things that may get missed
+# by plug if out of process, or just log messages for example.
+# https://hexdocs.pm/sentry/Sentry.LoggerBackend.html
+config :logger, Sentry.LoggerBackend,
+  # Also send warn messages
+  level: :warn,
+  # Send messages from Plug/Cowboy
+  excluded_domains: [],
+  # Include metadata added with `Logger.metadata([foo_bar: "value"])`
+  metadata: [:foo_bar],
+  # Send messages like `Logger.error("error")` to Sentry
+  capture_log_messages: true
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

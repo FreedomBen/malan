@@ -83,7 +83,8 @@ defmodule Malan.MixProject do
         "cmd --cd assets npm run deploy",
         "esbuild default --minify",
         "phx.digest"
-      ]
+      ],
+      sentry_recompile: ["compile", "deps.compile sentry --force"]
     ]
   end
 end
