@@ -96,6 +96,7 @@ config :hammer,
 # https://hexdocs.pm/sentry/Sentry.html#content
 config :sentry,
   filter: Malan.SentryEventFilter,
+  before_send_event: {Malan.Sentry, :before_send},
   environment_name: config_env(),
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),

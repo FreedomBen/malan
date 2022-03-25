@@ -16,6 +16,7 @@ config :malan, MalanWeb.Endpoint,
 # Do not print debug messages in production
 config :logger, level: :info
 
+config :malan, :sentry, enabled: true
 
 # ## SSL Support
 #

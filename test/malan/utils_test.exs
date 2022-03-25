@@ -14,6 +14,13 @@ defmodule Malan.UtilsTest do
       assert false == Utils.nil_or_empty?(42)
     end
 
+    test "not_nil_or_empty?/1" do
+      assert false == Utils.not_nil_or_empty?(nil)
+      assert false == Utils.not_nil_or_empty?("")
+      assert true == Utils.not_nil_or_empty?("abcd")
+      assert true == Utils.not_nil_or_empty?(42)
+    end
+
     test "uuidgen/0" do
       assert Utils.uuidgen() =~
                ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/

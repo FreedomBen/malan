@@ -48,4 +48,14 @@ defmodule Malan.Config do
       {password_reset_upper_limit_msecs(), password_reset_upper_limit_count()}
     end
   end
+
+  defmodule Sentry do
+    def enabled? do
+      Application.get_env(:malan, :sentry)[:enabled]
+    end
+
+    def dsn do
+      Application.get_env(:sentry, :dsn)
+    end
+  end
 end

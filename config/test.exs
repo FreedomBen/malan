@@ -34,6 +34,8 @@ config :logger, level: :warn
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 
+config :malan, :sentry, enabled: false
+
 # config :malan, Malan.Accounts.User,
 #   # Basically no rate limiting in test
 #   password_reset_limit_count: 1_000_000,

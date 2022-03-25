@@ -165,6 +165,8 @@ defmodule Malan.Utils do
     "" == str_or_nil |> to_string() |> String.trim()
   end
 
+  def not_nil_or_empty?(str_or_nil), do: not nil_or_empty?(str_or_nil)
+
   @doc """
   if `value` (value of the argument) is nil, this will raise `Malan.CantBeNil`
 
