@@ -4,7 +4,7 @@ defmodule Malan.SentryEventFilter do
   # https://docs.sentry.io/platforms/elixir/#filtering-events
 
   # If the user passes invalid args that don't match handler, don't catch
-  def exclude_exception?(%Phoenix.ActionClauseError{}, :plug) do
+  def exclude_exception?(%Phoenix.ActionClauseError{args: [_conn, _params]}, :plug) do
     # if return value will be 400, don't report error
     #   true
     # otherwise

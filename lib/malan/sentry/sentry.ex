@@ -1,6 +1,11 @@
 defmodule Malan.Sentry do
   # For Sentry fingerprinting
   #   https://docs.sentry.io/platforms/elixir/#fingerprinting
+  def before_send(%{exception: [%{type: Phoenix.Router.NoRouteError}]} = event) do
+    # %{event | fingerprint: ["ecto", "db_connection", "timeout"]}
+    event
+  end
+
   def before_send(event) do
     event
   end
