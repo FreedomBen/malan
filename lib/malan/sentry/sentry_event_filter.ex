@@ -12,8 +12,7 @@ defmodule Malan.SentryEventFilter do
   end
 
   # If the user tries to hit a route that doesn't exist, don't catch
-  #def exclude_exception?(%Phoenix.Router.NoRouteError{}, :plug), do: true
-  def exclude_exception?(%Phoenix.Router.NoRouteError{}, :plug), do: false
+  def exclude_exception?(%Phoenix.Router.NoRouteError{}, :plug), do: true
 
   # Default handler, catch the exception
   def exclude_exception?(_exception, _source), do: false

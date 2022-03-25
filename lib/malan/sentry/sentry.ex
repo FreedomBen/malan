@@ -5,12 +5,11 @@ defmodule Malan.Sentry do
     event
   end
 
-  @moduledoc ~S"""
+  @doc ~S"""
   Wraps the Sentry SDK to NOP when Sentry is not enabled.
 
   If the Sentry DSN is not set, then Sentry is disabled.
   """
-
   @spec enabled?() :: boolean()
   def enabled? do
     case Malan.Config.Sentry.enabled?() do
