@@ -222,6 +222,25 @@ defmodule Malan.Utils do
   def mask_str(val), do: Kernel.inspect(val) |> mask_str()
 
   @doc """
+  Convert a list to a `String`, suitable for printing
+
+  Will raise a `String.chars` error if can't coerce part to a `String`
+
+  `mask_keys` is used to mask the values in any keys that are in maps in the `list`
+  """
+  def list_to_string(list, mask_keys \\ []) do
+    list
+    |> Enum.map(fn val ->
+      case val do
+        %{} -> map_to_string(val, mask_keys)
+        l when is_list(l) -> list_to_string(l)
+        _ -> to_string(val)
+      end
+    end)
+    |> Enum.join(", ")
+  end
+
+  @doc """
   Convert a map to a `String`, suitable for printing.
 
   Optionally pass a list of keys to mask.
@@ -246,6 +265,14 @@ defmodule Malan.Utils do
   """
   def map_to_string(map, mask_keys \\ []) do
     Map.to_list(map)
+    |> Enum.reverse()
+    |> Enum.map(fn {key, val} ->
+      case val do
+        %{} -> {key, map_to_string(val, mask_keys)}
+        l when is_list(l) -> {key, list_to_string(l, mask_keys)}
+        _ -> {key, val}
+      end
+    end)
     |> Enum.map(fn {key, val} ->
       case key in list_to_strings_and_atoms(mask_keys) do
         true -> {key, mask_str(val)}

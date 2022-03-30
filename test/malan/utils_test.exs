@@ -80,31 +80,81 @@ defmodule Malan.UtilsTest do
                Utils.list_to_strings_and_atoms(["circle", "square"])
     end
 
+    test "#list_to_string/2 works" do
+      assert "Dorothy, Rest in Peace" ==
+        Utils.list_to_string(["Dorothy", "Rest in Peace"])
+    end
+
+    test "#list_to_string/2 works recursively" do
+      assert "Dorothy, Rest in Peace, 2021" ==
+        Utils.list_to_string(["Dorothy", ["Rest in Peace", "2021"]])
+    end
+
+    test "#list_to_string/2 works with maps in it" do
+      assert "Dorothy, albums: 'Rest in Peace, 2021'" ==
+        Utils.list_to_string(["Dorothy", %{albums: ["Rest in Peace", "2021"]}])
+    end
+
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
-      assert "kitt: 'karr', michael: 'knight'" ==
+      #assert "kitt: 'karr', michael: 'knight'" ==
+      assert "michael: 'knight', kitt: 'karr'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"})
     end
 
     test "#map_to_string/2 masks specified values" do
-      assert "kitt: '****', michael: 'knight'" ==
+      #assert "kitt: '****', michael: 'knight'" ==
+      assert "michael: 'knight', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
 
-      assert "kitt: '****', michael: '******'" ==
+      #assert "kitt: '****', michael: '******'" ==
+      assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
 
-      assert "carr: 'hart', kitt: '****', michael: '******'" ==
+      #assert "carr: 'hart', kitt: '****', michael: '******'" ==
+      assert "michael: '******', kitt: '****', carr: 'hart'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, [
                  "kitt",
                  "michael"
                ])
 
-      assert "kitt: '****', michael: '******'" ==
+      #assert "kitt: '****', michael: '******'" ==
+      assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
 
-      assert "kitt: '****', michael: '******'" ==
+      #assert "kitt: '****', michael: '******'" ==
+      assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
+    end
+
+    test "#map_to_string/2 works recursively on maps and masks deeply nested keys" do
+      input =
+        %{
+          michael: "knight",
+          kitt: "karr",
+          courses: %{
+            ehrman: %{
+              new_testament: "New Testament"
+            },
+            johnson: %{
+              philosophy: [
+                %{
+                  name: "Big Questions of Philosophy",
+                  year: 2015,
+                  mask: "maskme"
+                }
+              ]
+            }
+          }
+        }
+
+      output = Utils.map_to_string(input, ["mask", "kitt"])
+
+      expected =
+        "michael: 'knight', kitt: '****', courses: 'johnson: 'philosophy: 'year: '2015', name: 'Big Questions of Philosophy', mask: '******''', ehrman: 'new_testament: 'New Testament'''"
+
+      assert output == expected
     end
 
     test "mask_str/1 nil returns nil" do
