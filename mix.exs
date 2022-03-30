@@ -62,7 +62,8 @@ defmodule Malan.MixProject do
       {:hammer, "~> 6.0"},
       {:hammer_backend_redis, "~> 6.1"},
       {:sentry, "~> 8.0"},
-      {:unplug, "~> 0.2.1"}
+      {:unplug, "~> 0.2.1"},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 
