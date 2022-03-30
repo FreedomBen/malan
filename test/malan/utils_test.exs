@@ -95,6 +95,24 @@ defmodule Malan.UtilsTest do
         Utils.list_to_string(["Dorothy", %{albums: ["Rest in Peace", "2021"]}])
     end
 
+    test "#list_to_string/2 works with tuples in it" do
+      assert "Dorothy, albums, Rest in Peace, 2021" ==
+        Utils.list_to_string(["Dorothy", {:albums, ["Rest in Peace", "2021"]}])
+    end
+
+    test "#tuple_to_string/2 works with maps in it" do
+      assert "error, albums: 'Rest in Peace, 2021'" ==
+        Utils.tuple_to_string({:error, %{albums: ["Rest in Peace", "2021"]}})
+    end
+
+    test "#tuple_to_string/2 works with keyword lists" do
+      # TODO:  Prefer format like:
+      # assert "song, [title, 'Rest in Peace', year, '2021']" ==
+
+      assert "song, title, Rest in Peace, year, 2021" ==
+        Utils.tuple_to_string({:song, [title: "Rest in Peace", year: "2021"]})
+    end
+
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
@@ -133,6 +151,7 @@ defmodule Malan.UtilsTest do
         %{
           michael: "knight",
           kitt: "karr",
+          errors: [one: %{level: {:fatal, true}}],
           courses: %{
             ehrman: %{
               new_testament: "New Testament"
@@ -146,13 +165,13 @@ defmodule Malan.UtilsTest do
                 }
               ]
             }
-          }
+          },
         }
 
       output = Utils.map_to_string(input, ["mask", "kitt"])
 
       expected =
-        "michael: 'knight', kitt: '****', courses: 'johnson: 'philosophy: 'year: '2015', name: 'Big Questions of Philosophy', mask: '******''', ehrman: 'new_testament: 'New Testament'''"
+        "michael: 'knight', kitt: '****', errors: 'one, level: 'fatal, true'', courses: 'johnson: 'philosophy: 'year: '2015', name: 'Big Questions of Philosophy', mask: '******''', ehrman: 'new_testament: 'New Testament'''"
 
       assert output == expected
     end
@@ -171,6 +190,7 @@ defmodule Malan.UtilsTest do
       assert Utils.to_string("ohai") == Utils.map_to_string("ohai")
       assert Utils.to_string(%{one: "two"}) == Utils.map_to_string(%{one: "two"})
       assert Utils.to_string(["one", "two"]) == Utils.list_to_string(["one", "two"])
+      assert Utils.to_string({"one", "two"}) == Utils.tuple_to_string({"one", "two"})
     end
 
     test "mask_str/1 nil returns nil" do

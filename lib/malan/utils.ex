@@ -234,11 +234,26 @@ defmodule Malan.Utils do
     |> Enum.map(fn val ->
       case val do
         %{} -> map_to_string(val, mask_keys)
-        l when is_list(l) -> list_to_string(l)
+        l when is_list(l) -> list_to_string(l, mask_keys)
+        t when is_tuple(t) -> tuple_to_string(t, mask_keys)
         _ -> Kernel.to_string(val)
       end
     end)
     |> Enum.join(", ")
+  end
+
+  @doc """
+  Convert a tuple to a `String`, suitable for printing
+
+  Will raise a `String.chars` error if can't coerce part to a `String`
+
+  `mask_keys` is used to mask the values in any keys that are in maps in the `tuple`
+  """
+  @spec tuple_to_string(tuple :: tuple() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
+  def tuple_to_string(tuple, mask_keys \\ []) do
+    tuple
+    |> Tuple.to_list()
+    |> list_to_string(mask_keys)
   end
 
   @doc """
@@ -274,6 +289,7 @@ defmodule Malan.Utils do
       case val do
         %{} -> {key, map_to_string(val, mask_keys)}
         l when is_list(l) -> {key, list_to_string(l, mask_keys)}
+        t when is_tuple(t) -> {key, tuple_to_string(t, mask_keys)}
         _ -> {key, val}
       end
     end)
@@ -304,6 +320,7 @@ defmodule Malan.Utils do
   def to_string(value, mask_keys \\ [])
   def to_string(%{} = map, mask_keys), do: map_to_string(map, mask_keys)
   def to_string(list, mask_keys) when is_list(list), do: list_to_string(list, mask_keys)
+  def to_string(tuple, mask_keys) when is_tuple(tuple), do: tuple_to_string(tuple, mask_keys)
   def to_string(value, _mask_keys), do: Kernel.to_string(value)
 
   defp atom_or_string_to_string_or_atom(atom) when is_atom(atom) do
