@@ -148,7 +148,7 @@ defmodule Malan.Utils do
   @doc """
   Checks if the passed item is nil or empty string.
 
-  The param will be passed to `to_string()`
+  The param will be passed to `Kernel.to_string()`
   and then `String.trim()` and checked for empty string
 
   ## Examples
@@ -162,7 +162,7 @@ defmodule Malan.Utils do
 
   """
   def nil_or_empty?(str_or_nil) do
-    "" == str_or_nil |> to_string() |> String.trim()
+    "" == str_or_nil |> Kernel.to_string() |> String.trim()
   end
 
   def not_nil_or_empty?(str_or_nil), do: not nil_or_empty?(str_or_nil)
@@ -228,13 +228,14 @@ defmodule Malan.Utils do
 
   `mask_keys` is used to mask the values in any keys that are in maps in the `list`
   """
+  @spec list_to_string(list :: list() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
   def list_to_string(list, mask_keys \\ []) do
     list
     |> Enum.map(fn val ->
       case val do
         %{} -> map_to_string(val, mask_keys)
         l when is_list(l) -> list_to_string(l)
-        _ -> to_string(val)
+        _ -> Kernel.to_string(val)
       end
     end)
     |> Enum.join(", ")
@@ -263,7 +264,10 @@ defmodule Malan.Utils do
       "carr: 'hart', kitt: '****', michael: '******'"
 
   """
-  def map_to_string(map, mask_keys \\ []) do
+  @spec map_to_string(map :: map() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
+  def map_to_string(map, mask_keys \\ [])
+
+  def map_to_string(%{} = map, mask_keys) do
     Map.to_list(map)
     |> Enum.reverse()
     |> Enum.map(fn {key, val} ->
@@ -282,6 +286,25 @@ defmodule Malan.Utils do
     |> Enum.map(fn {key, val} -> "#{key}: '#{val}'" end)
     |> Enum.join(", ")
   end
+
+  def map_to_string(not_a_map, _mask_keys), do: Kernel.to_string(not_a_map)
+
+  @doc ~S"""
+  Convert the value, map, or list to a string, suitable for printing or storing.
+
+  If the value is not a map or list, it must be a type that implements the
+  `String.Chars` protocol, otherwise this will fail.
+
+  The reason to offer this util function rather than implementing `String.Chars`
+  for maps and lists is that we want to make sure that we never accidentally
+  convert those to a string.  This conversion is somewhat destructive and is
+  irreversable, so it should only be done intentionally.
+  """
+  @spec to_string(input :: map() | list() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
+  def to_string(value, mask_keys \\ [])
+  def to_string(%{} = map, mask_keys), do: map_to_string(map, mask_keys)
+  def to_string(list, mask_keys) when is_list(list), do: list_to_string(list, mask_keys)
+  def to_string(value, _mask_keys), do: Kernel.to_string(value)
 
   defp atom_or_string_to_string_or_atom(atom) when is_atom(atom) do
     Atom.to_string(atom)

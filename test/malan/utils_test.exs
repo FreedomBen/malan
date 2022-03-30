@@ -157,6 +157,22 @@ defmodule Malan.UtilsTest do
       assert output == expected
     end
 
+    test "#map_to_string/2 echoes back non-map arg" do
+      assert "995" == Utils.map_to_string(995)
+      assert "995" == Utils.map_to_string("995")
+      assert "ARG" == Utils.map_to_string("ARG")
+    end
+
+    test "#to_string/2 works" do
+      assert "995" == Utils.to_string(995)
+      assert "995" == Utils.to_string("995")
+      assert "ARG" == Utils.to_string("ARG")
+      assert Utils.to_string(995) == Utils.map_to_string("995")
+      assert Utils.to_string("ohai") == Utils.map_to_string("ohai")
+      assert Utils.to_string(%{one: "two"}) == Utils.map_to_string(%{one: "two"})
+      assert Utils.to_string(["one", "two"]) == Utils.list_to_string(["one", "two"])
+    end
+
     test "mask_str/1 nil returns nil" do
       assert is_nil(Utils.mask_str(nil))
     end
