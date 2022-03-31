@@ -82,27 +82,27 @@ defmodule Malan.UtilsTest do
 
     test "#list_to_string/2 works" do
       assert "Dorothy, Rest in Peace" ==
-        Utils.list_to_string(["Dorothy", "Rest in Peace"])
+               Utils.list_to_string(["Dorothy", "Rest in Peace"])
     end
 
     test "#list_to_string/2 works recursively" do
       assert "Dorothy, Rest in Peace, 2021" ==
-        Utils.list_to_string(["Dorothy", ["Rest in Peace", "2021"]])
+               Utils.list_to_string(["Dorothy", ["Rest in Peace", "2021"]])
     end
 
     test "#list_to_string/2 works with maps in it" do
       assert "Dorothy, albums: 'Rest in Peace, 2021'" ==
-        Utils.list_to_string(["Dorothy", %{albums: ["Rest in Peace", "2021"]}])
+               Utils.list_to_string(["Dorothy", %{albums: ["Rest in Peace", "2021"]}])
     end
 
     test "#list_to_string/2 works with tuples in it" do
       assert "Dorothy, albums, Rest in Peace, 2021" ==
-        Utils.list_to_string(["Dorothy", {:albums, ["Rest in Peace", "2021"]}])
+               Utils.list_to_string(["Dorothy", {:albums, ["Rest in Peace", "2021"]}])
     end
 
     test "#tuple_to_string/2 works with maps in it" do
       assert "error, albums: 'Rest in Peace, 2021'" ==
-        Utils.tuple_to_string({:error, %{albums: ["Rest in Peace", "2021"]}})
+               Utils.tuple_to_string({:error, %{albums: ["Rest in Peace", "2021"]}})
     end
 
     test "#tuple_to_string/2 works with keyword lists" do
@@ -110,63 +110,56 @@ defmodule Malan.UtilsTest do
       # assert "song, [title, 'Rest in Peace', year, '2021']" ==
 
       assert "song, title, Rest in Peace, year, 2021" ==
-        Utils.tuple_to_string({:song, [title: "Rest in Peace", year: "2021"]})
+               Utils.tuple_to_string({:song, [title: "Rest in Peace", year: "2021"]})
     end
 
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
-      #assert "kitt: 'karr', michael: 'knight'" ==
       assert "michael: 'knight', kitt: 'karr'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"})
     end
 
     test "#map_to_string/2 masks specified values" do
-      #assert "kitt: '****', michael: 'knight'" ==
       assert "michael: 'knight', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
 
-      #assert "kitt: '****', michael: '******'" ==
       assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
 
-      #assert "carr: 'hart', kitt: '****', michael: '******'" ==
       assert "michael: '******', kitt: '****', carr: 'hart'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, [
                  "kitt",
                  "michael"
                ])
 
-      #assert "kitt: '****', michael: '******'" ==
       assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
 
-      #assert "kitt: '****', michael: '******'" ==
       assert "michael: '******', kitt: '****'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
     end
 
     test "#map_to_string/2 works recursively on maps and masks deeply nested keys" do
-      input =
-        %{
-          michael: "knight",
-          kitt: "karr",
-          errors: [one: %{level: {:fatal, true}}],
-          courses: %{
-            ehrman: %{
-              new_testament: "New Testament"
-            },
-            johnson: %{
-              philosophy: [
-                %{
-                  name: "Big Questions of Philosophy",
-                  year: 2015,
-                  mask: "maskme"
-                }
-              ]
-            }
+      input = %{
+        michael: "knight",
+        kitt: "karr",
+        errors: [one: %{level: {:fatal, true}}],
+        courses: %{
+          ehrman: %{
+            new_testament: "New Testament"
           },
+          johnson: %{
+            philosophy: [
+              %{
+                name: "Big Questions of Philosophy",
+                year: 2015,
+                mask: "maskme"
+              }
+            ]
+          }
         }
+      }
 
       output = Utils.map_to_string(input, ["mask", "kitt"])
 
@@ -378,25 +371,35 @@ defmodule Malan.UtilsTest do
   end
 
   describe "FromEnv" do
-    test "#log_str/2 :mfa", do:
-      assert "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :mfa/1]" == Utils.FromEnv.log_str(__ENV__)
+    test "#log_str/2 :mfa",
+      do:
+        assert(
+          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :mfa/1]" ==
+            Utils.FromEnv.log_str(__ENV__)
+        )
 
-    test "#log_str/2 :func_only", do:
-      assert "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :func_only/1]" == Utils.FromEnv.log_str(__ENV__)
+    test "#log_str/2 :func_only",
+      do:
+        assert(
+          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :func_only/1]" ==
+            Utils.FromEnv.log_str(__ENV__)
+        )
 
-    test "#log_str/1 defaults to :mfa", do:
-      assert Utils.FromEnv.log_str(__ENV__, :mfa) == Utils.FromEnv.log_str(__ENV__)
+    test "#log_str/1 defaults to :mfa",
+      do: assert(Utils.FromEnv.log_str(__ENV__, :mfa) == Utils.FromEnv.log_str(__ENV__))
 
-    test "#mfa_str/1", do:
-      assert "Elixir.Malan.UtilsTest.#test FromEnv #mfa_str/1/1" == Utils.FromEnv.mfa_str(__ENV__)
+    test "#mfa_str/1",
+      do:
+        assert(
+          "Elixir.Malan.UtilsTest.#test FromEnv #mfa_str/1/1" == Utils.FromEnv.mfa_str(__ENV__)
+        )
 
-    test "#func_str/1 env", do:
-      assert "#test FromEnv #func_str/1 env/1" == Utils.FromEnv.func_str(__ENV__.function)
+    test "#func_str/1 env",
+      do: assert("#test FromEnv #func_str/1 env/1" == Utils.FromEnv.func_str(__ENV__.function))
 
-    test "#func_str/1 func", do:
-      assert "#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__)
+    test "#func_str/1 func",
+      do: assert("#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__))
 
-    test "#mod_str/1", do:
-      assert "Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__)
+    test "#mod_str/1", do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
   end
 end

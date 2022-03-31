@@ -137,7 +137,8 @@ defmodule Malan.Utils do
   def is_uuid?(nil), do: false
 
   def is_uuid?(string),
-    do: string =~ ~r/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    do:
+      string =~ ~r/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
   def is_uuid_or_nil?(nil), do: true
   def is_uuid_or_nil?(string), do: is_uuid?(string)
@@ -249,7 +250,8 @@ defmodule Malan.Utils do
 
   `mask_keys` is used to mask the values in any keys that are in maps in the `tuple`
   """
-  @spec tuple_to_string(tuple :: tuple() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
+  @spec tuple_to_string(tuple :: tuple() | String.Chars.t(), mask_keys :: list(binary())) ::
+          binary()
   def tuple_to_string(tuple, mask_keys \\ []) do
     tuple
     |> Tuple.to_list()
@@ -316,7 +318,8 @@ defmodule Malan.Utils do
   convert those to a string.  This conversion is somewhat destructive and is
   irreversable, so it should only be done intentionally.
   """
-  @spec to_string(input :: map() | list() | String.Chars.t(), mask_keys :: list(binary())) :: binary()
+  @spec to_string(input :: map() | list() | String.Chars.t(), mask_keys :: list(binary())) ::
+          binary()
   def to_string(value, mask_keys \\ [])
   def to_string(%{} = map, mask_keys), do: map_to_string(map, mask_keys)
   def to_string(list, mask_keys) when is_list(list), do: list_to_string(list, mask_keys)
@@ -575,7 +578,11 @@ defmodule Malan.Utils.Ecto.Changeset do
         changeset
 
       true ->
-        Ecto.Changeset.add_error(changeset, property, "#{property} must be a valid IPv4 or IPv6 address")
+        Ecto.Changeset.add_error(
+          changeset,
+          property,
+          "#{property} must be a valid IPv4 or IPv6 address"
+        )
     end
   end
 
