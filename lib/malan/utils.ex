@@ -503,6 +503,29 @@ defmodule Malan.Utils.DateTime do
     do: in_the_past?(expires_at, DateTime.utc_now())
 end
 
+defmodule Malan.Utils.IPv4 do
+  def to_s(%Plug.Conn{} = conn), do: to_s(conn.remote_ip)
+
+  def to_s(ip_tuple) do
+    ip_tuple
+    |> :inet_parse.ntoa()
+    |> Kernel.to_string()
+  end
+end
+
+defmodule Malan.Utils.FromEnv do
+  def log_str(env, :mfa), do: "[#{mfa_str(env)}]"
+  def log_str(env, :func_only), do: "[#{func_str(env)}]"
+  def log_str(env), do: log_str(env, :mfa)
+
+  def mfa_str(env), do: mod_str(env) <> "." <> func_str(env)
+
+  def func_str({func, arity}), do: "##{func}/#{arity}"
+  def func_str(env), do: func_str(env.function)
+
+  def mod_str(env), do: Kernel.to_string(env.module)
+end
+
 defmodule Malan.Utils.Phoenix.Controller do
   import Plug.Conn, only: [halt: 1, put_status: 2]
 
@@ -629,15 +652,5 @@ defmodule Malan.Utils.Ecto.Changeset do
 
   def convert_changes(data, struct_type) do
     struct(struct_type, convert_changes(data))
-  end
-end
-
-defmodule Malan.Utils.IPv4 do
-  def to_s(%Plug.Conn{} = conn), do: to_s(conn.remote_ip)
-
-  def to_s(ip_tuple) do
-    ip_tuple
-    |> :inet_parse.ntoa()
-    |> Kernel.to_string()
   end
 end

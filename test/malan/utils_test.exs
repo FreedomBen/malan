@@ -376,4 +376,27 @@ defmodule Malan.UtilsTest do
       assert "127.0.0.1" == Utils.IPv4.to_s({127, 0, 0, 1})
     end
   end
+
+  describe "FromEnv" do
+    test "#log_str/2 :mfa", do:
+      assert "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :mfa/1]" == Utils.FromEnv.log_str(__ENV__)
+
+    test "#log_str/2 :func_only", do:
+      assert "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :func_only/1]" == Utils.FromEnv.log_str(__ENV__)
+
+    test "#log_str/1 defaults to :mfa", do:
+      assert Utils.FromEnv.log_str(__ENV__, :mfa) == Utils.FromEnv.log_str(__ENV__)
+
+    test "#mfa_str/1", do:
+      assert "Elixir.Malan.UtilsTest.#test FromEnv #mfa_str/1/1" == Utils.FromEnv.mfa_str(__ENV__)
+
+    test "#func_str/1 env", do:
+      assert "#test FromEnv #func_str/1 env/1" == Utils.FromEnv.func_str(__ENV__.function)
+
+    test "#func_str/1 func", do:
+      assert "#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__)
+
+    test "#mod_str/1", do:
+      assert "Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__)
+  end
 end
