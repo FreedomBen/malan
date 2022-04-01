@@ -31,11 +31,40 @@ defmodule Malan.Utils do
       |> render(:"404")
       |> pry_pipe()
 
+  ## Alternatives
+
+  You may also wish to consider using `IO.inspect/3` in pipelines.  `IO.inspect/3`
+  will print and return the value unchanged.  Example:
+
+      conn
+      |> put_status(:not_found)
+      |> IO.inspect(label: "after status")
+      |> render(:"404")
+
   """
   def pry_pipe(retval, arg1 \\ nil, arg2 \\ nil, arg3 \\ nil, arg4 \\ nil) do
     require IEx
     IEx.pry()
     retval
+  end
+
+  @doc ~S"""
+  Runs `IO.inspect/2` with pretty printing, colors, and unlimited size.
+
+  If `opaque_struct` is false, then structs will be printed as `Map`s, which
+  allows you to see any opaque fields they might have set
+  """
+  def inspect(val, opaque_struct \\ true, limit \\ 50) do
+    syntax_colors = [
+      atom: :cyan,
+      binary: :green,
+      boolean: :brown,
+      number: :blue,
+      regex: :brown,
+      string: :green
+    ]
+
+    IO.inspect(val, structs: opaque_struct, limit: limit, syntax_colors: syntax_colors, width: 80)
   end
 
   @doc ~S"""
