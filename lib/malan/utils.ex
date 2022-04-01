@@ -49,22 +49,45 @@ defmodule Malan.Utils do
   end
 
   @doc ~S"""
+  Retrieve syntax colors for embedding into `:syntax_colors` of `Inspect.Opts`
+
+  You probably don't want this directly.  You probably want `inspect_format`
+  """
+  def inspect_syntax_colors do
+    [
+      number: :yellow,
+      atom: :cyan,
+      string: :green,
+      boolean: :magenta,
+      nil: :magenta
+    ]
+  end
+
+  @doc ~S"""
+  Get `Inspect.Opts` for `Kernel.inspect` or `IO.inspect`
+
+  If `opaque_struct` is false, then structs will be printed as `Map`s, which
+  allows you to see any opaque fields they might have set
+
+  `limit` is the max number of stuff printed out.  Can be an integer or `:infinity`
+  """
+  def inspect_format(opaque_struct \\ true, limit \\ 50) do
+    [
+      structs: opaque_struct,
+      limit: limit,
+      syntax_colors: inspect_syntax_colors(),
+      width: 80
+    ]
+  end
+
+  @doc ~S"""
   Runs `IO.inspect/2` with pretty printing, colors, and unlimited size.
 
   If `opaque_struct` is false, then structs will be printed as `Map`s, which
   allows you to see any opaque fields they might have set
   """
   def inspect(val, opaque_struct \\ true, limit \\ 50) do
-    syntax_colors = [
-      atom: :cyan,
-      binary: :green,
-      boolean: :brown,
-      number: :blue,
-      regex: :brown,
-      string: :green
-    ]
-
-    IO.inspect(val, structs: opaque_struct, limit: limit, syntax_colors: syntax_colors, width: 80)
+    Kernel.inspect(val, inspect_format(opaque_struct, limit))
   end
 
   @doc ~S"""
