@@ -23,8 +23,9 @@ config :malan, MalanWeb.Endpoint,
   # http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
-  debug_errors: true,
-  # debug_errors: false,
+  # Set `debug_errors: true` to get more useful output for any exceptions
+  # debug_errors: true,
+  debug_errors: false,
   secret_key_base: "udX5bFf0B1XDP3LQdGk/neU0RDWp7LUf/ocaUT9lzJ80056EUKKuS7VKm71YYFhy",
   watchers: [
     # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
