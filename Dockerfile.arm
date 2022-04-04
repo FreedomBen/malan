@@ -46,7 +46,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
  && update-ca-certificates
 
-# Set environment to production
+# Set environment to development
 ENV MIX_ENV dev
 
 # Copy over source code
