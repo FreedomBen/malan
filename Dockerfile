@@ -73,5 +73,6 @@ COPY --chown=docker:docker .iex.exs /app
 COPY --chown=docker:docker .bashrc $USER_HOME
 
 RUN mix compile
+RUN mix phx.digest
 
 CMD PORT=4000 ./scripts/start-in-docker.sh
