@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-docker push docker.io/freedomben/malan-dev:latest
+LATEST_VERSION='20220401110701'
+
+docker push "docker.io/freedomben/malan-dev:${LATEST_VERSION}"
+docker push "docker.io/freedomben/malan-dev:latest"

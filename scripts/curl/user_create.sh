@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-MALAN_HOST='https://malan-staging.ameelio.org'
-#MALAN_HOST='http://localhost:4000'
+MALAN_HOST='http://localhost:4000'
+#MALAN_HOST='https://malan-staging.ameelio.org'
+#MALAN_HOST='https://malan-prod.ameelio.org'
 
 # Regular user
 NEW_EMAIL="ben@ameelio.org"
