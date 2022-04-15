@@ -7,6 +7,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 400.json" do
     assert render(MalanWeb.ErrorView, "400.json", []) == %{
              errors: %{
+               ok: false,
                code: 400,
                detail: "Bad Request"
              }
@@ -16,6 +17,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 401.json" do
     assert render(MalanWeb.ErrorView, "401.json", []) == %{
              errors: %{
+               ok: false,
                code: 401,
                detail: "Unauthorized",
                message:
@@ -27,6 +29,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 403.json" do
     assert render(MalanWeb.ErrorView, "403.json", []) == %{
              errors: %{
+               ok: false,
                code: 403,
                detail: "Forbidden",
                message:
@@ -38,6 +41,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 404.json" do
     assert render(MalanWeb.ErrorView, "404.json", []) == %{
              errors: %{
+               ok: false,
                code: 404,
                detail: "Not Found",
                message: "The requested object was not found."
@@ -48,6 +52,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 461.json" do
     assert render(MalanWeb.ErrorView, "461.json", []) == %{
              errors: %{
+               ok: false,
                code: 461,
                detail: "Terms of Service Required",
                message:
@@ -59,6 +64,7 @@ defmodule MalanWeb.ErrorViewTest do
   test "renders 462.json" do
     assert render(MalanWeb.ErrorView, "462.json", []) == %{
              errors: %{
+               ok: false,
                code: 462,
                detail: "Privacy Policy Required",
                message:
@@ -71,6 +77,7 @@ defmodule MalanWeb.ErrorViewTest do
     assert render(MalanWeb.ErrorView, "500.json", []) ==
              %{
                errors: %{
+                 ok: false,
                  code: 500,
                  detail: "Internal Server Error"
                }

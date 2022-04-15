@@ -4,6 +4,7 @@ defmodule MalanWeb.ErrorView do
   def render("400.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 400,
         detail: "Bad Request"
       }
@@ -13,6 +14,7 @@ defmodule MalanWeb.ErrorView do
   def render("401.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 401,
         detail: "Unauthorized",
         message: "You are authenticated but do not have access to this method on this object."
@@ -23,6 +25,7 @@ defmodule MalanWeb.ErrorView do
   def render("403.json", %{invalid_credentials: true}) do
     %{
       errors: %{
+        ok: false,
         code: 403,
         detail: "Forbidden",
         message:
@@ -34,6 +37,7 @@ defmodule MalanWeb.ErrorView do
   def render("403.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 403,
         detail: "Forbidden",
         message:
@@ -45,6 +49,7 @@ defmodule MalanWeb.ErrorView do
   def render("404.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 404,
         detail: "Not Found",
         message: "The requested object was not found."
@@ -64,6 +69,7 @@ defmodule MalanWeb.ErrorView do
 
     %{
       errors: %{
+        ok: false,
         code: 422,
         detail: "Unprocessable Entity",
         message: msg
@@ -74,6 +80,7 @@ defmodule MalanWeb.ErrorView do
   def render("423.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 423,
         detail: "Locked",
         message: "The requested resource is locked.  Please contact an administrator"
@@ -84,6 +91,7 @@ defmodule MalanWeb.ErrorView do
   def render("429.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 429,
         detail: "Too Many Requests",
         message:
@@ -95,6 +103,7 @@ defmodule MalanWeb.ErrorView do
   def render("461.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 461,
         detail: "Terms of Service Required",
         message:
@@ -106,6 +115,7 @@ defmodule MalanWeb.ErrorView do
   def render("462.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 462,
         detail: "Privacy Policy Required",
         message:
@@ -117,6 +127,7 @@ defmodule MalanWeb.ErrorView do
   def render("500.json", _assigns) do
     %{
       errors: %{
+        ok: false,
         code: 500,
         detail: "Internal Server Error"
       }
@@ -129,6 +140,7 @@ defmodule MalanWeb.ErrorView do
   def template_not_found(template, _assigns) do
     %{
       errors: %{
+        ok: false,
         # TODO: Can get this code from template?
         code: 404,
         detail: Phoenix.Controller.status_message_from_template(template)
