@@ -1433,7 +1433,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -1490,7 +1490,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -1541,7 +1541,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -1627,7 +1627,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1659,7 +1659,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -1691,12 +1691,14 @@ defmodule MalanWeb.UserControllerTest do
       # Get a second password reset token.  This should get rate limited
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
-      assert %{"errors" => %{"detail" => "Too Many Requests"}} = json_response(conn, 429)
+      assert %{"errors" => %{"code" => 429, "detail" => "Too Many Requests"}} =
+               json_response(conn, 429)
 
       # Try a third time.  Still rate limited
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
-      assert %{"errors" => %{"detail" => "Too Many Requests"}} = json_response(conn, 429)
+      assert %{"errors" => %{"code" => 429, "detail" => "Too Many Requests"}} =
+               json_response(conn, 429)
     end
 
     test "can't use token after expiration", %{
@@ -1741,7 +1743,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1794,7 +1796,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -1855,7 +1857,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -1908,7 +1910,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -1987,7 +1989,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2012,7 +2014,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -2063,7 +2065,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2201,7 +2203,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -2266,7 +2268,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -2317,7 +2319,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -2399,7 +2401,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2433,7 +2435,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -2486,7 +2488,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2551,7 +2553,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -2616,7 +2618,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -2744,7 +2746,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2771,7 +2773,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -2822,7 +2824,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"errors" => %{"code" => 403, "detail" => "Forbidden"}} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
