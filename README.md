@@ -1,6 +1,22 @@
 # Malan Authentication Service
 
-Malan is a basic authentication service that you can drop into you microservice ecosystem, or even use as a base for a new Phoenix project
+Malan is a basic authentication service that you can drop into you microservice ecosystem, or even use as a base for a new Phoenix project.
+
+## Use Malan
+
+### Basic endpoints you'll use
+
+If using Malan as an authentication service, there are 3 main endpoints you'll use:
+
+1.  Create a user:  `POST /api/users`
+1.  Login (get an auth token) for a user:  `POST /api/sessions`
+1.  Check auth status:  `GET /api/users/whoami`
+
+### Structuring your app with Malan
+
+There are a couple of different ways to structure your application.  One way to structure your app around Malan is to outsource your user and session model to Malan.  Malan allows you to set an arbitrary JSON blob (called `custom_attrs`) on each user, so you can pack a decent amount of info in there.  The user's API token can be stored in session storage and you can easily use just the token to retrieve the relevant user from Malan.  If the token is expired, revoked, or otherwise invalid then no user will be returned so you can trigger a new login page.
+
+Another common option is to maintain a minimal User table in your app that contains the user's malan ID.  If you have a number of things you want to store then this may be a better approach than jamming everything into `custom_attrs`.
 
 ## Run Malan
 
