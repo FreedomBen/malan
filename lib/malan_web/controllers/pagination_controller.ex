@@ -84,7 +84,7 @@ defmodule Malan.PaginationController do
 
       _ ->
         Logger.warning(
-          "[pagination_info]: pagination info retrieved from conn that hasn't been through the plug `validate_pagination` or `require_pagination`. There may be an endpoint that expects to be paginated but doesn't require the Plug correctly.  Because of this it will always und up with the defautl page num and default page size even if those params are included in the query string"
+          "[pagination_info]: pagination info retrieved from conn that hasn't been through the plug `validate_pagination` or `require_pagination`. There may be an endpoint that expects to be paginated but doesn't require the Plug correctly.  Because of this it will always und up with the default page num and default page size even if those params are included in the query string"
         )
 
         {Pagination.default_page_num(), Pagination.default_page_size()}

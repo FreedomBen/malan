@@ -448,7 +448,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: "invalid username", password: "something wrong"}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
     end
 
     test "invalid password", %{conn: conn} do
@@ -459,7 +459,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "incorrect password"}
         )
 
-      assert %{"errors" => %{"detail" => "Forbidden"}} = json_response(conn, 403)
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
@@ -708,7 +708,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"detail" => "Locked"} = json_response(conn, 423)["errors"]
+      assert %{"detail" => "Locked"} = json_response(conn, 423)
 
       assert [
                ^tx_locked,
@@ -739,7 +739,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: bad_user_name, password: "fakeusernamespassword"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)["errors"]
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
 
       assert [
                %Transaction{
@@ -772,7 +772,7 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "fakeusernamespassword"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)["errors"]
+      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
 
       assert [
                %Transaction{
