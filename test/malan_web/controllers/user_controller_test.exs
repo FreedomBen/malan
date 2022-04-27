@@ -287,7 +287,20 @@ defmodule MalanWeb.UserControllerTest do
 
     test "renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+
+      assert json_response(conn, 422) == %{
+        "ok" => false,
+        "code" => 422,
+        "detail" => "Unprocessable Entity",
+        "message" => "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+        "errors" => %{
+          "email" => ["can't be blank"],
+          "first_name" => ["can't be blank"],
+          "last_name" => ["can't be blank"],
+          "password_hash" => ["can't be blank"],
+          "username" => ["can't be blank"],
+        }
+      }
     end
 
     test "allows specifying initial password and requires ToS/PP", %{conn: conn} do
