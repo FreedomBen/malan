@@ -31,6 +31,28 @@ defmodule MalanWeb.ErrorView do
     }
   end
 
+  def render("403.json", %{token_expired: true}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message: "API token is expired or revoked",
+      token_expired: true,
+      errors: [%{token: ["expired"]}]
+    }
+  end
+
+  def render("403.json", %{token_revoked: true}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message: "API token is expired or revoked",
+      token_expired: true,
+      errors: [%{token: ["expired"]}]
+    }
+  end
+
   def render("403.json", _assigns) do
     %{
       ok: false,
