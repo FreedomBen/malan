@@ -45,9 +45,7 @@ defmodule Malan.Accounts.Session do
       :api_token,
       :expires_at,
       :authenticated_at,
-      :revoked_at,
-      :ip_address,
-      :location
+      :ip_address
     ])
   end
 
