@@ -183,6 +183,68 @@ defmodule MalanWeb.AuthControllerTest do
 
       assert conn.halted == true
       assert conn.status == 403
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token.",
+      } = json_response(conn, 403)
+    end
+
+    test "halts with 403 when token expired", %{conn: conn} do
+      {:ok, _user, session} = Helpers.Accounts.regular_user_with_session()
+
+      c1 =
+        validate_token(conn, session.api_token)
+        |> AuthController.is_authenticated(nil)
+
+      assert c1.halted == false
+      assert c1.status == nil
+
+      session = Helpers.Accounts.set_expired(session)
+
+      c2 =
+        validate_token(conn, session.api_token)
+        |> AuthController.is_authenticated(nil)
+
+      assert c2.halted == true
+      assert c2.status == 403
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true
+      } = json_response(c2, 403)
+    end
+
+    test "halts with 403 when token revoked", %{conn: conn} do
+      {:ok, _user, session} = Helpers.Accounts.regular_user_with_session()
+
+      c1 =
+        validate_token(conn, session.api_token)
+        |> AuthController.is_authenticated(nil)
+
+      assert c1.halted == false
+      assert c1.status == nil
+
+      session = Helpers.Accounts.set_expired(session)
+
+      c2 =
+        validate_token(conn, session.api_token)
+        |> AuthController.is_authenticated(nil)
+
+      assert c2.halted == true
+      assert c2.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true
+      } = json_response(c2, 403)
     end
   end
 

@@ -257,4 +257,14 @@ defmodule Malan.Test.Helpers.Accounts do
 
     session
   end
+
+  def set_revoked(session) do
+    session
+    |> set_revoked_at(Utils.DateTime.adjust_cur_time(-10, :seconds))
+  end
+
+  def set_revoked_at(session, revoked_at) do
+    {:ok, session} = Accounts.revoke_session(session)
+    session
+  end
 end
