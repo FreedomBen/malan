@@ -1,6 +1,6 @@
 defmodule Malan.Test.Helpers.Accounts do
-  alias Malan.{Accounts, Repo}
-  alias Malan.Accounts.User
+  alias Malan.{Accounts, Repo, Utils}
+  alias Malan.Accounts.{User, Session}
 
   def admin_attrs() do
     ui = System.unique_integer([:positive])
@@ -243,5 +243,18 @@ defmodule Malan.Test.Helpers.Accounts do
     Enum.map(1..num_users, fn i ->
       admin_user_session_conn(conn, %{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
+  end
+
+  def set_expired(session) do
+    session
+    |> set_expires_at(Utils.DateTime.adjust_cur_time(-10, :seconds))
+  end
+
+  def set_expires_at(session, expires_at) do
+    {:ok, session} = session
+    |> Session.admin_changeset(%{expires_at: expires_at})
+    |> Repo.update()
+
+    session
   end
 end

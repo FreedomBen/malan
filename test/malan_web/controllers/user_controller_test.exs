@@ -102,6 +102,43 @@ defmodule MalanWeb.UserControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
+  describe "show" do
+    setup [:create_regular_user_with_session]
+
+    test "Rejects with 403 when expired", %{conn: conn, user: %User{id: id} = user, session: %Session{} = session} do
+      session = Helpers.Accounts.set_expired(session)
+      assert TestUtils.DateTime.within_last?(session.expires_at, 20, :seconds)
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true,
+             } = json_response(conn, 403)
+    end
+
+    test "Rejects with 403 when revoked", %{conn: conn, user: %User{id: id} = user, session: %Session{} = session} do
+      assert is_nil(session.revoked_at)
+      session = Helpers.Accounts.set_revoked(session)
+      assert true == TestUtils.DateTime.within_last?(session.revoked_at, 2, :seconds)
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true,
+             } = json_response(conn, 403)
+    end
+  end
+
   describe "index" do
     test "lists all users (as admin)", %{conn: conn} do
       {:ok, conn, au, _as} = Helpers.Accounts.admin_user_session_conn(conn)

@@ -586,13 +586,13 @@ defmodule Malan.Utils.Phoenix.Controller do
 
   require Logger
 
-  def halt_status(conn, status) do
+  def halt_status(conn, status, details \\ %{}) do
     Logger.debug("[halt_status]: status: #{status}")
 
     conn
     |> put_status(status)
     |> Phoenix.Controller.put_view(MalanWeb.ErrorView)
-    |> Phoenix.Controller.render("#{status}.json")
+    |> Phoenix.Controller.render("#{status}.json", details)
     |> halt()
   end
 

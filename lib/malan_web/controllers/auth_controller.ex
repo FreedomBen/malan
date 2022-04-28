@@ -17,9 +17,9 @@ defmodule Malan.AuthController do
 
     case conn.assigns do
       %{auth_error: nil} -> conn
-      %{auth_error: {:error, :expired}} -> halt_status(conn, 401)
-      %{auth_error: {:error, :revoked}} -> halt_status(conn, 401)
-      %{auth_error: {:error, :not_found}} -> halt_status(conn, 403)
+      %{auth_error: {:error, :revoked}} -> halt_status(conn, 403, %{token_revoked: true})
+      %{auth_error: {:error, :expired}} -> halt_status(conn, 403, %{token_expired: true})
+      %{auth_error: {:error, :not_found}} -> halt_status(conn, 403, %{token_not_found: true})
       _ -> halt_status(conn, 403)
     end
   end
