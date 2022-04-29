@@ -306,19 +306,6 @@ defmodule MalanWeb.UserController do
 
       {:error, err} ->
         render_token_error(conn, err)
-
-        #TODO
-      {:error, :revoked} ->
-        render(conn, "403.json", %{token_revoked: true})
-
-      {:error, :expired} ->
-        render(conn, "403.json", %{token_expired: true})
-
-      {:error, :not_found} ->
-        render(conn, "404.json", %{})
-
-      {:error, _} ->
-        render(conn, "404.json", %{})
     end
   end
 
@@ -358,10 +345,11 @@ defmodule MalanWeb.UserController do
         {:error, err_cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
 
-          cs_or_atom = case err_cs do
-                         :too_many_requests -> changeset
-                         _ -> err_cs
-                       end
+          cs_or_atom =
+            case err_cs do
+              :too_many_requests -> changeset
+              _ -> err_cs
+            end
 
           record_transaction(
             conn,
@@ -591,22 +579,22 @@ defmodule MalanWeb.UserController do
   end
 
   defp render_token_error(conn, :expired) do
-    render_token_error(conn, 403, :expired, %{token_expired: true})
+    render_token_error(conn, 403, %{token_expired: true})
   end
 
   defp render_token_error(conn, :revoked) do
-    render_token_error(conn, 403, :revoked, %{token_revoked: true})
+    render_token_error(conn, 403, %{token_revoked: true})
   end
 
   defp render_token_error(conn, :not_found) do
-    render_token_error(conn, 404, :not_found)
+    render_token_error(conn, 404)
   end
 
   defp render_token_error(conn, error) when is_atom(error) do
-    render_token_error(conn, 404, :not_found)
+    render_token_error(conn, 403)
   end
 
-  defp render_token_error(conn, status, error, details \\ %{}) do
+  defp render_token_error(conn, status, details \\ %{}) do
     conn
     |> put_status(status)
     |> put_view(MalanWeb.ErrorView)
