@@ -1389,6 +1389,40 @@ defmodule MalanWeb.UserControllerTest do
       conn = put(conn, Routes.user_path(conn, :whoami))
       assert conn.status == 403
     end
+
+    test "Rejects with 403 when expired", %{conn: conn, user: %User{} = user, session: %Session{} = session} do
+      assert not Accounts.session_expired?(session)
+      session = Helpers.Accounts.set_expired(session)
+      assert Accounts.session_expired?(session)
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :whoami))
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true,
+             } = json_response(conn, 403)
+    end
+
+    test "Rejects with 403 when revoked", %{conn: conn, user: %User{id: user_id} = user, session: %Session{} = session} do
+      assert is_nil(session.revoked_at)
+      session = Helpers.Accounts.set_revoked(session)
+      assert not is_nil(session.revoked_at)
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :whoami))
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "API token is expired or revoked",
+        "token_expired" => true,
+             } = json_response(conn, 403)
+    end
   end
 
   describe "reset_password" do

@@ -1386,6 +1386,16 @@ defmodule Malan.AccountsTest do
                  "127.0.0.1"
                )
     end
+
+    test "session_expired?/1" do
+      session = session_fixture()
+      assert false == Accounts.session_expired?(session)
+      assert false == Accounts.session_expired?(session.expires_at)
+
+      session = Helpers.Accounts.set_expired(session)
+      assert true == Accounts.session_expired?(session)
+      assert true == Accounts.session_expired?(session.expires_at)
+    end
   end
 
   # describe "teams" do
