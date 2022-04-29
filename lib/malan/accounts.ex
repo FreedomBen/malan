@@ -1712,7 +1712,7 @@ defmodule Malan.Accounts do
 
     # TODO:  Switch to Malan.Sentry.capture_message to avoid log messages
     # about missing DSN in environments where there is no DSN
-    #Malan.Sentry.capture_message(msg, opts)
+    # Malan.Sentry.capture_message(msg, opts)
 
     {:error, changeset}
   end

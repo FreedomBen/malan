@@ -105,7 +105,11 @@ defmodule MalanWeb.UserControllerTest do
   describe "show" do
     setup [:create_regular_user_with_session]
 
-    test "Rejects with 403 when expired", %{conn: conn, user: %User{id: id} = user, session: %Session{} = session} do
+    test "Rejects with 403 when expired", %{
+      conn: conn,
+      user: %User{id: id} = _user,
+      session: %Session{} = session
+    } do
       session = Helpers.Accounts.set_expired(session)
       assert TestUtils.DateTime.within_last?(session.expires_at, 20, :seconds)
 
@@ -113,15 +117,19 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :show, id))
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true,
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
              } = json_response(conn, 403)
     end
 
-    test "Rejects with 403 when revoked", %{conn: conn, user: %User{id: id} = user, session: %Session{} = session} do
+    test "Rejects with 403 when revoked", %{
+      conn: conn,
+      user: %User{id: id} = _user,
+      session: %Session{} = session
+    } do
       assert is_nil(session.revoked_at)
       session = Helpers.Accounts.set_revoked(session)
       assert true == TestUtils.DateTime.within_last?(session.revoked_at, 2, :seconds)
@@ -130,11 +138,11 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :show, id))
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true,
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
              } = json_response(conn, 403)
     end
   end
@@ -326,18 +334,19 @@ defmodule MalanWeb.UserControllerTest do
       conn = post(conn, Routes.user_path(conn, :create), user: @invalid_attrs)
 
       assert json_response(conn, 422) == %{
-        "ok" => false,
-        "code" => 422,
-        "detail" => "Unprocessable Entity",
-        "message" => "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
-        "errors" => %{
-          "email" => ["can't be blank"],
-          "first_name" => ["can't be blank"],
-          "last_name" => ["can't be blank"],
-          "password_hash" => ["can't be blank"],
-          "username" => ["can't be blank"],
-        }
-      }
+               "ok" => false,
+               "code" => 422,
+               "detail" => "Unprocessable Entity",
+               "message" =>
+                 "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+               "errors" => %{
+                 "email" => ["can't be blank"],
+                 "first_name" => ["can't be blank"],
+                 "last_name" => ["can't be blank"],
+                 "password_hash" => ["can't be blank"],
+                 "username" => ["can't be blank"]
+               }
+             }
     end
 
     test "allows specifying initial password and requires ToS/PP", %{conn: conn} do
@@ -1277,8 +1286,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, user))
 
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "Creates a corresponding transaction", %{
@@ -1292,8 +1300,7 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, user))
 
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
       assert [
                %Transaction{
@@ -1390,7 +1397,11 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 403
     end
 
-    test "Rejects with 403 when expired", %{conn: conn, user: %User{} = user, session: %Session{} = session} do
+    test "Rejects with 403 when expired", %{
+      conn: conn,
+      user: %User{} = _user,
+      session: %Session{} = session
+    } do
       assert not Accounts.session_expired?(session)
       session = Helpers.Accounts.set_expired(session)
       assert Accounts.session_expired?(session)
@@ -1399,15 +1410,19 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :whoami))
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true,
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
              } = json_response(conn, 403)
     end
 
-    test "Rejects with 403 when revoked", %{conn: conn, user: %User{id: user_id} = user, session: %Session{} = session} do
+    test "Rejects with 403 when revoked", %{
+      conn: conn,
+      user: %User{} = _user,
+      session: %Session{} = session
+    } do
       assert is_nil(session.revoked_at)
       session = Helpers.Accounts.set_revoked(session)
       assert not is_nil(session.revoked_at)
@@ -1416,11 +1431,11 @@ defmodule MalanWeb.UserControllerTest do
       conn = get(conn, Routes.user_path(conn, :whoami))
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true,
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
              } = json_response(conn, 403)
     end
   end
@@ -1452,8 +1467,7 @@ defmodule MalanWeb.UserControllerTest do
     test "Returns 404 when user is not found", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :reset_password, "invaliduser"))
 
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "Creates a corresponding transaction", %{conn: conn, user: %User{id: id}} do
@@ -1716,8 +1730,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1749,8 +1762,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -1834,8 +1846,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -1888,8 +1899,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -1912,8 +1922,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "Rejects when token is wrong - endpoint with no user ID", %{
@@ -1943,8 +1952,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
       # Try to login with new password and make sure it doesn't work
       conn =
@@ -1952,8 +1960,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -2006,8 +2013,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -2025,8 +2031,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "can't use a reset token after a new one has been created - endpoint with no user ID", %{
@@ -2079,8 +2084,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
       # Try to login with new password and ensure it doesn't work
       conn =
@@ -2088,8 +2092,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2114,8 +2117,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -2589,8 +2591,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2655,8 +2656,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with new password to make sure it works
       conn =
@@ -2683,8 +2683,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "Rejects when token is wrong - endpoint with no user ID", %{
@@ -2714,8 +2713,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
       # Try to login with new password and make sure it doesn't work
       conn =
@@ -2723,8 +2721,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Try to login with old password and ensure it works
       conn =
@@ -2797,8 +2794,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
     test "can't use a reset token after a new one has been created - endpoint with no user ID", %{
@@ -2845,8 +2841,7 @@ defmodule MalanWeb.UserControllerTest do
 
       # assert %{"ok" => false, "err" => "invalid_password_reset_token", "msg" => _} = json_response(conn, 401)
       # For now just accept a 404
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} =
-               json_response(conn, 404)
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
       # Try to login with new password and ensure it doesn't work
       conn =
@@ -2854,8 +2849,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
@@ -2882,8 +2876,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Try to login with new password and ensure it works
       conn =
@@ -2934,8 +2927,7 @@ defmodule MalanWeb.UserControllerTest do
           session: %{username: user.username, password: new_password}
         )
 
-      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} =
-               json_response(conn, 403)
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
       # Now login with the old password to make sure it still works
       conn =
