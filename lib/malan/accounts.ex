@@ -1022,6 +1022,9 @@ defmodule Malan.Accounts do
 
   def session_revoked?(revoked_at), do: !!revoked_at
 
+  def session_expired?(%Session{expires_at: expires_at} = session),
+    do: session_expired?(expires_at)
+
   def session_expired?(expires_at),
     do: DateTime.compare(expires_at, DateTime.utc_now()) == :lt
 

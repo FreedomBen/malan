@@ -304,11 +304,21 @@ defmodule MalanWeb.UserController do
           pp
         )
 
-      # {:error, :revoked}
-      # {:error, :expired}
-      # {:error, :not_found}
+      {:error, err} ->
+        render_token_error(conn, err)
+
+        #TODO
+      {:error, :revoked} ->
+        render(conn, "403.json", %{token_revoked: true})
+
+      {:error, :expired} ->
+        render(conn, "403.json", %{token_expired: true})
+
+      {:error, :not_found} ->
+        render(conn, "404.json", %{})
+
       {:error, _} ->
-        send_resp(conn, :not_found, "")
+        render(conn, "404.json", %{})
     end
   end
 
@@ -578,6 +588,29 @@ defmodule MalanWeb.UserController do
       password_reset_token: user.password_reset_token,
       password_reset_token_expires_at: user.password_reset_token_expires_at
     )
+  end
+
+  defp render_token_error(conn, :expired) do
+    render_token_error(conn, 403, :expired, %{token_expired: true})
+  end
+
+  defp render_token_error(conn, :revoked) do
+    render_token_error(conn, 403, :revoked, %{token_revoked: true})
+  end
+
+  defp render_token_error(conn, :not_found) do
+    render_token_error(conn, 404, :not_found)
+  end
+
+  defp render_token_error(conn, error) when is_atom(error) do
+    render_token_error(conn, 404, :not_found)
+  end
+
+  defp render_token_error(conn, status, error, details \\ %{}) do
+    conn
+    |> put_status(status)
+    |> put_view(MalanWeb.ErrorView)
+    |> render("#{status}.json", details)
   end
 
   defp is_self_or_admin(conn, _opts) do
