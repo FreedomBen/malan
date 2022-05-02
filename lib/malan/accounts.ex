@@ -1022,7 +1022,7 @@ defmodule Malan.Accounts do
 
   def session_revoked?(revoked_at), do: !!revoked_at
 
-  def session_expired?(%Session{expires_at: expires_at} = session),
+  def session_expired?(%Session{expires_at: expires_at}),
     do: session_expired?(expires_at)
 
   def session_expired?(expires_at),
