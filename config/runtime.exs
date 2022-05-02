@@ -1,5 +1,7 @@
 import Config
 
+alias Malan.Utils
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration
@@ -8,6 +10,7 @@ import Config
 # The block below contains prod specific runtime configuration.
 
 # Start the phoenix server if environment is set and running in a release
+
 if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
   config :malan, MalanWeb.Endpoint, server: true
 end
@@ -27,10 +30,10 @@ if config_env() == :prod do
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6,
-    ssl: true,
+    ssl: System.get_env("DATABASE_TLS_ENABLED") |> Utils.true_or_explicitly_false?(),
     ssl_opts: [
       # To verify provider's self-signed cert
-      cacertfile: "priv/certs/do-db-ca-cert.crt",
+      cacertfile: "priv/certs/do-db-ca-cert.crt"
 
       # To provide mTLS client creds
       # keyfile: "priv/client-key.pem",
@@ -84,5 +87,4 @@ if config_env() == :prod do
   config :swoosh, :api_client, Swoosh.ApiClient.Hackney
 
   config :sentry, dsn: System.get_env("SENTRY_DSN")
-
 end
