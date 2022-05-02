@@ -213,6 +213,107 @@ defmodule Malan.UtilsTest do
 
       assert after_removed == Utils.remove_not_loaded(before)
     end
+
+    test "#explicitly_true?/1" do
+      assert true == Utils.explicitly_true?("true")
+      assert true == Utils.explicitly_true?("True")
+      assert true == Utils.explicitly_true?("T")
+      assert true == Utils.explicitly_true?("t")
+      assert true == Utils.explicitly_true?("Yes")
+      assert true == Utils.explicitly_true?("yes")
+      assert true == Utils.explicitly_true?("Y")
+      assert true == Utils.explicitly_true?("y")
+
+      assert false == Utils.explicitly_true?("F")
+      assert false == Utils.explicitly_true?("f")
+      assert false == Utils.explicitly_true?("False")
+      assert false == Utils.explicitly_true?("false")
+      assert false == Utils.explicitly_true?("n")
+      assert false == Utils.explicitly_true?("N")
+      assert false == Utils.explicitly_true?("no")
+      assert false == Utils.explicitly_true?("No")
+      assert false == Utils.explicitly_true?("NO")
+      assert false == Utils.explicitly_true?("nO")
+    end
+
+    test "#false_or_explicitly_true?/1" do
+      assert false == Utils.false_or_explicitly_true?("F")
+      assert false == Utils.false_or_explicitly_true?("f")
+      assert false == Utils.false_or_explicitly_true?("False")
+      assert false == Utils.false_or_explicitly_true?("false")
+      assert false == Utils.false_or_explicitly_true?("n")
+      assert false == Utils.false_or_explicitly_true?("N")
+      assert false == Utils.false_or_explicitly_true?("no")
+      assert false == Utils.false_or_explicitly_true?("No")
+      assert false == Utils.false_or_explicitly_true?("NO")
+      assert false == Utils.false_or_explicitly_true?("nO")
+
+      assert false == Utils.false_or_explicitly_true?(false)
+      assert false == Utils.false_or_explicitly_true?("Hello")
+      assert false == Utils.false_or_explicitly_true?("")
+      assert false == Utils.false_or_explicitly_true?(nil)
+
+      assert true == Utils.false_or_explicitly_true?("true")
+      assert true == Utils.false_or_explicitly_true?("True")
+      assert true == Utils.false_or_explicitly_true?("T")
+      assert true == Utils.false_or_explicitly_true?("t")
+      assert true == Utils.false_or_explicitly_true?("Yes")
+      assert true == Utils.false_or_explicitly_true?("yes")
+      assert true == Utils.false_or_explicitly_true?("Y")
+      assert true == Utils.false_or_explicitly_true?("y")
+      assert true == Utils.false_or_explicitly_true?(true)
+    end
+
+    test "#explicitly_false?/1" do
+      assert false == Utils.explicitly_false?("true")
+      assert false == Utils.explicitly_false?("True")
+      assert false == Utils.explicitly_false?("T")
+      assert false == Utils.explicitly_false?("t")
+      assert false == Utils.explicitly_false?("Yes")
+      assert false == Utils.explicitly_false?("yes")
+      assert false == Utils.explicitly_false?("Y")
+      assert false == Utils.explicitly_false?("y")
+
+      assert true == Utils.explicitly_false?("F")
+      assert true == Utils.explicitly_false?("f")
+      assert true == Utils.explicitly_false?("False")
+      assert true == Utils.explicitly_false?("false")
+      assert true == Utils.explicitly_false?("n")
+      assert true == Utils.explicitly_false?("N")
+      assert true == Utils.explicitly_false?("no")
+      assert true == Utils.explicitly_false?("No")
+      assert true == Utils.explicitly_false?("NO")
+      assert true == Utils.explicitly_false?("nO")
+    end
+
+    test "#true_or_explicitly_false?/1" do
+      assert false == Utils.true_or_explicitly_false?("F")
+      assert false == Utils.true_or_explicitly_false?("f")
+      assert false == Utils.true_or_explicitly_false?("False")
+      assert false == Utils.true_or_explicitly_false?("false")
+      assert false == Utils.true_or_explicitly_false?("n")
+      assert false == Utils.true_or_explicitly_false?("N")
+      assert false == Utils.true_or_explicitly_false?("no")
+      assert false == Utils.true_or_explicitly_false?("No")
+      assert false == Utils.true_or_explicitly_false?("NO")
+      assert false == Utils.true_or_explicitly_false?("nO")
+
+      assert false == Utils.true_or_explicitly_false?(false)
+
+      assert true == Utils.true_or_explicitly_false?("true")
+      assert true == Utils.true_or_explicitly_false?("True")
+      assert true == Utils.true_or_explicitly_false?("T")
+      assert true == Utils.true_or_explicitly_false?("t")
+      assert true == Utils.true_or_explicitly_false?("Yes")
+      assert true == Utils.true_or_explicitly_false?("yes")
+      assert true == Utils.true_or_explicitly_false?("Y")
+      assert true == Utils.true_or_explicitly_false?("y")
+
+      assert true == Utils.true_or_explicitly_false?(true)
+      assert true == Utils.true_or_explicitly_false?("Hello")
+      assert true == Utils.true_or_explicitly_false?("")
+      assert true == Utils.true_or_explicitly_false?(nil)
+    end
   end
 
   describe "Crypto" do
