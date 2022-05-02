@@ -423,6 +423,41 @@ defmodule Malan.Utils do
   end
 
   def trunc_str(str, length \\ 255), do: String.slice(str, 0, length)
+
+  @doc ~S"""
+  If `val` is explicitly (and therefore unambiguously) true, then returns `false`.  Otherwise `true`
+
+  Explicitly true values are case-insensitive, "t", "true", "yes", "y"
+  """
+  def explicitly_true?(val) when is_binary(val), do: String.downcase(val) in ~w[t true yes y]
+
+  @doc ~S"""
+  If `val` is explicitly (and therefore unambiguously) false, then returns `true`.  Otherwise `false`
+
+  Explicitly false values are case-insensitive, "f", "false", "no", "n"
+  """
+  def explicitly_false?(val) when is_binary(val), do: String.downcase(val) in ~w[f false no n]
+
+  @doc ~S"""
+  If `val` is explicitly true, output is true.  Otherwise false
+
+  The effect of this is that if the string isn't explicitly true then it is
+  considered false.  This is useful for example with an env var where the default
+  should be `false`
+  """
+  def false_or_explicitly_true?(val) when is_binary(val), do: explicitly_true?(val)
+  def false_or_explicitly_true?(val) when is_atom(val), do: val == true
+
+  @doc ~S"""
+  If `val` is explicitly false, output is false.  Otherwise true
+
+  The effect of this is that if the string isn't explicitly false then it is
+  considered true.  This is useful for example with an env var where the default
+  should be `true`
+  """
+  def true_or_explicitly_false?(val) when is_binary(val), do: not explicitly_false?(val)
+  def true_or_explicitly_false?(nil), do: true
+  def true_or_explicitly_false?(val) when is_atom(val), do: !!val
 end
 
 defmodule Malan.Utils.Enum do
