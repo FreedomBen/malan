@@ -810,15 +810,15 @@ defmodule Malan.Utils.LoggerColor do
   def cyan, do: :cyan
   def white, do: :white
 
-  def emergency, do: LoggerColor.red()
-  def alert, do: LoggerColor.red()
-  def critical, do: LoggerColor.red()
-  def error, do: LoggerColor.red()
-  def warning, do: LoggerColor.yellow()
-  def notice, do: LoggerColor.yellow()
-  def info, do: LoggerColor.green()
-  def debug, do: LoggerColor.cyan()
-  def trace, do: LoggerColor.blue()
+  def emergency, do: red()
+  def alert, do: red()
+  def critical, do: red()
+  def error, do: red()
+  def warning, do: yellow()
+  def notice, do: yellow()
+  def info, do: green()
+  def debug, do: cyan()
+  def trace, do: blue()
 end
 
 defmodule Malan.Utils.Number do
