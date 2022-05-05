@@ -800,16 +800,43 @@ defmodule Malan.Utils.LoggerColor do
 end
 
 defmodule Malan.Utils.Number do
-  @spec format(number :: number()) :: String.t()
-  def format(number), do: format_us(number)
+  import Malan.Utils, only: [defp_testable: 2]
+  import Number.Delimit
 
-  @spec format_us(number :: number()) :: String.t()
-  def format_us(number) do
-    Number.Delimit.number_to_delimited(number, delimiter: ",", separator: ".")
+  def default_int_opts(), do: [precision: 0, delimit: ",", separator: "."]
+  def default_float_opts(), do: [precision: 2, delimit: ",", separator: "."]
+  def default_intl_int_opts(), do: [precision: 0, delimit: ".", separator: ","]
+  def default_intl_float_opts(), do: [precision: 2, delimit: ".", separator: ","]
+
+  @spec format(number :: Number.t()) :: String.t()
+  def format(number, opts \\ [])
+  def format(number, opts) when is_float(number), do: format_us(number, opts)
+  def format(number, opts), do: format_us(number, opts)
+
+  @spec format_us(number :: Number.t()) :: String.t()
+  def format_us(number, opts \\ [])
+
+  def format_us(number, opts) when is_float(number) do
+    number_to_delimited(number, get_float_opts(opts))
   end
 
-  @spec format_intl(number :: number()) :: String.t()
-  def format_intl(number) do
-    Number.Delimit.number_to_delimited(number, delimiter: ",", separator: ".")
+  def format_us(number, opts) do
+    number_to_delimited(number, get_int_opts(opts))
   end
+
+  @spec format_intl(number :: Number.t()) :: String.t()
+  def format_intl(number, opts \\ [])
+
+  def format_intl(number, opts) when is_float(number) do
+    number_to_delimited(number, get_intl_float_opts(opts))
+  end
+
+  def format_intl(number, opts) do
+    number_to_delimited(number, get_intl_int_opts(opts))
+  end
+
+  defp_testable get_int_opts(opts), do: Keyword.merge(default_int_opts(), opts)
+  defp_testable get_float_opts(opts), do: Keyword.merge(default_float_opts(), opts)
+  defp_testable get_intl_int_opts(opts), do: Keyword.merge(default_intl_int_opts(), opts)
+  defp_testable get_intl_float_opts(opts), do: Keyword.merge(default_intl_float_opts(), opts)
 end

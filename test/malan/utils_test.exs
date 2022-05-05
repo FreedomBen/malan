@@ -517,4 +517,47 @@ defmodule Malan.UtilsTest do
 
     test "#mod_str/1", do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
   end
+
+  describe "Number" do
+    test "#get_int_opts/1 properly merges opts" do
+      # Note:  Keyword Lists do not guarantee order, but currently they are
+      # predictable and deterministic.  If the order changes in the future this
+      # test may need to be updated
+      assert [precision: 0, delimit: ",", separator: "."] == Utils.Number.get_int_opts([])
+      assert [precision: 0, delimit: ",", separator: ".", one: "one"] == Utils.Number.get_int_opts([one: "one"])
+      assert [delimit: ",", separator: ".", precision: 3] == Utils.Number.get_int_opts([precision: 3])
+      assert [delimit: "-", separator: " ", precision: 1] == Utils.Number.get_int_opts([delimit: "-", separator: " ", precision: 1])
+    end
+
+    test "#get_float_opts/1 properly merges opts" do
+      # Note:  Keyword Lists do not guarantee order, but currently they are
+      # predictable and deterministic.  If the order changes in the future this
+      # test may need to be updated
+      assert [precision: 2, delimit: ",", separator: "."] == Utils.Number.get_float_opts([])
+      assert [precision: 2, delimit: ",", separator: ".", one: "one"] == Utils.Number.get_float_opts([one: "one"])
+      assert [delimit: ",", separator: ".", precision: 0] == Utils.Number.get_float_opts([precision: 0])
+      assert [delimit: "-", separator: " ", precision: 0] == Utils.Number.get_float_opts([delimit: "-", separator: " ", precision: 0])
+    end
+
+    test "#format/1" do
+      assert "123" == Utils.Number.format(123)
+      assert "123.04" == Utils.Number.format(123.04)
+      assert "456,789.01" == Utils.Number.format(456789.01234)
+      assert "456,789.0123" == Utils.Number.format(456789.01234, precision: 4)
+    end
+
+    test "#format_us/1" do
+      assert "123" == Utils.Number.format_us(123)
+      assert "123.04" == Utils.Number.format_us(123.04)
+      assert "456,789.01" == Utils.Number.format_us(456789.01234)
+      assert "456,789.0123" == Utils.Number.format_us(456789.01234, precision: 4)
+    end
+
+    test "#format_intl/1" do
+      assert "123" == Utils.Number.format_intl(123)
+      assert "123,04" == Utils.Number.format_intl(123.04)
+      assert "456.789,01" == Utils.Number.format_intl(456789.01234)
+      assert "456.789,0123" == Utils.Number.format_intl(456789.01234, precision: 4)
+    end
+  end
 end
