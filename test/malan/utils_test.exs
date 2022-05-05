@@ -113,6 +113,20 @@ defmodule Malan.UtilsTest do
                Utils.tuple_to_string({:song, [title: "Rest in Peace", year: "2021"]})
     end
 
+    test "#tuple_to_string/2 masks values when is key value pair" do
+      assert "password, *****" == Utils.tuple_to_string({:password, "hello"}, [:password])
+      assert "password, *****" == Utils.tuple_to_string({:password, "hello"}, ["password"])
+
+      assert "password, *****" == Utils.tuple_to_string({"password", "hello"}, [:password])
+      assert "password, *****" == Utils.tuple_to_string({"password", "hello"}, ["password"])
+
+      assert "password, *****" == Utils.tuple_to_string({"password", 54321}, [:password])
+      assert "password, *****" == Utils.tuple_to_string({"password", 54321}, ["password"])
+
+      assert "password, hello, world" == Utils.tuple_to_string({:password, "hello", "world"}, [:password])
+      assert "password, hello, world" == Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
+    end
+
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
