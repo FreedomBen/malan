@@ -621,19 +621,6 @@ defmodule Malan.Utils.IPv4 do
   end
 end
 
-defmodule Malan.Utils.FromEnv do
-  def log_str(env, :mfa), do: "[#{mfa_str(env)}]"
-  def log_str(env, :func_only), do: "[#{func_str(env)}]"
-  def log_str(env), do: log_str(env, :mfa)
-
-  def mfa_str(env), do: mod_str(env) <> "." <> func_str(env)
-
-  def func_str({func, arity}), do: "##{func}/#{arity}"
-  def func_str(env), do: func_str(env.function)
-
-  def mod_str(env), do: Kernel.to_string(env.module)
-end
-
 defmodule Malan.Utils.Phoenix.Controller do
   import Plug.Conn, only: [halt: 1, put_status: 2]
 
@@ -765,4 +752,43 @@ defmodule Malan.Utils.Ecto.Changeset do
   def convert_changes(data, struct_type) do
     struct(struct_type, convert_changes(data))
   end
+end
+
+defmodule Malan.Utils.FromEnv do
+  def log_str(env, :mfa), do: "[#{mfa_str(env)}]"
+  def log_str(env, :func_only), do: "[#{func_str(env)}]"
+  def log_str(env), do: log_str(env, :mfa)
+
+  def mfa_str(env), do: mod_str(env) <> "." <> func_str(env)
+
+  def func_str({func, arity}), do: "##{func}/#{arity}"
+  def func_str(env), do: func_str(env.function)
+
+  def mod_str(env), do: Kernel.to_string(env.module)
+end
+
+defmodule Malan.Utils.Logger do
+  alias Malan.Utils.LoggerColor
+
+  require Logger
+
+  def emergency(msg), do: Logger.emergency(msg, ansi_color: LoggerColor.red())
+  def alert(msg), do: Logger.alert(msg, ansi_color: LoggerColor.red())
+  def critical(msg), do: Logger.critical(msg, ansi_color: LoggerColor.red())
+  def error(msg), do: Logger.error(msg, ansi_color: LoggerColor.red())
+  def warning(msg), do: Logger.warning(msg, ansi_color: LoggerColor.yellow())
+  def notice(msg), do: Logger.notice(msg, ansi_color: LoggerColor.yellow())
+  def info(msg), do: Logger.info(msg, ansi_color: LoggerColor.green())
+  def debug(msg), do: Logger.debug(msg, ansi_color: LoggerColor.cyan())
+  def trace(msg), do: Logger.debug(msg, ansi_color: LoggerColor.blue())
+end
+
+defmodule Malan.Utils.LoggerColor do
+  def green, do: :green
+  def black, do: :black
+  def red, do: :red
+  def yellow, do: :yellow
+  def blue, do: :blue
+  def cyan, do: :cyan
+  def white, do: :white
 end
