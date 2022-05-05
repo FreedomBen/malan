@@ -754,17 +754,23 @@ defmodule Malan.Utils.Ecto.Changeset do
   end
 end
 
-defmodule Malan.Utils.FromEnv do
-  def log_str(env, :mfa), do: "[#{mfa_str(env)}]"
-  def log_str(env, :func_only), do: "[#{func_str(env)}]"
-  def log_str(env), do: log_str(env, :mfa)
+defmodule StripeMonitor.Utils.FromEnv do
+  @spec log_str(env :: Macro.Env.t(), :mfa | :func_only) :: String.t()
+  def log_str(%Macro.Env{} = env, :mfa), do: "[#{mfa_str(env)}]"
+  def log_str(%Macro.Env{} = env, :func_only), do: "[#{func_str(env)}]"
 
-  def mfa_str(env), do: mod_str(env) <> "." <> func_str(env)
+  @spec log_str(env :: Macro.Env.t()) :: String.t()
+  def log_str(%Macro.Env{} = env), do: log_str(env, :mfa)
 
+  @spec mfa_str(env :: Macro.Env.t()) :: String.t()
+  def mfa_str(%Macro.Env{} = env), do: mod_str(env) <> "." <> func_str(env)
+
+  @spec func_str(env :: Macro.Env.t() | {atom(), integer()}) :: String.t()
   def func_str({func, arity}), do: "##{func}/#{arity}"
-  def func_str(env), do: func_str(env.function)
+  def func_str(%Macro.Env{} = env), do: func_str(env.function)
 
-  def mod_str(env), do: Kernel.to_string(env.module)
+  @spec mod_str(env :: Macro.Env.t()) :: String.t()
+  def mod_str(%Macro.Env{} = env), do: Kernel.to_string(env.module)
 end
 
 defmodule Malan.Utils.Logger do
