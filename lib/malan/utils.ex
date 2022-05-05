@@ -754,7 +754,7 @@ defmodule Malan.Utils.Ecto.Changeset do
   end
 end
 
-defmodule StripeMonitor.Utils.FromEnv do
+defmodule Malan.Utils.FromEnv do
   @spec log_str(env :: Macro.Env.t(), :mfa | :func_only) :: String.t()
   def log_str(%Macro.Env{} = env, :mfa), do: "[#{mfa_str(env)}]"
   def log_str(%Macro.Env{} = env, :func_only), do: "[#{func_str(env)}]"
@@ -797,4 +797,19 @@ defmodule Malan.Utils.LoggerColor do
   def blue, do: :blue
   def cyan, do: :cyan
   def white, do: :white
+end
+
+defmodule Malan.Utils.Number do
+  @spec format(number :: number()) :: String.t()
+  def format(number), do: format_us(number)
+
+  @spec format_us(number :: number()) :: String.t()
+  def format_us(number) do
+    Number.Delimit.number_to_delimited(number, delimiter: ",", separator: ".")
+  end
+
+  @spec format_intl(number :: number()) :: String.t()
+  def format_intl(number) do
+    Number.Delimit.number_to_delimited(number, delimiter: ",", separator: ".")
+  end
 end
