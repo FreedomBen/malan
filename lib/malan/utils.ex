@@ -776,17 +776,29 @@ end
 defmodule Malan.Utils.Logger do
   alias Malan.Utils.LoggerColor
 
+  import Malan.Utils.FromEnv
+
   require Logger
 
-  def emergency(msg), do: Logger.emergency(msg, ansi_color: LoggerColor.red())
-  def alert(msg), do: Logger.alert(msg, ansi_color: LoggerColor.red())
-  def critical(msg), do: Logger.critical(msg, ansi_color: LoggerColor.red())
-  def error(msg), do: Logger.error(msg, ansi_color: LoggerColor.red())
-  def warning(msg), do: Logger.warning(msg, ansi_color: LoggerColor.yellow())
-  def notice(msg), do: Logger.notice(msg, ansi_color: LoggerColor.yellow())
-  def info(msg), do: Logger.info(msg, ansi_color: LoggerColor.green())
-  def debug(msg), do: Logger.debug(msg, ansi_color: LoggerColor.cyan())
-  def trace(msg), do: Logger.debug(msg, ansi_color: LoggerColor.blue())
+  def emergency(msg), do: Logger.emergency(msg, ansi_color: LoggerColor.emergency())
+  def alert(msg), do: Logger.alert(msg, ansi_color: LoggerColor.alert())
+  def critical(msg), do: Logger.critical(msg, ansi_color: LoggerColor.critical())
+  def error(msg), do: Logger.error(msg, ansi_color: LoggerColor.error())
+  def warning(msg), do: Logger.warning(msg, ansi_color: LoggerColor.warning())
+  def notice(msg), do: Logger.notice(msg, ansi_color: LoggerColor.notice())
+  def info(msg), do: Logger.info(msg, ansi_color: LoggerColor.info())
+  def debug(msg), do: Logger.debug(msg, ansi_color: LoggerColor.debug())
+  def trace(msg), do: Logger.debug(msg, ansi_color: LoggerColor.trace())
+
+  def emergency(%Macro.Env{} = env, msg), do: emergency(log_str(env, :mfa) <> ": " <> msg)
+  def alert(%Macro.Env{} = env, msg), do: alert(log_str(env, :mfa) <> ": " <> msg)
+  def critical(%Macro.Env{} = env, msg), do: critical(log_str(env, :mfa) <> ": " <> msg)
+  def error(%Macro.Env{} = env, msg), do: error(log_str(env, :mfa) <> ": " <> msg)
+  def warning(%Macro.Env{} = env, msg), do: warning(log_str(env, :mfa) <> ": " <> msg)
+  def notice(%Macro.Env{} = env, msg), do: notice(log_str(env, :mfa) <> ": " <> msg)
+  def info(%Macro.Env{} = env, msg), do: info(log_str(env, :mfa) <> ": " <> msg)
+  def debug(%Macro.Env{} = env, msg), do: debug(log_str(env, :mfa) <> ": " <> msg)
+  def trace(%Macro.Env{} = env, msg), do: trace(log_str(env, :mfa) <> ": " <> msg)
 end
 
 defmodule Malan.Utils.LoggerColor do
@@ -797,6 +809,16 @@ defmodule Malan.Utils.LoggerColor do
   def blue, do: :blue
   def cyan, do: :cyan
   def white, do: :white
+
+  def emergency, do: LoggerColor.red()
+  def alert, do: LoggerColor.red()
+  def critical, do: LoggerColor.red()
+  def error, do: LoggerColor.red()
+  def warning, do: LoggerColor.yellow()
+  def notice, do: LoggerColor.yellow()
+  def info, do: LoggerColor.green()
+  def debug, do: LoggerColor.cyan()
+  def trace, do: LoggerColor.blue()
 end
 
 defmodule Malan.Utils.Number do
