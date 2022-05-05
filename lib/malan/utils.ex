@@ -303,7 +303,10 @@ defmodule Malan.Utils do
   `mask_keys` is used to mask the values in any keys that are in maps in the `tuple`
   """
   @type tuple_key_value :: binary() | atom()
-  @spec tuple_to_string(tuple :: {tuple_key_value, tuple_key_value} | String.Chars.t(), mask_keys :: list(binary())) ::
+  @spec tuple_to_string(
+          tuple :: {tuple_key_value, tuple_key_value} | String.Chars.t(),
+          mask_keys :: list(binary())
+        ) ::
           binary()
   def tuple_to_string(tuple, mask_keys \\ [])
 
