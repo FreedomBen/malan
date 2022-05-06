@@ -64,7 +64,8 @@ defmodule Malan.MixProject do
       {:sentry, "~> 8.0"},
       {:unplug, "~> 0.2.1"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:number, "~> 1.0.3"}
+      {:number, "~> 1.0.3"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 
