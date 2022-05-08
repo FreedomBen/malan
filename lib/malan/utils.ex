@@ -31,7 +31,10 @@ defmodule Malan.Utils do
     iex> Malan.Utils.extract(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
     74
   """
-  @spec extract(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  @spec extract(
+          Access.t() | List.t() | Tuple.t() | any(),
+          integer() | String.t() | (... -> any())
+        ) :: any()
   def extract(list, key) when is_list(list) and is_integer(key) do
     Enum.at(list, key)
   end
@@ -48,12 +51,17 @@ defmodule Malan.Utils do
     extract_func.(anything)
   end
 
-  @spec process(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  @spec process(
+          Access.t() | List.t() | Tuple.t() | any(),
+          integer() | String.t() | (... -> any())
+        ) :: any()
   def process(thing, arg), do: extract(thing, arg)
 
-  @spec transform(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  @spec transform(
+          Access.t() | List.t() | Tuple.t() | any(),
+          integer() | String.t() | (... -> any())
+        ) :: any()
   def transform(thing, arg), do: extract(thing, arg)
-
 
   @doc ~S"""
   Macro that makes a function public in test, private in non-test
