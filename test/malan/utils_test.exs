@@ -7,21 +7,45 @@ defmodule Malan.UtilsTest do
   defmodule TestStruct, do: defstruct([:one, :two, :three])
 
   describe "main" do
-    test "nil_or_empty?/1" do
+    test "#extract/2 works with index on array" do
+      assert "world" == Malan.Utils.extract(["hello", "world"], 1)
+      assert "world" == Malan.Utils.process(["hello", "world"], 1)
+      assert "world" == Malan.Utils.transform(["hello", "world"], 1)
+    end
+
+    test "#extract/2 works with index on tuple" do
+      assert "hello" == Malan.Utils.extract({"hello", "world"}, 0)
+      assert "hello" == Malan.Utils.process({"hello", "world"}, 0)
+      assert "hello" == Malan.Utils.transform({"hello", "world"}, 0)
+    end
+
+    test "#extract/2 works with key on map" do
+      assert 37 == Malan.Utils.extract(%{name: "Jeb", age: 37}, :age)
+      assert 37 == Malan.Utils.process(%{name: "Jeb", age: 37}, :age)
+      assert 37 == Malan.Utils.transform(%{name: "Jeb", age: 37}, :age)
+    end
+
+    test "#extract/2 works with function" do
+      assert 74 == Malan.Utils.extract(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
+      assert 74 == Malan.Utils.process(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
+      assert 74 == Malan.Utils.transform(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
+    end
+
+    test "#nil_or_empty?/1" do
       assert true == Utils.nil_or_empty?(nil)
       assert true == Utils.nil_or_empty?("")
       assert false == Utils.nil_or_empty?("abcd")
       assert false == Utils.nil_or_empty?(42)
     end
 
-    test "not_nil_or_empty?/1" do
+    test "#not_nil_or_empty?/1" do
       assert false == Utils.not_nil_or_empty?(nil)
       assert false == Utils.not_nil_or_empty?("")
       assert true == Utils.not_nil_or_empty?("abcd")
       assert true == Utils.not_nil_or_empty?(42)
     end
 
-    test "uuidgen/0" do
+    test "#uuidgen/0" do
       assert Utils.uuidgen() =~
                ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
     end

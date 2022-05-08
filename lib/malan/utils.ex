@@ -1,5 +1,61 @@
 defmodule Malan.Utils do
   @doc ~S"""
+  Using either `key` or `extract_func`, extract the specified thing.
+
+  Alias is `process()` and `transform()`
+
+  This is very useful for converting some value into another in a pipeline,
+  such as unwrapping a structure or transforming it.  It's essentially like
+  `Enum.map/2` but only operates on a single object rather than an `Enumerable`
+
+  Example:
+
+  ```
+  some_function_returns_a_map()
+  |> Malan.Utils.extract(:data)  # extract the 'data' key from map
+  |> Enum.map(...)
+
+  get_user()
+  |> Malan.Utils.extract(:age)
+  |> handle_age()
+
+  get_user()
+  |> Malan.Utils.extract(%{name: "Jeb", age: 37}, fn {:ok, user} -> user)
+  |> extract()
+  ```
+  ## iex examples:
+
+    iex> Malan.Utils.extract(%{name: "Jeb", age: 37}, :age)
+    37
+
+    iex> Malan.Utils.extract(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
+    74
+  """
+  @spec extract(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  def extract(list, key) when is_list(list) and is_integer(key) do
+    Enum.at(list, key)
+  end
+
+  def extract(tuple, key) when is_tuple(tuple) and is_integer(key) do
+    elem(tuple, key)
+  end
+
+  def extract(access, key) when is_atom(key) or is_binary(key) do
+    access[key]
+  end
+
+  def extract(anything, extract_func) do
+    extract_func.(anything)
+  end
+
+  @spec process(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  def process(thing, arg), do: extract(thing, arg)
+
+  @spec transform(Access.t() | List.t() | Tuple.t() | any(), integer() | String.t() | (... -> any())) :: any()
+  def transform(thing, arg), do: extract(thing, arg)
+
+
+  @doc ~S"""
   Macro that makes a function public in test, private in non-test
 
   See:  https://stackoverflow.com/a/47598190/2062384
