@@ -852,7 +852,7 @@ defmodule Malan.Utils.Logger do
   def notice(msg), do: Logger.notice(msg, ansi_color: LoggerColor.notice())
   def info(msg), do: Logger.info(msg, ansi_color: LoggerColor.info())
   def debug(msg), do: Logger.debug(msg, ansi_color: LoggerColor.debug())
-  def trace(msg), do: Logger.debug(msg, ansi_color: LoggerColor.trace())
+  def trace(msg), do: Logger.debug("[trace]: " <> msg, ansi_color: LoggerColor.trace())
 
   def emergency(%Macro.Env{} = env, msg), do: emergency(log_str(env, :mfa) <> ": " <> msg)
   def alert(%Macro.Env{} = env, msg), do: alert(log_str(env, :mfa) <> ": " <> msg)
