@@ -35,7 +35,7 @@ defmodule Malan.Accounts.User do
     field :deleted_at, :utc_datetime
     field :latest_tos_accept_ver, :integer # nil means rejected
     field :latest_pp_accept_ver, :integer  # nil means rejected
-    field :birthday, :utc_datetime         # nil means not specified
+    field :birthday, :date                 # nil means not specified
     field :weight, :decimal                # nil means not specified
     field :height, :decimal                # nil means not specified
     field :race_enum, {:array, :integer}   # nil means not specified
