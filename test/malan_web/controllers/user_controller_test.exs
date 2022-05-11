@@ -19,7 +19,8 @@ defmodule MalanWeb.UserControllerTest do
     first_name: "Some",
     last_name: "cool User",
     custom_attrs: %{"hereiam" => "rockyou", "likea" => "hurricane", "year" => 1986},
-    locked_at: "",  # Shouldn't make it through
+    birthday: "1986-06-13",
+    locked_at: ""  # Shouldn't make it through
   }
   @invalid_attrs %{
     email: nil,
@@ -1106,6 +1107,69 @@ defmodule MalanWeb.UserControllerTest do
       assert [tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
       assert [tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
       assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+    end
+
+    test "Accepts datetimes and more precision on birthday", %{conn: conn, user: %User{} = user} do
+      email = user.email
+
+      {:ok, session} = Helpers.Accounts.create_session(user)
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      [
+        "2022-05-11 01:30:49.970337Z",
+        "2022-05-11 01:30:49.00000",
+        "2022-05-11 01:30:49.00",
+        "2022-05-11 01:30:49",
+        "2022-05-11"
+      ]
+      |> Enum.each(fn datetime ->
+        conn = put(conn, Routes.user_path(conn, :update, user), user: %{birthday: datetime})
+
+        assert %{"id" => id} = json_response(conn, 200)["data"]
+
+        conn = get(conn, Routes.user_path(conn, :show, id))
+
+        assert %{
+                 # "ok" => true,
+                 # "code" => 200,
+                 "data" => %{
+                   "id" => ^id,
+                   "email" => ^email,
+                   "birthday" => "2022-05-11"
+                 }
+               } = json_response(conn, 200)
+      end)
+    end
+
+    test "Rejects malformed birthdays", %{conn: conn, user: %User{} = user} do
+      {:ok, session} = Helpers.Accounts.create_session(user)
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      [
+        "2022-05-11 01:30",
+        "2022-05-11 01",
+        "2022-05",
+        "false",
+        "4.567",
+        "2022",
+        "null",
+        "abc",
+        "nil"
+      ]
+      |> Enum.each(fn datetime ->
+        conn = put(conn, Routes.user_path(conn, :update, user), user: %{birthday: datetime})
+
+        assert %{
+                 "ok" => false,
+                 "code" => 422,
+                 "detail" => "Unprocessable Entity",
+                 "message" =>
+                   "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+                 "errors" => %{
+                   "birthday" => ["is invalid"]
+                 }
+               } = json_response(conn, 422)
+      end)
     end
   end
 
