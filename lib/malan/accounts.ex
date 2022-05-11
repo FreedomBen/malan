@@ -895,11 +895,7 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_session(%Session{} = session) do
-    session
-    |> Session.revoke_changeset(%{revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)})
-    |> Repo.update()
-  end
+  def delete_session(%Session{} = session), do: revoke_session(session)
 
   @doc ~S"""
   Returns nil if no matching user is found.
@@ -1083,7 +1079,16 @@ defmodule Malan.Accounts do
     {:ok, num_revoked}
   end
 
-  def revoke_session(%Session{} = session), do: delete_session(%Session{} = session)
+  def revoke_session(%Session{} = session) do
+    session
+    |> revoke_session_at(DateTime.utc_now() |> DateTime.add(-1, :second))
+  end
+
+  def revoke_session_at(%Session{} = session, %DateTime{} = datetime) do
+    session
+    |> Session.revoke_changeset(%{revoked_at: datetime})
+    |> Repo.update()
+  end
 
   alias Malan.Accounts.Team
 

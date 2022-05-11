@@ -1,6 +1,6 @@
 defmodule Malan.Accounts.Transaction do
   import Malan.Utils, only: [defp_testable: 2]
-  import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
+  # import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
   use Ecto.Schema
   import Ecto.Changeset

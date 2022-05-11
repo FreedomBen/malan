@@ -132,7 +132,7 @@ defmodule MalanWeb.UserControllerTest do
     } do
       assert is_nil(session.revoked_at)
       session = Helpers.Accounts.set_revoked(session)
-      assert true == TestUtils.DateTime.within_last?(session.revoked_at, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(session.revoked_at, 12, :seconds)
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.user_path(conn, :show, id))
@@ -176,21 +176,39 @@ defmodule MalanWeb.UserControllerTest do
 
     test "requires being an admin to access (unauthenticated)", %{conn: conn} do
       conn = get(conn, Routes.user_path(conn, :index))
-      assert conn.status == 403
+
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
+      } == json_response(conn, 403)
     end
 
     test "requires being an admin to access (as regular user)", %{conn: conn} do
       {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
       conn = Helpers.Accounts.put_token(conn, rs.api_token)
       conn = get(conn, Routes.user_path(conn, :index))
-      assert conn.status == 401
+
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => "You are authenticated but do not have access to this method on this object."
+      } == json_response(conn, 401)
     end
 
     test "requires being an admin to access (as moderator)", %{conn: conn} do
       {:ok, _au, as} = Helpers.Accounts.moderator_user_with_session()
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = get(conn, Routes.user_path(conn, :index))
-      assert conn.status == 401
+
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => "You are authenticated but do not have access to this method on this object."
+      } == json_response(conn, 401)
     end
 
     test "Works with pagination (as admin)", %{conn: conn} do
@@ -821,7 +839,17 @@ defmodule MalanWeb.UserControllerTest do
     } do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+
+      assert json_response(conn, 422) == %{
+               "ok" => false,
+               "code" => 422,
+               "detail" => "Unprocessable Entity",
+               "message" =>
+                 "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+               "errors" => %{
+                 "preferences" => ["can't be blank"]
+               }
+             }
     end
 
     test "allows updating password", %{conn: conn, user: %User{id: id} = user} do
@@ -914,7 +942,13 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, _ru, rs} = Helpers.Accounts.regular_user_with_session()
       conn = Helpers.Accounts.put_token(conn, rs.api_token)
       conn = get(conn, Routes.user_path(conn, :index))
-      assert conn.status == 401
+
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => "You are authenticated but do not have access to this method on this object."
+      } == json_response(conn, 401)
     end
 
     test "Allows updating phone numbers", %{conn: conn, user: %User{} = user} do
