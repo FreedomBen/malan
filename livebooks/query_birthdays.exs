@@ -13,3 +13,5 @@ from(u in User, where: not is_nil(u.birthday), limit: 10)
 from(u in User, select: count(u.id), where: not is_nil(u.birthday))
 |> Repo.one()
 
+from(u in User, select: {u.id, u.email, u.birthday}, where: not is_nil(u.birthday), limit: 10)
+|> Repo.all()

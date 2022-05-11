@@ -726,7 +726,7 @@ defmodule MalanWeb.UserControllerTest do
         accept_privacy_policy: true,
         preferences: %{theme: "dark"},
         sex: "male",
-        birthday: ~U[1986-06-13 01:09:08.105179Z],
+        birthday: ~D[1986-06-13],
         roles: ["admin", "user"],  # Shouldn't make it through
         custom_attrs: %{
           "hereiam" => "rockyou",
@@ -743,7 +743,7 @@ defmodule MalanWeb.UserControllerTest do
                  "email_verified" => nil,
                  "preferences" => %{"theme" => "dark"},
                  "roles" => ["user"],
-                 "birthday" => "1986-06-13T01:09:08Z",
+                 "birthday" => "1986-06-13",
                  "sex" => "Male",
                  "gender" => nil,
                  "latest_tos_accept_ver" => 1,
