@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#MALAN_ENDPOINT="http://localhost:4000"
-MALAN_ENDPOINT="https://malan-staging.ameelio.org"
+MALAN_ENDPOINT="http://localhost:4000"
+#MALAN_ENDPOINT="https://malan-staging.ameelio.org"
 #MALAN_ENDPOINT="https://malan.ameelio.org"
 
 USERNAME='root'
@@ -20,7 +20,6 @@ curl \
   --request POST \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
-  --header "CF-Connecting-IP: 127.0.1.1" \
   --data "{\"session\":{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\",\"never_expires\":true}}" \
   "${MALAN_ENDPOINT}/api/sessions/"
 

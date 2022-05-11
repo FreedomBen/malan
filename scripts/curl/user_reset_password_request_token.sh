@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-#MALAN_ENDPOINT="http://localhost:4000"
-MALAN_ENDPOINT="https://malan-staging.ameelio.org"
+MALAN_ENDPOINT="http://localhost:4000"
+#MALAN_ENDPOINT="https://malan-staging.ameelio.org"
 
-USERNAME="NewRegularUser1@example.com"
+USERNAME="NewRegularUser100@example.com"
 
 curl \
   --request POST \
