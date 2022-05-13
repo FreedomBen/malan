@@ -147,8 +147,11 @@ defmodule Malan.UtilsTest do
       assert "password, *****" == Utils.tuple_to_string({"password", 54321}, [:password])
       assert "password, *****" == Utils.tuple_to_string({"password", 54321}, ["password"])
 
-      assert "password, hello, world" == Utils.tuple_to_string({:password, "hello", "world"}, [:password])
-      assert "password, hello, world" == Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
+      assert "password, hello, world" ==
+               Utils.tuple_to_string({:password, "hello", "world"}, [:password])
+
+      assert "password, hello, world" ==
+               Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
     end
 
     test "#map_to_string/1" do
@@ -213,6 +216,16 @@ defmodule Malan.UtilsTest do
       assert "ARG" == Utils.map_to_string("ARG")
     end
 
+    test "#struct_to_string/2 works" do
+      ts = %TestStruct{one: "one", two: "two"}
+      assert "two: 'two', three: '', one: 'one'" == Utils.struct_to_string(ts)
+      assert "two: 'two', three: '', one: '***'" == Utils.struct_to_string(ts, [:one])
+      ts = %TestStruct{one: "one", two: "two", three: ts}
+
+      assert "two: 'two', three: 'two: 'two', three: '', one: '***', __struct__: 'Elixir.Malan.UtilsTest.TestStruct'', one: '***'" ==
+               Utils.struct_to_string(ts, [:one])
+    end
+
     test "#to_string/2 works" do
       assert "995" == Utils.to_string(995)
       assert "995" == Utils.to_string("995")
@@ -222,6 +235,8 @@ defmodule Malan.UtilsTest do
       assert Utils.to_string(%{one: "two"}) == Utils.map_to_string(%{one: "two"})
       assert Utils.to_string(["one", "two"]) == Utils.list_to_string(["one", "two"])
       assert Utils.to_string({"one", "two"}) == Utils.tuple_to_string({"one", "two"})
+      ts = %TestStruct{one: "one", two: "two"}
+      assert Utils.to_string(ts) == Utils.struct_to_string(ts)
     end
 
     test "mask_str/1 nil returns nil" do
@@ -548,9 +563,15 @@ defmodule Malan.UtilsTest do
       # predictable and deterministic.  If the order changes in the future this
       # test may need to be updated
       assert [precision: 0, delimit: ",", separator: "."] == Utils.Number.get_int_opts([])
-      assert [precision: 0, delimit: ",", separator: ".", one: "one"] == Utils.Number.get_int_opts([one: "one"])
-      assert [delimit: ",", separator: ".", precision: 3] == Utils.Number.get_int_opts([precision: 3])
-      assert [delimit: "-", separator: " ", precision: 1] == Utils.Number.get_int_opts([delimit: "-", separator: " ", precision: 1])
+
+      assert [precision: 0, delimit: ",", separator: ".", one: "one"] ==
+               Utils.Number.get_int_opts(one: "one")
+
+      assert [delimit: ",", separator: ".", precision: 3] ==
+               Utils.Number.get_int_opts(precision: 3)
+
+      assert [delimit: "-", separator: " ", precision: 1] ==
+               Utils.Number.get_int_opts(delimit: "-", separator: " ", precision: 1)
     end
 
     test "#get_float_opts/1 properly merges opts" do
@@ -558,23 +579,29 @@ defmodule Malan.UtilsTest do
       # predictable and deterministic.  If the order changes in the future this
       # test may need to be updated
       assert [precision: 2, delimit: ",", separator: "."] == Utils.Number.get_float_opts([])
-      assert [precision: 2, delimit: ",", separator: ".", one: "one"] == Utils.Number.get_float_opts([one: "one"])
-      assert [delimit: ",", separator: ".", precision: 0] == Utils.Number.get_float_opts([precision: 0])
-      assert [delimit: "-", separator: " ", precision: 0] == Utils.Number.get_float_opts([delimit: "-", separator: " ", precision: 0])
+
+      assert [precision: 2, delimit: ",", separator: ".", one: "one"] ==
+               Utils.Number.get_float_opts(one: "one")
+
+      assert [delimit: ",", separator: ".", precision: 0] ==
+               Utils.Number.get_float_opts(precision: 0)
+
+      assert [delimit: "-", separator: " ", precision: 0] ==
+               Utils.Number.get_float_opts(delimit: "-", separator: " ", precision: 0)
     end
 
     test "#format/1" do
       assert "123" == Utils.Number.format(123)
       assert "123.04" == Utils.Number.format(123.04)
-      assert "456,789.01" == Utils.Number.format(456789.01234)
-      assert "456,789.0123" == Utils.Number.format(456789.01234, precision: 4)
+      assert "456,789.01" == Utils.Number.format(456_789.01234)
+      assert "456,789.0123" == Utils.Number.format(456_789.01234, precision: 4)
     end
 
     test "#format_us/1" do
       assert "123" == Utils.Number.format_us(123)
       assert "123.04" == Utils.Number.format_us(123.04)
-      assert "456,789.01" == Utils.Number.format_us(456789.01234)
-      assert "456,789.0123" == Utils.Number.format_us(456789.01234, precision: 4)
+      assert "456,789.01" == Utils.Number.format_us(456_789.01234)
+      assert "456,789.0123" == Utils.Number.format_us(456_789.01234, precision: 4)
     end
 
     # Currently format_intl doesn't work properly!
@@ -582,8 +609,8 @@ defmodule Malan.UtilsTest do
     test "#format_intl/1" do
       assert "123" == Utils.Number.format_intl(123)
       assert "123,04" == Utils.Number.format_intl(123.04)
-      assert "456.789,01" == Utils.Number.format_intl(456789.01234)
-      assert "456.789,0123" == Utils.Number.format_intl(456789.01234, precision: 4)
+      assert "456.789,01" == Utils.Number.format_intl(456_789.01234)
+      assert "456.789,0123" == Utils.Number.format_intl(456_789.01234, precision: 4)
     end
   end
 end

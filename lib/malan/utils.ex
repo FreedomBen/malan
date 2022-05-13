@@ -441,6 +441,8 @@ defmodule Malan.Utils do
 
   def map_to_string(not_a_map, _mask_keys), do: Kernel.to_string(not_a_map)
 
+  def struct_to_string(s, mask_keys \\ []), do: map_to_string(Map.from_struct(s), mask_keys)
+
   @doc ~S"""
   Convert the value, map, or list to a string, suitable for printing or storing.
 
@@ -455,6 +457,7 @@ defmodule Malan.Utils do
   @spec to_string(input :: map() | list() | String.Chars.t(), mask_keys :: list(binary())) ::
           binary()
   def to_string(value, mask_keys \\ [])
+  def to_string(%{__struct__: _} = s, mask_keys), do: struct_to_string(s, mask_keys)
   def to_string(%{} = map, mask_keys), do: map_to_string(map, mask_keys)
   def to_string(list, mask_keys) when is_list(list), do: list_to_string(list, mask_keys)
   def to_string(tuple, mask_keys) when is_tuple(tuple), do: tuple_to_string(tuple, mask_keys)
