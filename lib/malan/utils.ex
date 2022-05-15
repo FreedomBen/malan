@@ -32,7 +32,7 @@ defmodule Malan.Utils do
     74
   """
   @spec extract(
-          Access.t() | List.t() | Tuple.t() | any(),
+          Access.t() | list() | tuple() | any(),
           integer() | String.t() | (... -> any())
         ) :: any()
   def extract(list, key) when is_list(list) and is_integer(key) do
@@ -52,13 +52,13 @@ defmodule Malan.Utils do
   end
 
   @spec process(
-          Access.t() | List.t() | Tuple.t() | any(),
+          Access.t() | list() | tuple() | any(),
           integer() | String.t() | (... -> any())
         ) :: any()
   def process(thing, arg), do: extract(thing, arg)
 
   @spec transform(
-          Access.t() | List.t() | Tuple.t() | any(),
+          Access.t() | list() | tuple() | any(),
           integer() | String.t() | (... -> any())
         ) :: any()
   def transform(thing, arg), do: extract(thing, arg)
