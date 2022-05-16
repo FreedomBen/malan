@@ -43,6 +43,14 @@ defmodule Malan.Utils do
     elem(tuple, key)
   end
 
+  def extract(struct, key) when is_struct(struct) and is_atom(key) do
+    Map.from_struct(struct)[key]
+  end
+
+  def extract(struct, key) when is_struct(struct) and is_binary(key) do
+    extract(struct, String.to_atom(key))
+  end
+
   def extract(access, key) when is_atom(key) or is_binary(key) do
     access[key]
   end

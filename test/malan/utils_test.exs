@@ -25,6 +25,18 @@ defmodule Malan.UtilsTest do
       assert 37 == Malan.Utils.transform(%{name: "Jeb", age: 37}, :age)
     end
 
+    test "#extract/2 works with property on struct" do
+      assert "one" == Malan.Utils.extract(%TestStruct{one: "one", two: "two"}, :one)
+      assert "two" == Malan.Utils.process(%TestStruct{one: "one", two: "two"}, :two)
+      assert nil == Malan.Utils.transform(%TestStruct{one: "one", two: "two"}, :three)
+      assert nil == Malan.Utils.transform(%TestStruct{one: "one", two: "two"}, :four)
+
+      assert "one" == Malan.Utils.extract(%TestStruct{one: "one", two: "two"}, "one")
+      assert "two" == Malan.Utils.process(%TestStruct{one: "one", two: "two"}, "two")
+      assert nil == Malan.Utils.transform(%TestStruct{one: "one", two: "two"}, "three")
+      assert nil == Malan.Utils.transform(%TestStruct{one: "one", two: "two"}, "four")
+    end
+
     test "#extract/2 works with function" do
       assert 74 == Malan.Utils.extract(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
       assert 74 == Malan.Utils.process(%{name: "Jeb", age: 37}, fn arg -> arg[:age] * 2 end)
