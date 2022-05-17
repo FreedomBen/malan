@@ -20,7 +20,7 @@ jobs:
       - name: Build Image
         run: ./scripts/build-release.sh
 
-      - name: Authenticate to DO Container Registry
+      - name: Authenticate to Container Registry
         env:
           DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
         run: |
