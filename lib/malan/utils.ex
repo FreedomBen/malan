@@ -462,7 +462,10 @@ defmodule Malan.Utils do
   convert those to a string.  This conversion is somewhat destructive and is
   irreversable, so it should only be done intentionally.
   """
-  @spec to_string(input :: map() | list() | String.Chars.t(), mask_keys :: list(binary())) ::
+  @spec to_string(
+          input :: map() | list() | String.Chars.t() | number() | boolean(),
+          mask_keys :: list(binary())
+        ) ::
           binary()
   def to_string(value, mask_keys \\ [])
   def to_string(%{__struct__: _} = s, mask_keys), do: struct_to_string(s, mask_keys)
