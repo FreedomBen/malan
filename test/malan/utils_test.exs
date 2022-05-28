@@ -117,8 +117,8 @@ defmodule Malan.UtilsTest do
     end
 
     test "#list_to_string/2 works" do
-      assert "Dorothy, Rest in Peace" ==
-               Utils.list_to_string(["Dorothy", "Rest in Peace"])
+      assert "Dorothy, Rest in Peace, <nil>" ==
+               Utils.list_to_string(["Dorothy", "Rest in Peace", nil])
     end
 
     test "#list_to_string/2 works recursively" do
@@ -249,6 +249,11 @@ defmodule Malan.UtilsTest do
       assert Utils.to_string({"one", "two"}) == Utils.tuple_to_string({"one", "two"})
       ts = %TestStruct{one: "one", two: "two"}
       assert Utils.to_string(ts) == Utils.struct_to_string(ts)
+    end
+
+    test "#to_string/{1,2} on nil work" do
+      assert "<nil>" == Utils.to_string(nil)
+      assert "<nil>" == Utils.to_string(nil, "anything")
     end
 
     test "mask_str/1 nil returns nil" do
