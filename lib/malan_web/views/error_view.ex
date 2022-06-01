@@ -8,11 +8,7 @@ defmodule MalanWeb.ErrorView do
       ok: false,
       code: 400,
       detail: "Bad Request",
-      message: "The request was very very bad",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Bad Request"
-      }
+      message: "The request was very very bad"
     }
   end
 
@@ -21,12 +17,7 @@ defmodule MalanWeb.ErrorView do
       ok: false,
       code: 401,
       detail: "Unauthorized",
-      message: "You are authenticated but do not have access to this method on this object.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Unauthorized",
-        message: "You are authenticated but do not have access to this method on this object."
-      }
+      message: "You are authenticated but do not have access to this method on this object."
     }
   end
 
@@ -36,12 +27,7 @@ defmodule MalanWeb.ErrorView do
       code: 403,
       detail: "Forbidden",
       message:
-        "Username, password and/or location were invalid.  Please verify credentials and try again.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Forbidden",
-        message: "Username, password and/or location were invalid.  Please verify credentials and try again."
-      }
+        "Username, password and/or location were invalid.  Please verify credentials and try again."
     }
   end
 
@@ -52,12 +38,7 @@ defmodule MalanWeb.ErrorView do
       detail: "Forbidden",
       message: "API token is expired or revoked",
       token_expired: true,
-      #errors: [%{token: ["expired"]}]
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Forbidden",
-        message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
-      }
+      errors: [%{token: ["expired"]}]
     }
   end
 
@@ -68,12 +49,7 @@ defmodule MalanWeb.ErrorView do
       detail: "Forbidden",
       message: "API token is expired or revoked",
       token_expired: true,
-      #errors: [%{token: ["expired"]}]
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Forbidden",
-        message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
-      }
+      errors: [%{token: ["expired"]}]
     }
   end
 
@@ -83,12 +59,7 @@ defmodule MalanWeb.ErrorView do
       code: 403,
       detail: "Forbidden",
       message:
-        "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Forbidden",
-        message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
-      }
+        "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
     }
   end
 
@@ -97,12 +68,7 @@ defmodule MalanWeb.ErrorView do
       ok: false,
       code: 404,
       detail: "Not Found",
-      message: "The requested object was not found.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Not Found",
-        message: "The requested object was not found."
-      }
+      message: "The requested object was not found."
     }
   end
 
@@ -123,12 +89,7 @@ defmodule MalanWeb.ErrorView do
       code: 422,
       detail: "Unprocessable Entity",
       message: msg,
-      #errors: errors
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Unprocessable Entity",
-        message: msg
-      }
+      errors: errors
     }
   end
 
@@ -137,12 +98,7 @@ defmodule MalanWeb.ErrorView do
       ok: false,
       code: 423,
       detail: "Locked",
-      message: "The requested resource is locked.  Please contact an administrator",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Locked",
-        message: "The requested resource is locked.  Please contact an administrator",
-      }
+      message: "The requested resource is locked.  Please contact an administrator"
     }
   end
 
@@ -152,12 +108,7 @@ defmodule MalanWeb.ErrorView do
       code: 429,
       detail: "Too Many Requests",
       message:
-        "You have exceeded the allowed number of requests.  Please cool off and try again later.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Too Many Requests",
-        message: "You have exceeded the allowed number of requests.  Please cool off and try again later."
-      }
+        "You have exceeded the allowed number of requests.  Please cool off and try again later."
     }
   end
 
@@ -167,12 +118,7 @@ defmodule MalanWeb.ErrorView do
       code: 461,
       detail: "Terms of Service Required",
       message:
-        "You have not yet accepted the Terms of Service.  Acceptance is required to use this API.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Too Many Requests",
-        message: "You have not yet accepted the Terms of Service.  Acceptance is required to use this API."
-      }
+        "You have not yet accepted the Terms of Service.  Acceptance is required to use this API."
     }
   end
 
@@ -182,12 +128,7 @@ defmodule MalanWeb.ErrorView do
       code: 462,
       detail: "Privacy Policy Required",
       message:
-        "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API.",
-      # Temporary for compatiblity
-      errors: %{
-        detail: "Too Many Requests",
-        message: "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API."
-      }
+        "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API."
     }
   end
 
@@ -196,9 +137,7 @@ defmodule MalanWeb.ErrorView do
       ok: false,
       code: 500,
       detail: "Internal Server Error",
-      message: "Internal Server Error",
-      # Temporary for compatiblity
-      errors: %{detail: "Internal Server Error"}
+      message: "Internal Server Error"
     }
   end
 
@@ -211,11 +150,7 @@ defmodule MalanWeb.ErrorView do
       # TODO: Can get this code from template?
       code: 404,
       detail: Phoenix.Controller.status_message_from_template(template),
-      message: "Template not found",
-      # Temporary for compatiblity
-      errors: %{
-        detail: Phoenix.Controller.status_message_from_template(template)
-      }
+      message: "Template not found"
     }
   end
 end
