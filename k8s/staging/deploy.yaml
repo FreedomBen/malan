@@ -77,18 +77,18 @@ spec:
       targetPort: 4000
       nodePort: 30000
 
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: malan
-  labels:
-    app: malan
-  namespace: malan-staging
-spec:
-  namespace: malan-staging
-  serviceName: malan
-  hostName: malan-staging
-  domain: ameelio.xyz
-  proxied: true
-  zoneId: 16c266b9ad2cc7affc86783eb0fa74fd
+# ---
+# apiVersion: domain-name-operator.tamx.org/v1
+# kind: CloudflareDnsRecord
+# metadata:
+#   name: malan
+#   labels:
+#     app: malan
+#   namespace: malan-staging
+# spec:
+#   namespace: malan-staging
+#   serviceName: malan
+#   hostName: malan-staging
+#   domain: ameelio.xyz
+#   proxied: true
+#   zoneId: 16c266b9ad2cc7affc86783eb0fa74fd
