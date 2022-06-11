@@ -20,7 +20,7 @@ defmodule MalanWeb.SessionController do
   def admin_index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(page_num, page_size)
-    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
+    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
   end
 
   def admin_delete(conn, %{"id" => id}) do
@@ -41,7 +41,7 @@ defmodule MalanWeb.SessionController do
         tx_changeset
       )
 
-      render(conn, "show.json", session: session)
+      render(conn, "show.json", code: 200, session: session)
     else
       {:error, err_cs} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
@@ -62,7 +62,7 @@ defmodule MalanWeb.SessionController do
   def index(conn, %{"user_id" => user_id}) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(user_id, page_num, page_size)
-    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
+    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
   end
 
   def index_active(conn, params) do
@@ -75,7 +75,7 @@ defmodule MalanWeb.SessionController do
   def user_index_active(conn, %{"user_id" => user_id}) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_active_sessions(user_id, page_num, page_size)
-    render(conn, "index.json", sessions: sessions, page_num: page_num, page_size: page_size)
+    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
   end
 
   def create(conn, %{
@@ -101,7 +101,7 @@ defmodule MalanWeb.SessionController do
 
       conn
       |> put_status(:created)
-      |> render("show.json", session: session)
+      |> render("show.json", code: 201, session: session)
     else
       # Logging of failed login attemps (aka session creation) currently happens
       # in accounts.ex
@@ -123,7 +123,7 @@ defmodule MalanWeb.SessionController do
 
   def show(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
-    render(conn, "show.json", session: session)
+    render(conn, "show.json", code: 200, session: session)
   end
 
   def show_current(conn, %{}), do: show(conn, %{"id" => conn.assigns.authed_session_id})
@@ -146,7 +146,7 @@ defmodule MalanWeb.SessionController do
         changeset
       )
 
-      render(conn, "show.json", session: session)
+      render(conn, "show.json", code: 200, session: session)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -172,7 +172,7 @@ defmodule MalanWeb.SessionController do
         num_revoked: num_revoked
       })
 
-      render(conn, "delete_all.json", num_revoked: num_revoked)
+      render(conn, "delete_all.json", code: 200, num_revoked: num_revoked)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
