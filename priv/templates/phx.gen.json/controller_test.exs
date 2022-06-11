@@ -42,7 +42,6 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
 
     test "requires authentication", %{conn: conn} do
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :index))
-      assert conn.status == 403
       assert %{
         "ok" => false,
         "code" => 403,
@@ -56,12 +55,22 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :index))
       # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+      assert %{
+        "ok" => false,
+        "code" => 461,
+        "detail" => "Terms of Service Required",
+        "message" => _
+      } = json_response(conn, 461)
 
       {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :index))
       # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+      assert %{
+        "ok" => false,
+        "code" => 462,
+        "detail" => "Privacy Policy Required",
+        "message" => _
+      } = json_response(conn, 462)
     end
   end
 

@@ -50,34 +50,63 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
 
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
 
       conn = Helpers.Accounts.put_token(build_conn(), rs1.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
 
       # When ToS and Privay Policy are required, uncomment the below
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       # conn = get(conn, Routes.session_path(conn, :admin_index))
-      # assert conn.status == 461
+      # assert %{
+      #   "ok" => false,
+      #   "code" => 461,
+      #   "detail" => "Terms of Service Required",
+      #   "message" => _
+      # } = json_response(conn, 461)
 
       ## Accept ToS
       # {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
       # conn = get(conn, Routes.session_path(conn, :admin_index))
-      # assert conn.status == 462
+      # assert %{
+      #   "ok" => false,
+      #   "code" => 462,
+      #   "detail" => "Privacy Policy Required",
+      #   "message" => _
+      # } = json_response(conn, 462)
 
       ## Accept Privacy Policy
       # {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      jr = json_response(conn, 200)["data"]
-      assert length(jr) == 4
-      assert true == Enum.any?(jr, fn s -> s["id"] == as.id end)
-      assert true == Enum.any?(jr, fn s -> s["id"] == rs1.id end)
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => data
+      } = json_response(conn, 200)
+      assert length(data) == 4
+      assert true == Enum.any?(data, fn s -> s["id"] == as.id end)
+      assert true == Enum.any?(data, fn s -> s["id"] == rs1.id end)
     end
 
     test "Requires being authenticated", %{conn: conn} do
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "Requires being an admin", %{conn: conn} do
@@ -86,7 +115,12 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(conn, rs1.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     # test "Requires accepting ToS and PP", %{conn: conn} do
@@ -97,12 +131,23 @@ defmodule MalanWeb.SessionControllerTest do
     #   # When ToS and Privay Policy are required, uncomment the below
     #   conn = Helpers.Accounts.put_token(conn, as.api_token)
     #   conn = get(conn, Routes.session_path(conn, :admin_index))
-    #   assert conn.status == 461
+      # assert %{
+      #   "ok" => false,
+      #   "code" => 461,
+      #   "detail" => "Terms of Service Required",
+      #   "message" => _
+      # } = json_response(conn, 461)
 
     #   # Accept ToS
     #   {:ok, au} = Helpers.Accounts.accept_user_tos(au, true)
     #   conn = get(conn, Routes.session_path(conn, :admin_index))
     #   assert conn.status == 462
+      # assert %{
+      #   "ok" => false,
+      #   "code" => 462,
+      #   "detail" => "Terms of Service Required",
+      #   "message" => _
+      # } = json_response(conn, 462)
 
     #   # Accept Privacy Policy
     #   {:ok, _au} = Helpers.Accounts.accept_user_pp(au, true)
@@ -124,18 +169,18 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s1, s2, s3, s4, s5, s6])
+      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+      assert data == sessions_to_retval([s1, s2, s3, s4, s5, s6])
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 0, page_size: 5)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s1, s2, s3, s4, s5])
+      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+      assert data == sessions_to_retval([s1, s2, s3, s4, s5])
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 1, page_size: 5)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s6])
+      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+      assert data == sessions_to_retval([s6])
     end
   end
 
@@ -145,7 +190,13 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = delete(conn, Routes.session_path(conn, :admin_delete, rs.id))
-      assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => %{
+          "revoked_at" => revoked_at
+        }
+      } = json_response(conn, 200)
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
     end
@@ -154,7 +205,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, conn, _ru, rs} = Helpers.Accounts.regular_user_session_conn(conn)
 
       conn = delete(conn, Routes.session_path(conn, :admin_delete, rs.id))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
@@ -164,7 +220,13 @@ defmodule MalanWeb.SessionControllerTest do
         Helpers.Accounts.admin_user_session_conn(conn)
 
       conn = delete(conn, Routes.session_path(conn, :admin_delete, rs.id))
-      assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => %{
+          "revoked_at" => revoked_at
+        }
+      } = json_response(conn, 200)
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
 
@@ -193,15 +255,24 @@ defmodule MalanWeb.SessionControllerTest do
     test "lists all sessions for user", %{conn: conn} do
       # Require authentication
       conn = get(conn, Routes.user_session_path(conn, :index, "some id"))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
 
       users = Helpers.Accounts.regular_users_session_conn(build_conn(), 3)
       {:ok, conn, ru1, rs1} = List.first(users)
 
       conn = get(conn, Routes.user_session_path(conn, :index, ru1.id))
-      jr = json_response(conn, 200)["data"]
-      assert length(jr) == 1
-      assert jr == [session_to_retval_map(rs1)]
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => data
+      } = json_response(conn, 200)
+      assert length(data) == 1
+      assert data == [session_to_retval_map(rs1)]
     end
 
     test "can be called by admin non-owner" do
@@ -210,9 +281,13 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, ca, _au1, _as1} = Helpers.Accounts.admin_user_session_conn(build_conn())
 
       ca = get(ca, Routes.user_session_path(ca, :index, ru1.id))
-      jr = json_response(ca, 200)["data"]
-      assert length(jr) == 1
-      assert jr == [session_to_retval_map(rs1)]
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => data
+      } = json_response(ca, 200)
+      assert length(data) == 1
+      assert data == [session_to_retval_map(rs1)]
     end
 
     test "can't be called by non-admin non-owner" do
@@ -221,7 +296,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, c2, _ru2, _rs2} = Enum.at(users, 1)
 
       c2 = get(c2, Routes.user_session_path(c2, :index, ru1.id))
-      assert c2.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(c2, 401)
     end
 
     test "works with pagination", %{conn: conn} do
@@ -339,9 +419,20 @@ defmodule MalanWeb.SessionControllerTest do
 
     test "Must be authenticated", %{conn: conn} do
       conn = get(conn, Routes.session_path(conn, :index_active))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = get(conn, Routes.user_session_path(conn, :user_index_active, "current"))
       assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "can't be called by non-admin non-owner", %{conn: conn} do
@@ -357,7 +448,12 @@ defmodule MalanWeb.SessionControllerTest do
           page_size: 3
         )
 
-      assert c1.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(c1, 401)
     end
   end
 
@@ -367,7 +463,12 @@ defmodule MalanWeb.SessionControllerTest do
       user_id = user.id
       session_id = session.id
       conn = get(conn, Routes.session_path(conn, :show_current))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
       assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token, nil)
       conn = get(conn, Routes.session_path(conn, :show_current))
@@ -411,7 +512,12 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{"id" => id, "api_token" => api_token} = json_response(conn, 201)["data"]
 
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
 
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
@@ -448,7 +554,12 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: "invalid username", password: "something wrong"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "invalid password", %{conn: conn} do
@@ -459,7 +570,12 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "incorrect password"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
@@ -515,7 +631,12 @@ defmodule MalanWeb.SessionControllerTest do
 
       {:ok, conn, _au, _as} = Helpers.Accounts.regular_user_session_conn(build_conn())
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "Allows creating tokens that never expire", %{conn: conn} do
@@ -708,7 +829,12 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: user.password}
         )
 
-      assert %{"detail" => "Locked"} = json_response(conn, 423)
+      assert %{
+        "ok" => false,
+        "code" => 423,
+        "detail" => "Locked",
+        "message" => _
+      } = json_response(conn, 423)
 
       assert [
                ^tx_locked,
@@ -739,7 +865,12 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: bad_user_name, password: "fakeusernamespassword"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
 
       assert [
                %Transaction{
@@ -772,7 +903,12 @@ defmodule MalanWeb.SessionControllerTest do
           session: %{username: user.username, password: "fakeusernamespassword"}
         )
 
-      assert %{"detail" => "Forbidden"} = json_response(conn, 403)
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
 
       assert [
                %Transaction{
@@ -862,7 +998,12 @@ defmodule MalanWeb.SessionControllerTest do
       # Make sure the token now doesn't work
       conn = Helpers.Accounts.put_token(build_conn(), api_token)
       conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
-      assert 403 == conn.status
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "Create session fails if IP isn't approved for user", %{conn: conn} do
@@ -877,7 +1018,12 @@ defmodule MalanWeb.SessionControllerTest do
           }
         )
 
-      assert 403 == conn.status
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
   end
 
@@ -885,7 +1031,12 @@ defmodule MalanWeb.SessionControllerTest do
     test "deletes chosen session", %{conn: conn} do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
 
@@ -911,7 +1062,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       {:ok, conn, _ru, _rs} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
@@ -920,7 +1076,10 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.user_session_path(conn, :delete, user_id, session))
-      assert conn.status == 200
+      assert %{
+        "ok" => true,
+        "code" => 200,
+      } = json_response(conn, 200)
 
       assert [
                %Transaction{
@@ -999,7 +1158,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, s4} = Helpers.Accounts.create_session(user)
 
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
 
       for s <- [s1, s2, s3, s4] do
@@ -1028,7 +1192,12 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, s4} = Helpers.Accounts.create_session(ru)
 
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, ru.id))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
 
       for s <- [s1, s2, s3, s4] do
@@ -1053,10 +1222,20 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.regular_user()
 
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
       conn = Helpers.Accounts.put_token(build_conn(), rs.api_token)
       conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "Creates a corresponding Transaction", %{conn: conn} do
