@@ -20,7 +20,13 @@ defmodule MalanWeb.SessionController do
   def admin_index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(page_num, page_size)
-    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
+
+    render(conn, "index.json",
+      code: 200,
+      sessions: sessions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   def admin_delete(conn, %{"id" => id}) do
@@ -62,7 +68,13 @@ defmodule MalanWeb.SessionController do
   def index(conn, %{"user_id" => user_id}) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(user_id, page_num, page_size)
-    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
+
+    render(conn, "index.json",
+      code: 200,
+      sessions: sessions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   def index_active(conn, params) do
@@ -75,7 +87,13 @@ defmodule MalanWeb.SessionController do
   def user_index_active(conn, %{"user_id" => user_id}) do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_active_sessions(user_id, page_num, page_size)
-    render(conn, "index.json", code: 200, sessions: sessions, page_num: page_num, page_size: page_size)
+
+    render(conn, "index.json",
+      code: 200,
+      sessions: sessions,
+      page_num: page_num,
+      page_size: page_size
+    )
   end
 
   def create(conn, %{
@@ -220,6 +238,7 @@ defmodule MalanWeb.SessionController do
   defp put_ip_addr(session_params, conn) do
     session_params
     |> Map.put("ip_address", Utils.IPv4.to_s(conn))
+
     # |> Map.put("real_ip_address", get_cf_real_ip_addr(conn))
   end
 end

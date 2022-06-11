@@ -20,11 +20,17 @@ defmodule MalanWeb.UserView do
     }
   end
 
-  def render("show.json", %{code: code, user: %User{addresses: %Ecto.Association.NotLoaded{}} = user}) do
+  def render("show.json", %{
+        code: code,
+        user: %User{addresses: %Ecto.Association.NotLoaded{}} = user
+      }) do
     %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
-  def render("show.json", %{code: code, user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user}) do
+  def render("show.json", %{
+        code: code,
+        user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user
+      }) do
     %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
