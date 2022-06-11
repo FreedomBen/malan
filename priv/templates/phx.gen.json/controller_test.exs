@@ -7,6 +7,9 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
 
   alias Malan.Test.Helpers
 
+  @default_page_num 0
+  @default_page_size 10
+
   @create_attrs %{
 <%= schema.params.create |> Enum.map(fn {key, val} -> "    \"#{key}\" => #{inspect(val)}" end) |> Enum.join(",\n") %>
   }
@@ -28,12 +31,24 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
     test "lists all <%= schema.plural %>", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :index))
-      assert json_response(conn, 200)["data"] == []
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "page_num" => @default_page_num,
+        "page_size" => @default_page_size,
+        "data" => [],
+      } = json_response(conn, 200)
     end
 
     test "requires authentication", %{conn: conn} do
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :index))
       assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "requires accepting ToS and PP", %{conn: conn} do
@@ -57,14 +72,25 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :show, id))
       assert %{
-               "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
-               "<%= key %>" => <%= inspect(val) %><% end %>
-             } = json_response(conn, 200)["data"]
+        "ok" => true,
+        "code" => 200,
+        "detail" => "Forbidden",
+        "data" => %{
+           "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+           "<%= key %>" => <%= inspect(val) %><% end %>
+        }
+      } = json_response(conn, 200)
     end
 
     test "requires authentication", %{conn: conn} do
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :show, "42"))
       assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "requires accepting ToS and PP", %{conn: conn} do
@@ -90,27 +116,52 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :show, id))
 
       assert %{
-               "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
-               "<%= key %>" => <%= inspect(val) %><% end %>
-             } = json_response(conn, 200)["data"]
+        "ok" => true,
+        "code" => 200,
+        "page_num" => @default_page_num,
+        "page_size" => @default_page_size,
+        "data" => %{
+           "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+           "<%= key %>" => <%= inspect(val) %><% end %>
+        } = _<%= schema.singular %>,
+      } = json_response(conn, 200)
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = post(conn, Routes.<%= schema.route_helper %>_path(conn, :create), <%= schema.singular %>: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+      assert %{
+        "ok" => false,
+        "code" => 422,
+        "detail" => "Unprocessable Entity",
+        "message" => _
+        "errors" => %{
+          # TODO: Fill in correct errors messages
+          "param1" => ["error message one"]
+        }
+      } = json_response(conn, 422)
     end
 
     # If regular users should be allowed to create a <%= schema.singular %>, then remove this test
     test "won't work for regular user", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = post(conn, Routes.<%= schema.route_helper %>_path(conn, :create), <%= schema.singular %>: @create_attrs)
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "requires being authenticated", %{conn: conn} do
       conn = post(conn, Routes.<%= schema.route_helper %>_path(conn, :create), <%= schema.singular %>: @create_attrs)
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "requires accepting ToS and PP", %{conn: conn} do
@@ -118,12 +169,22 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = post(conn, Routes.<%= schema.route_helper %>_path(conn, :create), <%= schema.singular %>: @create_attrs)
       # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+      assert %{
+        "ok" => false,
+        "code" => 461,
+        "detail" => "Terms of Service Required",
+        "message" => _
+      } = json_response(conn, 461)
 
       {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
       conn = post(conn, Routes.<%= schema.route_helper %>_path(conn, :create), <%= schema.singular %>: @create_attrs)
       # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+      assert %{
+        "ok" => false,
+        "code" => 462,
+        "detail" => "Privacy Policy Required",
+        "message" =>_
+      } = json_response(conn, 462)
     end
   end
 
@@ -133,32 +194,62 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
     test "renders <%= schema.singular %> when data is valid", %{conn: conn, <%= schema.singular %>: %<%= inspect schema.alias %>{id: id} = <%= schema.singular %>} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, <%= schema.singular %>), <%= schema.singular %>: @update_attrs)
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      assert %{
+        "ok" => true,
+        "code" => 200,
+        "data" => %{
+           "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+           "<%= key %>" => <%= inspect(val) %><% end %>
+        } = _<%= schema.singular %>,
+      } = json_response(conn, 200)
 
       conn = get(conn, Routes.<%= schema.route_helper %>_path(conn, :show, id))
 
       assert %{
-               "id" => ^id<%= for {key, val} <- schema.params.update |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
-               "<%= key %>" => <%= inspect(val) %><% end %>
-             } = json_response(conn, 200)["data"]
+        "ok" => true,
+        "code" => 200,
+        "data" => %{
+           "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+           "<%= key %>" => <%= inspect(val) %><% end %>
+        } = _<%= schema.singular %>,
+      } = json_response(conn, 200)
     end
 
     test "renders errors when data is invalid", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, <%= schema.singular %>), <%= schema.singular %>: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+      assert %{
+        "ok" => false,
+        "code" => 422,
+        "detail" => "Unprocessable Entity",
+        "message" => _
+        "errors" => %{
+          # TODO: Fill in correct errors messages
+          "param1" => ["error message one"]
+        }
+      } = json_response(conn, 422)
     end
 
-    # If regular users should be allowed to create a <%= schema.singular %>, then remove this test
+    # If regular users should be allowed to update a <%= schema.singular %>, then remove this test
     test "won't work for regular user", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, <%= schema.singular %>), <%= schema.singular %>: @update_attrs)
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "requires being authenticated", %{conn: conn, <%= schema.singular %>: _<%= schema.singular %>} do
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, "42"), <%= schema.singular %>: @update_attrs)
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
     test "requires accepting ToS and PP", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
@@ -166,12 +257,22 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, <%= schema.singular %>), <%= schema.singular %>: @update_attrs)
       # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+      assert %{
+        "ok" => false,
+        "code" => 461,
+        "detail" => "Terms of Service Required",
+        "message" => _
+      } = json_response(conn, 461)
 
       {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
       conn = put(conn, Routes.<%= schema.route_helper %>_path(conn, :update, <%= schema.singular %>), <%= schema.singular %>: @update_attrs)
       # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+      assert %{
+        "ok" => false,
+        "code" => 462,
+        "detail" => "Privacy Policy Required",
+        "message" =>_
+      } = json_response(conn, 462)
     end
   end
 
@@ -190,14 +291,24 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
 
     test "Requires being authenticated", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
       conn = delete(conn, Routes.<%= schema.route_helper %>_path(conn, :delete, <%= schema.singular %>))
-      assert conn.status == 403
+      assert %{
+        "ok" => false,
+        "code" => 403,
+        "detail" => "Forbidden",
+        "message" => _
+      } = json_response(conn, 403)
     end
 
-    # If regular users should be allowed to create a <%= schema.singular %>, then remove this test
+    # If regular users should be allowed to delete a <%= schema.singular %>, then remove this test
     test "won't work for regular user", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = delete(conn, Routes.<%= schema.route_helper %>_path(conn, :delete, <%= schema.singular %>))
-      assert conn.status == 401
+      assert %{
+        "ok" => false,
+        "code" => 401,
+        "detail" => "Unauthorized",
+        "message" => _
+      } = json_response(conn, 401)
     end
 
     test "requires accepting ToS and PP", %{conn: conn, <%= schema.singular %>: <%= schema.singular %>} do
@@ -205,12 +316,22 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.<%= schema.route_helper %>_path(conn, :delete, <%= schema.singular %>))
       # We haven't accepted the terms of service yet so expect 461
-      assert conn.status == 461
+      assert %{
+        "ok" => false,
+        "code" => 461,
+        "detail" => "Terms of Service Required",
+        "message" => _
+      } = json_response(conn, 461)
 
       {:ok, _user} = Helpers.Accounts.accept_user_tos(user, true)
       conn = delete(conn, Routes.<%= schema.route_helper %>_path(conn, :delete, <%= schema.singular %>))
       # We haven't accepted the PP yet so expect 462
-      assert conn.status == 462
+      assert %{
+        "ok" => false,
+        "code" => 462,
+        "detail" => "Privacy Policy Required",
+        "message" =>_
+      } = json_response(conn, 462)
     end
   end
 
