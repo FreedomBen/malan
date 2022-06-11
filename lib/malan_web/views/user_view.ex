@@ -10,26 +10,27 @@ defmodule MalanWeb.UserView do
   alias MalanWeb.AddressView
   alias MalanWeb.PhoneNumberView
 
-  def render("index.json", %{users: users, page_num: page_num, page_size: page_size}) do
+  def render("index.json", %{code: code, users: users, page_num: page_num, page_size: page_size}) do
     %{
       ok: true,
+      code: code,
       data: render_many(users, UserView, "user.json"),
       page_num: page_num,
       page_size: page_size
     }
   end
 
-  def render("show.json", %{user: %User{addresses: %Ecto.Association.NotLoaded{}} = user}) do
-    %{ok: true, data: render_one(user, UserView, "user.json")}
+  def render("show.json", %{code: code, user: %User{addresses: %Ecto.Association.NotLoaded{}} = user}) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
-  def render("show.json", %{user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user}) do
-    %{ok: true, data: render_one(user, UserView, "user.json")}
+  def render("show.json", %{code: code, user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user}) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
   # def render("show.json", %{user: %User{phone_numbers: _} = user}) do
-  def render("show.json", %{user: %User{} = user}) do
-    %{ok: true, data: render_one(user, UserView, "user_full.json")}
+  def render("show.json", %{code: code, user: %User{} = user}) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user_full.json")}
   end
 
   # def render("show.json", %{user: user}) do
@@ -89,6 +90,7 @@ defmodule MalanWeb.UserView do
   end
 
   def render("whoami.json", %{
+        code: code,
         user_id: user_id,
         session_id: session_id,
         ip_address: ip_address,
@@ -100,6 +102,7 @@ defmodule MalanWeb.UserView do
       }) do
     %{
       ok: true,
+      code: code,
       data: %{
         user_id: user_id,
         session_id: session_id,
@@ -114,11 +117,13 @@ defmodule MalanWeb.UserView do
   end
 
   def render("password_reset.json", %{
+        code: code,
         password_reset_token: password_reset_token,
         password_reset_token_expires_at: password_reset_token_expires_at
       }) do
     %{
       ok: true,
+      code: code,
       data: %{
         password_reset_token: password_reset_token,
         password_reset_token_expires_at: password_reset_token_expires_at

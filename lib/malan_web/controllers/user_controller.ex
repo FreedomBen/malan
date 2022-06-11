@@ -34,7 +34,7 @@ defmodule MalanWeb.UserController do
   def index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
     users = Accounts.list_users(page_num, page_size)
-    render(conn, "index.json", users: users, page_num: page_num, page_size: page_size)
+    render(conn, "index.json", code: 200, users: users, page_num: page_num, page_size: page_size)
   end
 
   def create(conn, %{"user" => user_params}) do
@@ -47,7 +47,7 @@ defmodule MalanWeb.UserController do
       |> record_transaction(true, id, username, "POST", "#UserController.create/2", changeset)
       |> put_status(:created)
       |> put_resp_header("location", Routes.user_path(conn, :show, user))
-      |> render("show.json", user: user)
+      |> render("show.json", code: 201, user: user)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -99,7 +99,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", user: user)
+        render(conn, "show.json", code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -138,7 +138,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", user: user)
+        render(conn, "show.json", code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -177,7 +177,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", user: user)
+        render(conn, "show.json", code: 200, user: user)
       else
         {:error, %Ecto.Changeset{} = cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(cs)
@@ -229,7 +229,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", user: user)
+        render(conn, "show.json", code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -338,7 +338,7 @@ defmodule MalanWeb.UserController do
 
         conn
         |> put_status(200)
-        |> json(%{ok: true})
+        |> json(%{ok: true, code: 200})
       else
         # {:error, :too_many_requests}
         # {:error, changeset}
@@ -466,7 +466,7 @@ defmodule MalanWeb.UserController do
 
       conn
       |> put_status(200)
-      |> json(%{ok: true})
+      |> json(%{ok: true, code: 200})
     else
       {:error, :missing_password_reset_token = err} ->
         conn
@@ -474,6 +474,7 @@ defmodule MalanWeb.UserController do
         |> put_status(401)
         |> json(%{
           ok: false,
+          code: 401,
           err: err,
           msg: "No password reset token has been issued"
         })
@@ -484,6 +485,7 @@ defmodule MalanWeb.UserController do
         |> put_status(401)
         |> json(%{
           ok: false,
+          code: 401,
           err: err,
           msg: "Password reset token in invalid"
         })
@@ -494,6 +496,7 @@ defmodule MalanWeb.UserController do
         |> put_status(401)
         |> json(%{
           ok: false,
+          code: 401,
           err: err,
           msg: "Password reset token is expired"
         })
@@ -547,6 +550,7 @@ defmodule MalanWeb.UserController do
     render(
       conn,
       "whoami.json",
+      code: 200,
       user_id: user_id,
       session_id: session_id,
       user_roles: user_roles,
@@ -565,7 +569,7 @@ defmodule MalanWeb.UserController do
       |> put_view(MalanWeb.ErrorView)
       |> render(:"404")
     else
-      render(conn, "show.json", user: user)
+      render(conn, "show.json", code: 200, user: user)
     end
   end
 
@@ -573,6 +577,7 @@ defmodule MalanWeb.UserController do
     render(
       conn,
       "password_reset.json",
+      code: 200,
       password_reset_token: user.password_reset_token,
       password_reset_token_expires_at: user.password_reset_token_expires_at
     )

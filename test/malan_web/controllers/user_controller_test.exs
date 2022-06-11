@@ -13,6 +13,9 @@ defmodule MalanWeb.UserControllerTest do
 
   # alias MalanWeb.UserNotifier
 
+  @default_page_num 0
+  @default_page_size 10
+
   @create_attrs %{
     email: "some@email.com",
     username: "someusername",
@@ -153,7 +156,14 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, conn, au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
       {:ok, ru, _rs} = Helpers.Accounts.regular_user_with_session()
       conn = get(conn, Routes.user_path(conn, :index))
-      users = json_response(conn, 200)["data"]
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "data" => users,
+               "page_num" => @default_page_num,
+               "page_size" => @default_page_size,
+             } = json_response(conn, 200)
 
       assert Enum.any?(users, fn u ->
                u["id"] == au.id &&
@@ -233,31 +243,55 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, u6} = Helpers.Accounts.regular_user()
 
       conn = get(conn, Routes.user_path(conn, :index), %{page_num: 1, page_size: 2})
-      resp = json_response(conn, 200)
-      assert 1 == resp["page_num"]
-      assert 2 == resp["page_size"]
-      assert_list_users_eq(orig_to_retval([u1, u2]), resp["data"])
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "data" => users,
+               "page_num" => 1,
+               "page_size" => 2
+             } = json_response(conn, 200)
+
+      assert_list_users_eq(orig_to_retval([u1, u2]), users)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.user_path(conn, :index), %{page_num: 2, page_size: 2})
-      resp = json_response(conn, 200)
-      assert 2 == resp["page_num"]
-      assert 2 == resp["page_size"]
-      assert_list_users_eq(orig_to_retval([u3, u4]), resp["data"])
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "data" => users,
+               "page_num" => 2,
+               "page_size" => 2
+             } = json_response(conn, 200)
+
+      assert_list_users_eq(orig_to_retval([u3, u4]), users)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.user_path(conn, :index), %{page_num: 3, page_size: 2})
-      resp = json_response(conn, 200)
-      assert 3 == resp["page_num"]
-      assert 2 == resp["page_size"]
-      assert_list_users_eq(orig_to_retval([u5, u6]), resp["data"])
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "data" => users,
+               "page_num" => 3,
+               "page_size" => 2
+             } = json_response(conn, 200)
+
+      assert_list_users_eq(orig_to_retval([u5, u6]), users)
 
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.user_path(conn, :index), %{page_num: 4, page_size: 2})
-      resp = json_response(conn, 200)
-      assert 4 == resp["page_num"]
-      assert 2 == resp["page_size"]
-      assert_list_users_eq(orig_to_retval([]), resp["data"])
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "data" => users,
+               "page_num" => 4,
+               "page_size" => 2
+             } = json_response(conn, 200)
+
+      assert_list_users_eq(orig_to_retval([]), users)
     end
   end
 
@@ -265,8 +299,16 @@ defmodule MalanWeb.UserControllerTest do
     test "renders user when data is valid", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => password} =
-               user = json_response(conn, 201)["data"]
+      assert %{
+               "ok" => true,
+               "code" => 201,
+               "data" =>
+                 %{
+                   "id" => id,
+                   "username" => _username,
+                   "password" => password
+                 } = user
+             } = json_response(conn, 201)
 
       assert is_nil(password) == false
 
@@ -275,39 +317,42 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
-      jr = json_response(conn, 200)["data"]
-
       assert %{
-               "id" => ^id,
-               "email" => "some@email.com",
-               "email_verified" => nil,
-               "preferences" => %{"theme" => "light"},
-               "roles" => ["user"],
-               "tos_accept_events" => [],
-               "privacy_policy_accept_events" => [],
-               "latest_tos_accept_ver" => nil,
-               "latest_pp_accept_ver" => nil,
-               "tos_accepted" => false,
-               "privacy_policy_accepted" => false,
-               "username" => "someusername",
-               "nick_name" => "",
-               "locked_at" => nil,
-               "locked_by" => nil,
-               "custom_attrs" => %{
-                 "hereiam" => "rockyou",
-                 "likea" => "hurricane",
-                 "year" => 1986
-               }
-             } = jr
+               "ok" => true,
+               "code" => 200,
+               "data" =>
+                 %{
+                   "id" => ^id,
+                   "email" => "some@email.com",
+                   "email_verified" => nil,
+                   "preferences" => %{"theme" => "light"},
+                   "roles" => ["user"],
+                   "tos_accept_events" => [],
+                   "privacy_policy_accept_events" => [],
+                   "latest_tos_accept_ver" => nil,
+                   "latest_pp_accept_ver" => nil,
+                   "tos_accepted" => false,
+                   "privacy_policy_accepted" => false,
+                   "username" => "someusername",
+                   "nick_name" => "",
+                   "locked_at" => nil,
+                   "locked_by" => nil,
+                   "custom_attrs" => %{
+                     "hereiam" => "rockyou",
+                     "likea" => "hurricane",
+                     "year" => 1986
+                   }
+                 } = user
+             } = json_response(conn, 200)
 
       # password should not be included in get response
-      assert Map.has_key?(jr, "password") == false
+      assert Map.has_key?(user, "password") == false
 
       # Should not have phone numbers present because not set and not requested
-      assert Map.has_key?(jr, "phone_numbers") == false
+      assert Map.has_key?(user, "phone_numbers") == false
 
       # Should not have addresses present because not set and not requested
-      assert Map.has_key?(jr, "addresses") == false
+      assert Map.has_key?(user, "addresses") == false
     end
 
     test "allows setting preferences and middle name/display name in creation", %{conn: conn} do
@@ -328,8 +373,16 @@ defmodule MalanWeb.UserControllerTest do
       conn = post(conn, Routes.user_path(conn, :create), user: create_attrs)
 
       # password should be included after creation
-      assert %{"id" => id, "username" => _username, "password" => password} =
-               user = json_response(conn, 201)["data"]
+      assert %{
+               "ok" => true,
+               "code" => 201,
+               "data" =>
+                 %{
+                   "id" => id,
+                   "username" => _username,
+                   "password" => password
+                 } = user
+             } = json_response(conn, 201)
 
       assert is_nil(password) == false
 
@@ -337,16 +390,19 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, session} = Helpers.Accounts.create_session(Utils.map_string_keys_to_atoms(user))
       conn = Helpers.Accounts.put_token(build_conn(), session.api_token)
 
-      conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
-      jr = json_response(conn, 200)["data"]
-
       preferences = Utils.map_atom_keys_to_strings(preferences)
 
+      conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
       assert %{
-               "id" => ^id,
-               "email" => "some@email.com",
-               "preferences" => ^preferences
-             } = jr
+               "ok" => true,
+               "code" => 200,
+               "data" => %{
+                 "id" => ^id,
+                 "email" => "some@email.com",
+                 "preferences" => ^preferences
+               }
+             } = json_response(conn, 200)
+
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
