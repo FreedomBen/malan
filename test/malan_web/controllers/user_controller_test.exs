@@ -161,7 +161,7 @@ defmodule MalanWeb.UserControllerTest do
                "code" => 200,
                "data" => users,
                "page_num" => @default_page_num,
-               "page_size" => @default_page_size,
+               "page_size" => @default_page_size
              } = json_response(conn, 200)
 
       assert Enum.any?(users, fn u ->
@@ -298,6 +298,7 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
 
       conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
+
       assert %{
                "ok" => true,
                "code" => 200,
@@ -374,6 +375,7 @@ defmodule MalanWeb.UserControllerTest do
       preferences = Utils.map_atom_keys_to_strings(preferences)
 
       conn = get(conn, Routes.user_path(conn, :show, id), abbr: 1)
+
       assert %{
                "ok" => true,
                "code" => 200,
@@ -383,7 +385,6 @@ defmodule MalanWeb.UserControllerTest do
                  "preferences" => ^preferences
                }
              } = json_response(conn, 200)
-
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
