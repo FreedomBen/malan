@@ -6,11 +6,11 @@ defmodule MalanWeb.SessionView do
   alias MalanWeb.SessionView
 
   def render("index.json", %{sessions: sessions}) do
-    %{data: render_many(sessions, SessionView, "session.json")}
+    %{ok: true, data: render_many(sessions, SessionView, "session.json")}
   end
 
   def render("show.json", %{session: session}) do
-    %{data: render_one(session, SessionView, "session.json")}
+    %{ok: true, data: render_one(session, SessionView, "session.json")}
   end
 
   def render("session.json", %{session: session}) do
@@ -33,6 +33,7 @@ defmodule MalanWeb.SessionView do
 
   def render("delete_all.json", %{num_revoked: num_revoked}) do
     %{
+      ok: true,
       data: %{
         status: true,
         num_revoked: num_revoked,
