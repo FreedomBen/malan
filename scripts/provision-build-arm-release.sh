@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# This script is meant to run on a fresh ubuntu ARM64 ec2 instance.
+# This script is meant to run on a fresh Ubuntu ARM64 ec2 instance.
 # It will build and push malan latest arm releases
 #
 # To find the image ID (not this takes a LONG time it's 262MB!):
