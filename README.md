@@ -161,6 +161,30 @@ ALTER DEFAULT PRIVILEGES FOR ROLE
   * Source: https://github.com/phoenixframework/phoenix
 
 
+## CI/CD
+
+The CI/CD system utilizes Github Actions to run automated builds, tests, and deployments to all environments.
+
+### Environments
+
+#### Prod
+
+The Production environment is where the production instances of the application are running.  Deployments to Production are fully automated but are not automatic.  Deploys to Production are triggered using git tags.
+
+#### Staging
+
+The staging environment.  Staging is typically a small change ahead of production to allow for testing in a "prod-like" environment
+
+All commits, merges, and tags added to the `main` branch will automatically trigger a deployment to staging.
+
+### The pieces to CI/CD in this repo are these
+
+1.  `.github/workflows/build-test-deploy.yaml`:  This yaml file contains the Github-specific configuration.  It tells Github Actions how to run the build, push the image, run the tests, and deploy the change.
+1.  `scripts/build-release.sh:  This script contains the instructions that build the release into an image.
+1.  `scripts/push-release.sh:  This script contains the instructions that push the application image to the registry.
+1.  `scripts/deploy-release.sh:  This script contains the instructions that deploy the change to Kubernetes.  It contains the bulk of the CD logic.
+
+
 ## Frequently Asked Questions (FAQs)
 
 ### 1.  Where does the name "malan" come from?
