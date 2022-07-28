@@ -1440,7 +1440,11 @@ defmodule MalanWeb.UserControllerTest do
       assert response(conn, 204)
 
       conn = get(conn, Routes.user_path(conn, :show, user))
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
+      # Use an admin token to make sure the user 404s
+      {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_path(conn, :show, user))
       assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
@@ -1454,10 +1458,26 @@ defmodule MalanWeb.UserControllerTest do
       assert response(conn, 204)
 
       conn = get(conn, Routes.user_path(conn, :show, user))
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
 
+      # Use an admin token to make sure the user 404s
+      {:ok, ac, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(ac, Routes.user_path(ac, :show, user))
       assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
 
+      # The deletion of the user should have triggered a session revocation.
+      # First Tx here is the active session revocation, second is user deletion.
       assert [
+               %Transaction{
+                 success: true,
+                 #user_id: ^id,
+                 user_id: nil,
+                 session_id: nil,
+                 type_enum: 1,
+                 verb_enum: 3,
+                 who: ^id,
+                 when: _
+               } = rev_tx,
                %Transaction{
                  success: true,
                  user_id: ^id,
@@ -1466,13 +1486,44 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 3,
                  who: ^id,
                  when: when_utc
-               } = tx
+               } = del_tx
              ] = Accounts.list_transactions_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [del_tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
+      assert [del_tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
+      assert [rev_tx, del_tx] == Accounts.list_transactions_by_who(id, 0, 10)
+    end
+
+    test "requires being self or admin", %{conn: conn, user: %User{} = user, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      {:ok, au} = Helpers.Accounts.admin_user()
+
+      conn = delete(conn, Routes.user_path(conn, :delete, user))
+      conn = get(conn, Routes.user_path(conn, :show, au))
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
+    end
+
+    test "Admin can delete other users", %{conn: conn, user: user, session: session} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      # User can get self
+      conn = get(conn, Routes.user_path(conn, :show, user))
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
+
+      # Admin user deletes regular user
+      {:ok, ac, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      ac = delete(ac, Routes.user_path(ac, :delete, user))
+      assert response(ac, 204)
+
+      # User getting self
+      conn = get(conn, Routes.user_path(conn, :show, user))
+      assert %{"ok" => false, "code" => 403, "detail" => "Forbidden"} = json_response(conn, 403)
+
+      # Get an admin token and make sure the user 404s
+      {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_path(conn, :show, user))
+      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
   end
 

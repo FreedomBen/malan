@@ -433,11 +433,12 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_user(%User{} = user) do
-    # Repo.delete(user)
-    user
-    |> User.delete_changeset()
-    |> Repo.update()
+  def delete_user(%User{} = user, remote_ip \\ dummy_ip()) do
+    with {:ok, _num_revoked} <- revoke_active_sessions(user, remote_ip) do
+      user
+      |> User.delete_changeset()
+      |> Repo.update()
+    end
   end
 
   def lock_user(%User{} = user, locked_by_id, remote_ip \\ dummy_ip()) do
