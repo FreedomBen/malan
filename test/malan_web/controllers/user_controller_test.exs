@@ -1644,6 +1644,28 @@ defmodule MalanWeb.UserControllerTest do
                "token_expired" => true
              } = json_response(conn, 403)
     end
+
+    test "Rejects with 403 when user is deleted and had active sessions", %{
+      conn: conn,
+      user: %User{} = user,
+      session: %Session{} = session
+    } do
+      assert is_nil(session.revoked_at)
+      #session = Helpers.Accounts.set_revoked(session)
+      #assert not is_nil(session.revoked_at)
+      assert {:ok, %User{}} = Accounts.delete_user(user)
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :whoami))
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
+             } = json_response(conn, 403)
+    end
   end
 
   describe "reset_password" do
