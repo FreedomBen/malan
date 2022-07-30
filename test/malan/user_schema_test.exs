@@ -55,7 +55,7 @@ defmodule Malan.UserSchemaTest do
 
     test "#validate_username maximum length" do
       changeset =
-        Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 101)}, [:username])
+        Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 201)}, [:username])
         |> User.validate_username()
 
       assert changeset.valid? == false
@@ -94,8 +94,7 @@ defmodule Malan.UserSchemaTest do
       assert changeset.valid? == true
     end
 
-    # Our deleted_at prefix starts wth | so need to make sure that no
-    # usernames do
+    # Our deleted_at prefix includes | so need to make sure that no usernames do
     test "#validate_username rejects usernames starting with |" do
       changeset =
         Ecto.Changeset.cast(%User{}, %{username: "bobl|o"}, [:username])
@@ -108,6 +107,7 @@ defmodule Malan.UserSchemaTest do
         |> User.validate_username()
 
       assert changeset.valid? == false
+
       assert errors_on(changeset).username
              |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
     end
@@ -152,8 +152,7 @@ defmodule Malan.UserSchemaTest do
       )
     end
 
-    # Our deleted_at prefix starts wth | so need to make sure that no
-    # emails do
+    # Our deleted_at prefix includes | so need to make sure that no emails do
     test "#validate_email reject emails starting with |" do
       validate_email("boblo@hotmail.com", true)
       validate_email("|boblo@hotmail.com", false, "has invalid format")
@@ -171,7 +170,7 @@ defmodule Malan.UserSchemaTest do
 
     test "#validate_email max length 2" do
       validate_email(
-        "#{String.duplicate("A", 101)}bob@hotmail.com",
+        "#{String.duplicate("A", 201)}bob@hotmail.com",
         false,
         "should be at most"
       )
@@ -264,6 +263,31 @@ defmodule Malan.UserSchemaTest do
         |> User.validate_roles()
 
       assert changeset.valid? == true
+    end
+
+    test "#val_to_deleted_val/1" do
+      assert User.val_to_deleted_val("userbinator") =~
+               ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|userbinator/
+
+      assert User.val_to_deleted_val("user@example.com") =~
+               ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|user@example.com/
+    end
+
+    test "#deleted_val_to_val/1" do
+      assert "billy" == User.deleted_val_to_val("64678b9f-aaaa-aaaa-aaaa-b1b0071e7603|billy")
+      assert "madmax" == User.deleted_val_to_val("40a0fed2-539c-48a0-ac77-51967d5647e7|madmax")
+
+      assert "userbinator" ==
+               User.deleted_val_to_val("0a29dac0-2aa1-4e91-a061-5f59480d154d|userbinator")
+
+      assert "user@example.com" ==
+               User.deleted_val_to_val("0a29dac0-2aa1-4e91-a061-5f59480d154d|user@example.com")
+
+      assert "user@example.com" ==
+               User.deleted_val_to_val("64678b9f-adce-49f6-883e-b1b0071e7603|user@example.com")
+
+      assert "user@example.com" ==
+               User.deleted_val_to_val("40a0fed2-539c-48a0-ac77-51967d5647e7|user@example.com")
     end
   end
 

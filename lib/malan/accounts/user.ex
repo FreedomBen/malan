@@ -13,7 +13,17 @@ defmodule Malan.Accounts.User do
 
   @derive {Swoosh.Email.Recipient, name: :first_name, address: :email}
 
-  @prefix_deleted_user "|"
+  @max_email_size 150
+  @max_username_size 150
+
+  @deleted_user_uuid_len 37
+  @deleted_user_sentinel "|"
+  @deleted_user_sentinel_len 1
+  @deleted_user_prefix_length (@deleted_user_uuid_len + @deleted_user_sentinel_len)
+
+  @max_email_length (@max_email_size + @deleted_user_prefix_length)
+  @max_username_length (@max_username_size + @deleted_user_prefix_length)
+
   # @valid_roles ["admin", "user", "moderator"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -182,8 +192,8 @@ defmodule Malan.Accounts.User do
     # In the future once out of beta, anonymize the data instead of marking it deleted
     user
     |> cast(%{deleted_at: Utils.DateTime.utc_now_trunc()}, [:deleted_at])
-    |> put_change(:email, email_to_deleted_email(user.email))
-    |> put_change(:username, uname_to_deleted_uname(user.username))
+    |> put_change(:email, val_to_deleted_val(user.email))
+    |> put_change(:username, val_to_deleted_val(user.username))
   end
 
   def lock_changeset(user, locked_by) do
@@ -259,7 +269,7 @@ defmodule Malan.Accounts.User do
 
   defp_testable validate_username(changeset) do
     changeset
-    |> validate_length(:username, min: 3, max: 89)
+    |> validate_length(:username, min: 3, max: @max_username_length)
     |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
     |> validate_not_format(:username, ~r/^\|/)  # Doesn't start with a pipe |
     |> unique_constraint(:username)
@@ -267,7 +277,7 @@ defmodule Malan.Accounts.User do
 
   defp_testable validate_email(changeset) do
     changeset
-    |> validate_length(:email, min: 6, max: 100)
+    |> validate_length(:email, min: 6, max: @max_email_length)
     |> validate_format(
       :email,
       ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/
@@ -614,19 +624,12 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp_testable deleted_email_to_email(deleted_email) do
-    String.replace_prefix(deleted_email, @prefix_deleted_user, "")
+  defp_testable val_to_deleted_val(val) do
+    Utils.uuidgen() <> @deleted_user_sentinel <> val
   end
 
-  defp_testable email_to_deleted_email(email) do
-    @prefix_deleted_user <> email
-  end
-
-  defp_testable deleted_uname_to_uname(deleted_uname) do
-    String.replace_prefix(deleted_uname, @prefix_deleted_user, "")
-  end
-
-  defp_testable uname_to_deleted_uname(username) do
-    @prefix_deleted_user <> username
+  defp_testable deleted_val_to_val(deleted_val) do
+    deleted_val
+    |> String.slice((@deleted_user_prefix_length - 1)..String.length(deleted_val))
   end
 end
