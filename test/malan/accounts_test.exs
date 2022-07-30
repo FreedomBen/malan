@@ -524,8 +524,38 @@ defmodule Malan.AccountsTest do
       assert {:ok, %User{}} = Accounts.delete_user(user)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
       retval = get_u.(user.id)
-      assert retval.email == "|#{user.email}"
-      assert retval.username == "|#{user.username}"
+      assert String.ends_with?(retval.email, "|#{user.email}")
+      assert String.ends_with?(retval.username, "|#{user.username}")
+    end
+
+    test "delete_user/1 can be called multiple times" do
+      # We need to do our own query because the Accounts ones omit deleted
+      get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
+
+      u1 = user_fixture()
+      assert {:ok, %User{}} = Accounts.delete_user(u1)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(u1.id) end
+      retval = get_u.(u1.id)
+      assert String.ends_with?(retval.email, "|#{u1.email}")
+      assert String.ends_with?(retval.username, "|#{u1.username}")
+
+      # Recreate the user and delete it again
+      u2 = user_fixture(%{"email" => u1.email, "username" => u1.username})
+      assert {:ok, %User{}} = Accounts.delete_user(u2)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(u2.id) end
+      retval = get_u.(u2.id)
+      assert String.ends_with?(retval.email, "|#{u2.email}")
+      assert String.ends_with?(retval.username, "|#{u2.username}")
+    end
+
+    test "delete_user/1 cannot be called on an already deleted user" do
+      get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
+      user = user_fixture()
+      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
+      retval = get_u.(user.id)
+      assert String.ends_with?(retval.email, "|#{user.email}")
+      assert String.ends_with?(retval.username, "|#{user.username}")
     end
 
     test "Usernames must be unique on creation" do
