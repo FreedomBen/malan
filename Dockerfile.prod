@@ -29,6 +29,8 @@ RUN apt-get update \
     build-essential \
     python \
     jq \
+    nodejs \
+    npm \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
  && update-ca-certificates
@@ -72,11 +74,12 @@ COPY --chown=docker:docker config /app/config
 COPY --chown=docker:docker scripts /app/scripts
 COPY --chown=docker:docker priv /app/priv
 COPY --chown=docker:docker lib /app/lib
+COPY --chown=docker:docker assets /app/assets
 COPY --chown=docker:docker test /app/test
 COPY --chown=docker:docker .iex.exs /app
 COPY --chown=docker:docker .bashrc $USER_HOME
 
 RUN mix compile
-RUN mix phx.digest
+RUN mix assets.deploy
 
 CMD PORT=4000 mix phx.server
