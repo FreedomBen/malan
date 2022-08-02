@@ -56,8 +56,8 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 ENV MIX_ENV prod
 
 # Copy over source code
-RUN mkdir /app \
- && chown docker:docker /app
+RUN mkdir -p /app/assets \
+ && chown -R docker:docker /app
 
 COPY --chown=docker:docker mix.exs mix.lock /app/
 
@@ -69,6 +69,9 @@ RUN mix local.hex --force
 RUN mix local.rebar --force
 RUN mix deps.get --only prod
 RUN mix deps.compile
+
+COPY --chown=docker:docker assets/package*.json /app/assets/
+RUN cd assets && npm install
 
 COPY --chown=docker:docker config /app/config
 COPY --chown=docker:docker scripts /app/scripts
