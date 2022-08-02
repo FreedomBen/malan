@@ -58,8 +58,23 @@ defmodule Malan.UtilsTest do
     end
 
     test "#uuidgen/0" do
-      assert Utils.uuidgen() =~
-               ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+      uuid_regex = ~r/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+
+      # Quick sanity test to fail fast
+      assert Utils.uuidgen() =~ uuid_regex
+
+      # Run through a number of invocations and ensure no collisions
+      num_vals = 1_000_000
+
+      set =
+        Enum.reduce(1..num_vals, MapSet.new(), fn _, acc ->
+          next_uuid = Utils.uuidgen()
+          assert next_uuid =~ uuid_regex
+          assert !MapSet.member?(acc, next_uuid)
+          MapSet.put(acc, Utils.uuidgen())
+        end)
+
+      assert MapSet.size(set) == num_vals
     end
 
     test "#is_uuid?/1" do
