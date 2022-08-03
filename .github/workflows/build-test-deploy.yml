@@ -10,7 +10,29 @@ env:
   RELEASE_VERSION: ${{ github.sha }}
 
 jobs:
+  build-dev:
+    name: Build and Push Dev Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: ./scripts/build-dev.sh
+
+      - name: Authenticate to Container Registry
+        env:
+          DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
+        run: |
+          mkdir -p $HOME/.docker
+          echo "${DOCKER_CONFIG}" > $HOME/.docker/config.json
+
+      - name: Push Image
+        run: ./scripts/push-dev.sh
+
   build:
+    name: Build and Push Prod Image
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +53,7 @@ jobs:
         run: ./scripts/push-release.sh
 
   test:
+    name: Run CI Tests
     needs: [build]
     runs-on: ubuntu-latest
 
@@ -42,6 +65,7 @@ jobs:
         run: ./scripts/run-ci.sh
 
   deploy-staging:
+    name: Deploy to Staging Environment
     needs: [build, test]
     runs-on: ubuntu-latest
     #if: ${{ endsWith(github.ref, 'main') || endsWith(github.ref, '') }}
@@ -76,6 +100,7 @@ jobs:
         run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
 
   deploy-prod:
+    name: Deploy to Production
     needs: [build, test, deploy-staging]
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
