@@ -24,6 +24,8 @@ RUN apt-get update \
     build-essential \
     python \
     jq \
+    nodejs \
+    npm \
     ncat \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
@@ -50,8 +52,8 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 ENV MIX_ENV dev
 
 # Copy over source code
-RUN mkdir /app \
- && chown docker:docker /app
+RUN mkdir -p /app/assets \
+ && chown -R docker:docker /app
 
 COPY --chown=docker:docker mix.exs mix.lock /app/
 
@@ -64,15 +66,19 @@ RUN mix local.rebar --force
 RUN mix deps.get
 RUN mix deps.compile
 
+COPY --chown=docker:docker assets/package*.json /app/assets/
+RUN cd assets && npm install
+
 COPY --chown=docker:docker config /app/config
 COPY --chown=docker:docker scripts /app/scripts
 COPY --chown=docker:docker priv /app/priv
 COPY --chown=docker:docker lib /app/lib
+COPY --chown=docker:docker assets /app/assets
 COPY --chown=docker:docker test /app/test
 COPY --chown=docker:docker .iex.exs /app
 COPY --chown=docker:docker .bashrc $USER_HOME
 
 RUN mix compile
-RUN mix phx.digest
+RUN mix assets.deploy
 
 CMD PORT=4000 ./scripts/start-in-docker.sh
