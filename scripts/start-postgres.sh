@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+DATA_DIR='pgdata'
+
 #IMG='postgres:11.7-alpine'
 IMG='postgres:12.6-alpine'
 NAME='malan_postgres'
@@ -23,7 +25,8 @@ if sudo podman ps -a --format "{{.Names}} {{.Status}}" | grep -E "${NAME}.Create
   sudo podman rm "$NAME"
 fi
 
-mkdir -p pgdata || die "Could not create pgdata directory for volume"
+mkdir -p "${DATA_DIR}" || die "Could not create '"${DATA_DIR}"' directory for volume"
+
 # This is a little safer than bind mounting in /etc/passwd, which got corrupted
 # and rendered my system unbootable.  That's worse than having an extra file
 # hanging aroud, trust me
@@ -43,7 +46,7 @@ sudo podman run \
   --publish '5432:5432' \
   --user "$(id -u):$(id -g)" \
   --volume "$(pwd)/pg_passwd:/etc/passwd:ro,Z" \
-  --volume "$(pwd)/pgdata:/var/lib/postgresql/data:Z" \
+  --volume "$(pwd)/"${DATA_DIR}":/var/lib/postgresql/data:Z" \
   --env POSTGRES_USER=postgres \
   --env POSTGRES_PASSWORD=postgres \
   --name "$NAME" \
