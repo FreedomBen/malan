@@ -128,6 +128,10 @@ defmodule Malan.UserSchemaTest do
       validate_email("bob.1!#$%^&*@hotmail.seven.four.com", true)
     end
 
+    test "#validate_email correct emails 5 (allows a +)" do
+      validate_email("gregory+clark@example.com", true)
+    end
+
     test "#validate_email invalid emails 1" do
       validate_email("bob@hotmail", false, "has invalid format")
     end
