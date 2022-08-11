@@ -1,4 +1,25 @@
 defmodule Malan.Test.Utils do
+  def lists_equal_ignore_order(list1, list2) do
+    lists_equal_ignore_order(list1, list2, &(&1))
+  end
+
+  def lists_equal_ignore_order(list1, list2, mapper, type \\ :asc) do
+    l1 = Enum.sort_by(list1, mapper, type)
+    l2 = Enum.sort_by(list2, mapper, type)
+    l1 == l2
+  end
+
+  def lists_equal_ignore_order_sort_by_id(list1, list2) do
+    lists_equal_ignore_order(list1, list2, &(&1.id))
+  end
+
+  def sort_by(list, mapper, type \\ :asc) do
+    Enum.sort_by(list, mapper, type)
+  end
+
+  def sort_by_id(list, type \\ :asc) do
+    Enum.sort_by(list, &(&1.id), type)
+  end
 end
 
 defmodule Malan.Test.Utils.Controller do
