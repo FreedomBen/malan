@@ -176,17 +176,24 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
       assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
-      assert data == sessions_to_retval([s1, s2, s3, s4, s5, s6])
+
+      assert data
+             |> TestUtils.lists_equal_ignore_order(sessions_to_retval([s1, s2, s3, s4, s5, s6]))
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 0, page_size: 5)
       assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
-      assert data == sessions_to_retval([s1, s2, s3, s4, s5])
+
+      assert data
+             |> TestUtils.lists_equal_ignore_order(
+               sessions_to_retval([s1, s2, s3, s4, s5]),
+               & &1["id"]
+             )
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 1, page_size: 5)
       assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
-      assert data == sessions_to_retval([s6])
+      assert data |> TestUtils.lists_equal_ignore_order(sessions_to_retval([s6]))
     end
   end
 
@@ -332,23 +339,30 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 3)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s5, s4, s3])
+
+      jr =
+        json_response(conn, 200)["data"]
+        |> TestUtils.sort_by_id_str()
+
+      assert jr ==
+               [s5, s4, s3]
+               |> sessions_to_retval()
+               |> TestUtils.sort_by_id_str()
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 1, page_size: 3)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s1])
+      jr = json_response(conn, 200)["data"] |> TestUtils.sort_by_id_str()
+      assert jr == [s1] |> sessions_to_retval() |> TestUtils.sort_by_id_str()
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, au.id), page_num: 0, page_size: 3)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s6, s2])
+      jr = json_response(conn, 200)["data"] |> TestUtils.sort_by_id_str()
+      assert jr == [s6, s2] |> sessions_to_retval() |> TestUtils.sort_by_id_str()
 
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 5)
-      jr = json_response(conn, 200)["data"]
-      assert jr == sessions_to_retval([s5, s4, s3, s1])
+      jr = json_response(conn, 200)["data"] |> TestUtils.sort_by_id_str()
+      assert jr == [s5, s4, s3, s1] |> sessions_to_retval() |> TestUtils.sort_by_id_str()
     end
   end
 
@@ -376,7 +390,13 @@ defmodule MalanWeb.SessionControllerTest do
         )
 
       for c <- [c1, c2, c3],
-          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s5, s4, s3]))
+          do:
+            assert(
+              TestUtils.lists_equal_ignore_order_sort_by_id_str(
+                json_response(c, 200)["data"],
+                sessions_to_retval([s5, s4, s3])
+              )
+            )
 
       # page_num: 1 page_size: 3
       c1 = c2 = c3 = Helpers.Accounts.put_token(build_conn(), s1.api_token)
