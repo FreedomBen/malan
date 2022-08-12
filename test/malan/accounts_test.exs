@@ -67,9 +67,13 @@ defmodule Malan.AccountsTest do
     def assert_list_users_eq(l1, l2) do
       assert Enum.count(l1) == Enum.count(l2)
 
-      l1
-      |> Enum.with_index()
-      |> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
+      # Check for equality ignoring order
+      TestUtils.lists_equal_ignore_order(l1, l2)
+
+      # Check for exact equality (including order)
+      # l1
+      # |> Enum.with_index()
+      # |> Enum.each(fn {u, i} -> assert users_eq(u, Enum.at(l2, i)) end)
     end
 
     test "list_users/2 returns all users" do
@@ -91,9 +95,21 @@ defmodule Malan.AccountsTest do
       assert lu |> Enum.count() == 3
       assert_list_users_eq(lu, [u1, u2, u3])
 
-      assert users_eq(u1, Accounts.list_users(1, 1) |> Enum.at(0))
-      assert users_eq(u2, Accounts.list_users(2, 1) |> Enum.at(0))
-      assert users_eq(u3, Accounts.list_users(3, 1) |> Enum.at(0))
+      assert Accounts.list_users(1, 1) |> Enum.count() == 1
+      assert Accounts.list_users(2, 1) |> Enum.count() == 1
+      assert Accounts.list_users(3, 1) |> Enum.count() == 1
+
+      [
+        Accounts.list_users(1, 1) |> Enum.at(0),
+        Accounts.list_users(2, 1) |> Enum.at(0),
+        Accounts.list_users(3, 1) |> Enum.at(0)
+      ]
+      |> TestUtils.lists_equal_ignore_order([u1, u2, u3])
+
+      # Flaky code
+      # assert users_eq(u1, Accounts.list_users(1, 1) |> Enum.at(0))
+      # assert users_eq(u2, Accounts.list_users(2, 1) |> Enum.at(0))
+      # assert users_eq(u3, Accounts.list_users(3, 1) |> Enum.at(0))
     end
 
     test "get_user!/1 returns the user with given id" do
@@ -938,17 +954,47 @@ defmodule Malan.AccountsTest do
       {:ok, s5} = Helpers.Accounts.create_session(u1)
       {:ok, s6} = Helpers.Accounts.create_session(u1)
 
-      assert Accounts.list_sessions(0, 10) == nillify_api_token([s1, s2, s3, s4, s5, s6])
-      assert Accounts.list_sessions(1, 10) == []
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(0, 10),
+               nillify_api_token([s1, s2, s3, s4, s5, s6])
+             )
 
-      assert Accounts.list_sessions(0, 2) == nillify_api_token([s1, s2])
-      assert Accounts.list_sessions(1, 2) == nillify_api_token([s3, s4])
-      assert Accounts.list_sessions(2, 2) == nillify_api_token([s5, s6])
-      assert Accounts.list_sessions(3, 2) == nillify_api_token([])
+      assert TestUtils.lists_equal_ignore_order(Accounts.list_sessions(1, 10), [])
 
-      assert Accounts.list_sessions(0, 4) == nillify_api_token([s1, s2, s3, s4])
-      assert Accounts.list_sessions(1, 4) == nillify_api_token([s5, s6])
-      assert Accounts.list_sessions(2, 4) == nillify_api_token([])
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(0, 2),
+               nillify_api_token([s1, s2])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(1, 2),
+               nillify_api_token([s3, s4])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(2, 2),
+               nillify_api_token([s5, s6])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(3, 2),
+               nillify_api_token([])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(0, 4),
+               nillify_api_token([s1, s2, s3, s4])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(1, 4),
+               nillify_api_token([s5, s6])
+             )
+
+      assert TestUtils.lists_equal_ignore_order(
+               Accounts.list_sessions(2, 4),
+               nillify_api_token([])
+             )
     end
 
     test "get_session!/1 returns the session with given id" do

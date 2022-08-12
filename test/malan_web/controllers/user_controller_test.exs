@@ -97,9 +97,13 @@ defmodule MalanWeb.UserControllerTest do
     l1 = Enum.map(l1, fn u -> strip_user(u) end)
     l2 = Enum.map(l2, fn u -> strip_user(u) end)
 
-    l1
-    |> Enum.with_index()
-    |> Enum.each(fn {u, i} -> assert u == Enum.at(l2, i) end)
+    # Check for equality ignoring order
+    TestUtils.lists_equal_ignore_order(l1, l2, &(&1["id"]))
+
+    # Check for exact equality (including order)
+    # l1
+    # |> Enum.with_index()
+    # |> Enum.each(fn {u, i} -> assert u == Enum.at(l2, i) end)
   end
 
   setup %{conn: conn} do
