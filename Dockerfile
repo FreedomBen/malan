@@ -30,7 +30,7 @@ RUN dnf install --assumeyes glibc-langpack-en \
     jq \
     python36 \
     npm \
-    netcat \
+    nmap \
     psmisc \
     procps-ng \
     wget \

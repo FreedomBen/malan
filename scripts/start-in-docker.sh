@@ -5,7 +5,7 @@ set -e
 # Wait for Postgres to initialize
 echo "[*] Waiting for PostgreSQL to initialize..."
 
-while ! netcat -z "${DB_HOSTNAME}" 5432; do
+while ! ncat -z "${DB_HOSTNAME}" 5432; do
   sleep 0.1
 done
 
