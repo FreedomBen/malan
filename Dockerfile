@@ -1,52 +1,63 @@
-FROM elixir:1.13
+FROM almalinux:8.6
 
 ENV USER_HOME /home/docker
-
-RUN addgroup --gid 1000 docker \
- && adduser --uid 1000 --gid 1000 --disabled-password --gecos "Docker User" --home ${USER_HOME} docker \
- && usermod -L docker
-
-# Configure apt, install updates and common packages, and clean up apt's cache
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
- && apt-get upgrade --assume-yes \
- && apt-get autoremove --assume-yes \
- && apt-get install --assume-yes --no-install-recommends \
-    apt-utils \
-    apt-transport-https \
-    ca-certificates \
-    software-properties-common \
-    locales \
- && apt-get install --assume-yes --no-install-recommends \
-    curl \
-    psmisc \
-    git \
-    build-essential \
-    python \
-    jq \
-    nodejs \
-    npm \
-    ncat \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
- && update-ca-certificates
+ENV LANG en_US.UTF-8
 
 # Ensure locale is UTF-8
-ENV LANG       en_US.UTF-8
-ENV LC_ALL     en_US.UTF-8
-ENV LC_TYPE    en_US.UTF-8
-ENV LANGUAGE   en_US.UTF-8
-RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen \
- && locale-gen \
- && dpkg-reconfigure locales
+RUN dnf install --assumeyes \
+    glibc-langpack-en \
+    glibc-locale-source \ 
+ && localedef --force --inputfile=en_US --charmap=UTF-8 en_US.UTF-8 \
+ && echo "LANG=en_US.UTF-8" > /etc/locale.conf \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf /var/cache/yum
+
+# Create non-root user
+RUN groupadd --gid 1000 docker \
+ && adduser --uid 1000 --gid 1000 --home ${USER_HOME} docker \
+ && usermod -L docker
+
+# Install EPEL and base packages
+RUN dnf install --assumeyes glibc-langpack-en \
+ && dnf install --assumeyes https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
+ && dnf install --assumeyes dnf-plugins-core \
+ && dnf config-manager --set-enabled powertools \
+ && dnf update --assumeyes \
+ && dnf install --assumeyes \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    python36 \
+    npm \
+    netcat \
+    psmisc \
+    procps-ng \
+    wget \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf /var/cache/yum
+
+ #Install nodejs and enable module nodejs:16
+RUN dnf module reset --assumeyes nodejs \
+ && dnf module enable --assumeyes nodejs:16 \
+ && dnf module install --assumeyes nodejs:16 
+
+#Install elixir version 1.13.0 and erlang version 25.0.3
+RUN wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/elixir_1.13.0-1~centos~8_all.rpm \
+ && wget https://packages.erlang-solutions.com/erlang/rpm/centos/7/x86_64/esl-erlang_25.0.3-1~centos~7_amd64.rpm \
+ && dnf install --assumeyes \
+    elixir_1.13.0-1~centos~8_all.rpm \ 
+    esl-erlang_25.0.3-1~centos~7_amd64.rpm \
+ && rm -rf esl-erlang_25.0.3-1~centos~7_amd64.rpm \
+   elixir_1.13.0-1~centos~8_all.rpm
 
 # Install extra utilities
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
- && echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
- && apt-get update \
- && apt-get --assume-yes install postgresql-client-12 \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/
+RUN dnf module enable --assumeyes postgresql:12 \
+ && dnf install --assumeyes postgresql \
+ && dnf update \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf /var/cache/yum \
+ && update-ca-trust extract
 
 # Set environment to development
 ENV MIX_ENV dev
