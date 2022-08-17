@@ -44,7 +44,7 @@ RUN dnf module reset --assumeyes nodejs \
 
 #Install elixir version 1.13.0 and erlang version 25.0.3
 RUN wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/elixir_1.13.0-1~centos~8_all.rpm \
- && wget http://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/esl-erlang_24.1.7-1~centos~8_amd64.rpm \
+ && wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/esl-erlang_24.1.7-1~centos~8_amd64.rpm \
  && dnf install --assumeyes \
     elixir_1.13.0-1~centos~8_all.rpm \ 
     esl-erlang_24.1.7-1~centos~8_amd64.rpm \
