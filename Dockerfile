@@ -34,6 +34,7 @@ RUN dnf install --assumeyes glibc-langpack-en \
     psmisc \
     procps-ng \
     wget \
+    tini \
  && dnf clean all \
  && rm -rf /var/cache/dnf /var/cache/yum
 
@@ -92,4 +93,6 @@ COPY --chown=docker:docker .bashrc $USER_HOME
 RUN mix compile
 RUN mix assets.deploy
 
-CMD PORT=4000 ./scripts/start-in-docker.sh
+ENV PORT 4000
+ENTRYPOINT [ "tini", "--" ]
+CMD [ "./scripts/start-in-docker.sh" ]
