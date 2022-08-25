@@ -210,40 +210,42 @@ defmodule Malan.Accounts do
   end
 
   @doc ~S"""
-  Returns nil if no matching user is found.
+  Retrieve the user matching the specified param(s) or `nil`.
+
+  Returns `%User{}` if found, raises Ecto.NoResultsError if not found
+
+  Returns `nil` if no matching user is found.
   Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
 
-      iex> Accounts.get_user_by(title: "My post")
+      iex> Accounts.get_user_by(email: "brad@example.com")
 
   """
   def get_user_by(params) do
-    # TODO: Don't return users where deleted_at is not nil
-    Repo.get_by(User, params)
+    User
+    |> where([u], is_nil(u.deleted_at))
+    |> Repo.get_by(params)
   end
 
   @doc ~S"""
-  Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
-  Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+  Retrieve the user matching the specified param(s).
 
-      iex> Accounts.get_user_by!(title: "My post")
+  Returns `%User{}` if found, raises Ecto.NoResultsError if not found
+
+  Raises `Ecto.NoResultsError` if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
+  Raises `Ecto.MultipleResultsError` if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
+
+      iex> Accounts.get_user_by!(email: "brad@example.com")
 
   """
   def get_user_by!(params) do
-    # TODO: Don't return users where deleted_at is not nil
-    Repo.get_by!(User, params)
+    User
+    |> where([u], is_nil(u.deleted_at))
+    |> Repo.get_by!(params)
   end
 
   def get_user_by_password_reset_token(token) do
     get_user_by(password_reset_token_hash: Utils.Crypto.hash_token(token))
   end
-
-  # def get_user_by(username: username) do
-  #   TODO: Don't return users where deleted_at is not nil
-  #   Repo.one(
-  #     from u in User,
-  #     where: u.username == ^username
-  #   )
-  # end
 
   @doc """
   Creates a user.

@@ -28,7 +28,7 @@ root =
 Malan.Repo.insert!(root, on_conflict: :nothing, conflict_target: :username)
 
 # Promote root user to admin (currently the role gets stripped on create.  See #7)
-Accounts.get_user_by(username: "root")
+Accounts.get_user_by!(username: "root")
 |> Accounts.admin_update_user(%{roles: ["admin", "user"]})
 
 # ben = User.registration_changeset(%User{}, %{

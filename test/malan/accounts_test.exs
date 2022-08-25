@@ -731,6 +731,79 @@ defmodule Malan.AccountsTest do
                )
     end
 
+    test "get_user_by/1" do
+      uf = user_fixture()
+
+      u1 = Accounts.get_user_by(username: uf.username)
+      assert %{uf | custom_attrs: %{}, password: nil} == u1
+
+      u2 = Accounts.get_user_by(email: uf.email)
+      assert %{uf | custom_attrs: %{}, password: nil} == u2
+
+      u3 = Accounts.get_user_by(last_name: uf.last_name)
+      assert %{uf | custom_attrs: %{}, password: nil} == u3
+
+      u4 = Accounts.get_user_by(first_name: uf.first_name)
+      assert %{uf | custom_attrs: %{}, password: nil} == u4
+
+      u5 = Accounts.get_user_by(first_name: "Not a real first name")
+      assert is_nil(u5)
+
+      assert u1 == u2
+      assert u1 == u3
+      assert u1 == u4
+    end
+
+    test "get_user_by/1 does not include deleted users" do
+      uf = user_fixture()
+
+      assert {:ok, %User{}} = Accounts.delete_user(uf)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(uf.id) end
+      assert is_nil(Accounts.get_user(uf.id))
+
+      assert Accounts.get_user_by(username: uf.username) |> is_nil()
+      assert Accounts.get_user_by(email: uf.email) |> is_nil()
+      assert Accounts.get_user_by(last_name: uf.last_name) |> is_nil()
+      assert Accounts.get_user_by(first_name: uf.first_name) |> is_nil()
+      assert Accounts.get_user_by(first_name: "Not a real first name") |> is_nil()
+    end
+
+    test "get_user_by!/1" do
+      uf = user_fixture()
+
+      u1 = Accounts.get_user_by!(username: uf.username)
+      assert %{uf | custom_attrs: %{}, password: nil} == u1
+
+      u2 = Accounts.get_user_by!(email: uf.email)
+      assert %{uf | custom_attrs: %{}, password: nil} == u2
+
+      u3 = Accounts.get_user_by!(last_name: uf.last_name)
+      assert %{uf | custom_attrs: %{}, password: nil} == u3
+
+      u4 = Accounts.get_user_by!(first_name: uf.first_name)
+      assert %{uf | custom_attrs: %{}, password: nil} == u4
+
+      assert u1 == u2
+      assert u1 == u3
+      assert u1 == u4
+
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: "Not a real first name") end
+    end
+
+    test "get_user_by!/1 does not include deleted users" do
+      uf = user_fixture()
+
+      assert {:ok, %User{}} = Accounts.delete_user(uf)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(uf.id) end
+      assert is_nil(Accounts.get_user(uf.id))
+
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(username: uf.username) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(email: uf.email) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(last_name: uf.last_name) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: uf.first_name) end
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: "Not a real first name") end
+    end
+
     test "get_user_by_password_reset_token/1" do
       # This is tested by the user controller test
     end
@@ -776,7 +849,7 @@ defmodule Malan.AccountsTest do
                id: ^user_id,
                email: "capitaladdr@example.com",
                username: "capitalusername"
-             } = Accounts.get_user_by(email: orig_email)
+             } = Accounts.get_user_by!(email: orig_email)
     end
 
     test "get_user_full/1 works" do
