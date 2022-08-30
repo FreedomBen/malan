@@ -15,6 +15,18 @@ if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
   config :malan, MalanWeb.Endpoint, server: true
 end
 
+# If it's non-prod, and MAILGUN_API_KEY is set, and MAILGUN_DISABLE is not set
+if config_env() != :prod && !!System.get_env("MAILGUN_API_KEY") && !System.get_env("MAILGUN_DISABLE") do
+  Utils.Logger.warning(
+    "config/runtime.exs:  MAILGUN_API_KEY is set!  We are using real mailgun for sending mail.  If this is not what you want, export MAILGUN_DISABLE=y"
+  )
+
+  config :malan, Malan.Mailer,
+    adapter: Swoosh.Adapters.Mailgun,
+    api_key: System.get_env("MAILGUN_API_KEY"),
+    domain: System.get_env("MAILGUN_DOMAIN")
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -79,6 +91,7 @@ if config_env() == :prod do
 
   # ## Configuring the mailer
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  # This only gets used if the environment is prod
   config :malan, Malan.Mailer,
     adapter: Swoosh.Adapters.Mailgun,
     api_key: System.get_env("MAILGUN_API_KEY"),

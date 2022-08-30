@@ -29,3 +29,4 @@ Malan.Repo.insert_all(
   ]
 )
 
+# TODO - Read back the emails to verify they are down cased

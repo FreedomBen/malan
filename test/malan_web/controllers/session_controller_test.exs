@@ -344,6 +344,7 @@ defmodule MalanWeb.SessionControllerTest do
         json_response(conn, 200)["data"]
         |> TestUtils.sort_by_id_str()
 
+      # TODO
       assert jr ==
                [s5, s4, s3]
                |> sessions_to_retval()
@@ -389,6 +390,7 @@ defmodule MalanWeb.SessionControllerTest do
           page_size: 3
         )
 
+      # TODO
       for c <- [c1, c2, c3],
           do:
             assert(
