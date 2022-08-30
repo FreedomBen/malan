@@ -808,6 +808,12 @@ defmodule Malan.AccountsTest do
       # This is tested by the user controller test
     end
 
+    test "get_user_by_email/1" do
+      uf = user_fixture()
+      u1 = Accounts.get_user_by_email(uf.email)
+      assert %{uf | custom_attrs: %{}, password: nil} == u1
+    end
+
     test "get_user_by_id_or_username/1" do
       uf = user_fixture()
       u1 = Accounts.get_user_by_id_or_username!(uf.username)

@@ -243,6 +243,10 @@ defmodule Malan.Accounts do
     |> Repo.get_by!(params)
   end
 
+  def get_user_by_email(email) do
+    get_user_by(email: email)
+  end
+
   def get_user_by_password_reset_token(token) do
     get_user_by(password_reset_token_hash: Utils.Crypto.hash_token(token))
   end
