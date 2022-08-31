@@ -1679,13 +1679,17 @@ defmodule MalanWeb.UserControllerTest do
   describe "reset_password" do
     setup [:create_regular_user_with_session]
 
-    test "works without auth", %{user: %User{id: user_id}} do
+    test "works without auth", %{user: %User{id: user_id} = user} do
       conn = build_conn()
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
-      assert %{"ok" => true} = json_response(conn, 200)
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
-      # Check that an email was sent to the user with the token
+      # Retrieve the reset token from the email.
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
     test "works with username instead of ID", %{
@@ -1695,9 +1699,13 @@ defmodule MalanWeb.UserControllerTest do
     } do
       conn = post(conn, Routes.user_path(conn, :reset_password, user.username))
 
-      assert %{"ok" => true} = json_response(conn, 200)
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
-      # Check that an email was sent to the user with the token
+      # Retrieve the reset token from the email.
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
     test "Returns 404 when user is not found", %{conn: conn} do
@@ -1709,7 +1717,7 @@ defmodule MalanWeb.UserControllerTest do
     test "Creates a corresponding transaction", %{conn: conn, user: %User{id: id}} do
       conn = post(conn, Routes.user_path(conn, :reset_password, id))
 
-      assert conn.status == 200
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
       assert [
                %Transaction{
@@ -1727,6 +1735,37 @@ defmodule MalanWeb.UserControllerTest do
       assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
       assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
       assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+    end
+
+    test "Rate limits requests", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
+      # First login with password to make sure it works
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # Get a password reset token
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Get a second password reset token.  This should get rate limited
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"ok" => false, "code" => 429, "detail" => "Too Many Requests"} =
+               json_response(conn, 429)
+
+      # Try a third time.  Still rate limited
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+
+      assert %{"ok" => false, "code" => 429, "detail" => "Too Many Requests"} =
+               json_response(conn, 429)
     end
   end
 
@@ -2007,37 +2046,6 @@ defmodule MalanWeb.UserControllerTest do
         )
 
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
-    end
-
-    test "password reset endpoint rate limits requests", %{
-      conn: conn,
-      user: %User{id: user_id} = user,
-      session: _session
-    } do
-      # First login with password to make sure it works
-      conn =
-        post(conn, Routes.session_path(conn, :create),
-          session: %{username: user.username, password: user.password}
-        )
-
-      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
-
-      # Get a password reset token
-      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
-
-      assert %{"ok" => true} = json_response(conn, 200)
-
-      # Get a second password reset token.  This should get rate limited
-      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
-
-      assert %{"ok" => false, "code" => 429, "detail" => "Too Many Requests"} =
-               json_response(conn, 429)
-
-      # Try a third time.  Still rate limited
-      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
-
-      assert %{"ok" => false, "code" => 429, "detail" => "Too Many Requests"} =
-               json_response(conn, 429)
     end
 
     test "can't use token after expiration", %{

@@ -1,9 +1,13 @@
 defmodule MalanWeb.UserNotifier do
+  alias Malan.Utils.Logger
+
   use Phoenix.Swoosh,
     view: MalanWeb.UserNotifierView,
     layout: {MalanWeb.LayoutView, :email}
 
   def welcome_and_confirm_email(user) do
+    Logger.debug(__ENV__, "Generating password_reset_email for user '#{user.email}'")
+
     new()
     # |> to({user.name, user.email})
     |> to(user)
@@ -15,13 +19,15 @@ defmodule MalanWeb.UserNotifier do
   end
 
   def password_reset_email(user) do
+    Logger.debug(__ENV__, "Generating password_reset_email for user '#{user.email}'")
+
     new()
     |> to(user)
     |> from({"Ameelio Support Team", "noreply@ameelio.org"})
     |> subject("Your requested password reset token")
     |> render_body("password_reset_email.html", %{
       user: user,
-      url: "https://ameelio.org/password/reset/#{user.password_reset_token}"
+      url: "https://ameelio.org/users/reset_password/#{user.password_reset_token}"
     })
 
     # password_reset_token: user.password_reset_token,

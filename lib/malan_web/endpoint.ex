@@ -12,7 +12,8 @@ defmodule MalanWeb.Endpoint do
     encryption_salt: "3043FHjkW"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [:peer_data, session: @session_options]]
 
   # If running behind CLoudflare, read the CF-Connection-IP header
   # and use that for `conn.remote_ip`

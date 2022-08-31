@@ -5,26 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <%= csrf_meta_tag() %>
-    <%= live_title_tag assigns[:page_title] || "Malan", suffix: " · Phoenix Framework" %>
+    <%= live_title_tag assigns[:page_title] || "Password Reset", suffix: " · Ameelio" %>
     <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
     <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
   </head>
   <body>
-    <header>
-      <section class="container">
-        <nav>
-          <ul>
-            <li><a href="https://hexdocs.pm/phoenix/overview.html">Get Started</a></li>
-            <%= if function_exported?(Routes, :live_dashboard_path, 2) do %>
-              <li><%= link "LiveDashboard", to: Routes.live_dashboard_path(@conn, :home) %></li>
-            <% end %>
-          </ul>
-        </nav>
-        <a href="https://phoenixframework.org/" class="phx-logo">
-          <img src={Routes.static_path(@conn, "/images/phoenix.png")} alt="Phoenix Framework Logo"/>
-        </a>
-      </section>
-    </header>
+
+    <div class="bg-white">
+      <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex-shrink-0 pt-16">
+          <img class="mx-auto h-12 w-auto" src={Routes.static_path(@conn, "/images/Ameelio_Logo.png")} alt="Workflow">
+        </div>
+      </main>
+    </div>
+
     <%= @inner_content %>
   </body>
 </html>

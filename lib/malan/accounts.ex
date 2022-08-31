@@ -1706,7 +1706,7 @@ defmodule Malan.Accounts do
     msg =
       "Error recording transaction: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
 
-    opts = %{
+    opts = [
       errors_to_str: Utils.Ecto.Changeset.errors_to_str(changeset),
       user_id: user_id,
       session_id: session_id,
@@ -1714,7 +1714,7 @@ defmodule Malan.Accounts do
       who_username: who_username,
       verb: verb,
       what: what
-    }
+    ]
 
     # In envs with Sentry, this will cause a double message to sentry
     # because we enabled the Sentry Logger backend.  The Sentry call

@@ -11,8 +11,6 @@ defmodule MalanWeb.UserController do
   alias Malan.Mailer
   alias Malan.Utils
 
-  alias MalanWeb.UserNotifier
-
   action_fallback MalanWeb.FallbackController
 
   plug :require_pagination, [table: "users"] when action in [:index]
@@ -319,48 +317,49 @@ defmodule MalanWeb.UserController do
       # exact same.  Slightly different utc times, and different api_token and
       # api_token_hash.  Might be misleadings and we should consider just
       # setting the transaction changeset to nil
+
       changeset = User.password_reset_create_changeset(user)
 
-      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user) do
+      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user),
+           {:ok, term} <- Mailer.send_password_reset_email(user) do
         record_transaction(
           conn,
           true,
           user.id,
           user.username,
           "POST",
-          "#UserController.reset_password/2",
+          "#UserController.reset_password/2 - term: '#{Utils.to_string(term)}",
           changeset
         )
-
-        # Send user the token through email
-        UserNotifier.password_reset_email(user)
-        |> Mailer.deliver()
 
         conn
         |> put_status(200)
         |> json(%{ok: true, code: 200})
       else
-        # {:error, :too_many_requests}
-        # {:error, changeset}
-        {:error, err_cs} ->
-          err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
-
-          cs_or_atom =
-            case err_cs do
-              :too_many_requests -> changeset
-              _ -> err_cs
-            end
-
-          record_transaction(
+        {:error, {401, _} = error} ->
+          record_tx_password_reset_email_fail(
             conn,
-            false,
-            user.id,
-            user.username,
-            "POST",
-            "#UserController.reset_password/2 - User reset password failed: #{err_str}",
-            cs_or_atom
+            user,
+            "Mail provider authentication seems to have failed: #{Utils.to_string(error)}",
+            changeset
           )
 
+          render(conn, "500.json")
+
+          {:error, :too_many_requests}
+
+          record_tx_password_reset_email_fail(
+            conn,
+            user,
+            "Rate limit exceeded for user #{user.username}",
+            changeset
+          )
+
+          render(conn, "429.json")
+
+        {:error, err_cs} ->
+          err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
+          record_tx_password_reset_email_fail(conn, user, err_str, err_cs)
           {:error, err_cs}
       end
     end
@@ -534,6 +533,18 @@ defmodule MalanWeb.UserController do
     )
 
     conn
+  end
+
+  defp record_tx_password_reset_email_fail(conn, user, err_str, tx_changeset) do
+    record_transaction(
+      conn,
+      false,
+      user.id,
+      user.username,
+      "POST",
+      "#UserController.reset_password/2 - User reset password failed: #{err_str}",
+      tx_changeset
+    )
   end
 
   defp render_whoami(

@@ -894,6 +894,7 @@ defmodule Malan.Utils.FromEnv do
   def mfa_str(%Macro.Env{} = env), do: mod_str(env) <> "." <> func_str(env)
 
   @spec func_str(env :: Macro.Env.t() | {atom(), integer()}) :: String.t()
+  def func_str(nil), do: "<nil>"
   def func_str({func, arity}), do: "##{func}/#{arity}"
   def func_str(%Macro.Env{} = env), do: func_str(env.function)
 
