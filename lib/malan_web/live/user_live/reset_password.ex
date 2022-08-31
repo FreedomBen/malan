@@ -9,59 +9,28 @@ defmodule MalanWeb.UserLive.ResetPassword do
   # Wires up socket assigns and after invokes handle_params/3
   @impl true
   def mount(_params, _session, socket) do
-    #{:ok, assign(socket, :pages, list_pages())}
-    #{:ok, assign(socket, :page, %{id: "TheID", title: "TheTitle", page: "ThePage"})}
     {:ok, socket}
   end
 
   # Handle URI and query params
   @impl true
   def handle_params(_params, _url, socket) do
-    #{:noreply, apply_action(socket, socket.assigns.live_action, params)}
     {:noreply, socket}
   end
 
-  # # Render HTML to client
-  # @impl true
-  # def render(assigns) do
-  #   Phoenix.View.render(MalanWeb.PageView, "reset_password.html", assigns)
-  #   Phoenix.LiveView.render(...)
-  #   Phoenix.LiveView.live_render(...)
-  # end
-
-  # defp apply_action(socket, :reset_password, %{"id" => id}) do
-  #   socket
-  #   |> assign(:page_title, "Edit Page")
-  #   |> assign(:page, Pages.get_page!(id))
-  # end
-
-#  defp apply_action(socket, :new, _params) do
-#    socket
-#    |> assign(:page_title, "New Page")
-#    |> assign(:page, %Page{})
-#  end
-#
-#  defp apply_action(socket, :index, _params) do
-#    socket
-#    |> assign(:page_title, "Listing Pages")
-#    |> assign(:page, nil)
-#  end
-
   @impl true
-  #def handle_event("send_reset_email", %{"id" => id}, socket) do
   def handle_event("send_reset_email", %{"email" => email}, socket) do
     remote_ip = "0.0.0.0"
 
     case Accounts.get_user_by_email(email) do
-      nil -> 
+      nil ->
         {:noreply, assign(socket, :success, false)}
 
       user ->
         with user <- Accounts.get_user_by_email(email),
              tx_changeset <- User.password_reset_create_changeset(user),
              {:ok, %User{} = user} <- Accounts.generate_password_reset(user),
-             {:ok, term} <-Mailer.send_password_reset_email(user)
-        do
+             {:ok, term} <- Mailer.send_password_reset_email(user) do
           record_transaction(
             true,
             user.id,
@@ -73,18 +42,16 @@ defmodule MalanWeb.UserLive.ResetPassword do
             tx_changeset
           )
 
-          socket = socket
-                   |> assign(:success, true)
-                   |> assign(:user, user)
+          socket =
+            socket
+            |> assign(:success, true)
+            |> assign(:user, user)
 
           {:noreply, socket}
-
-          # {:error, term} -> 
         else
           # {:error, :too_many_requests}
           # {:error, changeset}
           {:error, err_cs} ->
-            require IEx; IEx.pry
             err_str =
               case err_cs do
                 %Ecto.Changeset{} -> Utils.Ecto.Changeset.errors_to_str(err_cs)
@@ -122,7 +89,16 @@ defmodule MalanWeb.UserLive.ResetPassword do
     end
   end
 
-  defp record_transaction(success?, user_id, remote_ip, who, who_username, verb, what, tx_changeset) do
+  defp record_transaction(
+         success?,
+         user_id,
+         remote_ip,
+         who,
+         who_username,
+         verb,
+         what,
+         tx_changeset
+       ) do
     Accounts.record_transaction(
       success?,
       user_id,
