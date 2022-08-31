@@ -1679,13 +1679,17 @@ defmodule MalanWeb.UserControllerTest do
   describe "reset_password" do
     setup [:create_regular_user_with_session]
 
-    test "works without auth", %{user: %User{id: user_id}} do
+    test "works without auth", %{user: %User{id: user_id} = user} do
       conn = build_conn()
       conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
 
-      assert %{"ok" => true} = json_response(conn, 200)
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
-      # Check that an email was sent to the user with the token
+      # Retrieve the reset token from the email.
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
     test "works with username instead of ID", %{
@@ -1695,9 +1699,13 @@ defmodule MalanWeb.UserControllerTest do
     } do
       conn = post(conn, Routes.user_path(conn, :reset_password, user.username))
 
-      assert %{"ok" => true} = json_response(conn, 200)
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
-      # Check that an email was sent to the user with the token
+      # Retrieve the reset token from the email.
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
     test "Returns 404 when user is not found", %{conn: conn} do
@@ -1709,7 +1717,7 @@ defmodule MalanWeb.UserControllerTest do
     test "Creates a corresponding transaction", %{conn: conn, user: %User{id: id}} do
       conn = post(conn, Routes.user_path(conn, :reset_password, id))
 
-      assert conn.status == 200
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
       assert [
                %Transaction{
