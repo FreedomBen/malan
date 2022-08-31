@@ -16,7 +16,8 @@ if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
 end
 
 # If it's non-prod, and MAILGUN_API_KEY is set, and MAILGUN_DISABLE is not set
-if config_env() != :prod && !!System.get_env("MAILGUN_API_KEY") && !System.get_env("MAILGUN_DISABLE") do
+if config_env() != :prod && !!System.get_env("MAILGUN_API_KEY") &&
+     !System.get_env("MAILGUN_DISABLE") do
   Utils.Logger.warning(
     "config/runtime.exs:  MAILGUN_API_KEY is set!  We are using real mailgun for sending mail.  If this is not what you want, export MAILGUN_DISABLE=y"
   )

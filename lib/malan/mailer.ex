@@ -27,7 +27,10 @@ defmodule Malan.Mailer do
 
   defp log_delivery({:error, {401, _} = error}, email, env) do
     err = Utils.to_string(error)
-    msg = "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
+
+    msg =
+      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
+
     opts = [error: err, email: Utils.to_string(email)]
 
     Logger.error(env, msg)
@@ -37,7 +40,8 @@ defmodule Malan.Mailer do
   end
 
   defp log_delivery({:error, {403, _} = error}, email, env) do
-    msg = "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
+    msg =
+      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
 
     Logger.error(env, msg)
     Sentry.capture_message(msg, %{error: error, email: email})
@@ -46,7 +50,11 @@ defmodule Malan.Mailer do
   end
 
   defp log_delivery({:error, error}, email, env) do
-    Logger.warning(env, "Mail provider rejected message for #{to(email)}.  #{Utils.to_string(error)}")
+    Logger.warning(
+      env,
+      "Mail provider rejected message for #{to(email)}.  #{Utils.to_string(error)}"
+    )
+
     {:error, error}
   end
 

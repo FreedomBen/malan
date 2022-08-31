@@ -85,7 +85,7 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 # Configure swoosh mailer to use the local in memory mailbox
-#config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Local
+# config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure swoosh mailer to use the logger mailbox which just prints
 # out to the logs when mail is sent

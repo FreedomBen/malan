@@ -335,14 +335,26 @@ defmodule MalanWeb.UserController do
         conn
         |> put_status(200)
         |> json(%{ok: true, code: 200})
-
       else
         {:error, {401, _} = error} ->
-          record_tx_password_reset_email_fail(conn, user, "Mail provider authentication seems to have failed: #{Utils.to_string(error)}", changeset)
+          record_tx_password_reset_email_fail(
+            conn,
+            user,
+            "Mail provider authentication seems to have failed: #{Utils.to_string(error)}",
+            changeset
+          )
+
           render(conn, "500.json")
 
-        {:error, :too_many_requests}
-          record_tx_password_reset_email_fail(conn, user, "Rate limit exceeded for user #{user.username}", changeset)
+          {:error, :too_many_requests}
+
+          record_tx_password_reset_email_fail(
+            conn,
+            user,
+            "Rate limit exceeded for user #{user.username}",
+            changeset
+          )
+
           render(conn, "429.json")
 
         {:error, err_cs} ->
