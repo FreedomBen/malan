@@ -65,8 +65,8 @@ defmodule MalanWeb.Router do
   scope "/", MalanWeb do
     pipe_through :browser
 
-    live "/users/reset_password", UserLive.ResetPassword
-    live "/users/reset_password/:token", UserLive.ResetPasswordToken
+    #live "/users/reset_password", UserLive.ResetPassword
+    #live "/users/reset_password/:token", UserLive.ResetPasswordToken
   end
 
   scope "/health_check", MalanWeb, log: false do
