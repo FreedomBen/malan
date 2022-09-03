@@ -8,20 +8,24 @@ defmodule MalanWeb.Router do
     plug :put_root_layout, {MalanWeb.LayoutView, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :validate_token
   end
 
   pipeline :unauthed_api do
     plug :accepts, ["json"]
+    plug :fetch_session
   end
 
   pipeline :authed_api_no_tos_pp do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
   end
 
   pipeline :authed_owner_api_no_tos_pp do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
@@ -29,6 +33,7 @@ defmodule MalanWeb.Router do
 
   pipeline :authed_api do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :has_accepted_tos  # Ensures latest ToS have been accepted
@@ -37,6 +42,7 @@ defmodule MalanWeb.Router do
 
   pipeline :owner_api do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
@@ -55,6 +61,7 @@ defmodule MalanWeb.Router do
 
   pipeline :admin_api do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :is_admin          # Ensures user is admin
