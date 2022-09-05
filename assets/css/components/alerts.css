@@ -1,0 +1,28 @@
+/* Alerts and form errors used by phx.new */
+
+@layer components {
+  .alert {
+    @apply mb-5 border border-solid border-transparent rounded p-4 font-extralight;
+  }
+  .alert-danger {
+    @apply text-rose-800 bg-red-100 border-rose-200;
+  }
+  .alert-info {
+    @apply text-cyan-700 bg-sky-100 border-sky-200;
+  }
+  .alert-warning {
+    @apply text-yellow-700 bg-yellow-50 border-orange-100;
+  }
+  .alert:empty {
+    @apply hidden;
+  }
+
+  .invalid-feedback {
+    @apply text-rose-800 block -mt-3 mb-6 font-extralight;
+  }
+
+  .phx-no-feedback.invalid-feedback,
+  .phx-no-feedback .invalid-feedback {
+    @apply hidden;
+  }
+}

@@ -4,9 +4,8 @@ const colors = require("tailwindcss/colors");
 // https://tailwindcss.com/docs/customizing-colors#extending-the-defaults
 
 module.exports = {
-  mode: "jit",
-  purge: ["./js/**/*.js", "../lib/*_web/**/*.*ex"],
-  darkMode: false, // or 'media' or 'class'
+  content: ["./js/**/*.js", "../lib/*_web/**/*.*ex"],
+  darkMode: "media", // or 'media' or 'class'
   theme: {
     extend: {
       colors: {
@@ -22,9 +21,6 @@ module.exports = {
         'ehrman-gray': '#EEEEEE'
       },
     },
-  },
-  variants: {
-    extend: {},
   },
   plugins: [require("@tailwindcss/forms")],
 };

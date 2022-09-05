@@ -1,14 +1,32 @@
 /* This file is for your main application CSS */
 
-@tailwind base;
+/* Import Tailwind CSS */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-@tailwind components;
+/* Custom Components */
+@import "./components/alerts.css";
+@import "./components/buttons.css";
+@import "./components/form.css";
+@import "./components/modal.css";
+@import "./components/transitions.css";
 
-@tailwind utilities;
+
+
+
+/* This file is for your main application CSS */
+
+/*
+ * @tailwind base;
+ * @tailwind components;
+ * @tailwind utilities;
+ */
 
 /*
   * Example of tailwinds @apply directive:
   * https://tailwindcss.com/docs/extracting-components#extracting-component-classes-with-apply
+  * https://tailwindcss.com/docs/reusing-styles#extracting-classes-with-apply
   *
   * From:  https://pragmaticstudio.com/tutorials/adding-tailwind-css-to-phoenix
   * "Using Custom Component Classes"
