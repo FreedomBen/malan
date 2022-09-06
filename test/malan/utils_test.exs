@@ -477,6 +477,36 @@ defmodule Malan.UtilsTest do
       assert true == Utils.Enum.none?(input, fn i -> i == "four" end)
       assert false == Utils.Enum.none?(input, fn i -> i == "three" end)
     end
+
+    test "#include?/2" do
+      l1 = ["Henry Fonda", "Jimmy Stewart", "John Wayne"]
+
+      assert Malan.Utils.Enum.include?(l1, "Jimmy Stewart")
+      assert Malan.Utils.Enum.includes?(l1, "Jimmy Stewart")
+      assert Malan.Utils.Enum.contains?(l1, "Jimmy Stewart")
+
+      assert not Malan.Utils.Enum.include?(l1, "Johnny Wayne")
+      assert not Malan.Utils.Enum.includes?(l1, "Johnny Wayne")
+      assert not Malan.Utils.Enum.contains?(l1, "Johnny Wayne")
+    end
+
+    test "#each_ident/2 works" do
+      l1 = ["Henry Fonda", "Jimmy Stewart", "John Wayne"]
+      assert l1 == Malan.Utils.Enum.each_ident(l1, &(assert Enum.member?(l1, &1)))
+
+      l2 = [henry: "Henry Fonda", james: "Jimmy Stewart", john: "John Wayne"]
+      assert l2 == Malan.Utils.Enum.each_ident(l2, &(assert Enum.member?(l2, &1)))
+    end
+
+    test "#map_add/2 works" do
+      list = ["Henry Fonda", "Jimmy Stewart", "John Wayne"]
+
+      assert [
+               {"Henry Fonda", "Henry Fonda rocks"},
+               {"Jimmy Stewart", "Jimmy Stewart rocks"},
+               {"John Wayne", "John Wayne rocks"}
+             ] = Malan.Utils.Enum.map_add(list, &(&1 <> " rocks"))
+    end
   end
 
   describe "Phoenix.Controller" do

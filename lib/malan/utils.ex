@@ -613,8 +613,51 @@ defmodule Malan.Utils.Enum do
   `Enum.all?` will return true if all invocations of the function return
   true. `Malan.Utils.Enum.none?` is the opposite.
   """
-  def none?(enum, func) do
-    Enum.all?(enum, fn i -> !func.(i) end)
+  @spec none?(Enumerable.t(), (any() -> as_boolean(term()))) :: boolean()
+  def none?(enumerable, func) do
+    Enum.all?(enumerable, fn i -> !func.(i) end)
+  end
+
+  @doc """
+  will return true if `element` is present in `enumerable`.  See `#Enum.member?/2`
+  """
+  @spec include?(enumerable :: Enumerable.t(), any()) :: boolean()
+  def include?(enumerable, element) do
+    Enum.member?(enumerable, element)
+  end
+
+  @doc """
+  will return true if `element` is present in `enumerable`.  See `#Enum.member?/2`
+  """
+  @spec includes?(enumerable :: Enumerable.t(), any()) :: boolean()
+  def includes?(enumerable, element), do: include?(enumerable, element)
+
+  @doc """
+  will return true if `element` is present in `enumerable`.  See `#Enum.member?/2`
+  """
+  @spec contains?(enumerable :: Enumerable.t(), any()) :: boolean()
+  def contains?(enumerable, element), do: include?(enumerable, element)
+
+  @doc ~S"""
+  Run `Enum.each/2` for each element in `enumerable`, returning `enumerable` unchanged
+
+  "ident" is short for "identity", like `each_return_identity`
+  """
+  @spec each_ident(Enumerable.t(), (any() -> any())) :: Enumerable.t()
+  def each_ident(enumerable, func) do
+    Enum.each(enumerable, func)
+    enumerable
+  end
+
+  @doc ~S"""
+  Invokes `Enum.map/2` on `enumerable` and returns a tuple with {before, after}
+  """
+  @spec map_add(Enumerable.t(), (Enumerable.element() -> any())) :: [
+          {Enumerable.element(), any()}
+        ]
+  def map_add(enumerable, func) do
+    enumerable
+    |> Enum.map(fn i -> {i, func.(i)} end)
   end
 end
 
