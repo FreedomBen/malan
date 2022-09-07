@@ -681,6 +681,118 @@ defmodule Malan.Utils.Enum do
   end
 end
 
+defmodule Malan.Utils.Access do
+  @doc """
+  Returns `true` if `map_or_kwlist` has key of `key`
+
+  Similar to `Map.has_key?/2` but works for `Access` types as well as `Map`
+
+  ## Examples
+
+    iex> Malan.Utils.has_key?(%{name: %{first: "Jeb"}}, :name)
+    true
+
+    iex> Malan.Utils.has_key?(%{name: %{first: "Jeb"}}, "name")
+    false
+
+    iex> Malan.Utils.has_key?(%{name: %{first: "Jeb"}}, :age)
+    false
+
+    iex> Malan.Utils.has_key?(%{name: %{first: "Jeb"}}, 42)
+    false
+
+  """
+  @spec has_key?(map_or_kwlist :: Access.t(), key :: any()) :: boolean()
+  def has_key?(access, key) do
+    case Access.fetch(access, key) do
+      {:ok, _} -> true
+      :error -> false
+    end
+  end
+
+  @doc """
+  Returns `true` if `map_or_kwlist` has the keys defined in `path`
+
+  The `path` is a list of "keys" used to traverse the structure of `map_or_kwlist`.
+  If all the keys are present, returns `true`.  Otherwise, `false`
+
+  ## Examples
+
+    iex> Malan.Utils.has_path?(%{name: %{first: "Jeb"}}, [:name, :first])
+    true
+
+    iex> Malan.Utils.has_path?(%{name: %{first: "Jeb"}}, [:name, :last])
+    false
+
+  """
+  @spec has_path?(map_or_kwlist :: Access.t(), path :: list(any())) :: boolean()
+  def has_path?(access, []), do: true
+  def has_path?(access, [path]), do: has_key?(access, path)
+  def has_path?(access, [path | tail]),
+    do: has_key?(access, path) and has_path?(access[path], tail)
+
+  @doc """
+  Retrieves the value at `path` from `map_or_kwlist`
+
+  The `path` is a list of "keys" used to traverse the structure of `map_or_kwlist`
+  and retrieve the value at the end
+
+  ## Examples
+
+    iex> Malan.Utils.value_at(%{name: %{first: "Jeb"}}, [:name, :first])
+    "Jeb"
+
+    iex> Malan.Utils.value_at(%{name: %{first: "Jeb"}}, [:first])
+    %{first: "Jeb"}
+
+  """
+  @spec value_at(map_or_kwlist :: Access.t(), path :: list(any())) :: any()
+  def value_at(access, []), do: access
+  def value_at(access, [path]), do: access[path]
+  def value_at(access, [path | tail]), do: value_at(access[path], tail)
+
+  @doc """
+  Checks if the value at the specified `path` is in `map_or_kwlist` matches `val` or `func`
+
+  If `val` is a function, then it will be invoked to retrieve the value to compare to.
+  If `val` is any other type, it will be compared directly to the value at `path` with `==`
+
+  ## Examples
+
+    iex> Malan.Utils.value_is?(%{name: %{first: "Jeb"}}, [:name, :first], "Jeb")
+    true
+
+    iex> Malan.Utils.value_is?(%{name: %{first: "Jeb"}}, [:name, :first], fn _ -> "Jeb" end)
+    true
+
+    iex> Malan.Utils.value_is?(%{name: %{first: "Jeb"}}, [:name, :first], "Hey")
+    false
+
+    iex> Malan.Utils.value_is?(%{name: %{first: "Jeb"}}, [:name, :first], fn _ -> "Hey" end)
+    false
+
+    iex> Malan.Utils.value_is?(%{name: %{first: "Jeb"}}, [:name, :first], fn x -> x end)
+    true
+
+  """
+  @spec value_is?(map_or_kwlist :: Access.t(), path :: list(any()), (any() -> any())) :: boolean()
+  def value_is?(access, path, func) when is_list(path) and is_function(func, 1) do
+    case has_path?(access, path) do
+      true ->
+        v = value_at(access, path)
+        v == func.(v)
+
+      false ->
+        false
+    end
+  end
+
+  @spec value_is?(map_or_kwlist :: Access.t(), path :: list(any()), val :: any()) :: boolean()
+  def value_is?(access, path, val) when is_list(path) do
+    value_is?(access, path, fn (_) -> val end)
+  end
+end
+
 defmodule Malan.Utils.Crypto do
   def strong_random_string(length) do
     :crypto.strong_rand_bytes(length)
