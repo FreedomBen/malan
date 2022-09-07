@@ -606,6 +606,26 @@ defmodule Malan.Utils do
   defp e(15), do: ?f
 end
 
+defmodule Malan.Utils.String do
+  @doc """
+  Return `true` if the supplied string is empty (whitespace is removed)
+  """
+  @spec empty?(String.t()) :: boolean()
+  def empty?(string) when is_binary(string) do
+    string
+    |> String.trim()
+    |> empty_strict?()
+  end
+
+  @doc """
+  Return `true` if the supplied string is empty and contains no whitespace
+  """
+  @spec empty_strict?(String.t()) :: boolean()
+  def empty_strict?(string) do
+    "" == string
+  end
+end
+
 defmodule Malan.Utils.Enum do
   @doc """
   will return true if all invocations of the function return false.  If one callback returns `true`, the end result will be `false`
