@@ -583,6 +583,27 @@ defmodule Malan.UtilsTest do
     end
   end
 
+  describe "String" do
+    test "#empty?/1" do
+      assert true == Utils.String.empty?("")
+      assert true == Utils.String.empty?(" ")
+      assert true == Utils.String.empty?(" \t ")
+      assert true == Utils.String.empty?(" \t \n\n ")
+
+      assert false == Utils.String.empty?("hey")
+    end
+
+    test "#empty_strict?/1" do
+      assert true == Utils.String.empty?("")
+
+      assert false == Utils.String.empty_strict?(" ")
+      assert false == Utils.String.empty_strict?(" \t ")
+      assert false == Utils.String.empty_strict?("hey")
+      assert false == Utils.String.empty_strict?(1)
+      assert false == Utils.String.empty_strict?(nil)
+    end
+  end
+
   describe "Enum" do
     test "#none?" do
       input = ["one", "two", "three"]
