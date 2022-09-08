@@ -471,6 +471,118 @@ defmodule Malan.UtilsTest do
     end
   end
 
+  describe "Access" do
+    def singer, do: "Dexter"
+    def lead_guitar, do: "Noodles"
+
+    def band, do: %{"singer" => singer(), lead_guitar: lead_guitar()}
+    def map_one, do: %{one: band()}
+    def map_two, do: %{two: map_one()}
+    def map_three, do: %{"three" => map_two()}
+    def map_four, do: %{four: map_three()}
+
+    defp structure do
+      # structure will look like this:
+      #
+      # %{
+      #   four: %{
+      #     "three" => %{
+      #       two: %{
+      #         one: %{
+      #           "singer" => "Dexter",
+      #           lead_guitar: "Noodles"
+      #         }
+      #       }
+      #     }
+      #   }
+      # }
+      map_four()
+    end
+
+    test "#has_path?/2" do
+      assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, "singer"])
+      assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, :lead_guitar])
+      assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one])
+      assert true == Utils.Access.has_path?(structure(), [:four, "three", :two])
+      assert true == Utils.Access.has_path?(structure(), [:four, "three"])
+      assert true == Utils.Access.has_path?(structure(), [:four])
+      assert true == Utils.Access.has_path?(structure(), [])
+
+      assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, :wrong])
+      assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, "not_there"])
+      assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :seven])
+      assert false == Utils.Access.has_path?(structure(), [:four, "three", :twelve])
+      assert false == Utils.Access.has_path?(structure(), [:four, "nineteen"])
+      assert false == Utils.Access.has_path?(structure(), [:twenty_one])
+    end
+
+    test "#value_at/2" do
+      assert singer() == Utils.Access.value_at(structure(), [:four, "three", :two, :one, "singer"])
+      assert lead_guitar() == Utils.Access.value_at(structure(), [:four, "three", :two, :one, :lead_guitar])
+      assert band() == Utils.Access.value_at(structure(), [:four, "three", :two, :one])
+      assert map_one() == Utils.Access.value_at(structure(), [:four, "three", :two])
+      assert map_two() == Utils.Access.value_at(structure(), [:four, "three"])
+      assert map_three() == Utils.Access.value_at(structure(), [:four])
+      assert map_four() == Utils.Access.value_at(structure(), [])
+    end
+
+    test "#value_is?/3" do
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], singer())
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> singer() end)
+
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], lead_guitar())
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], fn _ -> lead_guitar() end)
+
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], band())
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ -> band() end)
+
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], map_one())
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> map_one() end)
+
+      assert true == Utils.Access.value_is?(structure(), [:four, "three"], map_two())
+      assert true == Utils.Access.value_is?(structure(), [:four, "three"], fn _ -> map_two() end)
+
+      assert true == Utils.Access.value_is?(structure(), [:four], map_three())
+      assert true == Utils.Access.value_is?(structure(), [:four], fn _ -> map_three() end)
+
+      assert true == Utils.Access.value_is?(structure(), [], structure())
+      assert true == Utils.Access.value_is?(structure(), [], fn _ -> structure() end)
+      assert true == Utils.Access.value_is?(structure(), [], map_four())
+      assert true == Utils.Access.value_is?(structure(), [], fn _ -> map_four() end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], "nothing")
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> "nothing" end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], "nothing")
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], fn _ -> "nothing" end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], nil)
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ -> nil end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two], "Todd")
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> "Todd" end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three"], "Ron")
+      assert false == Utils.Access.value_is?(structure(), [:four, "three"], fn _ -> "Ron" end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four], "James")
+      assert false == Utils.Access.value_is?(structure(), [:four], fn _ -> "James" end)
+
+      assert false == Utils.Access.value_is?(structure(), [], "Atom")
+      assert false == Utils.Access.value_is?(structure(), [], fn _ -> "Pete" end)
+
+      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> nil end)
+
+      # Identity function is always true
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn x -> x end)
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn x -> x end)
+      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], fn x -> x end)
+      assert true == Utils.Access.value_is?(structure(), [:four, "three"], fn x -> x end)
+      assert true == Utils.Access.value_is?(structure(), [:four], fn x -> x end)
+      assert true == Utils.Access.value_is?(structure(), [], fn x -> x end)
+    end
+  end
+
   describe "String" do
     test "#empty?/1" do
       assert true == Utils.String.empty?("")
