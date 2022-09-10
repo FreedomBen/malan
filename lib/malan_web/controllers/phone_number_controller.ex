@@ -12,10 +12,14 @@ defmodule MalanWeb.PhoneNumberController do
   end
 
   def create(conn, %{"user_id" => user_id, "phone_number" => phone_number_params}) do
-    with {:ok, %PhoneNumber{} = phone_number} <- Accounts.create_phone_number(user_id, phone_number_params) do
+    with {:ok, %PhoneNumber{} = phone_number} <-
+           Accounts.create_phone_number(user_id, phone_number_params) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", Routes.user_phone_number_path(conn, :show, user_id, phone_number))
+      |> put_resp_header(
+        "location",
+        Routes.user_phone_number_path(conn, :show, user_id, phone_number)
+      )
       |> render("show.json", phone_number: phone_number)
     end
   end
@@ -28,7 +32,8 @@ defmodule MalanWeb.PhoneNumberController do
   def update(conn, %{"user_id" => _user_id, "id" => id, "phone_number" => phone_number_params}) do
     phone_number = Accounts.get_phone_number!(id)
 
-    with {:ok, %PhoneNumber{} = phone_number} <- Accounts.update_phone_number(phone_number, phone_number_params) do
+    with {:ok, %PhoneNumber{} = phone_number} <-
+           Accounts.update_phone_number(phone_number, phone_number_params) do
       render(conn, "show.json", phone_number: phone_number)
     end
   end

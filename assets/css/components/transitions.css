@@ -1,0 +1,25 @@
+@layer components {
+  .phx-click-loading {
+    @apply opacity-50 transition-opacity duration-1000 ease-out;
+  }
+
+  .phx-loading {
+    @apply cursor-wait;
+  }
+
+  .fade-in-scale {
+    @apply animate-fade-in-scale;
+  }
+
+  .fade-out-scale {
+    @apply animate-fade-out-scale;
+  }
+
+  .fade-in {
+    @apply animate-fade-in;
+  }
+
+  .fade-out {
+    @apply animate-fade-out;
+  }
+}

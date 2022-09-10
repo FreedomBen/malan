@@ -1,0 +1,23 @@
+{
+  "name": "ehrman_blog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "NODE_ENV=production tailwindcss --postcss --minify --input=css/app.css --output=../priv/static/assets/app.css",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "formatCheck": "prettier --check ."
+  },
+  "author": "Benjamin Porter",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.3",
+    "alpinejs": "^3.10.3",
+    "autoprefixer": "^10.4.8",
+    "postcss": "^8.4.16",
+    "postcss-import": "^15.0.0",
+    "prettier": "2.7.1",
+    "tailwindcss": "^3.1.8"
+  }
+}

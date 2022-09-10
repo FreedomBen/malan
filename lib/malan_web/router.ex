@@ -1,6 +1,15 @@
 defmodule MalanWeb.Router do
   use MalanWeb, :router
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, {MalanWeb.LayoutView, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   pipeline :unauthed_api do
     plug :accepts, ["json"]
   end
@@ -71,6 +80,10 @@ defmodule MalanWeb.Router do
     post "/users", UserController, :create
     post "/sessions", SessionController, :create
     get "/users/whoami", UserController, :whoami
+
+    post "/users/:id/reset_password", UserController, :reset_password
+    put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
+    put "/users/reset_password/:token", UserController, :reset_password_token
   end
 
   scope "/api", MalanWeb do
@@ -84,43 +97,55 @@ defmodule MalanWeb.Router do
 
     # Get or Delete the current session (the one belonging to the api_token in use)
     # Not piped through "owner" because no User ID is passed and it will only delete the current session
+    get "/sessions/active", SessionController, :index_active
     get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
+
+    get "/transactions", TransactionController, :user_index
+    get "/transactions/:id", TransactionController, :show
   end
 
   scope "/api", MalanWeb do
     pipe_through :authed_owner_api_no_tos_pp
 
     resources "/users", UserController, only: [] do
-      delete "/sessions", SessionController, :delete_all  # Delete all active sessions for this user
+      # Delete all active sessions for this user
+      get "/sessions/active", SessionController, :user_index_active
+      delete "/sessions", SessionController, :delete_all
       resources "/sessions", SessionController, only: [:index, :show, :delete]
-      resources "/phone_numbers", PhoneNumberController, only: [:index, :show, :create, :update, :delete]
+
+      resources "/phone_numbers", PhoneNumberController,
+        only: [:index, :show, :create, :update, :delete]
+
+      resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
+
+      get "/transactions", TransactionController, :user_index
     end
   end
 
   scope "/api", MalanWeb do
     pipe_through :authed_api
 
-    #resources "/teams", TeamController, only: [:index, :show, :create, :update, :delete]
+    # resources "/teams", TeamController, only: [:index, :show, :create, :update, :delete]
   end
 
   scope "/api", MalanWeb do
     pipe_through :owner_api
 
-    #resources "/users", UserController, only: [] do
-    #  get "/objects", ObjectController, :user_index
-    #end
+    # resources "/users", UserController, only: [] do
+    #   get "/objects", ObjectController, :user_index
+    # end
   end
 
   scope "/api/moderator", MalanWeb do
     pipe_through :moderator_api
 
-    #resources "/users", UserController, only: [] do
-    #  get "/objects", ObjectController, :user_index
-    #end
+    # resources "/users", UserController, only: [] do
+    #   get "/objects", ObjectController, :user_index
+    # end
   end
 
-  #scope "/api/admin", MalanWeb, as: :admin do
+  # scope "/api/admin", MalanWeb, as: :admin do
   scope "/api/admin", MalanWeb do
     pipe_through :admin_api
 
@@ -137,5 +162,50 @@ defmodule MalanWeb.Router do
     post "/users/:id/reset_password", UserController, :admin_reset_password
     put "/users/:id/reset_password/:token", UserController, :admin_reset_password_token_user
     put "/users/reset_password/:token", UserController, :admin_reset_password_token
+
+    put "/users/:id/lock", UserController, :lock
+    put "/users/:id/unlock", UserController, :unlock
+
+    # Transactions can only be retreived (not created, updated, or deleted)
+    # they are created as side effects of user/session operations and are immutable
+    # Careful, returns a lot of records!
+    get "/transactions", TransactionController, :admin_index
+    get "/transactions/:id", TransactionController, :show, as: :admin_transaction
+    get "/transactions/users/:user_id", TransactionController, :users
+    get "/transactions/sessions/:session_id", TransactionController, :sessions
+    get "/transactions/who/:user_id", TransactionController, :who
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", MalanWeb do
+  #   pipe_through :api
+  # end
+
+  # Enables LiveDashboard only for development
+  #
+  # If you want to use the LiveDashboard in production, you should put
+  # it behind authentication and allow only admins to access it.
+  # If your application does not have an admins-only section yet,
+  # you can use Plug.BasicAuth to set up some basic authentication
+  # as long as you are also using SSL (which you should anyway).
+  if Mix.env() in [:dev, :test] do
+    import Phoenix.LiveDashboard.Router
+
+    scope "/" do
+      pipe_through :browser
+      live_dashboard "/dashboard", metrics: MalanWeb.Telemetry
+    end
+  end
+
+  # Enables the Swoosh mailbox preview in development.
+  #
+  # Note that preview only shows emails that were sent by the same
+  # node running the Phoenix server.
+  if Mix.env() == :dev do
+    scope "/dev" do
+      pipe_through :browser
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
   end
 end

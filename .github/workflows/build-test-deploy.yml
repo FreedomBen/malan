@@ -2,7 +2,7 @@ name: Build -> Test -> Deploy
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - 'prod-*'
 
@@ -10,7 +10,29 @@ env:
   RELEASE_VERSION: ${{ github.sha }}
 
 jobs:
+  build-dev:
+    name: Build and Push (Dev)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: ./scripts/build-dev.sh
+
+      - name: Authenticate to Container Registry
+        env:
+          DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
+        run: |
+          mkdir -p $HOME/.docker
+          echo "${DOCKER_CONFIG}" > $HOME/.docker/config.json
+
+      - name: Push Image
+        run: ./scripts/push-dev.sh
+
   build:
+    name: Build and Push (Prod)
     runs-on: ubuntu-latest
 
     steps:
@@ -20,7 +42,7 @@ jobs:
       - name: Build Image
         run: ./scripts/build-release.sh
 
-      - name: Authenticate to DO Container Registry
+      - name: Authenticate to Container Registry
         env:
           DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
         run: |
@@ -31,7 +53,8 @@ jobs:
         run: ./scripts/push-release.sh
 
   test:
-    needs: [build]
+    name: Run Tests
+    needs: [build, build-dev]
     runs-on: ubuntu-latest
 
     steps:
@@ -42,9 +65,10 @@ jobs:
         run: ./scripts/run-ci.sh
 
   deploy-staging:
+    name: Deploy (Staging)
     needs: [build, test]
     runs-on: ubuntu-latest
-    #if: ${{ endsWith(github.ref, 'main') || endsWith(github.ref, '') }}
+    concurrency: deploy_staging_mutex
     env:
       ENV: staging
       K8S_SERVER: https://79aad049-3068-4ca9-a029-e1587c7021fd.k8s.ondigitalocean.com:443
@@ -76,9 +100,11 @@ jobs:
         run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
 
   deploy-prod:
+    if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
+    name: Deploy (Prod)
     needs: [build, test, deploy-staging]
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
+    concurrency: deploy_prod_mutex
     env:
       ENV: prod
       K8S_SERVER: https://82f2cfa5-c499-43ff-832a-fe256fe4cbff.k8s.ondigitalocean.com

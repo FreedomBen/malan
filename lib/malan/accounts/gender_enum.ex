@@ -9,15 +9,16 @@ defmodule Malan.Accounts.User.Gender do
   def to_i(s) when is_binary(s), do: get(s)
 
   def valid?(i) when is_nil(i), do: true
-  def valid?(i) when is_integer(i), do: Map.has_key?(all_by_value, i)
+  def valid?(i) when is_integer(i), do: Map.has_key?(all_by_value(), i)
+
   def valid?(i) when is_binary(i) do
-    all_by_keyword
-    |> Map.merge(all_by_keyword_normalized)
+    all_by_keyword()
+    |> Map.merge(all_by_keyword_normalized())
     |> Map.has_key?(i)
   end
 
-  def valid_values(), do: Map.keys(all_by_keyword)
-  def valid_values_str(), do: Enum.join(valid_values, ", ")
+  def valid_values(), do: Map.keys(all_by_keyword())
+  def valid_values_str(), do: Enum.join(valid_values(), ", ")
 
   def normalize(g) when is_binary(g), do: String.downcase(g)
   def normalize_key({k, v}) when is_binary(k), do: {normalize(k), v}
@@ -25,13 +26,13 @@ defmodule Malan.Accounts.User.Gender do
   def equal?(f, s), do: normalize(f) == normalize(s)
 
   def all_by_value_normalized() do
-    all_by_value
+    all_by_value()
     |> Enum.map(&normalize_value/1)
     |> Enum.into(%{})
   end
 
   def all_by_keyword_normalized() do
-    all_by_keyword
+    all_by_keyword()
     |> Enum.map(&normalize_key/1)
     |> Enum.into(%{})
   end
@@ -89,7 +90,7 @@ defmodule Malan.Accounts.User.Gender do
       48 => "Transmasculine",
       49 => "Two-spirit",
       50 => "Male",
-      51 => "Female",
+      51 => "Female"
     }
   end
 

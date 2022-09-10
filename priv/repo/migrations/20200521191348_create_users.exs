@@ -24,10 +24,10 @@ defmodule Malan.Repo.Migrations.CreateUsers do
       add :birthday, :utc_datetime, null: true, default: nil
       add :weight, :decimal, null: true, default: nil
       add :height, :decimal, null: true, default: nil
-      add :race_enum, {:array, :smallint}, null: true, default: nil
-      add :ethnicity_enum, :smallint, null: true, default: nil
-      add :sex_enum, :smallint, null: true, default: nil
-      add :gender_enum, :smallint, null: true, default: nil
+      add :race_enum, {:array, :integer}, null: true, default: nil
+      add :ethnicity_enum, :integer, null: true, default: nil
+      add :sex_enum, :integer, null: true, default: nil
+      add :gender_enum, :integer, null: true, default: nil
 
       timestamps(type: :utc_datetime)
     end

@@ -6,59 +6,113 @@ defmodule MalanWeb.ErrorViewTest do
 
   test "renders 400.json" do
     assert render(MalanWeb.ErrorView, "400.json", []) == %{
-      errors: %{
-        detail: "Bad Request",
-      }
-    }
+             ok: false,
+             code: 400,
+             detail: "Bad Request",
+             message: "The request was very very bad"
+           }
   end
 
   test "renders 401.json" do
     assert render(MalanWeb.ErrorView, "401.json", []) == %{
-      errors: %{
-        detail: "Unauthorized",
-        message: "You are authenticated but do not have access to this method on this object.",
-      }
-    }
+             ok: false,
+             code: 401,
+             detail: "Unauthorized",
+             message:
+               "You are authenticated but do not have access to this method on this object."
+           }
   end
 
   test "renders 403.json" do
     assert render(MalanWeb.ErrorView, "403.json", []) == %{
-      errors: %{
-        detail: "Forbidden",
-        message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token.",
-      }
-    }
+             ok: false,
+             code: 403,
+             detail: "Forbidden",
+             message:
+               "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
+           }
   end
 
   test "renders 404.json" do
     assert render(MalanWeb.ErrorView, "404.json", []) == %{
-      errors: %{
-        detail: "Not Found",
-        message: "The requested object was not found.",
-      }
+             ok: false,
+             code: 404,
+             detail: "Not Found",
+             message: "The requested object was not found."
+           }
+  end
+
+  test "renders 422.json" do
+    errors = %{
+      dean: "winchester",
+      sam: "winchester"
     }
+
+    assert render(MalanWeb.ErrorView, "422.json", pagination_error: nil, errors: errors) == %{
+             ok: false,
+             code: 422,
+             detail: "Unprocessable Entity",
+             message:
+               "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+             errors: errors
+           }
+
+    assert render(MalanWeb.ErrorView, "422.json", pagination_error: nil, errors: errors) == %{
+             ok: false,
+             code: 422,
+             detail: "Unprocessable Entity",
+             message:
+               "The request was syntactically correct, but some or all of the parameters failed validation.  See errors key for details",
+             errors: errors
+           }
+  end
+
+  test "renders 423.json" do
+    assert render(MalanWeb.ErrorView, "423.json", []) == %{
+             ok: false,
+             code: 423,
+             detail: "Locked",
+             message: "The requested resource is locked.  Please contact an administrator"
+           }
+  end
+
+  test "renders 429.json" do
+    assert render(MalanWeb.ErrorView, "429.json", []) == %{
+             ok: false,
+             code: 429,
+             detail: "Too Many Requests",
+             message:
+               "You have exceeded the allowed number of requests.  Please cool off and try again later."
+           }
   end
 
   test "renders 461.json" do
     assert render(MalanWeb.ErrorView, "461.json", []) == %{
-      errors: %{
-        detail: "Terms of Service Required",
-        message: "You have not yet accepted the Terms of Service.  Acceptance is required to use this API.",
-      }
-    }
+             ok: false,
+             code: 461,
+             detail: "Terms of Service Required",
+             message:
+               "You have not yet accepted the Terms of Service.  Acceptance is required to use this API."
+           }
   end
 
   test "renders 462.json" do
     assert render(MalanWeb.ErrorView, "462.json", []) == %{
-      errors: %{
-        detail: "Privacy Policy Required",
-        message: "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API.",
-      }
-    }
+             ok: false,
+             code: 462,
+             detail: "Privacy Policy Required",
+             message:
+               "You have not yet accepted the Privacy Policy.  Acceptance is required to use this API."
+           }
   end
 
   test "renders 500.json" do
     assert render(MalanWeb.ErrorView, "500.json", []) ==
-             %{errors: %{detail: "Internal Server Error"}}
+             %{
+               ok: false,
+               code: 500,
+               detail: "Internal Server Error",
+               message: "Internal Server Error"
+             }
   end
 end

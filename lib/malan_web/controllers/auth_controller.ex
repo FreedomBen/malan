@@ -1,8 +1,10 @@
 defmodule Malan.AuthController do
   import Plug.Conn
+  import Malan.Utils.Phoenix.Controller
 
   require Logger
 
+  alias Malan.Utils
   alias Malan.Accounts
   alias Malan.Accounts.PrivacyPolicy
   alias Malan.Accounts.TermsOfService, as: ToS
@@ -12,12 +14,13 @@ defmodule Malan.AuthController do
   """
   def is_authenticated(conn, _opts) do
     Logger.debug("[is_authenticated]: Checking for authentication")
+
     case conn.assigns do
-      %{auth_error: nil}                  -> conn
-      %{auth_error: {:error, :expired}}   -> halt_status(conn, 401)
-      %{auth_error: {:error, :revoked}}   -> halt_status(conn, 401)
-      %{auth_error: {:error, :not_found}} -> halt_status(conn, 403)
-       _                                  -> halt_status(conn, 403)
+      %{auth_error: nil} -> conn
+      %{auth_error: :expired} -> halt_status(conn, 403, %{token_expired: true})
+      %{auth_error: :revoked} -> halt_status(conn, 403, %{token_revoked: true})
+      %{auth_error: :not_found} -> halt_status(conn, 403, %{token_not_found: true})
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -26,6 +29,7 @@ defmodule Malan.AuthController do
   """
   def has_accepted_tos(conn, _opts) do
     Logger.debug("[has_accepted_tos]:")
+
     case conn.assigns do
       %{authed_user_accepted_tos: true} -> conn
       _ -> halt_status(conn, 461)
@@ -37,6 +41,7 @@ defmodule Malan.AuthController do
   """
   def has_accepted_privacy_policy(conn, _opts) do
     Logger.debug("[has_accepted_privacy_policy]:")
+
     case conn.assigns do
       %{authed_user_accepted_pp: true} -> conn
       _ -> halt_status(conn, 462)
@@ -48,10 +53,11 @@ defmodule Malan.AuthController do
   """
   def is_admin(conn, _opts) do
     Logger.debug("[is_admin]:")
+
     case conn.assigns do
       %{authed_user_is_admin: true} -> conn
       %{auth_error: nil} -> halt_status(conn, 401)
-       _                 -> halt_status(conn, 403)
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -60,11 +66,12 @@ defmodule Malan.AuthController do
   """
   def is_moderator(conn, _opts) do
     Logger.debug("[is_moderator]:")
+
     case conn.assigns do
       %{authed_user_is_admin: true} -> conn
       %{authed_user_is_moderator: true} -> conn
       %{auth_error: nil} -> halt_status(conn, 401)
-       _                 -> halt_status(conn, 403)
+      _ -> halt_status(conn, 403)
     end
   end
 
@@ -79,15 +86,17 @@ defmodule Malan.AuthController do
   """
   def validate_token(conn, _opts) do
     with {:ok, api_token} <- retrieve_token(conn),
-         {:ok, user_id, session_id, user_roles, expires_at, tos, pp} <- Accounts.validate_session(api_token),
+         {:ok, user_id, username, session_id, ip_addr, valid_ip_only, user_roles, expires_at, tos,
+          pp} <-
+           Accounts.validate_session(api_token, Utils.IPv4.to_s(conn)),
          {:ok, accepted_tos} <- accepted_latest_tos?(tos),
          {:ok, accepted_pp} <- accepted_latest_pp?(pp),
          {:ok, is_admin} <- Accounts.user_is_admin?(user_roles),
-         {:ok, is_moderator}  <- Accounts.user_is_moderator?(user_roles)
-    do
+         {:ok, is_moderator} <- Accounts.user_is_moderator?(user_roles) do
       conn
       |> assign(:auth_error, nil)
       |> assign(:authed_user_id, user_id)
+      |> assign(:authed_username, username)
       |> assign(:auth_expires_at, expires_at)
       |> assign(:authed_session_id, session_id)
       |> assign(:authed_user_roles, user_roles)
@@ -95,15 +104,22 @@ defmodule Malan.AuthController do
       |> assign(:authed_user_accepted_pp, accepted_pp)
       |> assign(:authed_user_accepted_tos, accepted_tos)
       |> assign(:authed_user_is_moderator, is_moderator)
+      |> assign(:authed_session_ip_address, ip_addr)
+      |> assign(:authed_session_valid_only_for_ip, valid_ip_only)
     else
-      #{:error, :no_token} ->
-      #{:error, :not_found} ->
-      #{:error, :malformed} ->
+      # {:error, :no_token} ->
+      # {:error, :not_found} ->
+      # {:error, :malformed} ->
+      # {:error, :ip_addr} ->
       {:error, err} ->
+        # In the future, we may wish to log this further by creating
+        # a Transaction, or by sending it to an audit logging service
         Logger.info("[validate_token]: API token error: #{err}")
+
         conn
         |> assign(:auth_error, err)
         |> assign(:authed_user_id, nil)
+        |> assign(:authed_username, nil)
         |> assign(:auth_expires_at, nil)
         |> assign(:authed_session_id, nil)
         |> assign(:authed_user_roles, [])
@@ -111,26 +127,22 @@ defmodule Malan.AuthController do
         |> assign(:authed_user_accepted_pp, false)
         |> assign(:authed_user_accepted_tos, false)
         |> assign(:authed_user_is_moderator, false)
+        |> assign(:authed_session_ip_address, nil)
+        |> assign(:authed_session_valid_only_for_ip, nil)
     end
   end
 
   def halt_not_owner(conn), do: halt_status(conn, 401)
-
-  def halt_status(conn, status) do
-    Logger.debug("[halt_status]: status: #{status}")
-    conn
-    |> put_status(status)
-    |> Phoenix.Controller.put_view(MalanWeb.ErrorView)
-    |> Phoenix.Controller.render("#{status}.json")
-    |> halt()
-  end
 
   def is_admin?(conn), do: !!conn.assigns.authed_user_is_admin
   def is_moderator?(conn), do: !!conn.assigns.authed_user_is_moderator
   def is_moderator_or_admin?(conn), do: !!(is_moderator?(conn) || is_admin?(conn))
   def is_admin_or_moderator?(conn), do: is_moderator_or_admin?(conn)
   def is_owner?(conn), do: is_owner?(conn, conn.params["user_id"])
-  def is_owner?(conn, user_id), do: conn.assigns.authed_user_id == user_id
+  def is_owner?(_conn, "current"), do: true
+
+  def is_owner?(conn, user_id),
+    do: conn.assigns.authed_user_id == user_id || conn.assigns.authed_username == user_id
 
   def is_not_admin?(conn), do: !is_admin?(conn)
   def is_not_moderator?(conn), do: !is_moderator?(conn)
@@ -170,17 +182,17 @@ defmodule Malan.AuthController do
   def retrieve_token(conn) do
     case parse_authorization(conn) do
       {"authorization", auth_string} -> extract_token(auth_string)
-      _                              -> {:error, :no_token}
+      _ -> {:error, :no_token}
     end
   end
 
-  defp parse_authorization(conn), do:
-    Enum.find(conn.req_headers, fn ({k, _v}) -> k == "authorization" end)
+  defp parse_authorization(conn),
+    do: Enum.find(conn.req_headers, fn {k, _v} -> k == "authorization" end)
 
   defp extract_token(auth_string) do
     case String.split(auth_string, " ") do
       [_, api_token] -> {:ok, api_token}
-       _             -> {:error, :malformed}
+      _ -> {:error, :malformed}
     end
   end
 
@@ -190,5 +202,39 @@ defmodule Malan.AuthController do
 
   def accepted_latest_pp?(pp) do
     {:ok, pp == PrivacyPolicy.current_version()}
+  end
+
+  @doc ~S"""
+  Extract the authed user ID from the `conn`
+
+  Returns the user id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_user_id(Plug.Conn.t()) :: String.t() | nil
+  def authed_user_id(%Plug.Conn{} = conn) do
+    conn
+    |> Map.get(:assigns, %{})
+    |> Map.get(:authed_user_id, nil)
+  end
+
+  @doc ~S"""
+  Extract the authed session ID from the `conn`
+
+  Returns the session id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_session_id(Plug.Conn.t()) :: String.t() | nil
+  def authed_session_id(%Plug.Conn{} = conn) do
+    conn
+    |> Map.get(:assigns, %{})
+    |> Map.get(:authed_session_id, nil)
+  end
+
+  @doc ~S"""
+  Extract the authed user ID and authed session ID from the `conn`
+
+  Returns the session id as a string, or `nil` if not present in the conn
+  """
+  @spec authed_user_and_session(Plug.Conn.t()) :: {String.t() | nil, String.t() | nil}
+  def authed_user_and_session(%Plug.Conn{} = conn) do
+    {authed_user_id(conn), authed_session_id(conn)}
   end
 end

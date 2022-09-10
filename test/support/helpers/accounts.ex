@@ -1,9 +1,10 @@
 defmodule Malan.Test.Helpers.Accounts do
-  alias Malan.{Accounts, Repo}
+  alias Malan.{Accounts, Repo, Utils}
   alias Malan.Accounts.{User, Session}
 
   def admin_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "admin#{ui}@email.com",
       username: "adminuser#{ui}",
@@ -15,6 +16,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   def moderator_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "moderator#{ui}@email.com",
       username: "moderatoruser#{ui}",
@@ -26,6 +28,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   def regular_attrs() do
     ui = System.unique_integer([:positive])
+
     %{
       email: "regular#{ui}@email.com",
       username: "regularuser#{ui}",
@@ -71,13 +74,23 @@ defmodule Malan.Test.Helpers.Accounts do
   end
 
   @doc "Returns: {:ok, user}"
+  def lock_user(user, locked_by \\ nil) do
+    Accounts.lock_user(user, locked_by)
+  end
+
+  @doc "Returns: {:ok, user}"
+  def unlock_user(user) do
+    Accounts.unlock_user(user)
+  end
+
+  @doc "Returns: {:ok, user}"
   def admin_user(attrs \\ %{}) do
     {:ok, user} =
       attrs
       |> Enum.into(admin_attrs())
       |> Accounts.register_user()
 
-    {:ok, user} = make_user_admin(user)
+    make_user_admin(user)
   end
 
   @doc "Returns: {:ok, user}"
@@ -87,15 +100,19 @@ defmodule Malan.Test.Helpers.Accounts do
       |> Enum.into(moderator_attrs())
       |> Accounts.register_user()
 
-    {:ok, user} = make_user_moderator(user)
+    make_user_moderator(user)
   end
 
   @doc "Returns: {:ok, session}"
-  def create_session(user, session_attrs \\ %{}) do
+  def create_session(user, session_attrs \\ %{}, remote_ip \\ "192.168.2.200") do
     Accounts.create_session(
       user.username,
       user.password,
-      Map.merge(%{"ip_address" => "192.168.2.200"}, session_attrs)
+      remote_ip,
+      Map.merge(
+        %{"ip_address" => remote_ip},
+        session_attrs
+      )
     )
   end
 
@@ -106,16 +123,15 @@ defmodule Malan.Test.Helpers.Accounts do
   """
   def create_session_conn(conn, user, session_attrs \\ %{}) do
     with {:ok, session} <- create_session(user, session_attrs),
-         {:ok, user} <- accept_user_tos_and_pp(user, true),
+         {:ok, _user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-     do: {:ok, conn, session}
+         do: {:ok, conn, session}
   end
 
   @doc "Returns: {:ok, user, session}"
   def admin_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- admin_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -133,8 +149,7 @@ defmodule Malan.Test.Helpers.Accounts do
   @doc "Returns: {:ok, user, session}"
   def regular_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- regular_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -145,8 +160,7 @@ defmodule Malan.Test.Helpers.Accounts do
   @doc "Returns: {:ok, user, session}"
   def moderator_user_with_session(user_attrs \\ %{}, session_attrs \\ %{}) do
     with {:ok, user} <- moderator_user(user_attrs),
-         {:ok, session} <- create_session(user, session_attrs)
-    do
+         {:ok, session} <- create_session(user, session_attrs) do
       {:ok, user, session}
     else
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
@@ -159,7 +173,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- regular_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   @doc "Returns: {:ok, conn, user, session}"
@@ -167,7 +181,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- moderator_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   @doc "Returns: {:ok, conn, user, session}"
@@ -175,7 +189,7 @@ defmodule Malan.Test.Helpers.Accounts do
     with {:ok, user, session} <- admin_user_with_session(user_attrs, session_attrs),
          {:ok, user} <- accept_user_tos_and_pp(user, true),
          conn <- put_token(conn, session.api_token),
-    do: {:ok, conn, user, session}
+         do: {:ok, conn, user, session}
   end
 
   # This function can be used to get the specified number of users
@@ -185,7 +199,7 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, user1, session1}, {:ok, user2, session2}]
   #
   def regular_users_with_session(num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       regular_user_with_session(%{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
@@ -199,7 +213,7 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, conn, user1, session1}, {:ok, conn, user2, session2}]
   #
   def regular_users_session_conn(conn, num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       regular_user_session_conn(conn, %{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
@@ -211,10 +225,11 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, user1, session1}, {:ok, user2, session2}]
   #
   def admin_users_with_session(num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       admin_user_with_session(%{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
   end
+
   #
   # This function can be used to get the specified number of users
   # with their session tokens added to the conn that is returned
@@ -225,8 +240,31 @@ defmodule Malan.Test.Helpers.Accounts do
   #   Returns: [{:ok, conn, user1, session1}, {:ok, conn, user2, session2}]
   #
   def admin_users_session_conn(conn, num_users) do
-    Enum.map(1..num_users, fn (i) ->
+    Enum.map(1..num_users, fn i ->
       admin_user_session_conn(conn, %{email: "admin#{i}@email.com", username: "adminuser#{i}"})
     end)
+  end
+
+  def set_expired(session) do
+    session
+    |> set_expires_at(Utils.DateTime.adjust_cur_time(-10, :seconds))
+  end
+
+  def set_expires_at(session, expires_at) do
+    {:ok, session} = session
+    |> Session.admin_changeset(%{expires_at: expires_at})
+    |> Repo.update()
+
+    session
+  end
+
+  def set_revoked(session) do
+    session
+    |> set_revoked_at(Utils.DateTime.adjust_cur_time(-10, :seconds))
+  end
+
+  def set_revoked_at(session, revoked_at) do
+    {:ok, session} = Accounts.revoke_session_at(session, revoked_at)
+    session
   end
 end

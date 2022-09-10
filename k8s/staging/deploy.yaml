@@ -37,7 +37,7 @@ spec:
           - configMapRef:
               name: malan-web-config
           - secretRef:
-              name: malan-secrets
+              name: malan-deploy-secrets
         securityContext:
           allowPrivilegeEscalation: false
 
@@ -51,7 +51,9 @@ metadata:
   namespace: malan-staging
 data:
   BIND_ADDR: '0.0.0.0'
+  POOL_SIZE: '3'
   DB_POOL_SIZE: '3'
+  MAILGUN_DOMAIN: 'sandboxd0311bf768db4679945035aea547b6e7.mailgun.org'
 
 ---
 apiVersion: v1
@@ -74,3 +76,19 @@ spec:
       port: 80
       targetPort: 4000
       nodePort: 30000
+
+# ---
+# apiVersion: domain-name-operator.tamx.org/v1
+# kind: CloudflareDnsRecord
+# metadata:
+#   name: malan
+#   labels:
+#     app: malan
+#   namespace: malan-staging
+# spec:
+#   namespace: malan-staging
+#   serviceName: malan
+#   hostName: malan-staging
+#   domain: ameelio.xyz
+#   proxied: true
+#   zoneId: 16c266b9ad2cc7affc86783eb0fa74fd

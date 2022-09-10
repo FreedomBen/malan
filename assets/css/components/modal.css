@@ -1,0 +1,18 @@
+@layer components {
+  .phx-modal {
+    @apply opacity-100 fixed z-10 left-0 top-0 w-full h-full overflow-auto bg-black/40;
+  }
+
+  .phx-modal-content {
+    @apply bg-white my-[15vh] mx-auto p-5 border border-solid border-neutral-500 w-4/5;
+  }
+
+  .phx-modal-close {
+    @apply text-neutral-400 float-right text-3xl font-bold;
+  }
+
+  .phx-modal-close:hover,
+  .phx-modal-close:focus {
+    @apply text-black no-underline cursor-pointer;
+  }
+}

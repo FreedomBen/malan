@@ -1,8 +1,8 @@
 defmodule Malan.Accounts.Session do
-  @compile if Mix.env == :test, do: :export_all
-
   use Ecto.Schema
+
   import Ecto.Changeset
+  # import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
   alias Malan.Accounts.User
   alias Malan.Utils
@@ -16,6 +16,9 @@ defmodule Malan.Accounts.Session do
     field :ip_address, :string
     field :location, :string
     field :revoked_at, :utc_datetime
+    field :valid_only_for_ip, :boolean, default: false
+    # This is not yet used but will be in #78
+    field :valid_only_for_approved_ips, :boolean, default: false
     belongs_to :user, User
 
     field :api_token, :string, virtual: true
@@ -28,42 +31,68 @@ defmodule Malan.Accounts.Session do
   @doc "Being updated by an admin"
   def admin_changeset(session, attrs) do
     session
-    |> cast(attrs, [:api_token, :expires_at, :authenticated_at, :revoked_at, :ip_address, :location])
-    |> validate_required([:api_token, :expires_at, :authenticated_at, :revoked_at, :ip_address, :location])
+    |> cast(attrs, [
+      :api_token,
+      :expires_at,
+      :authenticated_at,
+      :revoked_at,
+      :ip_address,
+      :location,
+      :valid_only_for_ip,
+      :valid_only_for_approved_ips
+    ])
+    |> validate_required([
+      :api_token,
+      :expires_at,
+      :authenticated_at,
+      :ip_address
+    ])
   end
 
   @doc "User login session"
   def create_changeset(session, attrs) do
     session
-    |> cast(attrs, [:user_id, :never_expires, :expires_in_seconds, :ip_address, :location])
+    |> cast(attrs, [
+      :user_id,
+      :never_expires,
+      :expires_in_seconds,
+      :ip_address,
+      :location,
+      :valid_only_for_ip,
+      :valid_only_for_approved_ips
+    ])
     |> put_api_token()
     |> set_expiration_time()
     |> put_authenticated_at()
     |> validate_required([:api_token_hash, :expires_at, :authenticated_at, :ip_address])
+    # |> validate_ip_addr(:ip_address)
   end
 
   @doc "Revoke user session"
   def revoke_changeset(session, attrs) do
     session
     |> cast(attrs, [:revoked_at])
-    |> validate_required([:revoked_at, :api_token_hash, :expires_at, :authenticated_at, :ip_address])
+    |> validate_required([
+      :revoked_at,
+      :api_token_hash,
+      :expires_at,
+      :authenticated_at,
+      :ip_address
+    ])
   end
 
   defp gen_api_token(), do: Utils.Crypto.strong_random_string(65)
 
-  defp gen_api_token(changeset) do
-    put_change(changeset, :api_token, gen_api_token())
-  end
-
   defp put_api_token(changeset) do
     api_token = gen_api_token()
+
     changeset
     |> put_change(:api_token, api_token)
     |> put_change(:api_token_hash, Utils.Crypto.hash_token(api_token))
   end
 
   defp put_authenticated_at(changeset) do
-    put_change(changeset, :authenticated_at, Utils.DateTime.utc_now_trunc)
+    put_change(changeset, :authenticated_at, Utils.DateTime.utc_now_trunc())
   end
 
   defp set_expiration_time(%Ecto.Changeset{} = changeset, %DateTime{} = date_time) do
@@ -105,7 +134,7 @@ defmodule Malan.Accounts.Session do
   end
 
   defp set_expiration_time(changeset) do
-    num_secs = Application.get_env(:malan, Malan.Accounts.Session)[:default_token_expiration_secs]
+    num_secs = Malan.Config.Session.default_token_expiration_secs()
     set_expiration_time(changeset, num_secs, :seconds)
   end
 end

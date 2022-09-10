@@ -1,0 +1,10 @@
+@layer components {
+  .button {
+    @apply px-7 whitespace-nowrap inline-block h-10 text-xs font-bold leading-10 tracking-wider text-center uppercase border rounded cursor-pointer;
+  }
+
+  .button-primary {
+    @apply button;
+    @apply text-white bg-blue-700 border-blue-700 hover:bg-gray-500 hover:border-gray-500;
+  }
+}

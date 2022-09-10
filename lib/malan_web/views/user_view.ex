@@ -7,28 +7,47 @@ defmodule MalanWeb.UserView do
   alias MalanWeb.TosAcceptEventView
   alias MalanWeb.PrivacyPolicyAcceptEventView
   alias MalanWeb.PreferencesView
+  alias MalanWeb.AddressView
   alias MalanWeb.PhoneNumberView
 
-  def render("index.json", %{users: users}) do
-    %{data: render_many(users, UserView, "user.json")}
+  def render("index.json", %{code: code, users: users, page_num: page_num, page_size: page_size}) do
+    %{
+      ok: true,
+      code: code,
+      data: render_many(users, UserView, "user.json"),
+      page_num: page_num,
+      page_size: page_size
+    }
   end
 
-  def render("show.json", %{user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user}) do
-    %{data: render_one(user, UserView, "user.json")}
+  def render("show.json", %{
+        code: code,
+        user: %User{addresses: %Ecto.Association.NotLoaded{}} = user
+      }) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
-  def render("show.json", %{user: %User{phone_numbers: _} = user}) do
-    %{data: render_one(user, UserView, "user_full.json")}
+  def render("show.json", %{
+        code: code,
+        user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user
+      }) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
   end
 
-  #def render("show.json", %{user: user}) do
-  #  %{data: render_one(user, UserView, "user.json")}
-  #end
+  # def render("show.json", %{user: %User{phone_numbers: _} = user}) do
+  def render("show.json", %{code: code, user: %User{} = user}) do
+    %{ok: true, code: code, data: render_one(user, UserView, "user_full.json")}
+  end
+
+  # def render("show.json", %{user: user}) do
+  #   %{data: render_one(user, UserView, "user.json")}
+  # end
 
   def render("user.json", %{user: user}) do
     # If password is non-nil, it is included.  This is needed for
     # example with returning randomly generated passwords
-    %{id: user.id,
+    %{
+      id: user.id,
       username: user.username,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -46,37 +65,72 @@ defmodule MalanWeb.UserView do
       latest_tos_accept_ver: user.latest_tos_accept_ver,
       latest_pp_accept_ver: user.latest_pp_accept_ver,
       tos_accepted: user.latest_tos_accept_ver == Malan.Accounts.TermsOfService.current_version(),
-      privacy_policy_accepted: user.latest_pp_accept_ver == Malan.Accounts.PrivacyPolicy.current_version(),
-      tos_accept_events: render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
-      privacy_policy_accept_events: render_many(user.privacy_policy_accept_events, PrivacyPolicyAcceptEventView, "privacy_policy_accept_event.json"),
+      privacy_policy_accepted:
+        user.latest_pp_accept_ver == Malan.Accounts.PrivacyPolicy.current_version(),
+      tos_accept_events:
+        render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
+      privacy_policy_accept_events:
+        render_many(
+          user.privacy_policy_accept_events,
+          PrivacyPolicyAcceptEventView,
+          "privacy_policy_accept_event.json"
+        ),
       roles: user.roles,
       preferences: render_one(user.preferences, PreferencesView, "preferences.json"),
-      custom_attrs: user.custom_attrs}
-      |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
-      |> Enum.into(%{})
+      custom_attrs: user.custom_attrs,
+      locked_at: user.locked_at,
+      locked_by: user.locked_by,
+      approved_ips: user.approved_ips
+    }
+    |> Enum.reject(fn {k, v} -> k == :password && is_nil(v) end)
+    |> Enum.into(%{})
   end
 
   def render("user_full.json", %{user: user}) do
     render("user.json", %{user: user})
-    |> Map.put(:phone_numbers, render_many(user.phone_numbers, PhoneNumberView, "phone_number.json"))
-    #|> Map.put(:addresses, user.addresses)
+    |> Map.put(:addresses, render_many(user.addresses, AddressView, "address.json"))
+    |> Map.put(
+      :phone_numbers,
+      render_many(user.phone_numbers, PhoneNumberView, "phone_number.json")
+    )
   end
 
-  def render("whoami.json", %{user_id: user_id, session_id: session_id, user_roles: user_roles, expires_at: expires_at, tos: tos, pp: pp}) do
-    %{data:
-      %{user_id: user_id,
+  def render("whoami.json", %{
+        code: code,
+        user_id: user_id,
         session_id: session_id,
+        ip_address: ip_address,
+        valid_only_for_ip: valid_only_for_ip,
+        user_roles: user_roles,
+        expires_at: expires_at,
+        tos: tos,
+        pp: pp
+      }) do
+    %{
+      ok: true,
+      code: code,
+      data: %{
+        user_id: user_id,
+        session_id: session_id,
+        ip_address: ip_address,
+        valid_only_for_ip: valid_only_for_ip,
         user_roles: user_roles,
         expires_at: expires_at,
         terms_of_service: tos,
-        privacy_policy: pp,
+        privacy_policy: pp
       }
     }
   end
 
-  def render("password_reset.json", %{password_reset_token: password_reset_token, password_reset_token_expires_at: password_reset_token_expires_at}) do
-    %{data:
-      %{
+  def render("password_reset.json", %{
+        code: code,
+        password_reset_token: password_reset_token,
+        password_reset_token_expires_at: password_reset_token_expires_at
+      }) do
+    %{
+      ok: true,
+      code: code,
+      data: %{
         password_reset_token: password_reset_token,
         password_reset_token_expires_at: password_reset_token_expires_at
       }

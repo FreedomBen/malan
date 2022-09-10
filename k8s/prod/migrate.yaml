@@ -8,6 +8,7 @@ metadata:
   namespace: malan-prod
 data:
   BIND_ADDR: '127.0.0.1'
+  POOL_SIZE: '5'
   DB_POOL_SIZE: '5'
 
 ---
@@ -33,7 +34,7 @@ spec:
           - configMapRef:
               name: malan-migration-config
           - secretRef:
-              name: malan-secrets
+              name: malan-migration-secrets
         securityContext:
           allowPrivilegeEscalation: false
   ttlSecondsAfterFinished: 86400 # 24 hours

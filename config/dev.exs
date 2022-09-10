@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Configure your database
 config :malan, Malan.Repo,
@@ -15,14 +15,29 @@ config :malan, Malan.Repo,
 #
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
-# with webpack to recompile .js and .css sources.
+# with esbuild to bundle .js and .css sources.
 config :malan, MalanWeb.Endpoint,
-  http: [port: 4000],
-  debug_errors: true,
-  #debug_errors: false,
-  code_reloader: true,
+  # Binding to loopback ipv4 address prevents access from other machines.
+  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
+  http: [ip: {0, 0, 0, 0}, port: 4000],
+  # http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
-  watchers: []
+  code_reloader: true,
+  debug_errors: true,
+  # debug_errors: false,
+  secret_key_base: "udX5bFf0B1XDP3LQdGk/neU0RDWp7LUf/ocaUT9lzJ80056EUKKuS7VKm71YYFhy",
+  watchers: [
+    # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    npx: [
+      "tailwindcss",
+      "--input=css/app.css",
+      "--output=../priv/static/assets/app.css",
+      "--postcss",
+      "--watch",
+      cd: Path.expand("../assets", __DIR__)
+    ]
+  ]
 
 # ## SSL Support
 #
@@ -48,6 +63,17 @@ config :malan, MalanWeb.Endpoint,
 # configured to run both http and https servers on
 # different ports.
 
+# Watch static and templates for browser reloading.
+config :malan, MalanWeb.Endpoint,
+  live_reload: [
+    patterns: [
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/gettext/.*(po)$",
+      ~r"lib/malan_web/(live|views)/.*(ex)$",
+      ~r"lib/malan_web/templates/.*(eex)$"
+    ]
+  ]
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 
@@ -57,3 +83,12 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Configure swoosh mailer to use the local in memory mailbox
+# config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Local
+
+# Configure swoosh mailer to use the logger mailbox which just prints
+# out to the logs when mail is sent
+config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Logger
+
+config :malan, :sentry, enabled: false
