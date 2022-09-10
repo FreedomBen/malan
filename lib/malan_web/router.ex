@@ -53,6 +53,13 @@ defmodule MalanWeb.Router do
     #plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
   end
 
+  scope "/", MalanWeb do
+    pipe_through :browser
+
+    live "/users/reset_password", UserLive.ResetPassword
+    live "/users/reset_password/:token", UserLive.ResetPasswordToken
+  end
+
   scope "/health_check", MalanWeb, log: false do
     get "/liveness", HealthCheckController, :liveness
     get "/readiness", HealthCheckController, :readiness
