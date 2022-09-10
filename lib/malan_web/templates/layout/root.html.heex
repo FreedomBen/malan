@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
@@ -9,14 +9,116 @@
     <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
     <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
   </head>
-  <body>
-
-    <div class="bg-white">
-      <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex-shrink-0 pt-16">
-          <img class="mx-auto h-12 w-auto" src={Routes.static_path(@conn, "/images/Ameelio_Logo.png")} alt="Workflow">
+  <body class="h-full">
+    <div
+      class="relative bg-white"
+      x-data="{ mobile_menu_open: false, profile_menu_open: false }"
+    >
+      <div class="mx-auto max-w-7xl px-4 sm:px-6">
+        <div class="flex items-center justify-between border-b-2 border-gray-100 py-6 md:justify-start md:space-x-10">
+          <div class="flex justify-start lg:w-0 lg:flex-1">
+            <%= live_redirect to: Routes.live_path(@conn, MalanWeb.UserLive.ResetPassword) do %>
+              <span class="sr-only">Ameelio</span>
+              <img class="h-8 w-auto sm:h-10" src={Routes.static_path(@conn, "/images/ameelio_logo_square.png")} alt="Ameelio Logo">
+            <% end %>
+          </div>
+          <div class="-my-2 -mr-2 md:hidden">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              aria-expanded="false"
+              @click="mobile_menu_open = ! mobile_menu_open"
+            >
+              <span class="sr-only">Open menu</span>
+              <!-- Heroicon name: outline/bars-3 -->
+              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+          </div>
+          <nav class="hidden space-x-10 md:flex">
+            <a href="#" class="text-base font-medium text-gray-500 hover:text-gray-900">Ameelio.org</a>
+            <a href="#" class="text-base font-medium text-gray-500 hover:text-gray-900">Letters</a>
+            <a href="#" class="text-base font-medium text-gray-500 hover:text-gray-900">Pathways</a>
+            <a href="#" class="text-base font-medium text-gray-500 hover:text-gray-900">Connect</a>
+          </nav>
+          <div class="hidden items-center justify-end md:flex md:flex-1 lg:w-0">
+            <!-- Not implemented yet for accounts
+            <a href="#" class="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900">Sign in</a>
+            <a href="#" class="ml-8 inline-flex items-center justify-center whitespace-nowrap rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700">Sign up</a>
+            -->
+          </div>
         </div>
-      </main>
+      </div>
+
+      <!--
+        Mobile menu, show/hide based on mobile menu state.
+
+        Entering: "duration-200 ease-out"
+          From: "opacity-0 scale-95"
+          To: "opacity-100 scale-100"
+        Leaving: "duration-100 ease-in"
+          From: "opacity-100 scale-100"
+          To: "opacity-0 scale-95"
+      -->
+      <div
+        class="absolute inset-x-0 top-0 origin-top-right transform p-2 transition md:hidden"
+        x-cloak
+        x-show="mobile_menu_open"
+        class="lg:hidden"
+        id="mobile-menu"
+        x-transition
+        x-transition.duration.500ms
+      >
+        <div class="divide-y-2 divide-gray-50 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+          <div class="px-5 pt-5 pb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <img class="h-8 w-auto" src={Routes.static_path(@conn, "/images/ameelio_logo_square.png")} alt="Ameelio Logo">
+              </div>
+              <div class="-mr-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                  @click="mobile_menu_open = ! mobile_menu_open"
+                >
+                  <span class="sr-only">Close menu</span>
+                  <!-- Heroicon name: outline/x-mark -->
+                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="mt-6">
+              <nav class="grid gap-y-8">
+                <a href="#" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                  <span class="ml-3 text-base font-medium text-gray-900">Ameelio.org</span>
+                </a>
+
+                <a href="#" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                  <!-- Heroicon name: outline/cursor-arrow-rays -->
+                  <!--
+                  <svg class="h-6 w-6 flex-shrink-0 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
+                  </svg>
+                  -->
+                  <span class="ml-3 text-base font-medium text-gray-900">Letters</span>
+                </a>
+
+                <a href="#" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                  <span class="ml-3 text-base font-medium text-gray-900">Pathways</span>
+                </a>
+
+                <a href="#" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                  <span class="ml-3 text-base font-medium text-gray-900">Connect</span>
+                </a>
+
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <%= @inner_content %>

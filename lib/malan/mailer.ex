@@ -1,6 +1,8 @@
 defmodule Malan.Mailer do
   use Swoosh.Mailer, otp_app: :malan
 
+  alias Phoenix.LiveView.Socket
+
   alias Malan.Utils
   alias Malan.Utils.Logger
   alias MalanWeb.UserNotifier
@@ -13,10 +15,11 @@ defmodule Malan.Mailer do
     |> log_delivery(email, __ENV__)
   end
 
-  @spec send_password_reset_email(User.t()) :: {:ok, term} | {:error, term}
-  def send_password_reset_email(user) do
+
+  @spec send_password_reset_email(Socket.t() | Plug.Conn.t(), User.t()) :: {:ok, term} | {:error, term}
+  def send_password_reset_email(conn_or_socket, user) do
     user
-    |> UserNotifier.password_reset_email()
+    |> UserNotifier.password_reset_email(conn_or_socket)
     |> send_mail()
   end
 
