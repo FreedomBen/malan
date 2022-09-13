@@ -6,16 +6,13 @@ defmodule Malan.MailerTest do
   alias Malan.Test.Helpers
   alias Malan.Mailer
 
-  describe "Malan.Pagination.PageOutOfBounds" do
+  describe "UserNotifier" do
     test "Sends mail" do
       {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Malan.Accounts.generate_password_reset(user, :no_rate_limit)
       email = MalanWeb.UserNotifier.password_reset_email(user)
-      #Swoosh.Adapters.Test.deliver(email, [])
       Mailer.deliver(email)
       Swoosh.TestAssertions.assert_email_sent(email)
-
-
-
 
       #alias Swoosh.Email
       #import Swoosh.TestAssertions
@@ -33,7 +30,6 @@ defmodule Malan.MailerTest do
       #assert_email_sent(fn email ->
       #  assert length(email.to) == 2
       #end)
-
     end
   end
 end
