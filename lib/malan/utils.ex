@@ -702,7 +702,12 @@ defmodule Malan.Utils.Access do
     false
 
   """
-  @spec has_key?(map_or_kwlist :: Access.t(), key :: any()) :: boolean()
+  @spec has_key?(map_or_struct_kwlist :: Access.t() | %{__struct__: atom()}, key :: any()) ::
+          boolean()
+  def has_key?(_, nil), do: false
+  def has_key?(nil, _key), do: false
+  def has_key?(%{__struct__: _struct_type} = struct, key), do: Map.has_key?(struct, key)
+
   def has_key?(access, key) do
     case Access.fetch(access, key) do
       {:ok, _} -> true
@@ -725,9 +730,15 @@ defmodule Malan.Utils.Access do
     false
 
   """
-  @spec has_path?(map_or_kwlist :: Access.t(), path :: list(any())) :: boolean()
-  def has_path?(access, []), do: true
+  @spec has_path?(map_or_struct_kwlist :: Access.t() | struct(), path :: list(any())) :: boolean()
+  def has_path?(nil, _), do: false
+  def has_path?(_access, nil), do: false
+  def has_path?(_access, []), do: true
   def has_path?(access, [path]), do: has_key?(access, path)
+
+  def has_path?(%{__struct__: _struct_type} = struct, [path | tail]),
+    do: has_key?(struct, path) and struct |> Map.get(path) |> has_path?(tail)
+
   def has_path?(access, [path | tail]),
     do: has_key?(access, path) and has_path?(access[path], tail)
 
@@ -746,10 +757,28 @@ defmodule Malan.Utils.Access do
     %{first: "Jeb"}
 
   """
-  @spec value_at(map_or_kwlist :: Access.t(), path :: list(any())) :: any()
-  def value_at(access, []), do: access
-  def value_at(access, [path]), do: access[path]
-  def value_at(access, [path | tail]), do: value_at(access[path], tail)
+  @spec value_at(map_or_kwlist :: Access.t(), path :: list(any()), default :: any()) :: any()
+  def value_at(access, path, default \\ nil)
+  def value_at(access, [], _default), do: access
+
+  def value_at(%{__struct__: _struct_type} = struct, [path], default) do
+    case has_path?(struct, [path]) do
+      true -> Map.get(struct, path)
+      _ -> default
+    end
+  end
+
+  def value_at(access, [path], default) do
+    case has_path?(access, [path]) do
+      true -> access[path]
+      _ -> default
+    end
+  end
+
+  def value_at(%{__struct__: _struct_type} = struct, [path | tail], default),
+    do: value_at(Map.get(struct, path), tail, default)
+
+  def value_at(access, [path | tail], default), do: value_at(access[path], tail, default)
 
   @doc """
   Checks if the value at the specified `path` is in `map_or_kwlist` matches `val` or `func`
@@ -789,7 +818,7 @@ defmodule Malan.Utils.Access do
 
   @spec value_is?(map_or_kwlist :: Access.t(), path :: list(any()), val :: any()) :: boolean()
   def value_is?(access, path, val) when is_list(path) do
-    value_is?(access, path, fn (_) -> val end)
+    value_is?(access, path, fn _ -> val end)
   end
 end
 
