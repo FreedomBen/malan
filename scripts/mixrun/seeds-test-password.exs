@@ -32,7 +32,8 @@ case Accounts.create_session(username, password, "1.1.1.1", %{"ip_address" => "1
   {:ok, %Session{} = session} ->
     Print.puts_green("Successfully created session (logged in)")
     Print.inspect_green(session)
+
   {:error, error} ->
-    Print.puts_red("Error encountered creating sesion")
+    Print.puts_red("Error encountered creating session")
     Print.inspect_red(error)
 end
