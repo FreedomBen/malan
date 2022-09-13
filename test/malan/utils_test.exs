@@ -501,7 +501,10 @@ defmodule Malan.UtilsTest do
 
     test "#has_path?/2" do
       assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, "singer"])
-      assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, :lead_guitar])
+
+      assert true ==
+               Utils.Access.has_path?(structure(), [:four, "three", :two, :one, :lead_guitar])
+
       assert true == Utils.Access.has_path?(structure(), [:four, "three", :two, :one])
       assert true == Utils.Access.has_path?(structure(), [:four, "three", :two])
       assert true == Utils.Access.has_path?(structure(), [:four, "three"])
@@ -509,16 +512,23 @@ defmodule Malan.UtilsTest do
       assert true == Utils.Access.has_path?(structure(), [])
 
       assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, :wrong])
-      assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :one, "not_there"])
+
+      assert false ==
+               Utils.Access.has_path?(structure(), [:four, "three", :two, :one, "not_there"])
+
       assert false == Utils.Access.has_path?(structure(), [:four, "three", :two, :seven])
       assert false == Utils.Access.has_path?(structure(), [:four, "three", :twelve])
       assert false == Utils.Access.has_path?(structure(), [:four, "nineteen"])
       assert false == Utils.Access.has_path?(structure(), [:twenty_one])
     end
 
-    test "#value_at/2" do
-      assert singer() == Utils.Access.value_at(structure(), [:four, "three", :two, :one, "singer"])
-      assert lead_guitar() == Utils.Access.value_at(structure(), [:four, "three", :two, :one, :lead_guitar])
+    test "#value_at/3" do
+      assert singer() ==
+               Utils.Access.value_at(structure(), [:four, "three", :two, :one, "singer"])
+
+      assert lead_guitar() ==
+               Utils.Access.value_at(structure(), [:four, "three", :two, :one, :lead_guitar])
+
       assert band() == Utils.Access.value_at(structure(), [:four, "three", :two, :one])
       assert map_one() == Utils.Access.value_at(structure(), [:four, "three", :two])
       assert map_two() == Utils.Access.value_at(structure(), [:four, "three"])
@@ -526,18 +536,78 @@ defmodule Malan.UtilsTest do
       assert map_four() == Utils.Access.value_at(structure(), [])
     end
 
-    test "#value_is?/3" do
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], singer())
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> singer() end)
+    test "#value_at/3 when key does not exist" do
+      assert is_nil(Utils.Access.value_at(structure(), [:four, "three", :wrong, :one, "singer"]))
 
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], lead_guitar())
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], fn _ -> lead_guitar() end)
+      assert "DEFAULT_VALUE" ==
+               Utils.Access.value_at(
+                 structure(),
+                 [:four, "three", :wrong, :one, "singer"],
+                 "DEFAULT_VALUE"
+               )
+
+      struct_structure = %TestStruct{
+        one: "one",
+        two: %{
+          struct: %TestStruct{three: %{"winner" => "Alan"}}
+        }
+      }
+
+      assert is_nil(
+               Utils.Access.value_at(struct_structure, [:two, :struct, :three, "not present"])
+             )
+
+      assert "DEFAULT_VALUE" ==
+               Utils.Access.value_at(
+                 struct_structure,
+                 [:two, :struct, :three, "not present"],
+                 "DEFAULT_VALUE"
+               )
+
+      assert nil == Utils.Access.value_at(struct_structure, [:missing])
+
+      assert "DEFAULT_VALUE" ==
+               Utils.Access.value_at(struct_structure, [:missing], "DEFAULT_VALUE")
+    end
+
+    test "#value_is?/3" do
+      assert true ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, "singer"],
+                 singer()
+               )
+
+      assert true ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ ->
+                 singer()
+               end)
+
+      assert true ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, :lead_guitar],
+                 lead_guitar()
+               )
+
+      assert true ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, :lead_guitar],
+                 fn _ -> lead_guitar() end
+               )
 
       assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], band())
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ -> band() end)
+
+      assert true ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ ->
+                 band()
+               end)
 
       assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], map_one())
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> map_one() end)
+
+      assert true ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> map_one() end)
 
       assert true == Utils.Access.value_is?(structure(), [:four, "three"], map_two())
       assert true == Utils.Access.value_is?(structure(), [:four, "three"], fn _ -> map_two() end)
@@ -550,17 +620,41 @@ defmodule Malan.UtilsTest do
       assert true == Utils.Access.value_is?(structure(), [], map_four())
       assert true == Utils.Access.value_is?(structure(), [], fn _ -> map_four() end)
 
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], "nothing")
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> "nothing" end)
+      assert false ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, "singer"],
+                 "nothing"
+               )
 
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], "nothing")
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, :lead_guitar], fn _ -> "nothing" end)
+      assert false ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ ->
+                 "nothing"
+               end)
+
+      assert false ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, :lead_guitar],
+                 "nothing"
+               )
+
+      assert false ==
+               Utils.Access.value_is?(
+                 structure(),
+                 [:four, "three", :two, :one, :lead_guitar],
+                 fn _ -> "nothing" end
+               )
 
       assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], nil)
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ -> nil end)
+
+      assert false ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn _ -> nil end)
 
       assert false == Utils.Access.value_is?(structure(), [:four, "three", :two], "Todd")
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> "Todd" end)
+
+      assert false ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two], fn _ -> "Todd" end)
 
       assert false == Utils.Access.value_is?(structure(), [:four, "three"], "Ron")
       assert false == Utils.Access.value_is?(structure(), [:four, "three"], fn _ -> "Ron" end)
@@ -571,15 +665,60 @@ defmodule Malan.UtilsTest do
       assert false == Utils.Access.value_is?(structure(), [], "Atom")
       assert false == Utils.Access.value_is?(structure(), [], fn _ -> "Pete" end)
 
-      assert false == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ -> nil end)
+      assert false ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn _ ->
+                 nil
+               end)
 
       # Identity function is always true
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn x -> x end)
-      assert true == Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn x -> x end)
+      assert true ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one, "singer"], fn x ->
+                 x
+               end)
+
+      assert true ==
+               Utils.Access.value_is?(structure(), [:four, "three", :two, :one], fn x -> x end)
+
       assert true == Utils.Access.value_is?(structure(), [:four, "three", :two], fn x -> x end)
       assert true == Utils.Access.value_is?(structure(), [:four, "three"], fn x -> x end)
       assert true == Utils.Access.value_is?(structure(), [:four], fn x -> x end)
       assert true == Utils.Access.value_is?(structure(), [], fn x -> x end)
+    end
+
+    test "#value_is?/2 works with structs (this covers has_key?/2 and value_at/3 also" do
+      struct_structure = %TestStruct{
+        one: "one",
+        two: %{
+          struct: %TestStruct{three: %{"winner" => "Alan"}}
+        }
+      }
+
+      assert true ==
+               Utils.Access.value_is?(struct_structure, [:two, :struct, :three, "winner"], "Alan")
+
+      assert false == Utils.Access.value_is?(struct_structure, [:two, :struct, :winner], "Alan")
+
+      assert false ==
+               Utils.Access.value_is?(struct_structure, [:two, :struct, :three, :winner], "Alan")
+    end
+
+    test "#value_is?/2 works with keyword lists" do
+      ns = [
+        one: "one",
+        two: "two",
+        three: %{
+          "four" => [
+            five: "five"
+          ]
+        }
+      ]
+
+      assert true == Utils.Access.value_is?(ns, [:one], "one")
+      assert true == Utils.Access.value_is?(ns, [:two], "two")
+      assert true == Utils.Access.value_is?(ns, [:three, "four", :five], "five")
+
+      assert false == Utils.Access.value_is?(ns, [:one], "two")
+      assert false == Utils.Access.value_is?(ns, [:three, "four", :five], "six")
     end
   end
 
