@@ -27,10 +27,12 @@ defmodule MalanWeb.UserLive.ResetPassword do
         {:noreply, assign(socket, :success, false)}
 
       user ->
+        # TODO:  Use pattern matching so that we can remove the Accounts.get_user_by_email call above.
+        #with %User{} = user <- Accounts.get_user_by_email(email),
         with user <- Accounts.get_user_by_email(email),
              tx_changeset <- User.password_reset_create_changeset(user),
              {:ok, %User{} = user} <- Accounts.generate_password_reset(user),
-             {:ok, term} <- Mailer.send_password_reset_email(socket, user) do
+             {:ok, _term} <- Mailer.send_password_reset_email(user) do
           record_transaction(
             true,
             user.id,
