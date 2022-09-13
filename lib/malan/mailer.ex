@@ -1,8 +1,6 @@
 defmodule Malan.Mailer do
   use Swoosh.Mailer, otp_app: :malan
 
-  alias Phoenix.LiveView.Socket
-
   alias Malan.Utils
   alias Malan.Utils.Logger
   alias MalanWeb.UserNotifier

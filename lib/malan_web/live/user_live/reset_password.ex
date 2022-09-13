@@ -4,8 +4,6 @@ defmodule MalanWeb.UserLive.ResetPassword do
   alias Malan.{Accounts, Mailer, Utils}
   alias Malan.Accounts.User
 
-  alias MalanWeb.UserNotifier
-
   # Wires up socket assigns and after invokes handle_params/3
   @impl true
   def mount(_params, _session, socket) do
@@ -26,7 +24,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
       nil ->
         {:noreply, assign(socket, :success, false)}
 
-      user ->
+      _user ->
         # TODO:  Use pattern matching so that we can remove the Accounts.get_user_by_email call above.
         #with %User{} = user <- Accounts.get_user_by_email(email),
         with user <- Accounts.get_user_by_email(email),
@@ -111,19 +109,6 @@ defmodule MalanWeb.UserLive.ResetPassword do
       verb,
       what,
       remote_ip,
-      tx_changeset
-    )
-  end
-
-  defp record_tx_admin_reset_password_token_fail(remote_ip, user, err, tx_changeset) do
-    record_transaction(
-      false, # success
-      user.id,
-      remote_ip,
-      user.id,
-      user.username,
-      "PUT", # verb
-      "MalanWeb.UserLive.ResetPasswordToken - Err: #{Malan.Utils.Ecto.Changeset.errors_to_str_list(err)}",
       tx_changeset
     )
   end
