@@ -52,8 +52,15 @@ metadata:
 data:
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '3'
-  DB_POOL_SIZE: '3'
-  MAILGUN_DOMAIN: 'sandboxd0311bf768db4679945035aea547b6e7.mailgun.org'
+  MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
+  HOST: 'accounts.ameelio.org'
+  PORT: '4000'
+  DATABASE_TLS_ENABLED: 'true'
+  # Vars from secrets
+  # DATABASE_URL
+  # MAILGUN_API_KEY
+  # SERET_KEY_BASE
+  # SENTRY_DNS
 
 ---
 apiVersion: v1

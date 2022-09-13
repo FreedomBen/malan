@@ -7,7 +7,7 @@ metadata:
   name: malan
   namespace: malan-prod
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: malan
@@ -52,7 +52,15 @@ metadata:
 data:
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '5'
-  DB_POOL_SIZE: '5'
+  MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
+  HOST: 'accounts.ameelio.org'
+  PORT: '4000'
+  DATABASE_TLS_ENABLED: 'true'
+  # Vars from secrets
+  # DATABASE_URL
+  # MAILGUN_API_KEY
+  # SERET_KEY_BASE
+  # SENTRY_DNS
 
 # Service annotations for Digital Ocean
 # https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/
