@@ -95,6 +95,8 @@ defmodule MalanWeb do
       import MalanWeb.ErrorHelpers
       import MalanWeb.Gettext
       alias MalanWeb.Router.Helpers, as: Routes
+
+      import Malan.Utils.Phoenix.View.Helpers
     end
   end
 

@@ -971,12 +971,75 @@ defmodule Malan.Utils.Phoenix.Controller do
   def remote_ip_s(conn), do: Malan.Utils.IPv4.to_s(conn.remote_ip)
 end
 
+defmodule Malan.Utils.Phoenix.View.Helpers do
+  @doc """
+  A component you can use to quickly comment out some HEEx markup
+
+  Because HEEx does not have a block comment, and HTML's `<!-- -->` does not
+  work, commenting out blocks is difficult.  This component function makes
+  it simple.
+
+  This is also the function with the highest documentation to implementation
+  ratio (amount of comments to lines/complexity of implementation code).
+  It has a lot of documentation but has so little code that it's barely
+  even worth writing.
+
+  ## Examples
+
+  ### Comment out a block
+
+      ```
+      <div>
+        <Malan.Utils.Phoenix.View.comment>
+          <div>
+            Stuff that won't get rendered at all
+          </div>
+        </Malan.Utils.Phoenix.View.comment>
+      </div>
+      ```
+
+  ### import and use directly in templates/views
+
+      Put an alias in your view for easier usage Or add to `view_helpers/0`
+      in `lib/malan_web.ex` so it's automatically imported into every view
+      and can be used directly in each template:
+
+  #### `lib/malan_web.ex`:
+
+      Add to `MalanWeb.view_helpers/1`:
+
+      ```
+      import Malan.Utils.Phoenix.View
+      ```
+
+      Then use in your HEEx markup:
+
+      ```
+      <.comment>
+        <span>This won't show up</span>
+      </.comment>
+
+      <div>
+        <.comment>
+          <div>
+            Stuff that won't get rendered at all
+          </div>
+        </.comment>
+      </div>
+      ```
+  """
+  def comment(assigns) do
+    import Phoenix.LiveView.Helpers, only: [sigil_H: 2]
+    ~H//
+  end
+end
+
 defmodule Malan.Utils.Ecto.Query do
   defguard valid_sort(sort) when is_atom(sort) and sort in [:asc, :desc]
 end
 
 defmodule Malan.Utils.Ecto.Changeset do
-  @doc """
+  @doc ~S"""
   Validates that the property specified does NOT match the provided regex.
 
   This function is essentially the opposite of validate_format()
