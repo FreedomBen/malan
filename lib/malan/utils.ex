@@ -990,11 +990,11 @@ defmodule Malan.Utils.Phoenix.View.Helpers do
 
       ```
       <div>
-        <Malan.Utils.Phoenix.View.comment>
+        <Malan.Utils.Phoenix.View.Helpers.comment>
           <div>
             Stuff that won't get rendered at all
           </div>
-        </Malan.Utils.Phoenix.View.comment>
+        </Malan.Utils.Phoenix.View.Helpers.comment>
       </div>
       ```
 
@@ -1009,7 +1009,7 @@ defmodule Malan.Utils.Phoenix.View.Helpers do
       Add to `MalanWeb.view_helpers/1`:
 
       ```
-      import Malan.Utils.Phoenix.View
+      import Malan.Utils.Phoenix.View.Helpers
       ```
 
       Then use in your HEEx markup:
