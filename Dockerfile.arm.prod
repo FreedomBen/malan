@@ -1,4 +1,4 @@
-FROM almalinux:8.6
+FROM elixir:1.13
 
 # These are required to be in place for mix compile to run,
 # but the real values will be injected via Secret at runtime
@@ -6,64 +6,52 @@ ARG DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
 ARG SECRET_KEY_BASE=124
 
 ENV USER_HOME /home/docker
-ENV LANG en_US.UTF-8
 
-# Ensure locale is UTF-8
-RUN dnf install --assumeyes \
-    glibc-langpack-en \
-    glibc-locale-source \ 
- && localedef --force --inputfile=en_US --charmap=UTF-8 en_US.UTF-8 \
- && echo "LANG=en_US.UTF-8" > /etc/locale.conf \
- && dnf clean all \
- && rm -rf /var/cache/dnf /var/cache/yum
-
-# Create non-root user
-RUN groupadd --gid 1000 docker \
- && adduser --uid 1000 --gid 1000 --home ${USER_HOME} docker \
+RUN addgroup --gid 1000 docker \
+ && adduser --uid 1000 --gid 1000 --disabled-password --gecos "Docker User" --home ${USER_HOME} docker \
  && usermod -L docker
 
-# Install EPEL and base packages
-RUN dnf install --assumeyes glibc-langpack-en \
- && dnf install --assumeyes https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
- && dnf install --assumeyes dnf-plugins-core \
- && dnf config-manager --set-enabled powertools \
- && dnf update --assumeyes \
- && dnf install --assumeyes \
+# Configure apt, install updates and common packages, and clean up apt's cache
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get upgrade --assume-yes \
+ && apt-get autoremove --assume-yes \
+ && apt-get install --assume-yes --no-install-recommends \
+    apt-utils \
+    apt-transport-https \
     ca-certificates \
-    curl \
-    git \
-    jq \
-    python36 \
-    npm \
-    nmap \
-    psmisc \
-    procps-ng \
-    wget \
+    software-properties-common \
+    locales \
+ && apt-get install --assume-yes --no-install-recommends \
     tini \
- && dnf clean all \
- && rm -rf /var/cache/dnf /var/cache/yum
+    curl \
+    psmisc \
+    git \
+    build-essential \
+    python \
+    nodejs \
+    npm \
+    jq \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
+ && update-ca-certificates
 
- #Install nodejs and enable module nodejs:16
-RUN dnf module reset --assumeyes nodejs \
- && dnf module enable --assumeyes nodejs:16 \
- && dnf module install --assumeyes nodejs:16 
-
-#Install elixir version 1.13.0 and erlang version 25.0.3
-RUN wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/elixir_1.13.0-1~centos~8_all.rpm \
- && wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/esl-erlang_24.1.7-1~centos~8_amd64.rpm \
- && dnf install --assumeyes \
-    elixir_1.13.0-1~centos~8_all.rpm \ 
-    esl-erlang_24.1.7-1~centos~8_amd64.rpm \
- && rm -rf esl-erlang_24.1.7-1~centos~8_amd64.rpm \
-   elixir_1.13.0-1~centos~8_all.rpm
+# Ensure locale is UTF-8
+ENV LANG       en_US.UTF-8
+ENV LC_ALL     en_US.UTF-8
+ENV LC_TYPE    en_US.UTF-8
+ENV LANGUAGE   en_US.UTF-8
+RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen \
+ && locale-gen \
+ && dpkg-reconfigure locales
 
 # Install extra utilities
-RUN dnf module enable --assumeyes postgresql:12 \
- && dnf install --assumeyes postgresql \
- && dnf update \
- && dnf clean all \
- && rm -rf /var/cache/dnf /var/cache/yum \
- && update-ca-trust extract
+RUN apt-get update \
+ && apt-get install --assume-yes --no-install-recommends \
+    postgresql-client \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/ \
+ && update-ca-certificates
 
 # Set environment to production
 ENV MIX_ENV prod
