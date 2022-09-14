@@ -53,7 +53,7 @@ data:
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '3'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
-  HOST: 'accounts.ameelio.org'
+  HOST: 'malan-staging.ameelio.org'
   PORT: '4000'
   DATABASE_TLS_ENABLED: 'true'
   # Vars from secrets
