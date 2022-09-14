@@ -93,6 +93,9 @@ COPY --chown=docker:docker .bashrc $USER_HOME
 RUN mix compile
 RUN mix assets.deploy
 
-ENV PORT 4000
+ENV HOST ${HOST:-localhost}
+ENV PORT ${PORT:-4000}
+ENV BIND_ADDR ${BIND_ADDR:-0.0.0.0}
+
 ENTRYPOINT [ "tini", "--" ]
 CMD [ "./scripts/start-in-docker.sh" ]

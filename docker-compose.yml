@@ -14,11 +14,14 @@ services:
     ports:
       - "4000:4000"
     environment:
+      HOST: 'localhost'
+      PORT: '4000'
+      BIND_ADDR: '0.0.0.0'
+      MAILGUN_DISABLE: 'Yes'
       DB_INIT: 'Yes'
       DB_USERNAME: 'postgres'
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
-      BIND_ADDR: '0.0.0.0'
     depends_on:
       - 'postgres'
 

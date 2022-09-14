@@ -2,6 +2,10 @@
 
 set -e
 
+echo "[*] Starting Malan as '${HOST}:${PORT}'"
+echo "[-]   Host:Port '${HOST}:${PORT}'"
+echo "[-]   Bound to ${BIND_ADDR}"
+
 # Wait for Postgres to initialize
 echo "[*] Waiting for PostgreSQL to initialize..."
 

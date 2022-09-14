@@ -13,12 +13,13 @@ defmodule MalanWeb.Endpoint do
   ]
 
   # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [:peer_data, session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [:peer_data, session: @session_options]]
 
   # If running behind CLoudflare, read the CF-Connection-IP header
   # and use that for `conn.remote_ip`
   # https://github.com/c-rack/plug_cloudflare
-  #plug Plug.CloudFlare
+  # plug Plug.CloudFlare
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -50,11 +51,15 @@ defmodule MalanWeb.Endpoint do
   # include them:  https://github.com/akoutmos/unplug
   # Health Checks are on /health_check/readiness and /health_check/liveness
   plug Unplug,
-    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
+    if:
+      {Unplug.Predicates.RequestPathNotIn,
+       ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
     do: {Plug.Telemetry, event_prefix: [:phoenix, :endpoint]}
 
   plug Unplug,
-    if: {Unplug.Predicates.RequestPathNotIn, ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
+    if:
+      {Unplug.Predicates.RequestPathNotIn,
+       ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
     do: Plug.RequestId
 
   plug Plug.Parsers,

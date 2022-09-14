@@ -148,11 +148,6 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     """
   end
 
-  defp comment(assigns) do
-    ~H"""
-    """
-  end
-
   defp password_reset_form(assigns) do
     ~H"""
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
