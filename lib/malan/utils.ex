@@ -1253,6 +1253,14 @@ defmodule Malan.Utils.Number do
     number_to_delimited(number, get_intl_int_opts(opts))
   end
 
+  @spec to_string(number :: Elixir.String.t() | integer()) :: Elixir.String.t()
+  def to_string(number) when is_binary(number), do: number
+  def to_string(number) when is_integer(number), do: Elixir.Integer.to_string(number)
+
+  @spec to_string(number :: Elixir.String.t() | integer()) :: Elixir.String.t()
+  def to_int(number) when is_binary(number), do: Elixir.String.to_integer(number)
+  def to_int(number) when is_integer(number), do: number
+
   defp_testable get_int_opts(opts), do: Keyword.merge(default_int_opts(), opts)
   defp_testable get_float_opts(opts), do: Keyword.merge(default_float_opts(), opts)
   defp_testable get_intl_int_opts(opts), do: Keyword.merge(default_intl_int_opts(), opts)

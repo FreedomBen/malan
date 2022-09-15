@@ -11,6 +11,18 @@ alias Malan.Utils
 
 # Start the phoenix server if environment is set and running in a release
 
+
+host = System.get_env("HOST") || "localhost"
+port = System.get_env("PORT") || "4000"
+
+# If the external value isn't set, use value for value
+
+config :malan, MalanWeb.Config.App,
+  external_scheme: System.get_env("EXTERNAL_SCHEME") || "http",
+  external_host: System.get_env("EXTERNAL_HOST") || host,
+  external_port: System.get_env("EXTERNAL_PORT") || port
+
+
 if System.get_env("HOST") && System.get_env("RELEASE_NAME") do
   config :malan, MalanWeb.Endpoint, server: true
 end
@@ -65,18 +77,15 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("HOST") || "localhost"
-  port = String.to_integer(System.get_env("PORT") || "4000")
-
   config :malan, MalanWeb.Endpoint,
-    url: [host: host, port: port],
+    url: [host: host, port: Utils.Number.to_int(port)],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # See the documentation on https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
-      port: port
+      ip: {0, 0, 0, 0, 0, 0, 0, 1},
+      port: Utils.Number.to_int(port)
     ],
     secret_key_base: secret_key_base
 
