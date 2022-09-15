@@ -11,7 +11,6 @@ alias Malan.Utils
 
 # Start the phoenix server if environment is set and running in a release
 
-
 host = System.get_env("HOST") || "localhost"
 port = System.get_env("PORT") || "4000"
 
@@ -25,7 +24,6 @@ config :malan, MalanWeb.Config.App,
   external_scheme: external_scheme,
   external_host: external_host,
   external_port: external_port
-
 
 if System.get_env("HOST") && System.get_env("RELEASE_NAME") do
   config :malan, MalanWeb.Endpoint, server: true
@@ -82,7 +80,13 @@ if config_env() == :prod do
       """
 
   config :malan, MalanWeb.Endpoint,
-    url: [host: external_host, port: Utils.Number.to_int(external_port)],
+    # url: is used for generating links in the application.
+    url: [
+      scheme: external_scheme,
+      host: external_host,
+      port: Utils.Number.to_int(external_port)
+    ],
+    # http: and https: are what's actually used for binding to an interface.
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -91,6 +95,10 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: Utils.Number.to_int(port)
     ],
+    # https: [
+    #   ip: {0, 0, 0, 0, 0, 0, 0, 0},
+    #   port: Utils.Number.to_int(port)
+    # ],
     secret_key_base: secret_key_base
 
   # ## Using releases
