@@ -946,5 +946,19 @@ defmodule Malan.UtilsTest do
       assert "456.789,01" == Utils.Number.format_intl(456_789.01234)
       assert "456.789,0123" == Utils.Number.format_intl(456_789.01234, precision: 4)
     end
+
+    test "#to_string/1" do
+      assert "80" == Utils.Number.to_string(80)
+      assert "80" == Utils.Number.to_string("80")
+      assert "443" == Utils.Number.to_string(443)
+      assert "443" == Utils.Number.to_string("443")
+    end
+
+    test "#to_int/1" do
+      assert 80 == Utils.Number.to_int(80)
+      assert 80 == Utils.Number.to_int("80")
+      assert 443 == Utils.Number.to_int(443)
+      assert 443 == Utils.Number.to_int("443")
+    end
   end
 end
