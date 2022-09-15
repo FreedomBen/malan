@@ -67,6 +67,9 @@ defmodule MalanWeb.Router do
 
     live "/users/reset_password", UserLive.ResetPassword
     live "/users/reset_password/:token", UserLive.ResetPasswordToken
+
+    get "/password/reset", RedirectController, :reset_password
+    get "/password/forgot", RedirectController, :reset_password
   end
 
   scope "/health_check", MalanWeb, log: false do
