@@ -15,12 +15,16 @@ alias Malan.Utils
 host = System.get_env("HOST") || "localhost"
 port = System.get_env("PORT") || "4000"
 
+external_host = System.get_env("EXTERNAL_HOST") || host,
+external_port = System.get_env("EXTERNAL_PORT") || port
+external_scheme = System.get_env("EXTERNAL_SCHEME") || "http",
+
 # If the external value isn't set, use value for value
 
 config :malan, MalanWeb.Config.App,
-  external_scheme: System.get_env("EXTERNAL_SCHEME") || "http",
-  external_host: System.get_env("EXTERNAL_HOST") || host,
-  external_port: System.get_env("EXTERNAL_PORT") || port
+  external_scheme: external_scheme,
+  external_host: external_host,
+  external_port: external_port
 
 
 if System.get_env("HOST") && System.get_env("RELEASE_NAME") do
@@ -78,7 +82,7 @@ if config_env() == :prod do
       """
 
   config :malan, MalanWeb.Endpoint,
-    url: [host: host, port: Utils.Number.to_int(port)],
+    url: [host: external_host, port: Utils.Number.to_int(external_port)],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
