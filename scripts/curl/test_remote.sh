@@ -3,6 +3,7 @@
 #MALAN_ENDPOINT="http://localhost:4000"
 #MALAN_ENDPOINT="https://malan-staging.ameelio.org"
 MALAN_ENDPOINT="https://malan-prod.ameelio.org"
+#MALAN_ENDPOINT="https://accounts.ameelio.org"
 
 USER_NAME='root'
 USER_EMAIL='root@example.com'
