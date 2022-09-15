@@ -29,7 +29,13 @@ defmodule MalanWeb.UserNotifier do
     |> subject("Your requested password reset token")
     |> render_body("password_reset_email.html", %{
       user: user,
-      url: MalanWeb.Endpoint.url() <> Routes.live_path(MalanWeb.Endpoint, MalanWeb.UserLive.ResetPasswordToken, user.password_reset_token)
+      url:
+        Routes.live_path(
+          MalanWeb.Endpoint,
+          MalanWeb.UserLive.ResetPasswordToken,
+          user.password_reset_token
+        )
+        |> Malan.Config.App.external_link(),
     })
   end
 end

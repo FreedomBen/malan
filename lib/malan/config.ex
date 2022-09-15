@@ -28,6 +28,9 @@ defmodule Malan.Config do
       Application.get_env(:malan, MalanWeb.Config.App)[:external_host]
     end
 
+    @doc """
+    Get a link like "https://malan.dev:4000/path
+    """
     def external_link(path) do
       external_scheme() <> "://" <> external_host() <> external_port_str() <> path
     end

@@ -55,6 +55,9 @@ data:
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'malan-staging.ameelio.org'
   PORT: '4000'
+  EXTERNAL_HOST: 'malan-staging.ameelio.org'
+  EXTERNAL_PORT: '443'
+  EXTERNAL_SCHEME: 'https'
   DATABASE_TLS_ENABLED: 'true'
   # Vars from secrets
   # DATABASE_URL
