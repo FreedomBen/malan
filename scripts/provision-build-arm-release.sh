@@ -52,7 +52,7 @@
 # # If already have it:
 # imageid="ami-0ee02425a4c7e78bb"
 #
-# # Create the ec2 instance
+# # Create the ec2 instance using imageid variable from previous step
 # aws ec2 run-instances --image-id "${imageid}" --count 1 --instance-type c6g.xlarge --key-name ben_0
 # # wait for instance to initialize and get a public IP
 # # aws ec2 describe-instances | jq -r '.Reservations | map(.Instances) | map(.PublicIpAddress)'
