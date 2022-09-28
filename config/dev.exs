@@ -17,6 +17,8 @@ config :malan, Malan.Repo,
 # watchers to your application. For example, we use it
 # with esbuild to bundle .js and .css sources.
 config :malan, MalanWeb.Endpoint,
+  # If you want to use the digest version of the assets in dev, uncomment below
+  #cache_static_manifest: "priv/static/cache_manifest.json",
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {0, 0, 0, 0}, port: 4000],
