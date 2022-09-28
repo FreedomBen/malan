@@ -957,8 +957,10 @@ defmodule Malan.UtilsTest do
     test "#to_int/1" do
       assert 80 == Utils.Number.to_int(80)
       assert 80 == Utils.Number.to_int("80")
+      assert 80 == Utils.Number.to_int('80')
       assert 443 == Utils.Number.to_int(443)
       assert 443 == Utils.Number.to_int("443")
+      assert 443 == Utils.Number.to_int('443')
     end
   end
 end

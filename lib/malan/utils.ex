@@ -1258,6 +1258,7 @@ defmodule Malan.Utils.Number do
   def to_string(number) when is_integer(number), do: Elixir.Integer.to_string(number)
 
   @spec to_int(number :: Elixir.String.t() | integer()) :: integer()
+  def to_int(number) when is_list(number), do: Elixir.List.to_string(number) |> to_int()
   def to_int(number) when is_binary(number), do: Elixir.String.to_integer(number)
   def to_int(number) when is_integer(number), do: number
 
