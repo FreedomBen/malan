@@ -5,6 +5,9 @@ on:
       - main
     tags:
       - 'prod-*'
+    #Triggers event at 2:00am EST (0800 UTC)
+  schedule:
+    - cron: '0 6 * * *'
 
 env:
   RELEASE_VERSION: ${{ github.sha }}
