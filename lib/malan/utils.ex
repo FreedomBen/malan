@@ -1150,10 +1150,14 @@ defmodule Malan.Utils.Ecto.Changeset do
 end
 
 defmodule Malan.Utils.FromEnv do
-  @spec log_str(env :: Macro.Env.t(), :mfa | :func_only) :: String.t()
+  # the log_str functions are the intended entrypoint to this module
+  # :mfa_fln is short for "module function arity filename line number"
+  @spec log_str(env :: Macro.Env.t(), :mfa_fln | :mfa | :func_only) :: String.t()
+  def log_str(%Macro.Env{} = env, :mfa_fln), do: "[#{mfa_str(env)} - #{file_line_str(env)}]"
   def log_str(%Macro.Env{} = env, :mfa), do: "[#{mfa_str(env)}]"
   def log_str(%Macro.Env{} = env, :func_only), do: "[#{func_str(env)}]"
 
+  # The default log_str implementation
   @spec log_str(env :: Macro.Env.t()) :: String.t()
   def log_str(%Macro.Env{} = env), do: log_str(env, :mfa)
 
@@ -1167,6 +1171,15 @@ defmodule Malan.Utils.FromEnv do
 
   @spec mod_str(env :: Macro.Env.t()) :: String.t()
   def mod_str(%Macro.Env{} = env), do: Kernel.to_string(env.module)
+
+  @spec file_line_str(env :: Macro.Env.t()) :: String.t()
+  def file_line_str(%Macro.Env{} = env), do: file_str(env) <> ":" <> line_str(env)
+
+  @spec line_str(env :: Macro.Env.t()) :: String.t()
+  def line_str(%Macro.Env{} = env), do: Integer.to_string(env.line)
+
+  @spec file_str(env :: Macro.Env.t()) :: String.t()
+  def file_str(%Macro.Env{} = env), do: env.file
 end
 
 defmodule Malan.Utils.Logger do
@@ -1186,15 +1199,15 @@ defmodule Malan.Utils.Logger do
   def debug(msg), do: Logger.debug(msg, ansi_color: LoggerColor.debug())
   def trace(msg), do: Logger.debug("[trace]: " <> msg, ansi_color: LoggerColor.trace())
 
-  def emergency(%Macro.Env{} = env, msg), do: emergency(log_str(env, :mfa) <> ": " <> msg)
-  def alert(%Macro.Env{} = env, msg), do: alert(log_str(env, :mfa) <> ": " <> msg)
-  def critical(%Macro.Env{} = env, msg), do: critical(log_str(env, :mfa) <> ": " <> msg)
-  def error(%Macro.Env{} = env, msg), do: error(log_str(env, :mfa) <> ": " <> msg)
-  def warning(%Macro.Env{} = env, msg), do: warning(log_str(env, :mfa) <> ": " <> msg)
-  def notice(%Macro.Env{} = env, msg), do: notice(log_str(env, :mfa) <> ": " <> msg)
-  def info(%Macro.Env{} = env, msg), do: info(log_str(env, :mfa) <> ": " <> msg)
-  def debug(%Macro.Env{} = env, msg), do: debug(log_str(env, :mfa) <> ": " <> msg)
-  def trace(%Macro.Env{} = env, msg), do: trace(log_str(env, :mfa) <> ": " <> msg)
+  def emergency(%Macro.Env{} = env, msg), do: emergency(log_str(env, :mfa_fln) <> ": " <> msg)
+  def alert(%Macro.Env{} = env, msg), do: alert(log_str(env, :mfa_fln) <> ": " <> msg)
+  def critical(%Macro.Env{} = env, msg), do: critical(log_str(env, :mfa_fln) <> ": " <> msg)
+  def error(%Macro.Env{} = env, msg), do: error(log_str(env, :mfa_fln) <> ": " <> msg)
+  def warning(%Macro.Env{} = env, msg), do: warning(log_str(env, :mfa_fln) <> ": " <> msg)
+  def notice(%Macro.Env{} = env, msg), do: notice(log_str(env, :mfa_fln) <> ": " <> msg)
+  def info(%Macro.Env{} = env, msg), do: info(log_str(env, :mfa_fln) <> ": " <> msg)
+  def debug(%Macro.Env{} = env, msg), do: debug(log_str(env, :mfa_fln) <> ": " <> msg)
+  def trace(%Macro.Env{} = env, msg), do: trace(log_str(env, :mfa_fln) <> ": " <> msg)
 end
 
 defmodule Malan.Utils.LoggerColor do

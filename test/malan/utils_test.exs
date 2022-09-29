@@ -888,7 +888,17 @@ defmodule Malan.UtilsTest do
     test "#func_str/1 func",
       do: assert("#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__))
 
-    test "#mod_str/1", do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
+    test "#mod_str/1",
+      do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
+
+    test "#line_str/1",
+      do: assert("895" == Utils.FromEnv.line_str(__ENV__))
+
+    test "#file_str/1",
+      do: assert(Utils.FromEnv.file_str(__ENV__) =~ ~r(test/malan/utils_test.exs))
+
+    test "#file_line_str/1",
+      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:901$))
   end
 
   describe "Number" do
