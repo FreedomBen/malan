@@ -201,7 +201,9 @@ defmodule Malan.Utils do
       %{hello: "world"}
 
   """
-  def struct_to_map(struct, mask_keys \\ []) when is_struct(struct) do
+  def struct_to_map(struct, mask_keys \\ [])
+
+  def struct_to_map(struct, mask_keys) when is_struct(struct) do
     Map.from_struct(struct)
     |> Map.delete(:__meta__)
     |> Enum.map(fn {k, v} -> {k, struct_to_map(v, mask_keys)} end)
@@ -214,7 +216,7 @@ defmodule Malan.Utils do
     |> Enum.each(fn s -> struct_to_map(s, mask_keys) end)
   end
 
-  def struct_to_map(struct, mask_keys), do: struct
+  def struct_to_map(struct, _mask_keys), do: struct
 
   @doc ~S"""
   Takes a map and a list of keys whose values should be masked
