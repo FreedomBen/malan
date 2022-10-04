@@ -233,7 +233,7 @@ defmodule Malan.Utils do
 
   def struct_to_map_deep(struct, mask_keys) when is_list(struct) do
     struct
-    |> Enum.each(fn s -> struct_to_map_deep(s, mask_keys) end)
+    |> Enum.map(fn s -> struct_to_map_deep(s, mask_keys) end)
   end
 
   def struct_to_map_deep(struct, _mask_keys), do: struct

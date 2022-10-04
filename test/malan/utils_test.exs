@@ -311,9 +311,7 @@ defmodule Malan.UtilsTest do
       struct_list = [ts1_struct(), ts2_struct(), ts1_struct(), ts2_struct(), ts1_struct()]
       map_list = [ts1_map(), ts2_map(), ts1_map(), ts2_map(), ts1_map()]
 
-      0..5 |> Enum.each(fn i ->
-        assert Enum.at(map_list, i) == struct_list |> Enum.at(i) |> Utils.struct_to_map_deep()
-      end)
+      assert map_list == Utils.struct_to_map_deep(struct_list)
     end
 
     test "#map_to_string/1" do
