@@ -181,8 +181,8 @@ defmodule Malan.UtilsTest do
                Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
     end
 
-    test "struct_to_map/2 works recursively" do
-      ts = %TestStruct{
+    def ts1_struct,
+      do: %TestStruct{
         one: "Uhtred",
         two: "of Bebbanburg",
         three: %TestStruct{
@@ -195,7 +195,8 @@ defmodule Malan.UtilsTest do
         }
       }
 
-      assert %{
+    def ts1_map,
+      do: %{
         one: "Uhtred",
         two: "of Bebbanburg",
         three: %{
@@ -207,7 +208,56 @@ defmodule Malan.UtilsTest do
             three: nil
           }
         }
-      } == Utils.struct_to_map(ts)
+      }
+
+    def ts2_struct,
+      do: %TestStruct{
+        one: "Susebron the God King",
+        two: "of Hallandren",
+        three: %TestStruct{
+          one: "Vivenna",
+          two: "of Idris",
+          three: %TestStruct{
+            one: 40_000,
+            two: "Lifeless soldiers",
+            three: %TestStruct{
+              one: "Sisirinah"
+            }
+          }
+        }
+      }
+
+    def ts2_map,
+      do: %{
+        one: "Susebron the God King",
+        two: "of Hallandren",
+        three: %{
+          one: "Vivenna",
+          two: "of Idris",
+          three: %{
+            one: 40_000,
+            two: "Lifeless soldiers",
+            three: %{
+              one: "Sisirinah",
+              two: nil,
+              three: nil
+            }
+          }
+        }
+      }
+
+    test "struct_to_map/2 works recursively" do
+      assert ts1_map() == Utils.struct_to_map(ts1_struct())
+      assert ts2_map() == Utils.struct_to_map(ts2_struct())
+    end
+
+    test "struct_to_map/2 works recursively on lists" do
+      struct_list = [ts1_struct(), ts2_struct(), ts1_struct(), ts2_struct(), ts1_struct()]
+      map_list = [ts1_map(), ts2_map(), ts1_map(), ts2_map(), ts1_map()]
+
+      0..5 |> Enum.each(fn i ->
+        assert Enum.at(map_list, i) == struct_list |> Enum.at(i) |> Utils.struct_to_map()
+      end)
     end
 
     test "#map_to_string/1" do
@@ -921,13 +971,13 @@ defmodule Malan.UtilsTest do
       do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
 
     test "#line_str/1",
-      do: assert("924" == Utils.FromEnv.line_str(__ENV__))
+      do: assert("974" == Utils.FromEnv.line_str(__ENV__))
 
     test "#file_str/1",
       do: assert(Utils.FromEnv.file_str(__ENV__) =~ ~r(test/malan/utils_test.exs))
 
     test "#file_line_str/1",
-      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:930$))
+      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:980$))
   end
 
   describe "Number" do

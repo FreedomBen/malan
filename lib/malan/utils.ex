@@ -209,6 +209,11 @@ defmodule Malan.Utils do
     |> Enum.into(%{})
   end
 
+  def struct_to_map(struct, mask_keys) when is_list(struct) do
+    struct
+    |> Enum.each(fn s -> struct_to_map(s, mask_keys) end)
+  end
+
   def struct_to_map(struct, mask_keys), do: struct
 
   @doc ~S"""
