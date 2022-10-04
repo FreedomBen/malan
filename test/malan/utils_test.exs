@@ -181,6 +181,35 @@ defmodule Malan.UtilsTest do
                Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
     end
 
+    test "struct_to_map/2 works recursively" do
+      ts = %TestStruct{
+        one: "Uhtred",
+        two: "of Bebbanburg",
+        three: %TestStruct{
+          one: "Alfred",
+          two: "of Wessex",
+          three: %TestStruct{
+            one: 1_000,
+            two: "Aethelred of Mercia"
+          }
+        }
+      }
+
+      assert %{
+        one: "Uhtred",
+        two: "of Bebbanburg",
+        three: %{
+          one: "Alfred",
+          two: "of Wessex",
+          three: %{
+            one: 1_000,
+            two: "Aethelred of Mercia",
+            three: nil
+          }
+        }
+      } == Utils.struct_to_map(ts)
+    end
+
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
@@ -892,13 +921,13 @@ defmodule Malan.UtilsTest do
       do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
 
     test "#line_str/1",
-      do: assert("895" == Utils.FromEnv.line_str(__ENV__))
+      do: assert("924" == Utils.FromEnv.line_str(__ENV__))
 
     test "#file_str/1",
       do: assert(Utils.FromEnv.file_str(__ENV__) =~ ~r(test/malan/utils_test.exs))
 
     test "#file_line_str/1",
-      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:901$))
+      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:930$))
   end
 
   describe "Number" do
