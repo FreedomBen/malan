@@ -6,6 +6,51 @@ defmodule Malan.UtilsTest do
 
   defmodule TestStruct, do: defstruct([:one, :two, :three])
 
+  describe "FromEnv" do
+    test "#log_str/2 :mfa",
+      do:
+        assert(
+          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :mfa/1]" ==
+            Utils.FromEnv.log_str(__ENV__)
+        )
+
+    test "#log_str/2 :func_only",
+      do:
+        assert(
+          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :func_only/1]" ==
+            Utils.FromEnv.log_str(__ENV__)
+        )
+
+    test "#log_str/1 defaults to :mfa",
+      do: assert(Utils.FromEnv.log_str(__ENV__, :mfa) == Utils.FromEnv.log_str(__ENV__))
+
+    test "#mfa_str/1",
+      do:
+        assert(
+          "Elixir.Malan.UtilsTest.#test FromEnv #mfa_str/1/1" == Utils.FromEnv.mfa_str(__ENV__)
+        )
+
+    test "#func_str/1 env",
+      do: assert("#test FromEnv #func_str/1 env/1" == Utils.FromEnv.func_str(__ENV__.function))
+
+    test "#func_str/1 func",
+      do: assert("#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__))
+
+    test "#mod_str/1",
+      do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
+
+    # If this line number changes, the test will need to be updated to match
+    test "#line_str/1",
+      do: assert("44" == Utils.FromEnv.line_str(__ENV__))
+
+    test "#file_str/1",
+      do: assert(Utils.FromEnv.file_str(__ENV__) =~ ~r(test/malan/utils_test.exs))
+
+    # If this line number changes, the test will need to be updated to match
+    test "#file_line_str/1",
+      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:51))
+  end
+
   describe "main" do
     test "#extract/2 works with index on array" do
       assert "world" == Malan.Utils.extract(["hello", "world"], 1)
@@ -181,6 +226,17 @@ defmodule Malan.UtilsTest do
                Utils.tuple_to_string({:password, "hello", "world"}, ["password"])
     end
 
+    test "struct_to_map/2 works" do
+      assert %{
+        one: "Erik",
+        two: "Sigefrid",
+        three: nil
+      } == Utils.struct_to_map(%TestStruct{
+        one: "Erik",
+        two: "Sigefrid"
+      })
+    end
+
     def ts1_struct,
       do: %TestStruct{
         one: "Uhtred",
@@ -246,17 +302,17 @@ defmodule Malan.UtilsTest do
         }
       }
 
-    test "struct_to_map/2 works recursively" do
-      assert ts1_map() == Utils.struct_to_map(ts1_struct())
-      assert ts2_map() == Utils.struct_to_map(ts2_struct())
+    test "struct_to_map_deep/2 works recursively" do
+      assert ts1_map() == Utils.struct_to_map_deep(ts1_struct())
+      assert ts2_map() == Utils.struct_to_map_deep(ts2_struct())
     end
 
-    test "struct_to_map/2 works recursively on lists" do
+    test "struct_to_map_deep/2 works recursively on lists" do
       struct_list = [ts1_struct(), ts2_struct(), ts1_struct(), ts2_struct(), ts1_struct()]
       map_list = [ts1_map(), ts2_map(), ts1_map(), ts2_map(), ts1_map()]
 
       0..5 |> Enum.each(fn i ->
-        assert Enum.at(map_list, i) == struct_list |> Enum.at(i) |> Utils.struct_to_map()
+        assert Enum.at(map_list, i) == struct_list |> Enum.at(i) |> Utils.struct_to_map_deep()
       end)
     end
 
@@ -935,49 +991,6 @@ defmodule Malan.UtilsTest do
       assert "1.1.1.1" == Utils.IPv4.to_s({1, 1, 1, 1})
       assert "127.0.0.1" == Utils.IPv4.to_s({127, 0, 0, 1})
     end
-  end
-
-  describe "FromEnv" do
-    test "#log_str/2 :mfa",
-      do:
-        assert(
-          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :mfa/1]" ==
-            Utils.FromEnv.log_str(__ENV__)
-        )
-
-    test "#log_str/2 :func_only",
-      do:
-        assert(
-          "[Elixir.Malan.UtilsTest.#test FromEnv #log_str/2 :func_only/1]" ==
-            Utils.FromEnv.log_str(__ENV__)
-        )
-
-    test "#log_str/1 defaults to :mfa",
-      do: assert(Utils.FromEnv.log_str(__ENV__, :mfa) == Utils.FromEnv.log_str(__ENV__))
-
-    test "#mfa_str/1",
-      do:
-        assert(
-          "Elixir.Malan.UtilsTest.#test FromEnv #mfa_str/1/1" == Utils.FromEnv.mfa_str(__ENV__)
-        )
-
-    test "#func_str/1 env",
-      do: assert("#test FromEnv #func_str/1 env/1" == Utils.FromEnv.func_str(__ENV__.function))
-
-    test "#func_str/1 func",
-      do: assert("#test FromEnv #func_str/1 func/1" == Utils.FromEnv.func_str(__ENV__))
-
-    test "#mod_str/1",
-      do: assert("Elixir.Malan.UtilsTest" == Utils.FromEnv.mod_str(__ENV__))
-
-    test "#line_str/1",
-      do: assert("974" == Utils.FromEnv.line_str(__ENV__))
-
-    test "#file_str/1",
-      do: assert(Utils.FromEnv.file_str(__ENV__) =~ ~r(test/malan/utils_test.exs))
-
-    test "#file_line_str/1",
-      do: assert(Utils.FromEnv.file_line_str(__ENV__) =~ ~r(test/malan/utils_test.exs:980$))
   end
 
   describe "Number" do
