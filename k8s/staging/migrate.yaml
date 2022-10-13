@@ -4,6 +4,9 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
+    tier: migration
+    env: staging
+    kind: configmap
   name: malan-migration-config
   namespace: malan-staging
 data:
@@ -17,6 +20,9 @@ kind: Job
 metadata:
   labels:
     app: malan-migration
+    tier: migration
+    env: staging
+    kind: job
   name: malan-migration
   namespace: malan-staging
 spec:
@@ -30,7 +36,6 @@ spec:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}
         command: ["mix", "ecto.create.migrate"]
-          #command: ["sleep", "36000"]
         envFrom:
           - configMapRef:
               name: malan-migration-config
