@@ -4,6 +4,9 @@ kind: Deployment
 metadata:
   labels:
     app: malan
+    tier: web
+    env: staging
+    kind: deployment
   name: malan
   namespace: malan-staging
 spec:
@@ -11,10 +14,15 @@ spec:
   selector:
     matchLabels:
       app: malan
+#      tier: web
+#      env: staging
   template:
     metadata:
       labels:
         app: malan
+        tier: web
+        env: staging
+        kind: pod
       namespace: malan-staging
     spec:
       securityContext:
@@ -40,6 +48,35 @@ spec:
               name: malan-deploy-secrets
         securityContext:
           allowPrivilegeEscalation: false
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - malan
+                    - key: tier
+                      operator: In
+                      values:
+                        - web
+                topologyKey: doks.digitalocean.com/node-id
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: malan-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: malan
+#      tier: web
+#      env: staging
 
 ---
 apiVersion: v1
@@ -47,6 +84,8 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
+    env: staging
+    kind: configmap
   name: malan-web-config
   namespace: malan-staging
 data:
@@ -65,12 +104,18 @@ data:
   # SERET_KEY_BASE
   # SENTRY_DNS
 
+# Service annotations for Digital Ocean
+# https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: malan
+    tier: web
+    env: staging
+    kind: service
   name: malan
   namespace: malan-staging
   annotations:
