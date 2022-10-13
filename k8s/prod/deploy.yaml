@@ -14,8 +14,8 @@ spec:
   selector:
     matchLabels:
       app: malan
-      tier: web
-      env: prod
+#      tier: web
+#      env: prod
   template:
     metadata:
       labels:
@@ -75,8 +75,8 @@ spec:
   selector:
     matchLabels:
       app: malan
-      tier: web
-      env: prod
+#      tier: web
+#      env: prod
 
 ---
 apiVersion: v1
