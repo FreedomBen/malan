@@ -48,6 +48,23 @@ spec:
               name: malan-deploy-secrets
         securityContext:
           allowPrivilegeEscalation: false
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - malan
+                    - key: tier
+                      operator: In
+                      values:
+                        - web
+                topologyKey: doks.digitalocean.com/node-id
+
 
 ---
 apiVersion: v1
