@@ -65,6 +65,18 @@ spec:
                         - web
                 topologyKey: doks.digitalocean.com/node-id
 
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: malan-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: malan
+      tier: web
+      env: prod
 
 ---
 apiVersion: v1
