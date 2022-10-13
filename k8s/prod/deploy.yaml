@@ -4,6 +4,9 @@ kind: Deployment
 metadata:
   labels:
     app: malan
+    tier: web
+    env: prod
+    kind: deployment
   name: malan
   namespace: malan-prod
 spec:
@@ -11,10 +14,15 @@ spec:
   selector:
     matchLabels:
       app: malan
+      tier: web
+      env: prod
   template:
     metadata:
       labels:
         app: malan
+        tier: web
+        env: prod
+        kind: pod
       namespace: malan-prod
     spec:
       securityContext:
@@ -47,6 +55,8 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
+    env: prod
+    kind: configmap
   name: malan-web-config
   namespace: malan-prod
 data:
@@ -74,6 +84,9 @@ kind: Service
 metadata:
   labels:
     app: malan
+    tier: web
+    env: prod
+    kind: service
   name: malan
   namespace: malan-prod
   annotations:
