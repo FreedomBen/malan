@@ -139,6 +139,9 @@ metadata:
   name: malan
   labels:
     app: malan
+    tier: web
+    env: prod
+    kind: cloudflarednsrecord
   namespace: malan-prod
 spec:
   hostName: malan
@@ -152,9 +155,12 @@ spec:
 apiVersion: domain-name-operator.tamx.org/v1
 kind: CloudflareDnsRecord
 metadata:
-  name: malan
+  name: malan-prod
   labels:
     app: malan
+    tier: web
+    env: prod
+    kind: cloudflarednsrecord
   namespace: malan-prod
 spec:
   hostName: malan-prod
