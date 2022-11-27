@@ -6,7 +6,7 @@ defmodule MalanWeb.SessionControllerTest do
 
   alias Malan.Utils
   alias Malan.Accounts
-  alias Malan.Accounts.{User, Session, Transaction}
+  alias Malan.Accounts.{User, Session, Log}
 
   alias Malan.Test.Helpers
   alias Malan.Test.Utils, as: TestUtils
@@ -229,7 +229,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 401)
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Creates a corresponding Log", %{conn: conn} do
       {:ok, %User{id: user_id} = _ru, rs} = Helpers.Accounts.regular_user_with_session()
 
       {:ok, conn, %User{id: admin_user_id} = _au, %Session{id: admin_session_id} = _as} =
@@ -249,7 +249,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
@@ -259,13 +259,13 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
   end
 
@@ -811,7 +811,7 @@ defmodule MalanWeb.SessionControllerTest do
              )
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Creates a corresponding Log", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
@@ -824,7 +824,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{"id" => id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^user_id,
                  session_id: ^id,
@@ -834,28 +834,28 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
 
-    test "Create session fails when user is locked; creates Transaction", %{conn: conn} do
+    test "Create session fails when user is locked; creates Log", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       {:ok, user} = Helpers.Accounts.lock_user(user)
 
       user_id = user.id
       username = user.username
-      remote_ip = Transaction.dummy_ip()
+      remote_ip = Log.dummy_ip()
 
-      # Check that a transaction was created when we revoked all active sessions,
+      # Check that a log was created when we revoked all active sessions,
       # which happened because we locked the user
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: nil,
                  session_id: nil,
@@ -865,8 +865,8 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: ^remote_ip
-               } = tx_locked
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log_locked
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
 
@@ -883,8 +883,8 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 423)
 
       assert [
-               ^tx_locked,
-               %Transaction{
+               ^log_locked,
+               %Log{
                  success: false,
                  user_id: ^user_id,
                  session_id: nil,
@@ -894,16 +894,16 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: ^username,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx_locked, tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log_locked, log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log_locked, log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
 
-    test "Create session fails when user doesn't exist; creates Transaction", %{conn: conn} do
+    test "Create session fails when user doesn't exist; creates Log", %{conn: conn} do
       bad_user_name = "hp" <> Utils.uuidgen()
 
       conn =
@@ -919,7 +919,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 403)
 
       assert [
-               %Transaction{
+               %Log{
                  success: false,
                  user_id: nil,
                  session_id: nil,
@@ -929,16 +929,16 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: ^bad_user_name,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(nil, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(nil, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(nil, 0, 10)
     end
 
-    test "Create session fails when user password is wrong; creates Transaction", %{conn: conn} do
+    test "Create session fails when user password is wrong; creates Log", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
@@ -957,7 +957,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 403)
 
       assert [
-               %Transaction{
+               %Log{
                  success: false,
                  user_id: ^user_id,
                  session_id: nil,
@@ -967,13 +967,13 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: ^username,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
 
     test "Create session allows requiring same IP", %{conn: conn} do
@@ -1120,7 +1120,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 401)
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Creates a corresponding Log", %{conn: conn} do
       {:ok, %User{id: user_id} = _user, %Session{id: id} = session} =
         Helpers.Accounts.regular_user_with_session()
 
@@ -1133,7 +1133,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^user_id,
                  session_id: ^id,
@@ -1143,13 +1143,13 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
   end
 
@@ -1172,7 +1172,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, nil)
     end
 
-    test "Delete Current creates a corresponding Transaction", %{conn: conn} do
+    test "Delete Current creates a corresponding Log", %{conn: conn} do
       {:ok, %User{id: user_id} = _user, %Session{id: id} = session} =
         Helpers.Accounts.regular_user_with_session()
 
@@ -1181,7 +1181,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert conn.status == 200
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^user_id,
                  session_id: ^id,
@@ -1191,13 +1191,13 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
   end
 
@@ -1296,7 +1296,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 401)
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Creates a corresponding Log", %{conn: conn} do
       {:ok, %User{id: user_id} = user, %Session{id: s1_id} = s1} =
         Helpers.Accounts.regular_user_with_session()
 
@@ -1307,9 +1307,9 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(conn, s1.api_token)
       _conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
 
-      # :delete_all triggers revoking of all sessions which creates a transaction
+      # :delete_all triggers revoking of all sessions which creates a log
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: nil,
                  session_id: nil,
@@ -1318,8 +1318,8 @@ defmodule MalanWeb.SessionControllerTest do
                  who: ^user_id,
                  who_username: nil,
                  when: when_utc_locked
-               } = tx_locked,
-               %Transaction{
+               } = log_locked,
+               %Log{
                  success: true,
                  user_id: ^user_id,
                  session_id: ^s1_id,
@@ -1329,14 +1329,14 @@ defmodule MalanWeb.SessionControllerTest do
                  who_username: nil,
                  when: when_utc,
                  remote_ip: "127.0.0.1"
-               } = tx
-             ] = Accounts.list_transactions_by_who(user_id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc_locked, 2, :seconds)
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(s1_id, 0, 10)
-      assert [tx_locked, tx] == Accounts.list_transactions_by_who(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(s1_id, 0, 10)
+      assert [log_locked, log] == Accounts.list_logs_by_who(user_id, 0, 10)
     end
 
     test "Does not change previously closed sessions", %{conn: conn} do

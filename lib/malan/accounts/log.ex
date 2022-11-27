@@ -1,4 +1,4 @@
-defmodule Malan.Accounts.Transaction do
+defmodule Malan.Accounts.Log do
   import Malan.Utils, only: [defp_testable: 2]
   # import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
@@ -6,8 +6,8 @@ defmodule Malan.Accounts.Transaction do
   import Ecto.Changeset
 
   alias Malan.Utils
-  alias Malan.Accounts.Transaction
-  alias Malan.Accounts.Transaction.Changes
+  alias Malan.Accounts.Log
+  alias Malan.Accounts.Log.Changes
 
   @dummy_ip "255.255.255.255"
 
@@ -15,7 +15,7 @@ defmodule Malan.Accounts.Transaction do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "transactions" do
+  schema "logs" do
     field :success, :boolean, null: false     # Was the operation successful?
     field :type_enum, :integer, null: false   # Enum:  users || sessions
     field :verb_enum, :integer, null: false   # Action:  GET || POST || PUT || DELETE
@@ -33,7 +33,7 @@ defmodule Malan.Accounts.Transaction do
     # here are often very similar (same field values except for ttimetampes) 
     # but not identical.  With error changesets most of them are identical
     # If applicable, the changeset involved
-    embeds_one :changeset, Transaction.Changes, on_replace: :update
+    embeds_one :changeset, Log.Changes, on_replace: :update
 
     field :type, :string, virtual: true
     field :verb, :string, virtual: true
@@ -42,16 +42,16 @@ defmodule Malan.Accounts.Transaction do
   end
 
   @doc false
-  def create_changeset(transaction, %{"changeset" => %Ecto.Changeset{}} = attrs) do
+  def create_changeset(log, %{"changeset" => %Ecto.Changeset{}} = attrs) do
     create_changeset(
-      transaction,
+      log,
       Map.update!(attrs, "changeset", fn cs -> Changes.map_from_changeset(cs) end)
     )
   end
 
   @doc false
-  def create_changeset(transaction, attrs) do
-    transaction
+  def create_changeset(log, attrs) do
+    log
     |> cast(attrs, [
       :success,
       :user_id,
@@ -64,7 +64,7 @@ defmodule Malan.Accounts.Transaction do
       :what,
       :remote_ip
     ])
-    |> cast_embed(:changeset, with: &Transaction.Changes.changeset/2)
+    |> cast_embed(:changeset, with: &Log.Changes.changeset/2)
     |> put_default_when()
     |> validate_required([:success, :type, :verb, :when, :what, :remote_ip])
     |> validate_type()
@@ -92,7 +92,7 @@ defmodule Malan.Accounts.Transaction do
   end
 
   defp_testable validate_and_put_type(changeset) do
-    case Transaction.Type.valid?(get_change(changeset, :type, nil)) do
+    case Log.Type.valid?(get_change(changeset, :type, nil)) do
       true ->
         put_change(changeset, :type_enum, type_to_i(changeset))
 
@@ -100,7 +100,7 @@ defmodule Malan.Accounts.Transaction do
         Ecto.Changeset.add_error(
           changeset,
           :type,
-          "type is invalid.  Should be one of: '#{Transaction.Type.valid_values_str()}'"
+          "type is invalid.  Should be one of: '#{Log.Type.valid_values_str()}'"
         )
     end
   end
@@ -108,7 +108,7 @@ defmodule Malan.Accounts.Transaction do
   defp_testable type_to_i(changeset) do
     changeset
     |> get_change(:type, nil)
-    |> Transaction.Type.to_i()
+    |> Log.Type.to_i()
   end
 
   defp_testable validate_verb(changeset) do
@@ -119,7 +119,7 @@ defmodule Malan.Accounts.Transaction do
   end
 
   defp_testable validate_and_put_verb(changeset) do
-    case Transaction.Verb.valid?(get_change(changeset, :verb, nil)) do
+    case Log.Verb.valid?(get_change(changeset, :verb, nil)) do
       true ->
         put_change(changeset, :verb_enum, verb_to_i(changeset))
 
@@ -127,7 +127,7 @@ defmodule Malan.Accounts.Transaction do
         Ecto.Changeset.add_error(
           changeset,
           :verb,
-          "verb is invalid.  Should be one of: '#{Transaction.Verb.valid_values_str()}'"
+          "verb is invalid.  Should be one of: '#{Log.Verb.valid_values_str()}'"
         )
     end
   end
@@ -135,7 +135,7 @@ defmodule Malan.Accounts.Transaction do
   defp_testable verb_to_i(changeset) do
     changeset
     |> get_change(:verb, nil)
-    |> Transaction.Verb.to_i()
+    |> Log.Verb.to_i()
   end
 
   defp_testable validate_who_is_binary_id_or_nil(changeset) do

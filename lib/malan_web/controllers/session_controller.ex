@@ -32,19 +32,19 @@ defmodule MalanWeb.SessionController do
   def admin_delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
 
-    tx_changeset =
+    log_changeset =
       Session.revoke_changeset(session, %{
         revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)
       })
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
-      record_transaction(
+      record_log(
         conn,
         true,
         session.user_id,
         "DELETE",
         "#SessionController.admin_delete/2",
-        tx_changeset
+        log_changeset
       )
 
       render(conn, "show.json", code: 200, session: session)
@@ -52,7 +52,7 @@ defmodule MalanWeb.SessionController do
       {:error, err_cs} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
 
-        record_transaction(
+        record_log(
           conn,
           false,
           session.user_id,
@@ -106,7 +106,7 @@ defmodule MalanWeb.SessionController do
              remote_ip_s(conn),
              put_ip_addr(session_opts, conn)
            ) do
-      record_transaction(
+      record_log(
         Map.update(conn, :assigns, %{}, fn a ->
           Map.merge(a, %{authed_user_id: session.user_id, authed_session_id: session.id})
         end),
@@ -155,7 +155,7 @@ defmodule MalanWeb.SessionController do
       })
 
     with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
-      record_transaction(
+      record_log(
         conn,
         true,
         session.user_id,
@@ -169,7 +169,7 @@ defmodule MalanWeb.SessionController do
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
 
-        record_transaction(
+        record_log(
           conn,
           false,
           session.user_id,
@@ -186,7 +186,7 @@ defmodule MalanWeb.SessionController do
 
   def delete_all(conn, %{"user_id" => user_id}) do
     with {:ok, num_revoked} <- Accounts.revoke_active_sessions(user_id) do
-      record_transaction(conn, true, user_id, "DELETE", "#SessionController.delete_all/2", %{
+      record_log(conn, true, user_id, "DELETE", "#SessionController.delete_all/2", %{
         num_revoked: num_revoked
       })
 
@@ -195,7 +195,7 @@ defmodule MalanWeb.SessionController do
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
 
-        record_transaction(
+        record_log(
           conn,
           false,
           user_id,
@@ -208,10 +208,10 @@ defmodule MalanWeb.SessionController do
     end
   end
 
-  defp record_transaction(conn, success?, who, verb, what, changeset) do
+  defp record_log(conn, success?, who, verb, what, changeset) do
     {user_id, session_id} = authed_user_and_session(conn)
 
-    Accounts.record_transaction(
+    Accounts.record_log(
       success?,
       user_id,
       session_id,

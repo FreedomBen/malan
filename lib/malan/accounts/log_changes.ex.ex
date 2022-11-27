@@ -1,6 +1,6 @@
-defmodule Malan.Accounts.Transaction.Changes do
+defmodule Malan.Accounts.Log.Changes do
   @moduledoc """
-  Malan.Accounts.Transaction.Changes is used store a record of changes related to a `Malan.Accounts.Transaction`
+  Malan.Accounts.Log.Changes is used store a record of changes related to a `Malan.Accounts.Log`
 
   """
 
@@ -58,8 +58,8 @@ defmodule Malan.Accounts.Transaction.Changes do
   #   changeset(%__MODULE__{}, map_from_changeset(changeset, blacklisted_attrs))
   # end
 
-  def changeset(tx_changes, attrs) do
-    tx_changes
+  def changeset(log_changes, attrs) do
+    log_changes
     |> cast(attrs, [:errors, :changes, :data, :data_type, :action, :valid?])
     #|> validate_required([:errors, :changes, :data, :data_type, :valid?])
     |> validate_data_type()
