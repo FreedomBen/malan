@@ -26,7 +26,7 @@ defmodule Malan.AccountsFixtures do
   #    address
   #  end
 
-  @transaction_valid_attrs %{
+  @log_valid_attrs %{
     "type" => "users",
     "verb" => "GET",
     "what" => "some what",
@@ -34,8 +34,8 @@ defmodule Malan.AccountsFixtures do
     "remote_ip" => "1.1.1.1"
   }
 
-  def create_transaction(success?, nil, user, session, rip, cs, attrs) do
-    Accounts.create_transaction(
+  def create_log(success?, nil, user, session, rip, cs, attrs) do
+    Accounts.create_log(
       success?,
       user.id,
       session.id,
@@ -47,8 +47,8 @@ defmodule Malan.AccountsFixtures do
     )
   end
 
-  def create_transaction(success?, user_id, user, session, rip, cs, attrs) do
-    Accounts.create_transaction(
+  def create_log(success?, user_id, user, session, rip, cs, attrs) do
+    Accounts.create_log(
       success?,
       user_id,
       session.id,
@@ -61,15 +61,15 @@ defmodule Malan.AccountsFixtures do
   end
 
   @doc """
-  Creates a transaction using the specified attrs.  Supports specifying user_id in attrs
+  Creates a log using the specified attrs.  Supports specifying user_id in attrs
 
-  Returns {:ok, user, session, transaction)
+  Returns {:ok, user, session, log)
   """
-  def transaction_fixture(attrs \\ %{}) do
+  def log_fixture(attrs \\ %{}) do
     with {:ok, user, session} <- Helpers.Accounts.regular_user_with_session(),
-         %{} = val_attrs <- Map.merge(@transaction_valid_attrs, attrs),
-         {:ok, transaction} <-
-           create_transaction(
+         %{} = val_attrs <- Map.merge(@log_valid_attrs, attrs),
+         {:ok, log} <-
+           create_log(
              Map.get(attrs, "success") || true,
              Map.get(attrs, "user_id"),
              user,
@@ -78,10 +78,10 @@ defmodule Malan.AccountsFixtures do
              %{},
              val_attrs
            ),
-         do: {:ok, user, session, transaction}
+         do: {:ok, user, session, log}
   end
 
-  def transaction_fixture_to_retrieved(transaction) do
-    %{transaction | type: nil, verb: nil}
+  def log_fixture_to_retrieved(log) do
+    %{log | type: nil, verb: nil}
   end
 end

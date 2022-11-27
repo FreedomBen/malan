@@ -104,8 +104,8 @@ defmodule MalanWeb.Router do
     get "/sessions/current", SessionController, :show_current
     delete "/sessions/current", SessionController, :delete_current
 
-    get "/transactions", TransactionController, :user_index
-    get "/transactions/:id", TransactionController, :show
+    get "/logs", LogController, :user_index
+    get "/logs/:id", LogController, :show
   end
 
   scope "/api", MalanWeb do
@@ -122,7 +122,7 @@ defmodule MalanWeb.Router do
 
       resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
 
-      get "/transactions", TransactionController, :user_index
+      get "/logs", LogController, :user_index
     end
   end
 
@@ -169,14 +169,14 @@ defmodule MalanWeb.Router do
     put "/users/:id/lock", UserController, :lock
     put "/users/:id/unlock", UserController, :unlock
 
-    # Transactions can only be retreived (not created, updated, or deleted)
+    # Logs can only be retreived (not created, updated, or deleted)
     # they are created as side effects of user/session operations and are immutable
     # Careful, returns a lot of records!
-    get "/transactions", TransactionController, :admin_index
-    get "/transactions/:id", TransactionController, :show, as: :admin_transaction
-    get "/transactions/users/:user_id", TransactionController, :users
-    get "/transactions/sessions/:session_id", TransactionController, :sessions
-    get "/transactions/who/:user_id", TransactionController, :who
+    get "/logs", LogController, :admin_index
+    get "/logs/:id", LogController, :show, as: :admin_log
+    get "/logs/users/:user_id", LogController, :users
+    get "/logs/sessions/:session_id", LogController, :sessions
+    get "/logs/who/:user_id", LogController, :who
   end
 
   # Other scopes may use custom stacks.

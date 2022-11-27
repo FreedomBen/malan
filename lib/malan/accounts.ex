@@ -7,7 +7,7 @@ defmodule Malan.Accounts do
 
   import Ecto.Query, warn: false
   import Malan.Pagination, only: [valid_page: 2]
-  import Malan.Accounts.Transaction, only: [dummy_ip: 0]
+  import Malan.Accounts.Log, only: [dummy_ip: 0]
 
   alias Malan.Repo
 
@@ -762,7 +762,7 @@ defmodule Malan.Accounts do
   def record_create_session_locked(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
-        record_transaction(
+        record_log(
           false,
           username_or_id,
           nil,
@@ -796,7 +796,7 @@ defmodule Malan.Accounts do
   def record_create_session_bad_ip(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
-        record_transaction(
+        record_log(
           false,
           username_or_id,
           nil,
@@ -830,7 +830,7 @@ defmodule Malan.Accounts do
   def record_create_session_unauthorized(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
-        record_transaction(
+        record_log(
           false,
           username_or_id,
           nil,
@@ -864,7 +864,7 @@ defmodule Malan.Accounts do
   def record_create_session_not_a_user(username_or_id, remote_ip, attrs, username \\ nil) do
     case Utils.is_uuid_or_nil?(username_or_id) do
       true ->
-        record_transaction(
+        record_log(
           false,
           username_or_id,
           nil,
@@ -1070,7 +1070,7 @@ defmodule Malan.Accounts do
         set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
       )
 
-    record_transaction(
+    record_log(
       true,
       nil,
       nil,
@@ -1377,20 +1377,20 @@ defmodule Malan.Accounts do
     |> Repo.update()
   end
 
-  alias Malan.Accounts.Transaction
+  alias Malan.Accounts.Log
 
   @doc """
-  Returns the list of transactions.
+  Returns the list of logs.
 
   ## Examples
 
-      iex> list_transactions()
-      [%Transaction{}, ...]
+      iex> list_logs()
+      [%Log{}, ...]
 
   """
-  def list_transactions(page_num, page_size) do
-    from(t in Transaction,
-      select: t,
+  def list_logs(page_num, page_size) do
+    from(l in Log,
+      select: l,
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
@@ -1398,39 +1398,39 @@ defmodule Malan.Accounts do
   end
 
   @doc """
-  Returns the list of transactions for the specified user
+  Returns the list of logs for the specified user
 
   ## Examples
 
-      iex> list_transactions("user_id")
-      [%Transaction{}, ...]
+      iex> list_logs("user_id")
+      [%Log{}, ...]
 
   """
-  def list_transactions(%User{id: user_id}, page_num, page_size),
-    do: list_transactions(user_id, page_num, page_size)
+  def list_logs(%User{id: user_id}, page_num, page_size),
+    do: list_logs(user_id, page_num, page_size)
 
-  def list_transactions(user_id_or_username, page_num, page_size) do
+  def list_logs(user_id_or_username, page_num, page_size) do
     cond do
       user_id_or_username == nil ->
         []
 
       Utils.is_uuid?(user_id_or_username) ->
-        list_transactions_by_user_id(user_id_or_username, page_num, page_size)
+        list_logs_by_user_id(user_id_or_username, page_num, page_size)
 
       true ->
-        list_transactions_by_username(user_id_or_username, page_num, page_size)
+        list_logs_by_username(user_id_or_username, page_num, page_size)
     end
   end
 
   #
-  # SELECT t.* FROM transactions AS t WHERE t.id = (SELECT u.id FROM users AS u WHERE u.username = '$1');
+  # SELECT l.* FROM logs AS l WHERE l.id = (SELECT u.id FROM users AS u WHERE u.username = '$1');
   #
   # Written as join:
   #
-  # SELECT t.* FROM transactions AS t JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
-  # SELECT t.* FROM transactions AS t LEFT JOIN users AS u ON u.username = '$1' WHERE t.user_id = u.id;
+  # SELECT l.* FROM logs AS l JOIN users AS u ON u.username = '$1' WHERE l.user_id = u.id;
+  # SELECT l.* FROM logs AS l LEFT JOIN users AS u ON u.username = '$1' WHERE l.user_id = u.id;
   #
-  def list_transactions_by_username(username, page_num, page_size) do
+  def list_logs_by_username(username, page_num, page_size) do
     # Initially attempted using a subquery in "where', but ran into a cast error.
     # Also found some docs that said that subqueries in ecto couldn't be used
     # in where clauses, but I don't think that's true anymore
@@ -1441,154 +1441,154 @@ defmodule Malan.Accounts do
     #   where: u.username == ^username
 
     # Repo.all(
-    #   from t in Transaction,
-    #     where: t.user_id == ^[subquery(user_id_q)]
+    #   from l in Log,
+    #     where: l.user_id == ^[subquery(user_id_q)]
     # )
 
-    from(t in Transaction,
-      select: t,
+    from(l in Log,
+      select: l,
       join: u in User,
       on: u.username == ^username,
-      where: t.user_id == u.id,
+      where: l.user_id == u.id,
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
     |> Repo.all()
   end
 
-  def list_transactions_by_user_id(nil, page_num, page_size) do
+  def list_logs_by_user_id(nil, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: is_nil(t.user_id),
+      from l in Log,
+        where: is_nil(l.user_id),
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
-  def list_transactions_by_user_id(user_id, page_num, page_size) do
+  def list_logs_by_user_id(user_id, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: t.user_id == ^user_id,
+      from l in Log,
+        where: l.user_id == ^user_id,
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
   @doc """
-  Returns the list of transactions created by the specified session id.
+  Returns the list of logs created by the specified session id.
 
   ## Examples
 
-      iex> list_transactions_by_session_id(session_id)
-      [%Transaction{}, ...]
+      iex> list_logs_by_session_id(session_id)
+      [%Log{}, ...]
 
   """
-  def list_transactions_by_session_id(nil, page_num, page_size) do
+  def list_logs_by_session_id(nil, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: is_nil(t.session_id),
+      from l in Log,
+        where: is_nil(l.session_id),
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
-  def list_transactions_by_session_id(session_id, page_num, page_size) do
+  def list_logs_by_session_id(session_id, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: t.session_id == ^session_id,
+      from l in Log,
+        where: l.session_id == ^session_id,
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
   @doc """
-  Returns the list of transactions that affected the specified user id.
+  Returns the list of logs that affected the specified user id.
 
   ## Examples
 
-      iex> list_transactions_by_who(user_id)
-      [%Transaction{}, ...]
+      iex> list_logs_by_who(user_id)
+      [%Log{}, ...]
 
   """
-  def list_transactions_by_who(nil, page_num, page_size) do
+  def list_logs_by_who(nil, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: is_nil(t.who),
+      from l in Log,
+        where: is_nil(l.who),
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
-  def list_transactions_by_who(user_id, page_num, page_size) do
+  def list_logs_by_who(user_id, page_num, page_size) do
     Repo.all(
-      from t in Transaction,
-        where: t.who == ^user_id,
+      from l in Log,
+        where: l.who == ^user_id,
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
   end
 
   @doc """
-  Gets a single transaction.
+  Gets a single log.
 
-  Raises `Ecto.NoResultsError` if the Transaction does not exist.
+  Raises `Ecto.NoResultsError` if the Log does not exist.
 
   ## Examples
 
-      iex> get_transaction!(123)
-      %Transaction{}
+      iex> get_log!(123)
+      %Log{}
 
-      iex> get_transaction!(456)
+      iex> get_log!(456)
       ** (Ecto.NoResultsError)
 
   """
-  def get_transaction!(id), do: Repo.get!(Transaction, id)
+  def get_log!(id), do: Repo.get!(Log, id)
 
   @doc ~S"""
   Returns nil if no matching user is found.
   Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
 
-      iex> Accounts.get_transactions_by(title: "My post")
+      iex> Accounts.get_logs_by(title: "My post")
 
   """
-  def get_transaction_by(params) do
-    Repo.get_by(Transaction, params)
+  def get_log_by(params) do
+    Repo.get_by(Log, params)
   end
 
   @doc ~S"""
-  Returns transaction
+  Returns log
 
   Raises Ecto.NoResultsError if no matching user is found.  https://hexdocs.pm/ecto/Ecto.NoResultsError.html
   Raises Ecto.MultipleResultsError if more than one is found:  https://hexdocs.pm/ecto/Ecto.MultipleResultsError.html
 
-      iex> Accounts.get_transactions_by!(title: "My post")
-      %Transaction{}
+      iex> Accounts.get_logs_by!(title: "My post")
+      %Log{}
   """
-  def get_transaction_by!(params) do
-    Repo.get_by!(Transaction, params)
+  def get_log_by!(params) do
+    Repo.get_by!(Log, params)
   end
 
   @doc """
-  Retrieve the owner (user_id) of the specified transaction.
+  Retrieve the owner (user_id) of the specified log.
 
-  Raises Malan.CantBeNil if given a nil argument for transaction_id
+  Raises Malan.CantBeNil if given a nil argument for log_id
   Returns %{user_id: "user_id"}
 
-      iex> Accounts.get_transaction_user(transaction_id)
+      iex> Accounts.get_log_user(log_id)
       %{user_id: "user_id"}
   """
-  def get_transaction_user(transaction_id) do
-    Utils.raise_if_nil!("transaction_id", transaction_id)
+  def get_log_user(log_id) do
+    Utils.raise_if_nil!("log_id", log_id)
 
     Repo.one(
-      from t in Transaction,
-        select: %{user_id: t.user_id},
-        where: t.id == ^transaction_id
+      from l in Log,
+        select: %{user_id: l.user_id},
+        where: l.id == ^log_id
     )
   end
 
   @doc """
-  Creates a transaction.  A transaction is immutable once it is created, so it
+  Creates a log.  A log is immutable once it is created, so it
   cannot be updated later.  Make sure you have all the info you need now!
 
   `success?` is whether the operation being logged was successful
@@ -1602,14 +1602,14 @@ defmodule Malan.Accounts do
 
   ## Examples
 
-      iex> create_transaction(%{field: value})
-      {:ok, %Transaction{}}
+      iex> create_log(%{field: value})
+      {:ok, %Log{}}
 
-      iex> create_transaction(%{field: bad_value})
+      iex> create_log(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_transaction(
+  def create_log(
         success?,
         user_id,
         session_id,
@@ -1619,17 +1619,17 @@ defmodule Malan.Accounts do
         verb,
         what,
         remote_ip,
-        tx_changeset,
+        log_changeset,
         when_utc \\ nil
       ) do
-    create_transaction(
+    create_log(
       success?,
       user_id,
       session_id,
       who_id,
       who_username,
       remote_ip,
-      tx_changeset,
+      log_changeset,
       %{
         "success" => success?,
         "type" => type,
@@ -1640,18 +1640,18 @@ defmodule Malan.Accounts do
     )
   end
 
-  def create_transaction(
+  def create_log(
         success?,
         user_id,
         session_id,
         who_id,
         who_username,
         remote_ip,
-        tx_changeset,
+        log_changeset,
         attrs \\ %{}
       ) do
-    %Transaction{}
-    |> Transaction.create_changeset(
+    %Log{}
+    |> Log.create_changeset(
       Map.merge(attrs, %{
         "success" => success?,
         "user_id" => user_id,
@@ -1659,18 +1659,18 @@ defmodule Malan.Accounts do
         "who" => who_id,
         "who_username" => who_username,
         "remote_ip" => remote_ip,
-        "changeset" => tx_changeset
+        "changeset" => log_changeset
       })
     )
     |> Repo.insert()
   end
 
   @doc ~S"""
-  Record a transaction with the specified properties. Logs failures and reports to Sentry
+  Record a log with the specified properties. Logs failures and reports to Sentry
 
-  Returns {:ok, transaction} on success or {:error, changeset} on failure
+  Returns {:ok, log} on success or {:error, changeset} on failure
   """
-  def record_transaction(
+  def record_log(
         success?,
         user_id,
         session_id,
@@ -1680,9 +1680,9 @@ defmodule Malan.Accounts do
         verb,
         what,
         remote_ip,
-        tx_changeset
+        log_changeset
       ) do
-    case create_transaction(
+    case create_log(
            success?,
            user_id,
            session_id,
@@ -1692,19 +1692,19 @@ defmodule Malan.Accounts do
            verb,
            what,
            remote_ip,
-           tx_changeset
+           log_changeset
          ) do
-      {:ok, transaction} ->
-        {:ok, transaction}
+      {:ok, log} ->
+        {:ok, log}
 
       {:error, changeset} ->
-        report_transaction_error(changeset, user_id, session_id, who, who_username, verb, what)
+        report_log_error(changeset, user_id, session_id, who, who_username, verb, what)
     end
   end
 
-  defp report_transaction_error(changeset, user_id, session_id, who, who_username, verb, what) do
+  defp report_log_error(changeset, user_id, session_id, who, who_username, verb, what) do
     msg =
-      "Error recording transaction: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
+      "Error recording log: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
 
     opts = [
       errors_to_str: Utils.Ecto.Changeset.errors_to_str(changeset),
@@ -1730,47 +1730,47 @@ defmodule Malan.Accounts do
   end
 
   @doc """
-  Updates a transaction.  Because transactions are immutable and can't
+  Updates a log.  Because logs are immutable and can't
   be changed after the fact, this function should raise
 
   ## Examples
 
-      iex> update_transaction(transaction, %{field: new_value})
-      {:ok, %Transaction{}}
+      iex> update_log(log, %{field: new_value})
+      {:ok, %Log{}}
 
-      iex> update_transaction(transaction, %{field: bad_value})
+      iex> update_log(log, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_transaction(%Transaction{} = transaction, _attrs) do
-    # transaction
-    # |> Transaction.changeset(attrs)
+  def update_log(%Log{} = log, _attrs) do
+    # log
+    # |> Log.changeset(attrs)
     # |> Repo.update()
 
     raise Malan.ObjectIsImmutable,
       action: "update",
-      type: "Transaction",
-      id: transaction.id
+      type: "Log",
+      id: log.id
   end
 
   @doc """
-  Deletes a transaction.
+  Deletes a log.
 
   ## Examples
 
-      iex> delete_transaction(transaction)
-      {:ok, %Transaction{}}
+      iex> delete_log(log)
+      {:ok, %Log{}}
 
-      iex> delete_transaction(transaction)
+      iex> delete_log(log)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_transaction(%Transaction{} = transaction) do
-    # Repo.delete(transaction)
+  def delete_log(%Log{} = log) do
+    # Repo.delete(log)
 
     raise Malan.ObjectIsImmutable,
       action: "delete",
-      type: "Transaction",
-      id: transaction.id
+      type: "Log",
+      id: log.id
   end
 end

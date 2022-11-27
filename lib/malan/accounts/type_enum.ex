@@ -1,4 +1,4 @@
-defmodule Malan.Accounts.Transaction.Type do
+defmodule Malan.Accounts.Log.Type do
   def get(i) when is_integer(i), do: all_by_value()[i]
   def get(i) when is_binary(i), do: all_by_keyword_normalized()[normalize(i)]
 

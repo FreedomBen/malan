@@ -1812,74 +1812,74 @@ defmodule Malan.AccountsTest do
     end
   end
 
-  describe "transactions" do
-    alias Malan.Accounts.Transaction
+  describe "logs" do
+    alias Malan.Accounts.Log
 
     import Malan.AccountsFixtures
 
     @invalid_attrs %{"type" => nil, "verb" => nil, "what" => nil, "when" => nil}
 
-    test "list_transactions/0 returns all transactions" do
-      {:ok, _user, _session, transaction} = transaction_fixture()
-      assert Accounts.list_transactions(0, 10) == [transaction_fixture_to_retrieved(transaction)]
+    test "list_logs/0 returns all logs" do
+      {:ok, _user, _session, log} = log_fixture()
+      assert Accounts.list_logs(0, 10) == [log_fixture_to_retrieved(log)]
     end
 
-    test "list_transactions/1 returns all transactions for user" do
-      {:ok, u1, _s1, t1} = transaction_fixture()
-      {:ok, _u2, _s2, _t2} = transaction_fixture()
-      assert Accounts.list_transactions(u1.id, 0, 10) == [transaction_fixture_to_retrieved(t1)]
+    test "list_logs/1 returns all logs for user" do
+      {:ok, u1, _s1, l1} = log_fixture()
+      {:ok, _u2, _s2, _l2} = log_fixture()
+      assert Accounts.list_logs(u1.id, 0, 10) == [log_fixture_to_retrieved(l1)]
     end
 
-    test "get_transaction!/1 returns the transaction with given id" do
-      {:ok, _user, _session, transaction} = transaction_fixture()
+    test "get_log!/1 returns the log with given id" do
+      {:ok, _user, _session, log} = log_fixture()
 
-      assert Accounts.get_transaction!(transaction.id) ==
-               transaction_fixture_to_retrieved(transaction)
+      assert Accounts.get_log!(log.id) ==
+               log_fixture_to_retrieved(log)
     end
 
-    test "get_transaction_by/1 returns the transaction matching the param" do
-      {:ok, user, _session, transaction} = transaction_fixture()
+    test "get_log_by/1 returns the log matching the param" do
+      {:ok, user, _session, log} = log_fixture()
 
-      assert Accounts.get_transaction_by(user_id: user.id) ==
-               transaction_fixture_to_retrieved(transaction)
+      assert Accounts.get_log_by(user_id: user.id) ==
+               log_fixture_to_retrieved(log)
     end
 
-    test "get_transaction_by/1 returns nil if no results" do
-      assert Accounts.get_transaction_by(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04") == nil
+    test "get_log_by/1 returns nil if no results" do
+      assert Accounts.get_log_by(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04") == nil
     end
 
-    test "get_transaction_by/1 raises if multiple results" do
-      {:ok, u1, _s1, _t1} = transaction_fixture()
-      {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+    test "get_log_by/1 raises if multiple results" do
+      {:ok, u1, _s1, _l1} = log_fixture()
+      {:ok, _u2, _s2, _l2} = log_fixture(%{"user_id" => u1.id})
 
       assert_raise Ecto.MultipleResultsError, fn ->
-        Accounts.get_transaction_by(user_id: u1.id)
+        Accounts.get_log_by(user_id: u1.id)
       end
     end
 
-    test "get_transaction_by!/1 returns the transaction matching the param" do
-      {:ok, user, _session, tf} = transaction_fixture()
+    test "get_log_by!/1 returns the log matching the param" do
+      {:ok, user, _session, tf} = log_fixture()
 
-      assert transaction_fixture_to_retrieved(tf) ==
-               Accounts.get_transaction_by!(user_id: user.id)
+      assert log_fixture_to_retrieved(tf) ==
+               Accounts.get_log_by!(user_id: user.id)
     end
 
-    test "get_transaction_by!/1 raises if no results" do
+    test "get_log_by!/1 raises if no results" do
       assert_raise Ecto.NoResultsError, fn ->
-        Accounts.get_transaction_by!(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04")
+        Accounts.get_log_by!(user_id: "f0e2c256-1827-4c34-9e64-d890b959ee04")
       end
     end
 
-    test "get_transaction_by!/1 raises if multiple results" do
-      {:ok, u1, _s1, _t1} = transaction_fixture()
-      {:ok, _u2, _s2, _t2} = transaction_fixture(%{"user_id" => u1.id})
+    test "get_log_by!/1 raises if multiple results" do
+      {:ok, u1, _s1, _l1} = log_fixture()
+      {:ok, _u2, _s2, _l2} = log_fixture(%{"user_id" => u1.id})
 
       assert_raise Ecto.MultipleResultsError, fn ->
-        Accounts.get_transaction_by!(user_id: u1.id)
+        Accounts.get_log_by!(user_id: u1.id)
       end
     end
 
-    test "create_transaction/1 with valid data creates a transaction" do
+    test "create_log/1 with valid data creates a log" do
       valid_attrs = %{
         "type" => "sessions",
         "verb" => "DELETE",
@@ -1889,8 +1889,8 @@ defmodule Malan.AccountsTest do
 
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
 
-      assert {:ok, %Transaction{} = transaction} =
-               Accounts.create_transaction(
+      assert {:ok, %Log{} = log} =
+               Accounts.create_log(
                  true,
                  user.id,
                  session.id,
@@ -1901,19 +1901,19 @@ defmodule Malan.AccountsTest do
                  valid_attrs
                )
 
-      assert transaction.type == "sessions"
-      assert transaction.verb == "DELETE"
-      assert transaction.what == "some what"
-      assert transaction.when == ~U[2021-12-22 21:02:00Z]
+      assert log.type == "sessions"
+      assert log.verb == "DELETE"
+      assert log.what == "some what"
+      assert log.when == ~U[2021-12-22 21:02:00Z]
     end
 
-    test "create_transaction/1 with invalid data returns error changeset" do
+    test "create_log/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} =
-               Accounts.create_transaction(nil, nil, nil, nil, nil, nil, @invalid_attrs)
+               Accounts.create_log(nil, nil, nil, nil, nil, nil, @invalid_attrs)
     end
 
-    test "update_transaction/2 with valid data raises a Malan.ObjectIsImmutable exception" do
-      {:ok, _user, _session, transaction} = transaction_fixture()
+    test "update_log/2 with valid data raises a Malan.ObjectIsImmutable exception" do
+      {:ok, _user, _session, log} = log_fixture()
 
       update_attrs = %{
         type: "sessions",
@@ -1923,38 +1923,38 @@ defmodule Malan.AccountsTest do
       }
 
       assert_raise Malan.ObjectIsImmutable, fn ->
-        Accounts.update_transaction(transaction, update_attrs)
+        Accounts.update_log(log, update_attrs)
       end
 
-      assert transaction_fixture_to_retrieved(transaction) ==
-               Accounts.get_transaction!(transaction.id)
+      assert log_fixture_to_retrieved(log) ==
+               Accounts.get_log!(log.id)
     end
 
-    test "update_transaction/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
-      {:ok, _user, _session, tf} = transaction_fixture()
+    test "update_log/2 with invalid data raises a Malan.ObjectIsImmutable exception" do
+      {:ok, _user, _session, tf} = log_fixture()
 
       assert_raise Malan.ObjectIsImmutable, fn ->
-        Accounts.update_transaction(tf, @invalid_attrs)
+        Accounts.update_log(tf, @invalid_attrs)
       end
 
-      assert transaction_fixture_to_retrieved(tf) == Accounts.get_transaction!(tf.id)
+      assert log_fixture_to_retrieved(tf) == Accounts.get_log!(tf.id)
     end
 
-    test "delete_transaction/1 raises a Malan.ObjectIsImmutable exception" do
-      {:ok, _user, _session, transaction} = transaction_fixture()
+    test "delete_log/1 raises a Malan.ObjectIsImmutable exception" do
+      {:ok, _user, _session, log} = log_fixture()
 
       assert_raise Malan.ObjectIsImmutable, fn ->
-        Accounts.delete_transaction(transaction)
+        Accounts.delete_log(log)
       end
 
-      assert transaction_fixture_to_retrieved(transaction) ==
-               Accounts.get_transaction!(transaction.id)
+      assert log_fixture_to_retrieved(log) ==
+               Accounts.get_log!(log.id)
     end
 
-    test "get_transaction_user/1" do
-      {:ok, user, _session, transaction} = transaction_fixture()
+    test "get_log_user/1" do
+      {:ok, user, _session, log} = log_fixture()
       user_id = user.id
-      assert %{user_id: ^user_id} = Accounts.get_transaction_user(transaction.id)
+      assert %{user_id: ^user_id} = Accounts.get_log_user(log.id)
     end
   end
 end

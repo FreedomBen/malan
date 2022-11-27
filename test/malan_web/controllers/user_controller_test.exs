@@ -4,7 +4,7 @@ defmodule MalanWeb.UserControllerTest do
   # import Swoosh.TestAssertions, only: [assert_email_sent: 0, assert_email_sent: 1]
 
   alias Malan.Accounts
-  alias Malan.Accounts.{User, Session, Transaction}
+  alias Malan.Accounts.{User, Session, Log}
   alias Malan.Utils
   alias Malan.Repo
 
@@ -665,13 +665,13 @@ defmodule MalanWeb.UserControllerTest do
       assert Enum.all?(addrs, fn ad -> ad["name"] == ad1["name"] || ad["name"] == ad2["name"] end)
     end
 
-    test "Creates a corresponding Transaction", %{conn: conn} do
+    test "Creates a corresponding Log", %{conn: conn} do
       conn = post(conn, Routes.user_path(conn, :create), user: @create_attrs)
       # password should be included after creation
       assert %{"id" => id} = json_response(conn, 201)["data"]
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: nil,
                  session_id: nil,
@@ -679,16 +679,16 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 1,
                  who: ^id,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(id, 0, 10)
     end
 
-    test "Creates a transaction when create fails. Can't create user with a username that is already taken",
+    test "Creates a log when create fails. Can't create user with a username that is already taken",
          %{conn: conn} do
       # {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       {:ok, %{username: username} = _user} = Helpers.Accounts.regular_user()
@@ -700,7 +700,7 @@ defmodule MalanWeb.UserControllerTest do
       assert 422 == conn.status
 
       assert [
-               %Transaction{
+               %Log{
                  success: false,
                  user_id: nil,
                  session_id: nil,
@@ -709,13 +709,13 @@ defmodule MalanWeb.UserControllerTest do
                  who: nil,
                  who_username: ^username,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(nil, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(nil, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(nil, 0, 10)
     end
 
     test "Accepts approved_ips", %{conn: conn} do
@@ -1142,7 +1142,7 @@ defmodule MalanWeb.UserControllerTest do
       check_response.(conn)
     end
 
-    test "Creates a corresponding Transaction", %{
+    test "Creates a corresponding Log", %{
       conn: conn,
       user: %User{id: id} = user,
       session: %Session{id: session_id} = session
@@ -1157,7 +1157,7 @@ defmodule MalanWeb.UserControllerTest do
              } = json_response(conn, 200)["data"]
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^id,
                  session_id: ^session_id,
@@ -1165,13 +1165,13 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 2,
                  who: ^id,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(id, 0, 10)
     end
 
     test "Accepts datetimes and more precision on birthday", %{conn: conn, user: %User{} = user} do
@@ -1404,7 +1404,7 @@ defmodule MalanWeb.UserControllerTest do
              end)
     end
 
-    test "Creates a corresponding transaction", %{
+    test "Creates a corresponding log", %{
       conn: _conn,
       user: %User{id: id} = user,
       session: %Session{} = _session
@@ -1421,7 +1421,7 @@ defmodule MalanWeb.UserControllerTest do
              } = json_response(conn, 200)["data"]
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
@@ -1429,13 +1429,13 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 2,
                  who: ^id,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(id, 0, 10)
     end
   end
 
@@ -1456,7 +1456,7 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
-    test "Creates a corresponding transaction", %{
+    test "Creates a corresponding log", %{
       conn: conn,
       user: %User{id: id} = user,
       session: %Session{id: session_id} = session
@@ -1476,7 +1476,7 @@ defmodule MalanWeb.UserControllerTest do
       # The deletion of the user should have triggered a session revocation.
       # First Tx here is the active session revocation, second is user deletion.
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  # user_id: ^id,
                  user_id: nil,
@@ -1485,8 +1485,8 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 3,
                  who: ^id,
                  when: _
-               } = rev_tx,
-               %Transaction{
+               } = rev_log,
+               %Log{
                  success: true,
                  user_id: ^id,
                  session_id: ^session_id,
@@ -1494,13 +1494,13 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 3,
                  who: ^id,
                  when: when_utc
-               } = del_tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = del_log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [del_tx] == Accounts.list_transactions_by_user_id(id, 0, 10)
-      assert [del_tx] == Accounts.list_transactions_by_session_id(session_id, 0, 10)
-      assert [rev_tx, del_tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [del_log] == Accounts.list_logs_by_user_id(id, 0, 10)
+      assert [del_log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
+      assert [rev_log, del_log] == Accounts.list_logs_by_who(id, 0, 10)
     end
 
     test "requires being self or admin", %{conn: conn, user: %User{} = user, session: session} do
@@ -1714,13 +1714,13 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
     end
 
-    test "Creates a corresponding transaction", %{conn: conn, user: %User{id: id}} do
+    test "Creates a corresponding log", %{conn: conn, user: %User{id: id}} do
       conn = post(conn, Routes.user_path(conn, :reset_password, id))
 
       assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: nil,
                  session_id: nil,
@@ -1728,13 +1728,13 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 1,
                  who: ^id,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(nil, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(id, 0, 10)
     end
 
     test "Rate limits requests", %{
@@ -2423,7 +2423,7 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
-    test "Creates a corresponding transaction", %{
+    test "Creates a corresponding log", %{
       conn: conn,
       user: %User{id: id} = user
     } do
@@ -2450,10 +2450,10 @@ defmodule MalanWeb.UserControllerTest do
 
       assert %{"ok" => true} = json_response(conn, 200)
 
-      # Now check for the corresponding transaction
-      match_transaction_extract_when = fn t ->
+      # Now check for the corresponding log
+      match_log_extract_when = fn t ->
         try do
-          %Transaction{
+          %Log{
             success: true,
             user_id: nil,
             session_id: nil,
@@ -2471,38 +2471,38 @@ defmodule MalanWeb.UserControllerTest do
         end
       end
 
-      trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
+      trans_by_who = Accounts.list_logs_by_who(id, 0, 10)
       assert 3 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
              end)
 
-      trans_by_user_id = Accounts.list_transactions_by_user_id(nil, 0, 10)
+      trans_by_user_id = Accounts.list_logs_by_user_id(nil, 0, 10)
       assert 3 == length(trans_by_user_id)
 
       assert Enum.any?(trans_by_user_id, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
              end)
 
-      trans_by_session_id = Accounts.list_transactions_by_session_id(nil, 0, 10)
+      trans_by_session_id = Accounts.list_logs_by_session_id(nil, 0, 10)
       assert 3 == length(trans_by_session_id)
 
       assert Enum.any?(trans_by_session_id, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
              end)
     end
 
-    test "Creates a Transaction if password reset fails" do
+    test "Creates a Log if password reset fails" do
       # TODO
     end
   end
@@ -3202,7 +3202,7 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 401
     end
 
-    test "Creates a corresponding transaction", %{
+    test "Creates a corresponding log", %{
       conn: conn,
       user: %User{id: id} = _user,
       session: %Session{} = _session
@@ -3232,10 +3232,10 @@ defmodule MalanWeb.UserControllerTest do
 
       assert %{"ok" => true} = json_response(conn, 200)
 
-      # Now check for the corresponding transaction
-      match_transaction_extract_when = fn t ->
+      # Now check for the corresponding log
+      match_log_extract_when = fn t ->
         try do
-          %Transaction{
+          %Log{
             success: true,
             user_id: ^admin_user_id,
             session_id: ^admin_session_id,
@@ -3253,31 +3253,31 @@ defmodule MalanWeb.UserControllerTest do
         end
       end
 
-      trans_by_who = Accounts.list_transactions_by_who(id, 0, 10)
+      trans_by_who = Accounts.list_logs_by_who(id, 0, 10)
       assert 3 == length(trans_by_who)
 
       assert Enum.any?(trans_by_who, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
              end)
 
-      trans_by_user_id = Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
+      trans_by_user_id = Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
       assert 2 == length(trans_by_user_id)
 
       assert Enum.any?(trans_by_user_id, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
              end)
 
-      trans_by_session_id = Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
+      trans_by_session_id = Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
       assert 2 == length(trans_by_session_id)
 
       assert Enum.any?(trans_by_session_id, fn t ->
-               case match_transaction_extract_when.(t) do
+               case match_log_extract_when.(t) do
                  {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
                  {:error, _} -> false
                end
@@ -3328,7 +3328,7 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 401
     end
 
-    test "Creates a corresponding transaction", %{
+    test "Creates a corresponding log", %{
       conn: conn,
       user: %User{id: id} = _user,
       session: %Session{} = _session
@@ -3342,7 +3342,7 @@ defmodule MalanWeb.UserControllerTest do
       assert conn.status == 200
 
       assert [
-               %Transaction{
+               %Log{
                  success: true,
                  user_id: ^admin_user_id,
                  session_id: ^admin_session_id,
@@ -3350,13 +3350,13 @@ defmodule MalanWeb.UserControllerTest do
                  verb_enum: 1,
                  who: ^id,
                  when: when_utc
-               } = tx
-             ] = Accounts.list_transactions_by_who(id, 0, 10)
+               } = log
+             ] = Accounts.list_logs_by_who(id, 0, 10)
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
-      assert [tx] == Accounts.list_transactions_by_user_id(admin_user_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_session_id(admin_session_id, 0, 10)
-      assert [tx] == Accounts.list_transactions_by_who(id, 0, 10)
+      assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
+      assert [log] == Accounts.list_logs_by_who(id, 0, 10)
     end
   end
 

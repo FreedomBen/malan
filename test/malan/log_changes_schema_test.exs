@@ -1,8 +1,8 @@
-defmodule Malan.TransactionChangesSchemaTest do
+defmodule Malan.LogChangesSchemaTest do
   use Malan.DataCase, async: true
 
   alias Malan.Utils
-  alias Malan.Accounts.{Session, Transaction}
+  alias Malan.Accounts.{Session, Log}
 
   def session_changeset_fixture(initial_attrs \\ %{}, change_attrs \\ %{}) do
     %Session{location: "location"}
@@ -16,10 +16,10 @@ defmodule Malan.TransactionChangesSchemaTest do
     )
   end
 
-  describe "transactions_changes" do
+  describe "logs_changes" do
     # test "#from_changeset/2 success" do
     #   changeset = session_changeset_fixture()
-    #   tc = Transaction.Changes.from_changeset(changeset)
+    #   tc = Log.Changes.from_changeset(changeset)
 
     #   assert tc.action == changeset.action
     #   assert tc.changes == Map.update!(changeset.changes, :api_token, &Utils.mask_str/1)
@@ -31,7 +31,7 @@ defmodule Malan.TransactionChangesSchemaTest do
 
     test "#map_from_changeset/2 success" do
       changeset = session_changeset_fixture()
-      tc = Transaction.Changes.map_from_changeset(changeset)
+      tc = Log.Changes.map_from_changeset(changeset)
 
       assert tc.action == changeset.action
       assert tc.changes == Map.update!(changeset.changes, :api_token, &Utils.mask_str/1)
@@ -44,7 +44,7 @@ defmodule Malan.TransactionChangesSchemaTest do
     test "#validate_data_type/1 requires valid data type" do
       cs = session_changeset_fixture(%{}, %{data_type: "hello"})
       cs = Map.update!(cs, :changes, fn c -> Map.put(c, :data_type, "hello") end)
-      cs = Transaction.Changes.validate_data_type(cs)
+      cs = Log.Changes.validate_data_type(cs)
       [err_msg] = errors_on(cs).data_type
       assert err_msg =~ ~r/^data_type is invalid/i
     end

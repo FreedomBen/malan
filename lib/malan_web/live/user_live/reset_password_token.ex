@@ -39,26 +39,26 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     # that happens.  It still goes through the other validation, but if we can
     # catch it early then the user doesn't have to request a new token for every
     # attempt they want to make. Secondarily it slso give us a changset
-    # to use for logging the transaction
-    tx_changeset = User.update_changeset(socket.assigns.user, %{"password" => password})
+    # to use for logging the log
+    log_changeset = User.update_changeset(socket.assigns.user, %{"password" => password})
 
     socket =
-      case tx_changeset.valid? do
-        true -> handle_reset_password(reset_token, password, socket, remote_ip, tx_changeset)
-        _ -> handle_reset_password_fail(tx_changeset, socket, remote_ip)
+      case log_changeset.valid? do
+        true -> handle_reset_password(reset_token, password, socket, remote_ip, log_changeset)
+        _ -> handle_reset_password_fail(log_changeset, socket, remote_ip)
       end
 
     {:noreply, socket}
   end
 
-  defp handle_reset_password(reset_token, new_password, socket, remote_ip, tx_changeset) do
+  defp handle_reset_password(reset_token, new_password, socket, remote_ip, log_changeset) do
     with {:ok, %User{} = _user} <-
            Accounts.reset_password_with_token(
              socket.assigns.user,
              reset_token,
              new_password
            ) do
-      record_transaction(
+      record_log(
         true,
         socket.assigns.user.id,
         remote_ip,
@@ -66,7 +66,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
         socket.assigns.user.username, # who_username
         "PUT",
         "MalanWeb.UserLive.ResetPasswordToken | handle_event 'reset_password'",
-        tx_changeset
+        log_changeset
       )
 
       socket
@@ -79,7 +79,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
   end
 
   defp handle_reset_password_fail(err, socket, remote_ip) do
-    record_tx_admin_reset_password_token_fail(
+    record_log_admin_reset_password_token_fail(
       remote_ip,
       socket.assigns.user,
       err
@@ -90,7 +90,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     |> assign(:error, err)
   end
 
-  defp record_transaction(
+  defp record_log(
          success?,
          user_id,
          remote_ip,
@@ -98,9 +98,9 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
          who_username,
          verb,
          what,
-         tx_changeset
+         log_changeset
        ) do
-    Accounts.record_transaction(
+    Accounts.record_log(
       success?,
       user_id,
       nil, # session_id
@@ -110,12 +110,12 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
       verb,
       what,
       remote_ip,
-      tx_changeset
+      log_changeset
     )
   end
 
-  defp record_tx_admin_reset_password_token_fail(remote_ip, user, err) do
-    record_transaction(
+  defp record_log_admin_reset_password_token_fail(remote_ip, user, err) do
+    record_log(
       false, # success
       user.id,
       remote_ip,
