@@ -13,8 +13,7 @@ defmodule MalanWeb.SessionController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination,
-       [table: "sessions"]
+  plug :require_pagination, [default_page_size: 10, max_page_size: 100]
        when action in [:admin_index, :index, :index_active, :user_index_active]
 
   def admin_index(conn, _params) do

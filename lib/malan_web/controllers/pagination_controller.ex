@@ -33,13 +33,19 @@ defmodule Malan.PaginationController do
   Returns `conn`
   """
   def validate_pagination(conn, opts \\ []) do
-    table =
+    {default_page_size, max_page_size} =
       cond do
-        is_list(opts) -> Keyword.get(opts, :table, nil)
-        true -> nil
+        is_list(opts) ->
+          {
+            Keyword.get(opts, :default_page_size, nil),
+            Keyword.get(opts, :max_page_size, nil)
+          }
+
+        true ->
+          {nil, nil}
       end
 
-    with {:ok, pagination_info} <- extract_page_info(conn, table) do
+    with {:ok, pagination_info} <- extract_page_info(conn, default_page_size, max_page_size) do
       conn
       |> assign(:pagination_error, nil)
       |> assign(:pagination_info, pagination_info)
@@ -61,17 +67,36 @@ defmodule Malan.PaginationController do
     |> is_paginated(opts)
   end
 
-  def extract_page_info(%Plug.Conn{params: params}, table) do
-    params
-    |> Map.merge(%{"table" => table})
-    |> extract_page_info()
+  def extract_page_info(%Plug.Conn{params: params}, %Pagination{} = pagination) do
+    extract_page_info(params, pagination)
   end
 
-  def extract_page_info(params) do
-    case Pagination.changeset(%Pagination{}, params) |> apply_action(:update) do
+  def extract_page_info(%{} = params, %Pagination{} = pagination) do
+    pagination
+    |> Pagination.changeset(params)
+    |> apply_action(:update)
+    |> case do
       {:ok, pagination} -> {:ok, pagination}
       {:error, changeset} -> {:error, changeset}
     end
+  end
+
+  def extract_page_info(%Plug.Conn{params: params}, default_page_size, max_page_size) do
+    extract_page_info(params, %Pagination{
+      max_page_size: max_page_size,
+      default_page_size: default_page_size
+    })
+  end
+
+  def extract_page_info(%{} = params, default_page_size, max_page_size) do
+    extract_page_info(params, %Pagination{
+      max_page_size: max_page_size,
+      default_page_size: default_page_size
+    })
+  end
+
+  def extract_page_info(%{} = params) do
+    extract_page_info(params, %Pagination{})
   end
 
   @doc """
