@@ -528,6 +528,8 @@ defmodule Malan.Accounts do
     list_sessions(user_id, page_num, page_size)
   end
 
+  def get_session(id), do: Repo.get(Session, id)
+
   @doc """
   Gets a single session.
 
@@ -557,7 +559,7 @@ defmodule Malan.Accounts do
     Repo.one(
       from u in User,
         select: {u.id, u.password_hash, u.locked_at, u.approved_ips},
-        where: u.username == ^username,
+        where: u.username == ^username or u.email == ^username,
         where: is_nil(u.deleted_at)
     )
   end
