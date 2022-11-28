@@ -39,7 +39,12 @@ defmodule MalanWeb.AuthControllerTest do
   # the user's roles
   describe "#validate_token/2" do
     test "Adds proper assign when api_token is missing", %{conn: conn} do
-      conn = AuthController.validate_token(conn, nil)
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> Plug.Conn.fetch_session()
+        |> AuthController.validate_token(nil)
+
       assert conn.assigns == conn_assigns_for_invalid_token(:no_token)
     end
 
@@ -162,6 +167,43 @@ defmodule MalanWeb.AuthControllerTest do
       assert conn.assigns.authed_session_ip_address == nil
       assert conn.assigns.authed_session_valid_only_for_ip == nil
     end
+
+    test "Handles no token in header or in session cookie", %{conn: conn} do
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> Plug.Conn.fetch_session()
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns == conn_assigns_for_invalid_token(:no_token)
+    end
+
+    test "Handles invalid token in cookie", %{conn: conn} do
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{"authorization" => "hey"})
+        |> Plug.Conn.fetch_session()
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns == conn_assigns_for_invalid_token(:not_found)
+    end
+
+    test "Can get the token from the session cookie (admin user)", %{conn: conn} do
+      {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{"authorization" => session.api_token})
+        |> Plug.Conn.fetch_session()
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns.authed_user_id == user.id
+      assert conn.assigns.authed_username == user.username
+      assert conn.assigns.authed_user_roles == ["admin", "user"]
+      assert conn.assigns.authed_user_is_admin == true
+      assert conn.assigns.authed_user_is_moderator == false
+    end
+
   end
 
   describe "#is_authenticated/2" do

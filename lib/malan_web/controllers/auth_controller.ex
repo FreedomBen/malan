@@ -132,6 +132,18 @@ defmodule Malan.AuthController do
     end
   end
 
+  def retrieve_user(conn, _opts) do
+    # If we have a User ID, grab the whole user object for the controllers
+    # and views to use
+    user =
+      case is_nil(conn.assigns[:authed_user_id]) do
+        true -> nil
+        _ -> Accounts.get_user(conn.assigns[:authed_user_id])
+      end
+
+    assign(conn, :authed_user, user)
+  end
+
   def halt_not_owner(conn), do: halt_status(conn, 401)
 
   def is_admin?(conn), do: !!conn.assigns.authed_user_is_admin
@@ -181,15 +193,21 @@ defmodule Malan.AuthController do
 
   def retrieve_token(conn) do
     case parse_authorization(conn) do
-      {"authorization", auth_string} -> extract_token(auth_string)
+      {"authorization", auth_string} -> extract_header_token(auth_string)
+      %{"authorization" => auth_string} -> {:ok, auth_string}
       _ -> {:error, :no_token}
     end
   end
 
-  defp parse_authorization(conn),
-    do: Enum.find(conn.req_headers, fn {k, _v} -> k == "authorization" end)
+  defp parse_authorization(conn) do
+    # First look for the authorization HTTP header for the token, then look in the session cookie
+    case Enum.find(conn.req_headers, :header_not_found, fn {k, _v} -> k == "authorization" end) do
+      :header_not_found -> Plug.Conn.get_session(conn)
+      authorization -> authorization
+    end
+  end
 
-  defp extract_token(auth_string) do
+  defp extract_header_token(auth_string) do
     case String.split(auth_string, " ") do
       [_, api_token] -> {:ok, api_token}
       _ -> {:error, :malformed}
