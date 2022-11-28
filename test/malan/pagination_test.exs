@@ -9,38 +9,6 @@ defmodule Malan.PaginationTest do
   # use Malan.DataCase, async: true
 
   describe "Malan.Pagination" do
-    test "#max_page_size/1" do
-      assert 10 == Pagination.max_page_size(:users)
-      assert 20 == Pagination.max_page_size(:sessions)
-      assert 10 == Pagination.max_page_size(:posts)
-      assert 10 == Pagination.max_page_size(nil)
-      assert Pagination.max_page_size() == Pagination.max_page_size(nil)
-    end
-
-    test "#get_table/1 changeset" do
-      assert "users" =
-               Pagination.changeset(%Pagination{}, %{table: "users"}) |> Pagination.get_table()
-
-      assert "sessions" =
-               Pagination.changeset(%Pagination{}, %{table: "sessions"}) |> Pagination.get_table()
-
-      assert nil ==
-               Pagination.changeset(%Pagination{}, %{}) |> Pagination.get_table()
-    end
-
-    test "#get_table/1 table" do
-      assert %{max_page_size: 10} = Pagination.get_table(:users)
-      assert %{max_page_size: 20} = Pagination.get_table(:sessions)
-      assert %{max_page_size: 10} = Pagination.get_table(:notarealtable)
-
-      assert %{max_page_size: 10} = Pagination.get_table("users")
-      assert %{max_page_size: 20} = Pagination.get_table("sessions")
-      assert %{max_page_size: 10} = Pagination.get_table("notarealtable")
-
-      assert %{max_page_size: 10} = Pagination.get_table(nil)
-      assert %{max_page_size: 10} = Pagination.get_table()
-    end
-
     test "#validate_page_num/1" do
       assert {:ok, 0} = Pagination.validate_page_num(0)
       assert {:ok, 10} = Pagination.validate_page_num(10)
@@ -56,26 +24,20 @@ defmodule Malan.PaginationTest do
       end
     end
 
-    test "#validate_page_size/1" do
-      assert {:ok, 10} = Pagination.validate_page_size(10)
-      assert {:error, 0} = Pagination.validate_page_size(0)
-      assert {:error, -1} = Pagination.validate_page_size(-1)
-    end
-
     test "#changeset/2 for page_num" do
       assert %Ecto.Changeset{
                valid?: true,
                changes: %{page_num: 5},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               data: %Pagination{}
              } = p2 = Pagination.changeset(%Pagination{}, %{page_num: 5})
 
-      assert {:ok, %Pagination{page_num: 5, page_size: 10, table: nil}} =
+      assert {:ok, %Pagination{page_num: 5, page_size: 10}} =
                Ecto.Changeset.apply_action(p2, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{page_num: -2},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil},
+               data: %Pagination{},
                errors: [page_num: {"must be greater than or equal to %{number}", _}]
              } = p3 = Pagination.changeset(%Pagination{}, %{page_num: -2})
 
@@ -85,58 +47,38 @@ defmodule Malan.PaginationTest do
     test "#changeset/2 for page_num wrong type" do
       assert %Ecto.Changeset{
                valid?: true,
-               changes: %{page_num: 2, table: "users"},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
-             } = p1 = Pagination.changeset(%Pagination{}, %{page_num: "2", table: "users"})
+               changes: %{page_num: 2},
+               data: %Pagination{}
+             } = p1 = Pagination.changeset(%Pagination{}, %{page_num: "2"})
 
-      assert {:ok, %Pagination{page_num: 2, page_size: 10, table: "users"}} =
+      assert {:ok, %Pagination{page_num: 2, page_size: 10}} =
                Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil},
+               data: %Pagination{},
                errors: [page_num: {"is invalid", _}]
-             } = p2 = Pagination.changeset(%Pagination{}, %{page_num: "marshall", table: "users"})
+             } = p2 = Pagination.changeset(%Pagination{}, %{page_num: "marshall"})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p2, :update)
-    end
-
-    test "#changeset/2 for invalid table" do
-      assert %Ecto.Changeset{
-               valid?: true,
-               changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
-             } = p1 = Pagination.changeset(%Pagination{}, %{table: "notarealtable"})
-
-      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: nil}} =
-               Ecto.Changeset.apply_action(p1, :update)
-
-      assert %Ecto.Changeset{
-               valid?: true,
-               changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
-             } = p2 = Pagination.changeset(%Pagination{}, %{table: nil})
-
-      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: nil}} =
-               Ecto.Changeset.apply_action(p2, :update)
     end
 
     test "#changeset/2 for page_size" do
       assert %Ecto.Changeset{
                valid?: true,
-               changes: %{page_size: 5, table: "sessions"},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
-             } = p1 = Pagination.changeset(%Pagination{}, %{page_size: 5, table: "sessions"})
+               changes: %{page_size: 5},
+               data: %Pagination{}
+             } = p1 = Pagination.changeset(%Pagination{}, %{page_size: 5})
 
-      assert {:ok, %Pagination{page_num: 0, page_size: 5, table: "sessions"}} =
+      assert {:ok, %Pagination{page_num: 0, page_size: 5}} =
                Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{page_size: -2},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
-             } = p2 = Pagination.changeset(%Pagination{}, %{page_size: -2, table: "sessions"})
+               data: %Pagination{}
+             } = p2 = Pagination.changeset(%Pagination{}, %{page_size: -2})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p2, :update)
     end
@@ -144,18 +86,18 @@ defmodule Malan.PaginationTest do
     test "#changeset/2 for page_size too large" do
       assert %Ecto.Changeset{
                valid?: false,
-               changes: %{page_size: 30, table: "sessions"},
-               data: %Pagination{page_num: 0, page_size: 10},
+               changes: %{page_size: 30},
+               data: %Pagination{},
                errors: [page_size: {_, _}]
-             } = p1 = Pagination.changeset(%Pagination{}, %{page_size: 30, table: "sessions"})
+             } = p1 = Pagination.changeset(%Pagination{}, %{page_size: 30})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
-               changes: %{page_size: -2, table: "sessions"},
-               data: %Pagination{page_num: 0, page_size: 10}
-             } = p2 = Pagination.changeset(%Pagination{}, %{page_size: -2, table: "sessions"})
+               changes: %{page_size: -2},
+               data: %Pagination{}
+             } = p2 = Pagination.changeset(%Pagination{}, %{page_size: -2})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p2, :update)
     end
@@ -164,16 +106,16 @@ defmodule Malan.PaginationTest do
       assert %Ecto.Changeset{
                valid?: true,
                changes: %{page_size: 2},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               data: %Pagination{}
              } = p1 = Pagination.changeset(%Pagination{}, %{page_size: "2"})
 
-      assert {:ok, %Pagination{page_num: 0, page_size: 2, table: nil}} =
+      assert {:ok, %Pagination{page_num: 0, page_size: 2}} =
                Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil},
+               data: %Pagination{},
                errors: [page_size: {"is invalid", _}]
              } = p2 = Pagination.changeset(%Pagination{}, %{page_size: "marshall"})
 
@@ -183,48 +125,48 @@ defmodule Malan.PaginationTest do
     test "#changeset/2 for page_num and page_size" do
       assert %Ecto.Changeset{
                valid?: true,
-               data: %Pagination{page_num: 0, page_size: 10, table: nil},
-               changes: %{table: "users"}
-             } = p1 = Pagination.changeset(%Pagination{}, %{table: "users"})
+               data: %Pagination{},
+               changes: %{}
+             } = p1 = Pagination.changeset(%Pagination{}, %{})
 
-      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: "users"}} =
+      assert {:ok, %Pagination{page_num: 0, page_size: 10}} =
                Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: true,
-               changes: %{page_num: 2, page_size: 5, table: "users"},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               changes: %{page_num: 2, page_size: 5},
+               data: %Pagination{}
              } =
                p2 =
-               Pagination.changeset(%Pagination{}, %{page_num: 2, page_size: 5, table: "users"})
+               Pagination.changeset(%Pagination{}, %{page_num: 2, page_size: 5})
 
-      assert {:ok, %Pagination{page_num: 2, page_size: 5, table: "users"}} =
+      assert {:ok, %Pagination{page_num: 2, page_size: 5}} =
                Ecto.Changeset.apply_action(p2, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
-               changes: %{page_num: -5, page_size: 2, table: "users"},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               changes: %{page_num: -5, page_size: 2},
+               data: %Pagination{}
              } =
                p3 =
-               Pagination.changeset(%Pagination{}, %{page_num: -5, page_size: 2, table: "users"})
+               Pagination.changeset(%Pagination{}, %{page_num: -5, page_size: 2})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p3, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
-               changes: %{page_num: 3, page_size: -2, table: "users"},
-               data: %Pagination{page_num: 0, page_size: 10}
+               changes: %{page_num: 3, page_size: -2},
+               data: %Pagination{}
              } =
                p4 =
-               Pagination.changeset(%Pagination{}, %{page_num: 3, page_size: -2, table: "users"})
+               Pagination.changeset(%Pagination{}, %{page_num: 3, page_size: -2})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p4, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{page_num: -3, page_size: -2},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               data: %Pagination{}
              } = p5 = Pagination.changeset(%Pagination{}, %{page_num: -3, page_size: -2})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p5, :update)
@@ -234,49 +176,20 @@ defmodule Malan.PaginationTest do
       assert %Ecto.Changeset{
                valid?: true,
                changes: %{page_num: 4, page_size: 2},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil}
+               data: %Pagination{}
              } = p1 = Pagination.changeset(%Pagination{}, %{page_num: "4", page_size: "2"})
 
-      assert {:ok, %Pagination{page_num: 4, page_size: 2, table: nil}} =
+      assert {:ok, %Pagination{page_num: 4, page_size: 2}} =
                Ecto.Changeset.apply_action(p1, :update)
 
       assert %Ecto.Changeset{
                valid?: false,
                changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil},
+               data: %Pagination{},
                errors: [{:page_num, {"is invalid", _}}, {:page_size, {"is invalid", _}}]
              } =
                p2 =
                Pagination.changeset(%Pagination{}, %{page_num: "cliff", page_size: "marshall"})
-
-      assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p2, :update)
-    end
-
-    test "#changeset/2 for table" do
-      assert %Ecto.Changeset{
-               valid?: true,
-               changes: %{table: "users"},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil, max_page_size: 10}
-             } = p1 = Pagination.changeset(%Pagination{}, %{table: "users"})
-
-      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: "users"}} =
-               Ecto.Changeset.apply_action(p1, :update)
-
-      assert %Ecto.Changeset{
-               valid?: true,
-               changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil, max_page_size: 10}
-             } = p1 = Pagination.changeset(%Pagination{}, %{table: nil})
-
-      assert {:ok, %Pagination{page_num: 0, page_size: 10, table: nil}} =
-               Ecto.Changeset.apply_action(p1, :update)
-
-      assert %Ecto.Changeset{
-               valid?: false,
-               changes: %{},
-               data: %Pagination{page_num: 0, page_size: 10, table: nil, max_page_size: 10},
-               errors: [{:table, {"is invalid", _}}]
-             } = p2 = Pagination.changeset(%Pagination{}, %{table: :sessions})
 
       assert {:error, %Ecto.Changeset{}} = Ecto.Changeset.apply_action(p2, :update)
     end
@@ -305,75 +218,6 @@ defmodule Malan.PaginationTest do
                Pagination.validate_page_size(
                  Ecto.Changeset.change(%Pagination{}, %{page_size: -5})
                ).valid?
-    end
-
-    test "#validate_page_size/2" do
-      assert {:ok, 10} = Pagination.validate_page_size(:users, 10)
-      assert {:ok, 10} = Pagination.validate_page_size(:sessions, 10)
-      assert {:ok, 10} = Pagination.validate_page_size(:posts, 10)
-
-      assert {:error, 100} = Pagination.validate_page_size(:users, 100)
-      assert {:error, 100} = Pagination.validate_page_size(:sessions, 100)
-      assert {:error, 100} = Pagination.validate_page_size(:posts, 100)
-
-      assert {:error, 0} = Pagination.validate_page_size(:users, 0)
-      assert {:error, -1} = Pagination.validate_page_size(:users, -1)
-    end
-
-    test "#validate_page_size!/1" do
-      assert 10 == Pagination.validate_page_size!(10)
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(0) end
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(-1) end
-    end
-
-    test "#validate_page_size!/2" do
-      assert 10 = Pagination.validate_page_size!(:users, 10)
-      assert 10 = Pagination.validate_page_size!(:sessions, 10)
-      assert 10 = Pagination.validate_page_size!(:posts, 10)
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(:users, 100) end
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(:sessions, 100) end
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(:posts, 100) end
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(:users, 0) end
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_size!(:users, -1) end
-    end
-
-    test "#validate_page_num_size/2" do
-      assert {:ok, 0, 5} = Pagination.validate_page_num_size(:users, 0, 5)
-      assert {:ok, 4, 7} = Pagination.validate_page_num_size(:sessions, 4, 7)
-      assert {:ok, 8, 10} = Pagination.validate_page_num_size(:posts, 8, 10)
-
-      assert {:error, 2, 100} == Pagination.validate_page_num_size(:users, 2, 100)
-      assert {:error, 2, 100} == Pagination.validate_page_num_size(:sessions, 2, 100)
-      assert {:error, 2, 100} == Pagination.validate_page_num_size(:posts, 2, 100)
-
-      assert {:error, -1, 10} == Pagination.validate_page_num_size(:users, -1, 10)
-
-      assert {:error, -2, 0} == Pagination.validate_page_num_size(:users, -2, 0)
-      assert {:error, -99999, -1} == Pagination.validate_page_num_size(:users, -99999, -1)
-    end
-
-    test "#validate_page_num_size!/3" do
-      assert true = Pagination.validate_page_num_size!(:users, 0, 5)
-      assert true = Pagination.validate_page_num_size!(:sessions, 4, 7)
-      assert true = Pagination.validate_page_num_size!(:posts, 8, 10)
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_num_size!(:users, 2, 100) end
-
-      assert_raise PageOutOfBounds, fn ->
-        Pagination.validate_page_num_size!(:sessions, 2, 100)
-      end
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_num_size!(:posts, 2, 100) end
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_num_size!(:users, -1, 10) end
-
-      assert_raise PageOutOfBounds, fn -> Pagination.validate_page_num_size!(:users, -2, 0) end
-
-      assert_raise PageOutOfBounds, fn ->
-        Pagination.validate_page_num_size!(:users, -99999, -1)
-      end
     end
   end
 end

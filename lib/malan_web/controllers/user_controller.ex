@@ -13,7 +13,7 @@ defmodule MalanWeb.UserController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination, [table: "users"] when action in [:index]
+  plug :require_pagination, [default_page_size: 10, max_page_size: 100] when action in [:index]
 
   plug :is_self_or_admin
        when action not in [

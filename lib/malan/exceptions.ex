@@ -31,22 +31,15 @@ defmodule Malan.CantBeNil do
 end
 
 defmodule Malan.Pagination.PageOutOfBounds do
-  alias Malan.Pagination
-
   defexception [:message]
 
   def exception(opts) do
-    table = Keyword.get(opts, :table, "(not specified)")
     page_num = Keyword.get(opts, :page_num, "(not specified)")
     page_size = Keyword.get(opts, :page_size, "(not specified)")
+    max_page_size = Keyword.get(opts, :max_page_size, "(not specified)")
 
     msg =
-      "Page specification was out of bounds. page_num: '#{page_num}', page_size: '#{page_size}', table: '#{table}'"
-
-    msg = case !!table do
-            true -> "#{msg} Max page_size for table is '#{Pagination.max_page_size(table)}'"
-            false -> msg
-          end
+      "Page specification was out of bounds. page_num: '#{page_num}', page_size: '#{page_size}', max_page_size: '#{max_page_size}'"
 
     %__MODULE__{message: msg}
   end

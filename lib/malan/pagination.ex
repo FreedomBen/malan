@@ -13,16 +13,7 @@ defmodule Malan.Pagination do
 
   @default_page_num 0
   @default_page_size 10
-  @default_max_size 10
-
-  @valid_tables %{
-    nil => %{max_page_size: @default_max_size},
-    "users" => %{max_page_size: 10},
-    "sessions" => %{max_page_size: 20},
-    "phone_numbers" => %{max_page_size: 10},
-    "addresses" => %{max_page_size: 10},
-    "posts" => %{max_page_size: 10}
-  }
+  @default_max_page_size 10
 
   defguard valid_page(page_num, page_size)
            when is_integer(page_num) and is_integer(page_size) and page_num >= 0 and
@@ -30,58 +21,52 @@ defmodule Malan.Pagination do
 
   def default_page_num, do: @default_page_num
   def default_page_size, do: @default_page_size
-  def default_max_size, do: @default_max_size
+  def default_max_page_size, do: @default_max_page_size
 
   embedded_schema do
-    field :table, :string, default: nil
-    field :page_num, :integer, default: 0
-    field :page_size, :integer, default: 10
-    field :max_page_size, :integer, default: 10
+    field :page_num, :integer
+    field :page_size, :integer
+    field :default_page_size, :integer
+    field :max_page_size, :integer
   end
 
   def changeset(pagination, attrs) do
     pagination
-    |> cast(attrs, [:page_num, :page_size, :table])
-    |> validate_table()
-    |> inject_max_page_size()
+    |> cast(attrs, [:page_num, :page_size])
+    |> set_default_page_size()
+    |> set_max_page_size()
+    |> infer_default_page_num()
+    |> infer_default_page_size()
     |> validate_page_num()
     |> validate_page_size()
   end
 
-
-  def get_table(table \\ nil)
-
-  def get_table(%Ecto.Changeset{} = cs), do: get_field(cs, :table)
-  def get_table(table) when is_atom(table), do: get_table(Atom.to_string(table))
-
-  def get_table(table) do
-    case valid_table?(table) do
-      true -> Map.get(@valid_tables, table)
-      false -> Map.get(@valid_tables, nil)
+  def set_default_page_size(changeset) do
+    case get_field(changeset, :default_page_size) do
+      nil -> put_change(changeset, :default_page_size, @default_page_size)
+        _ -> changeset
     end
   end
 
-  def valid_table?(table), do: table in Map.keys(@valid_tables)
-
-  def max_page_size(table \\ nil)
-  def max_page_size(table) when is_atom(table), do: max_page_size(Atom.to_string(table))
-
-  def max_page_size(table) do
-    case valid_table?(table) do
-      true -> get_table(table).max_page_size
-      false -> @default_max_size
+  def set_max_page_size(changeset) do
+    case get_field(changeset, :max_page_size) do
+      nil -> put_change(changeset, :max_page_size, @default_max_page_size)
+        _ -> changeset
     end
   end
 
-  def validate_table(changeset) do
-    case get_field(changeset, :table) in Map.keys(@valid_tables) do
-      true -> changeset
-      false -> put_change(changeset, :table, nil)
+  def infer_default_page_num(changeset) do
+    case get_field(changeset, :page_num) do
+      nil -> put_change(changeset, :page_num, @default_page_num)
+        _ -> changeset
     end
   end
 
-  def inject_max_page_size(changeset) do
-    put_change(changeset, :max_page_size, max_page_size(get_table(changeset)))
+  def infer_default_page_size(changeset) do
+    case get_field(changeset, :page_size) do
+      nil -> put_change(changeset, :page_size, get_field(changeset, :default_page_size))
+        _ -> changeset
+    end
   end
 
   def validate_page_num(%Ecto.Changeset{} = changeset) do
@@ -116,16 +101,7 @@ defmodule Malan.Pagination do
   def validate_page_size(%Ecto.Changeset{} = changeset) do
     changeset
     |> validate_number(:page_size, greater_than_or_equal_to: 0)
-    |> validate_number(:page_size, less_than_or_equal_to: max_page_size(get_table(changeset)))
-  end
-
-  @doc ~S"""
-  Validate the specified page size.
-
-  Returns `{:ok, page_size}` or `{:error, page_size}`
-  """
-  def validate_page_size(page_size) do
-    _validate_page_size(page_size, max_page_size())
+    |> validate_number(:page_size, less_than_or_equal_to: get_field(changeset, :max_page_size))
   end
 
   @doc ~S"""
@@ -137,69 +113,6 @@ defmodule Malan.Pagination do
     case validate_page_size(page_size) do
       {:ok, _} -> page_size
       {:error, _} -> raise PageOutOfBounds, page_size: page_size
-    end
-  end
-
-  @doc ~S"""
-  Validate the specified page size.
-
-  Returns `{:ok, page_size}` or `{:error, page_size}`
-  """
-  def validate_page_size(table, page_size) do
-    _validate_page_size(page_size, max_page_size(table))
-  end
-
-  @doc ~S"""
-  Validate the specified page number.
-
-  Returns `page_size` or raises `Malan.PageOutOfBounds`
-  """
-  def validate_page_size!(table, page_size) do
-    case validate_page_size(table, page_size) do
-      {:ok, _} -> page_size
-      {:error, _} -> raise PageOutOfBounds, page_size: page_size, table: table
-    end
-  end
-
-  def validate_page_num_size(page_num, page_size) do
-    with {:ok, _} <- validate_page_num(page_num),
-         {:ok, _} <- validate_page_size(page_size) do
-      {:ok, page_num, page_size}
-    else
-      _ -> {:error, page_num, page_size}
-    end
-  end
-
-  def validate_page_num_size!(page_num, page_size) do
-    case validate_page_num_size(page_num, page_size) do
-      {:ok, _, _} -> true
-      {:error, _, _} -> false
-    end
-  end
-
-  def validate_page_num_size(table, page_num, page_size) do
-    with {:ok, _} <- validate_page_num(page_num),
-         {:ok, _} <- validate_page_size(table, page_size) do
-      {:ok, page_num, page_size}
-    else
-      _ -> {:error, page_num, page_size}
-    end
-  end
-
-  def validate_page_num_size!(table, page_num, page_size) do
-    case validate_page_num_size(table, page_num, page_size) do
-      {:ok, _, _} ->
-        true
-
-      {:error, _, _} ->
-        raise PageOutOfBounds, page_num: page_num, page_size: page_size, table: table
-    end
-  end
-
-  defp _validate_page_size(page_size, max_size) do
-    cond do
-      page_size > 0 && page_size <= max_size -> {:ok, page_size}
-      true -> {:error, page_size}
     end
   end
 end
