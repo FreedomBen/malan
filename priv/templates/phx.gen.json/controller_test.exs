@@ -5,7 +5,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
 
   alias <%= inspect schema.module %>
 
-  alias Malan.Test.Helpers
+  alias <%= inspect schema.base_module %>.Test.Helpers
 
   @default_page_num 0
   @default_page_size 10
