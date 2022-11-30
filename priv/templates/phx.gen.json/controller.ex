@@ -4,7 +4,6 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
   require Logger
 
   import <%= inspect context.web_module %>.PaginationController, only: [require_pagination: 2, pagination_info: 1]
-  import <%= inspect context.base_module %>.Utils.Phoenix.Controller, only: [remote_ip_s: 1]
 
   alias <%= inspect context.module %>
   alias <%= inspect schema.module %>
@@ -24,20 +23,20 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       conn
       |> put_status(:created)
       |> put_resp_header("location", Routes.<%= schema.route_helper %>_path(conn, :show, <%= schema.singular %>))
-      |> render("show.json", <%= schema.singular %>: <%= schema.singular %>)
+      |> render("show.json", code: 200, <%= schema.singular %>: <%= schema.singular %>)
     end
   end
 
   def show(conn, %{"id" => id}) do
     <%= schema.singular %> = <%= inspect context.alias %>.get_<%= schema.singular %>!(id)
-    render(conn, "show.json", <%= schema.singular %>: <%= schema.singular %>)
+    render(conn, "show.json", code: 200, <%= schema.singular %>: <%= schema.singular %>)
   end
 
   def update(conn, %{"id" => id, <%= inspect schema.singular %> => <%= schema.singular %>_params}) do
     <%= schema.singular %> = <%= inspect context.alias %>.get_<%= schema.singular %>!(id)
 
     with {:ok, %<%= inspect schema.alias %>{} = <%= schema.singular %>} <- <%= inspect context.alias %>.update_<%= schema.singular %>(<%= schema.singular %>, <%= schema.singular %>_params) do
-      render(conn, "show.json", <%= schema.singular %>: <%= schema.singular %>)
+      render(conn, "show.json", code: 200, <%= schema.singular %>: <%= schema.singular %>)
     end
   end
 

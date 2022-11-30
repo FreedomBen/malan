@@ -5,7 +5,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
 
   alias <%= inspect schema.module %>
 
-  alias <%= inspect schema.base_module %>.Test.Helpers
+  alias <%= inspect context.base_module %>.Test.Helpers
 
   @default_page_num 0
   @default_page_size 10
@@ -86,7 +86,6 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       assert %{
                "ok" => true,
                "code" => 200,
-               "detail" => "Forbidden",
                "data" =>
                  %{
                    "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
@@ -159,7 +158,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
                "detail" => "Unprocessable Entity",
                "message" => _,
                "errors" =>
-                 %{<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>
+                 %{<%= for {key, _val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>
                    "<%= key %>" => ["can't be blank"],<% end %>
                  }
              } = json_response(conn, 422)
@@ -226,7 +225,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
                "code" => 200,
                "data" =>
                  %{
-                   "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+                   "id" => ^id<%= for {key, val} <- schema.params.update |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
                    "<%= key %>" => <%= inspect(val) %><% end %>
                  } = _<%= schema.singular %>,
              } = json_response(conn, 200)
@@ -238,7 +237,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
                "code" => 200,
                "data" =>
                  %{
-                   "id" => ^id<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
+                   "id" => ^id<%= for {key, val} <- schema.params.update |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>,
                    "<%= key %>" => <%= inspect(val) %><% end %>
                  } = _<%= schema.singular %>,
              } = json_response(conn, 200)
@@ -253,7 +252,7 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
                "code" => 422,
                "detail" => "Unprocessable Entity",
                "message" => _,
-               "errors" => %{<%= for {key, val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>
+               "errors" => %{<%= for {key, _val} <- schema.params.create |> Phoenix.json_library().encode!() |> Phoenix.json_library().decode!() do %>
                  "<%= key %>" => ["can't be blank"],<% end %>
                }
              } = json_response(conn, 422)

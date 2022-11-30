@@ -6,7 +6,7 @@
 
   ## Examples
 
-      iex> list_<%= schema.plural %>()
+      iex> list_<%= schema.plural %>(0, 10)
       [%<%= inspect schema.alias %>{}, ...]
 
   """

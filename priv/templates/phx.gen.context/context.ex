@@ -4,6 +4,6 @@ defmodule <%= inspect context.module %> do
   """
 
   import Ecto.Query, warn: false
-  import <%= inspect schema.base_module %>.Pagination, only: [valid_page: 2]
+  import <%= inspect context.base_module %>.Pagination, only: [valid_page: 2]
   alias <%= inspect schema.repo %>
 end

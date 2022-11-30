@@ -10,7 +10,6 @@ defmodule <%= inspect context.web_module %>.<%= inspect Module.concat(schema.web
       page_size: page_size,
       data: render_many(<%= schema.plural %>, <%= inspect schema.alias %>View, "<%= schema.singular %>.json")
     }
-    %{data: render_many(<%= schema.plural %>, <%= inspect schema.alias %>View, "<%= schema.singular %>.json")}
   end
 
   def render("show.json", %{code: code, <%= schema.singular %>: <%= schema.singular %>}) do
