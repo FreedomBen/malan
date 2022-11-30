@@ -2,7 +2,7 @@ defmodule MalanWeb.PaginationControllerTest do
   use MalanWeb.ConnCase, async: true
 
   alias Malan.Pagination
-  alias Malan.PaginationController
+  alias MalanWeb.PaginationController
   alias Malan.PaginationFixtures
 
   alias Malan.Test.Utils, as: TestUtils

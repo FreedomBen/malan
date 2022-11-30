@@ -3,7 +3,7 @@ defmodule MalanWeb.UserController do
 
   require Logger
 
-  import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+  import MalanWeb.PaginationController, only: [require_pagination: 2, pagination_info: 1]
   import Malan.Utils.Phoenix.Controller, only: [remote_ip_s: 1]
 
   alias Malan.Accounts

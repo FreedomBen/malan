@@ -1,7 +1,7 @@
 defmodule MalanWeb.LogController do
   use MalanWeb, :controller
 
-  import Malan.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+  import MalanWeb.PaginationController, only: [require_pagination: 2, pagination_info: 1]
 
   alias Malan.Accounts
 

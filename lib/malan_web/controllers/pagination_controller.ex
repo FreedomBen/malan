@@ -1,4 +1,4 @@
-defmodule Malan.PaginationController do
+defmodule MalanWeb.PaginationController do
   import Plug.Conn
   import Malan.Utils.Phoenix.Controller
 
