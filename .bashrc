@@ -3,7 +3,7 @@ function psql-malan ()
   export PGPASSWORD="${DB_PASSWORD}"
 
   psql \
-    -U "${DB_USER}" \
+    -U "${DB_USERNAME}" \
     -h "${DB_HOSTNAME}" \
     -p "${DB_PORT}" \
     -d "${DB_DATABASE}" \
