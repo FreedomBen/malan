@@ -136,14 +136,14 @@ spec:
 apiVersion: domain-name-operator.tamx.org/v1
 kind: CloudflareDnsRecord
 metadata:
-  name: malan
+  name: malan-staging
   labels:
     app: malan
+    tier: web
+    env: staging
+    kind: cloudflarednsrecord
   namespace: malan-staging
 spec:
-  hostName: malan-staging
-  domain: ameelio.xyz
-  namespace: malan-staging
+  hostName: malan-staging.ameelio.xyz
   serviceName: malan
   proxied: true
-  zoneId: 16c266b9ad2cc7affc86783eb0fa74fd
