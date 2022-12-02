@@ -33,6 +33,10 @@ else
   remove_file "test/${PROJECT_NAME}/${context}_test.exs"
   remove_file "test/support/fixtures/${context}_fixtures.ex"
 
+  for f in priv/repo/migrations/*_create_${model}s.exs; do
+    remove_file "${f}"
+  done
+
   rmdir "lib/${PROJECT_NAME}/${context}"
 
   #find lib/ -iname "*${model}*"
