@@ -74,8 +74,11 @@ jobs:
     concurrency: deploy_staging_mutex
     env:
       ENV: staging
-      K8S_SERVER: https://79aad049-3068-4ca9-a029-e1587c7021fd.k8s.ondigitalocean.com:443
+      K8S_SERVER: ${{ secrets.K8S_ENDPOINT_STAGING }}
+      K8S_TOKEN: ${{ secrets.K8S_TOKEN_STAGING }}
+      K8S_CA_CERT: ${{ secrets.K8S_CA_CERT_STAGING }}
       SLACK_CHANNEL: '#infra-info'
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
 
     steps:
       - name: Checkout
@@ -91,15 +94,9 @@ jobs:
           path: "manifests-${{ env.RELEASE_VERSION }}-${{ env.ENV }}"
 
       - name: Run migrations
-        env:
-          K8S_TOKEN: ${{ secrets.K8S_TOKEN_DEV }}
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
         run: ./scripts/deploy-release.sh --apply-migration --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
 
       - name: Deploy new version
-        env:
-          K8S_TOKEN: ${{ secrets.K8S_TOKEN_DEV }}
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
         run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
 
   deploy-prod:
