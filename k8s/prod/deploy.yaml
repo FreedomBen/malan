@@ -136,6 +136,22 @@ spec:
 apiVersion: domain-name-operator.tamx.org/v1
 kind: CloudflareDnsRecord
 metadata:
+  name: accounts
+  labels:
+    app: malan
+    tier: web
+    env: prod
+    kind: cloudflarednsrecord
+  namespace: malan-prod
+spec:
+  hostName: accounts.ameelio.org
+  serviceName: malan
+  proxied: true
+
+---
+apiVersion: domain-name-operator.tamx.org/v1
+kind: CloudflareDnsRecord
+metadata:
   name: malan
   labels:
     app: malan
