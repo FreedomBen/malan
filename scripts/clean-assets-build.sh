@@ -4,12 +4,14 @@ list_files()
 {
   echo "Eligible files:"
   fd --type f '.*-[a-f0-9]{32}\.(css|txt|png|svg|webp|ico)(\.gz)?$' priv/static/
+  fd '^.*.gz$' priv/static/
 }
 
 delete_files()
 {
   echo "Deleting..."
   fd --type f '.*-[a-f0-9]{32}\.(css|txt|png|svg|webp|ico)(\.gz)?$' priv/static/ --exec rm {} \;
+  fd '^.*.gz$' priv/static/ --exec rm {} \;
 }
 
 if [[ "${1}" =~ [dDrR] ]]; then
