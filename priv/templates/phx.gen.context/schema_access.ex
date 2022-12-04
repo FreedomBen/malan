@@ -10,7 +10,7 @@
       [%<%= inspect schema.alias %>{}, ...]
 
   """
-  def list_<%= schema.plural %>(page_num, page_size) when valid_page(page_num, page_size)  do
+  def list_<%= schema.plural %>(page_num, page_size) when valid_page(page_num, page_size) do
     from(
       <%= schema.singular |> String.first() %> in <%= inspect schema.alias %>,
       select: <%= schema.singular |> String.first() %>,
