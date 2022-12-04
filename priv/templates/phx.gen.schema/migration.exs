@@ -11,5 +11,6 @@ defmodule <%= inspect schema.repo %>.Migrations.Create<%= Macro.camelize(schema.
     end
 <%= for index <- schema.indexes do %>
     <%= index %><% end %>
+    # For idempotent migrations, change index "create" to "create_if_not_exists"
   end
 end
