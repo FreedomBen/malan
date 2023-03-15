@@ -248,6 +248,9 @@ defmodule Malan.Utils do
 
       iex> Malan.Utils.mask_map_key_values(%{name: "Ben, age: 39}, [:age])
       %{name: "Ben", age: "**"}
+
+      iex> Malan.Utils.mask_map_key_values(%{name: "Ben, age: 39}, [:name, :age])
+      %{name: "***", age: "**"}
   """
   def mask_map_key_values(map, mask_keys) do
     map

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-MALAN_ENDPOINT="http://localhost:4000"
-#MALAN_ENDPOINT="https://malan-staging.ameelio.org"
+#MALAN_ENDPOINT="http://localhost:4000"
+MALAN_ENDPOINT="https://malan-staging.ameelio.xyz"
 #MALAN_ENDPOINT="https://malan.ameelio.org"
 
 USERNAME='root'
