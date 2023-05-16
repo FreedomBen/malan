@@ -147,3 +147,19 @@ spec:
   hostName: malan-staging.ameelio.xyz
   serviceName: malan
   proxied: true
+
+---
+apiVersion: domain-name-operator.tamx.org/v1
+kind: CloudflareDnsRecord
+metadata:
+  name: accounts-staging
+  labels:
+    app: malan
+    tier: web
+    env: staging
+    kind: cloudflarednsrecord
+  namespace: malan-staging
+spec:
+  hostName: accounts-staging.ameelio.xyz
+  serviceName: malan
+  proxied: true
