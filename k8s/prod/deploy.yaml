@@ -90,7 +90,7 @@ metadata:
   namespace: malan-prod
 data:
   BIND_ADDR: '0.0.0.0'
-  POOL_SIZE: '5'
+  POOL_SIZE: '7'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'accounts.ameelio.org'
   PORT: '4000'
