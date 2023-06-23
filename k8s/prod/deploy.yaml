@@ -10,7 +10,7 @@ metadata:
   name: malan
   namespace: malan-prod
 spec:
-  replicas: 4
+  replicas: 11
   selector:
     matchLabels:
       app: malan
@@ -90,7 +90,7 @@ metadata:
   namespace: malan-prod
 data:
   BIND_ADDR: '0.0.0.0'
-  POOL_SIZE: '7'
+  POOL_SIZE: '5'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'accounts.ameelio.org'
   PORT: '4000'
