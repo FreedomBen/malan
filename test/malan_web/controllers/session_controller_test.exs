@@ -23,7 +23,10 @@ defmodule MalanWeb.SessionControllerTest do
     |> Utils.struct_to_map()
     |> Utils.map_atom_keys_to_strings()
     |> Enum.map(fn {k, v} -> {k, datetime_to_string(v)} end)
+    |> Enum.reject(fn {k, _v} -> k == "extendable_until_seconds" end)
+    |> Enum.reject(fn {k, _v} -> k == "session_extensions" end)
     |> Enum.reject(fn {k, _v} -> k == "expires_in_seconds" end)
+    |> Enum.reject(fn {k, _v} -> k == "expire_in_seconds" end)
     |> Enum.reject(fn {k, _v} -> k == "api_token_hash" end)
     |> Enum.reject(fn {k, _v} -> k == "never_expires" end)
     |> Enum.reject(fn {k, _v} -> k == "inserted_at" end)
@@ -1072,6 +1075,140 @@ defmodule MalanWeb.SessionControllerTest do
                "message" => _
              } = json_response(conn, 403)
     end
+
+    test "Can specify maximum incremental session extension seconds and absolute limit", %{
+      conn: conn
+    } do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      # Global absolute limit of extensions
+      extendable_until_seconds = 30
+      # Limit for each extension
+      max_extension_secs = 10
+
+      expected_extendable_until =
+        Utils.DateTime.adjust_cur_time_trunc(extendable_until_seconds, :seconds)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "authenticated_at" => authenticated_at,
+               "expires_at" => expires_at,
+               "ip_address" => "127.0.0.1",
+               "location" => nil,
+               "revoked_at" => nil,
+               "is_valid" => true,
+               "valid_only_for_ip" => false,
+               "extendable_until" => actual_extendable_until,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      assert false == Map.has_key?(jr, "api_token")
+      {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      {:ok, actual_extendable_until, 0} = DateTime.from_iso8601(actual_extendable_until)
+      assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               actual_extendable_until,
+               expected_extendable_until,
+               2,
+               :seconds
+             )
+    end
+
+    test "Trying to exceed the global limit of session extension seconds results in the global limit",
+         %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = Malan.Config.Session.max_max_extension_secs() + 30
+      max_extension_secs = extendable_until_seconds + 30
+
+      expected_extendable_until =
+        Utils.DateTime.adjust_cur_time_trunc(
+          Malan.Config.Session.max_max_extension_secs(),
+          :seconds
+        )
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "authenticated_at" => authenticated_at,
+               "expires_at" => expires_at,
+               "ip_address" => "127.0.0.1",
+               "location" => nil,
+               "revoked_at" => nil,
+               "is_valid" => true,
+               "valid_only_for_ip" => false,
+               "extendable_until" => actual_extendable_until,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      assert false == Map.has_key?(jr, "api_token")
+      {:ok, authenticated_at, 0} = DateTime.from_iso8601(authenticated_at)
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      {:ok, actual_extendable_until, 0} = DateTime.from_iso8601(actual_extendable_until)
+      assert TestUtils.DateTime.within_last?(authenticated_at, 5, :seconds) == true
+      assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), authenticated_at, :second))
+
+      assert Enum.member?(
+               0..5,
+               DateTime.diff(Utils.DateTime.adjust_cur_time(1, :weeks), expires_at, :second)
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               actual_extendable_until,
+               expected_extendable_until,
+               2,
+               :seconds
+             )
+    end
   end
 
   describe "delete session" do
@@ -1382,6 +1519,829 @@ defmodule MalanWeb.SessionControllerTest do
       assert %Accounts.Session{revoked_at: ^s3_revoked_at} = Accounts.get_session!(s3.id)
       assert %Accounts.Session{revoked_at: ^s4_revoked_at} = Accounts.get_session!(s4.id)
       assert s1_revoked_at == s2_revoked_at
+    end
+  end
+
+  describe "extend user sessions" do
+    test "Session extension works (happy path) (IDs in path)", %{conn: conn} do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 90 # Global absolute limit of extensions
+      max_extension_secs = 45     # Limit for each extension
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(15, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      # Now extend the session
+      expected_expires_at = Utils.DateTime.adjust_cur_time_trunc(30, :seconds)
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user_id, id), %{expire_in_seconds: 30})
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Call the show endpoint and verify changes from above are persisted
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+    end
+
+    test "Session extension history gets recorded and surfaced to the user through the API", %{
+      conn: conn
+    } do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 360 # Global absolute limit of extensions
+      max_extension_secs = 300     # Limit for each extension
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(15, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      # Now extend the session
+      expected_expires_at = Utils.DateTime.adjust_cur_time_trunc(30, :seconds)
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user_id, id), %{expire_in_seconds: 30})
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Call the show endpoint and verify changes from above are persisted
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+    end
+
+    test "Session extension works without args by using the default extension secs (and no IDs in path)",
+         %{conn: conn} do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 30 # Global absolute limit of extensions
+      max_extension_secs = 20     # Limit for each extension
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(5, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      # Now extend the session
+      expected_expires_at = Utils.DateTime.adjust_cur_time_trunc(20, :seconds)
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = put(conn, Routes.session_path(conn, :extend_current), %{expire_in_seconds: 20})
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Call the show endpoint and verify changes from above are persisted
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+    end
+
+    test "Extending requires authentication", %{conn: conn} do
+      conn = put(conn, Routes.session_path(conn, :extend_current), %{expire_in_seconds: 20})
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => _
+             } = json_response(conn, 403)
+
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user.id, session.id), %{
+          expire_in_seconds: 30
+        })
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => _
+             } = json_response(conn, 403)
+    end
+
+    test "Extending requires ownership", %{conn: _conn} do
+      # Limit for each extension
+      max_extension_secs = 20
+
+      # Create the new session for the user
+      {:ok, c1, u1, s1} =
+        Helpers.Accounts.regular_user_session_conn(build_conn(), %{}, %{
+          "max_extension_secs" => max_extension_secs
+        })
+
+      {:ok, c2, _u2, s2} =
+        Helpers.Accounts.regular_user_session_conn(build_conn(), %{}, %{
+          "max_extension_secs" => max_extension_secs
+        })
+
+      {:ok, u1} = Helpers.Accounts.accept_user_tos_and_pp(u1, true)
+      u1_id = u1.id
+      s1_id = s1.id
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(5, :seconds)
+
+      assert {:ok, s1} =
+               Accounts.get_session!(s1.id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert {:ok, s2} =
+               Accounts.get_session!(s2.id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert s1.expires_at == patched_expiration_time
+      assert s2.expires_at == patched_expiration_time
+
+      # Now extend the session
+      c2 = put(c2, Routes.user_session_path(c2, :extend, u1.id, s1.id), %{expire_in_seconds: 20})
+
+      assert %{
+               "code" => 401,
+               "detail" => "Unauthorized",
+               "ok" => false
+             } = json_response(c2, 401)
+
+      # Call the show endpoint and verify changes from above are not persisted
+      c1 = get(c1, Routes.user_session_path(c1, :show, u1.id, s1.id))
+
+      jr = json_response(c1, 200)["data"]
+
+      assert %{
+               "id" => ^s1_id,
+               "user_id" => ^u1_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               patched_expiration_time,
+               1,
+               :seconds
+             )
+    end
+
+    test "Attempts at extending after the token expires fails", %{conn: conn} do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 30 # Global absolute limit of extensions
+      max_extension_secs = 20     # Limit for each extension
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{"id" => id, "api_token" => api_token, "max_extension_secs" => ^max_extension_secs} =
+               json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(-20, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      assert Helpers.Accounts.session_valid?(id) == false
+      assert Helpers.Accounts.session_valid?(session) == false
+
+      # Now try to extend the session
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = put(conn, Routes.session_path(conn, :extend_current), %{expire_in_seconds: 20})
+
+      assert %{
+               "code" => 403,
+               "detail" => "Forbidden",
+               "ok" => false,
+               "token_expired" => true
+             } = json_response(conn, 403)
+
+      # Ensure we can't do a show either with this token
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      assert %{
+               "code" => 403,
+               "detail" => "Forbidden",
+               "ok" => false,
+               "token_expired" => true
+             } = json_response(conn, 403)
+
+      # Call the show endpoint with a different token and verify session is still expired
+      {:ok, conn, _au1, _su1} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => false,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               patched_expiration_time,
+               2,
+               :seconds
+             )
+    end
+
+    test "Does not change previously closed sessions", %{conn: _conn} do
+      #
+      # Create two sessions for a user.  Expire one and use the second to extend the first.  It should fail
+      #
+
+      # Create the new sessions for the user
+      {:ok, _c1, user, s1} = Helpers.Accounts.regular_user_session_conn(build_conn())
+      {:ok, c2, s2} = Helpers.Accounts.create_session_conn(build_conn(), user)
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+      s1_id = s1.id
+
+      # Reach under the hood and change the expiration time of the first session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(-20, :seconds)
+
+      assert {:ok, s1} =
+               Accounts.get_session!(s1.id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert s1.expires_at == patched_expiration_time
+      assert s2.expires_at != patched_expiration_time
+
+      assert Helpers.Accounts.session_valid?(s1) == false
+      assert Helpers.Accounts.session_valid?(s2) == true
+
+      # Now extend the session
+      c2 =
+        put(c2, Routes.user_session_path(c2, :extend, user.id, s1.id), %{expire_in_seconds: 20})
+
+      assert %{
+               "code" => 403,
+               "detail" => "Forbidden",
+               "ok" => false
+             } = json_response(c2, 403)
+
+      # Call the show endpoint and verify changes to s1 didn't take affect
+      {:ok, conn, _au1, _su1} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, s1.id))
+
+      assert %{
+               "id" => ^s1_id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               patched_expiration_time,
+               1,
+               :seconds
+             )
+    end
+
+    test "Admins can extend regular user sessions", %{conn: _conn} do
+      # TODO EXTENSION
+    end
+
+    test "Admins can extend regular sessions", %{conn: _conn} do
+      # TODO EXTENSION
+    end
+
+    test "Revoking a session makes it so it can't be extended even if not expired", %{conn: _conn} do
+      #
+      # Create two sessions for a user.  Revoke the first one and use the second to extend the first.
+      # It should fail
+      #
+
+      # Create the new sessions for the user
+      {:ok, _c1, user, s1} = Helpers.Accounts.regular_user_session_conn(build_conn())
+      {:ok, c2, s2} = Helpers.Accounts.create_session_conn(build_conn(), user)
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+      s1_id = s1.id
+
+      assert Accounts.session_revoked_or_expired?(s1) == false
+      assert Helpers.Accounts.session_revoked_or_expired?(s1_id) == false
+      assert Accounts.session_revoked?(s1) == false
+      assert Accounts.session_expired?(s1) == false
+
+      # Revoke the first session
+      c2 = delete(c2, Routes.user_session_path(c2, :delete, user.id, s1.id))
+
+      assert %{
+               "id" => ^s1_id,
+               "user_id" => ^user_id,
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(c2, 200)["data"]
+
+      {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+
+      s1 = Accounts.get_session!(s1.id)
+      assert Accounts.session_revoked_or_expired?(s1) == true
+      assert Helpers.Accounts.session_revoked_or_expired?(s1_id) == true
+      assert Accounts.session_revoked?(s1) == true
+      assert Accounts.session_expired?(s1) == false
+
+      # Now try to extend the session
+      c2 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+
+      c2 =
+        put(c2, Routes.user_session_path(c2, :extend, user.id, s1.id), %{expire_in_seconds: 20})
+
+      assert %{
+               "code" => 403,
+               "detail" => "Forbidden",
+               "ok" => false
+             } = json_response(c2, 403)
+
+      # Call the show endpoint and verify changes to s1 didn't take affect
+      {:ok, conn, _au1, _su1} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, s1.id))
+
+      assert %{
+               "id" => ^s1_id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      {:ok, revoked_at, 0} = DateTime.from_iso8601(revoked_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               s1.expires_at,
+               1,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert Accounts.session_revoked_or_expired?(s1) == true
+      assert Accounts.session_revoked?(s1) == true
+      assert Accounts.session_expired?(s1) == false
+    end
+
+    test "Revoking an extended session terminates the session immediately", %{conn: conn} do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 90 # Global absolute limit of extensions
+      max_extension_secs = 45     # Limit for each extension
+      extension_secs = 30
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{
+               "id" => id,
+               "api_token" => api_token,
+               "max_extension_secs" => ^max_extension_secs,
+               "expires_at" => _orig_expires_at
+             } = json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(45, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      # Now extend the session
+      expected_expires_at = Utils.DateTime.adjust_cur_time_trunc(extension_secs, :seconds)
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user_id, id), %{
+          expire_in_seconds: extension_secs
+        })
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Call the show endpoint and verify changes from above are persisted
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Now revoke the session
+      conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, id))
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
+      {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+
+      assert Helpers.Accounts.session_revoked_or_expired?(id) == true
+      assert Helpers.Accounts.session_revoked?(id) == true
+      assert Helpers.Accounts.session_expired?(id) == false
+
+      # Call the show endpoint and verify session is revoked
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      assert %{
+               "code" => 403,
+               "detail" => "Forbidden",
+               "ok" => false,
+               "token_expired" => true
+             } = json_response(conn, 403)
+
+      # Triple verify with admin token
+      {:ok, conn, _au1, _su1} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "revoked_at" => revoked_at,
+               "is_valid" => false
+             } = json_response(conn, 200)["data"]
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      {:ok, revoked_at, 0} = DateTime.from_iso8601(revoked_at)
+
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert Helpers.Accounts.session_revoked_or_expired?(id) == true
+      assert Helpers.Accounts.session_revoked?(id) == true
+      assert Helpers.Accounts.session_expired?(id) == false
+    end
+
+    test "Extending a session with less time than it has expiration changes the expiration down to match extension",
+         %{conn: conn} do
+      # Create the new session for the user
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+      user_id = user.id
+
+      extendable_until_seconds = 90 # Global absolute limit of extensions
+      max_extension_secs = 45     # Limit for each extension
+      extension_secs = 30
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            extendable_until_seconds: extendable_until_seconds,
+            max_extension_secs: max_extension_secs
+          }
+        )
+
+      assert %{
+               "id" => id,
+               "api_token" => api_token,
+               "max_extension_secs" => ^max_extension_secs,
+               "expires_at" => _orig_expires_at
+             } = json_response(conn, 201)["data"]
+
+      # Reach under the hood and change the expiration time of the session
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(45, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(id)
+               |> Session.admin_changeset(%{expires_at: patched_expiration_time})
+               |> Malan.Repo.update()
+
+      assert session.expires_at == patched_expiration_time
+
+      # Now extend the session
+      expected_expires_at = Utils.DateTime.adjust_cur_time_trunc(extension_secs, :seconds)
+
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user_id, id), %{
+          expire_in_seconds: extension_secs
+        })
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => ^max_extension_secs
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      # Call the show endpoint and verify session expiration has changed to match extension
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, id))
+
+      assert %{
+               "id" => ^id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "revoked_at" => nil,
+               "is_valid" => true
+             } = json_response(conn, 200)["data"]
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+
+      assert Helpers.Accounts.session_revoked_or_expired?(id) == false
+      assert Helpers.Accounts.session_revoked?(id) == false
+      assert Helpers.Accounts.session_expired?(id) == false
+    end
+
+    test "Extending a session generates a log", %{conn: _conn} do
+      # TODO EXTENSION
+    end
+
+    test "Existing sessions (without the new extension attrs) can't be extended but don't error",
+         %{conn: _conn} do
+      # Create the new session for the user
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      user_id = user.id
+      session_id = session.id
+      api_token = session.api_token
+
+      # Reach under the hood and change the session attrs to match previously existing sessions
+      patched_expiration_time = Utils.DateTime.adjust_cur_time_trunc(45, :seconds)
+
+      assert {:ok, session} =
+               Accounts.get_session!(session_id)
+               |> Ecto.Changeset.change(%{
+                 extendable_until: nil,
+                 max_extension_secs: nil,
+                 expires_at: patched_expiration_time
+               })
+               |> Malan.Repo.update()
+
+      assert is_nil(session.extendable_until)
+      assert is_nil(session.max_extension_secs)
+      assert session.expires_at == patched_expiration_time
+
+      # Now try extend the session
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+
+      conn =
+        put(conn, Routes.user_session_path(conn, :extend, user_id, session_id), %{
+          expire_in_seconds: 180
+        })
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^session_id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "max_extension_secs" => nil
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               patched_expiration_time,
+               2,
+               :seconds
+             )
+
+      # Call the show endpoint and verify nothing above changed and the show endpoint doesn't choke
+      # on the missing attrs
+      conn = Helpers.Accounts.put_token(build_conn(), api_token)
+      conn = get(conn, Routes.user_session_path(conn, :show, user.id, session_id))
+
+      jr = json_response(conn, 200)["data"]
+
+      assert %{
+               "id" => ^session_id,
+               "user_id" => ^user_id,
+               "expires_at" => expires_at,
+               "is_valid" => true,
+               "revoked_at" => nil,
+               "extendable_until" => nil,
+               "max_extension_secs" => nil
+             } = jr
+
+      {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expires_at,
+               patched_expiration_time,
+               2,
+               :seconds
+             )
     end
   end
 

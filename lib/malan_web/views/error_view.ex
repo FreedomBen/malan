@@ -53,6 +53,16 @@ defmodule MalanWeb.ErrorView do
     }
   end
 
+  def render("403.json", %{session_revoked_or_expired: true}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message: "Session cannot be extended.  It is expired or revoked",
+      errors: [%{session: ["revoked_or_expired: true"]}]
+    }
+  end
+
   def render("403.json", _assigns) do
     %{
       ok: false,

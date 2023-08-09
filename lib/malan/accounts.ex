@@ -12,6 +12,8 @@ defmodule Malan.Accounts do
   alias Malan.Repo
 
   alias Malan.Accounts.User
+  alias Malan.Accounts.Session
+  alias Malan.Accounts.SessionExtension
   alias Malan.Utils
 
   @doc """
@@ -1025,6 +1027,12 @@ defmodule Malan.Accounts do
     end
   end
 
+  def session_revoked?(%Session{revoked_at: revoked_at}),
+    do: session_revoked?(revoked_at)
+
+  # session doesn't have the revoked_at set so it is nil
+  def session_revoked?(%Session{}), do: false
+
   def session_revoked?(revoked_at), do: !!revoked_at
 
   def session_expired?(%Session{expires_at: expires_at}),
@@ -1032,6 +1040,12 @@ defmodule Malan.Accounts do
 
   def session_expired?(expires_at),
     do: DateTime.compare(expires_at, DateTime.utc_now()) == :lt
+
+  def session_revoked_or_expired?(nil),
+    do: true
+
+  def session_revoked_or_expired?(%Session{expires_at: expires_at, revoked_at: revoked_at}),
+    do: session_revoked?(revoked_at) || session_expired?(expires_at)
 
   @doc ~S"""
   This is a very *simple* check for validity that returns a boolean.  This should **NOT** be relied on for security!  It only considers expiration and revocation, and does not consider other important things like IP address of the requester.
@@ -1097,6 +1111,17 @@ defmodule Malan.Accounts do
     session
     |> Session.revoke_changeset(%{revoked_at: datetime})
     |> Repo.update()
+  end
+
+  def extend_session(%Session{} = session, attrs, authed_ids \\ %{}) do
+    Repo.transaction(fn ->
+      sc = Session.extend_changeset(session, attrs)
+      sec = SessionExtension.create_changeset(sc, authed_ids)
+
+      sec = Repo.insert!(sec)
+      sc = Repo.update!(sc)
+      {sc, sec}
+    end)
   end
 
   alias Malan.Accounts.Team
@@ -1775,4 +1800,62 @@ defmodule Malan.Accounts do
       type: "Log",
       id: log.id
   end
+
+  alias Malan.Accounts.SessionExtension
+
+  @doc """
+  Returns the list of session_extensions.
+
+  ## Examples
+
+      iex> list_session_extensions(0, 10)
+      [%SessionExtension{}, ...]
+
+  """
+  def list_session_extensions(page_num, page_size) when valid_page(page_num, page_size) do
+    from(
+      s in SessionExtension,
+      select: s,
+      limit: ^page_size,
+      offset: ^(page_num * page_size)
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of session_extensions for the specified session.
+
+  ## Examples
+
+      iex> list_session_extensions(session.id, 0, 10)
+      [%SessionExtension{}, ...]
+
+  """
+  def list_session_extensions(session_id, page_num, page_size) when valid_page(page_num, page_size) do
+    from(
+      s in SessionExtension,
+      select: s,
+      where: s.session_id == ^session_id,
+      limit: ^page_size,
+      offset: ^(page_num * page_size)
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single session_extension.
+
+  Raises `Ecto.NoResultsError` if the Session extension does not exist.
+
+  ## Examples
+
+      iex> get_session_extension!(123)
+      %SessionExtension{}
+
+      iex> get_session_extension!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_session_extension!(id), do: Repo.get!(SessionExtension, id)
+
 end

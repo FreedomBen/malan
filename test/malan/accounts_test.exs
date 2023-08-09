@@ -787,7 +787,9 @@ defmodule Malan.AccountsTest do
       assert u1 == u3
       assert u1 == u4
 
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: "Not a real first name") end
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_by!(first_name: "Not a real first name")
+      end
     end
 
     test "get_user_by!/1 does not include deleted users" do
@@ -801,7 +803,10 @@ defmodule Malan.AccountsTest do
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(email: uf.email) end
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(last_name: uf.last_name) end
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: uf.first_name) end
-      assert_raise Ecto.NoResultsError, fn -> Accounts.get_user_by!(first_name: "Not a real first name") end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_by!(first_name: "Not a real first name")
+      end
     end
 
     test "get_user_by_password_reset_token/1" do
@@ -1020,7 +1025,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "list_sessions/2 returns all sessions" do
-      session = %{session_fixture() | api_token: nil}
+      session = %{session_fixture() | api_token: nil, extendable_until_seconds: nil}
       assert Accounts.list_sessions(0, 10) == [session]
       assert Accounts.list_sessions(1, 10) == []
     end
@@ -1078,7 +1083,12 @@ defmodule Malan.AccountsTest do
 
     test "get_session!/1 returns the session with given id" do
       session = session_fixture()
-      assert Accounts.get_session!(session.id) == %{session | api_token: nil}
+
+      assert Accounts.get_session!(session.id) == %{
+               session
+               | api_token: nil,
+                 extendable_until_seconds: nil
+             }
     end
 
     test "create_session/3 with valid data creates a session" do
@@ -1245,7 +1255,6 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{"username" => "randomusername1"})
-      # TODO Unused
       assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos,
               pp} = Accounts.validate_session(session.api_token, "1.1.1.1")
 
@@ -1550,6 +1559,425 @@ defmodule Malan.AccountsTest do
       session = Helpers.Accounts.set_expired(session)
       assert true == Accounts.session_expired?(session)
       assert true == Accounts.session_expired?(session.expires_at)
+    end
+
+    test "Creating a new session allows specifying max extension time" do
+      # Pass the max extension time to Accounts.create_session
+      session = session_fixture(%{}, %{"extendable_until_seconds" => 2 * 60 * 60})
+      expected_new_max_extension_time = Utils.DateTime.adjust_cur_time(2, :hours)
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{extendable_until: extendable_until} =
+        Accounts.get_session!(session.id)
+
+      assert extendable_until == Utils.DateTime.truncate(expected_new_max_extension_time)
+    end
+
+    test "Creating a new session without specifying extension time uses default" do
+      session = session_fixture()
+
+      %Malan.Accounts.Session{max_extension_secs: max_extension_secs} =
+        Accounts.get_session!(session.id)
+
+      assert max_extension_secs == Malan.Config.Session.default_max_extension_secs()
+    end
+
+    test "Default max extension time works" do
+      # Pass the max extension time to Accounts.create_session
+      session = session_fixture()
+      expected_new_max_extension_time = Utils.DateTime.adjust_cur_time(4, :weeks)
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{extendable_until: extendable_until} =
+        Accounts.get_session!(session.id)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expected_new_max_extension_time,
+               extendable_until,
+               2,
+               :seconds
+             )
+    end
+
+    test "Setting max extension time (for a new session) beyond the global maximum gets you the global maximum" do
+      # Pass the max extension time that exceeds our limit by 1 day (24 hours)
+      too_long_max_extension_secs = Malan.Config.Session.max_max_extension_secs() + 60 * 60 * 24
+
+      too_long_max_extension_time =
+        Utils.DateTime.adjust_cur_time(too_long_max_extension_secs, :seconds)
+
+      session =
+        session_fixture(%{}, %{
+          "extendable_until_seconds" => too_long_max_extension_secs,
+          "max_extension_seconds" => too_long_max_extension_secs
+        })
+
+      expected_new_max_extension_time = Utils.DateTime.adjust_cur_time(13, :weeks)
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{extendable_until: extendable_until} =
+        Accounts.get_session!(session.id)
+
+      assert TestUtils.DateTime.datetimes_within?(
+               expected_new_max_extension_time,
+               extendable_until,
+               2,
+               :seconds
+             )
+
+      assert !TestUtils.DateTime.datetimes_within?(
+               too_long_max_extension_time,
+               extendable_until,
+               2,
+               :seconds
+             )
+    end
+
+    test "A session can be properly extended" do
+      # Initial session expires after 30 minutes
+      session = session_fixture(%{}, %{"expires_in_seconds" => 1800})
+      cur_exp_time = session.expires_at
+
+      assert TestUtils.DateTime.datetimes_within?(
+               cur_exp_time,
+               Utils.DateTime.adjust_cur_time(30, :minutes),
+               2,
+               :seconds
+             )
+
+      expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
+      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 3600})
+
+      assert TestUtils.DateTime.datetimes_within?(
+               session_retval.expires_at,
+               expected_new_exp_time,
+               2,
+               :seconds
+             )
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{expires_at: expires_at} = Accounts.get_session!(session.id)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_new_exp_time, 2, :seconds)
+    end
+
+    test "Trying to extend beyond the extendable_until point results in extension to that point" do
+      session = session_fixture(%{}, %{"expires_in_seconds" => 1800, "extendable_until_seconds" => 3600})
+      cur_exp_time = session.expires_at
+
+      assert TestUtils.DateTime.datetimes_within?(
+               cur_exp_time,
+               Utils.DateTime.adjust_cur_time(30, :minutes),
+               2,
+               :seconds
+             )
+
+      expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
+      # 2,000 seconds more than what should be allowed based on our limit set above
+      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 5600})
+
+      assert TestUtils.DateTime.datetimes_within?(
+               session_retval.expires_at,
+               expected_new_exp_time,
+               2,
+               :seconds
+             )
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{expires_at: expires_at} = Accounts.get_session!(session.id)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_new_exp_time, 2, :seconds)
+    end
+
+    test "Not specifying extension seconds defaults to the session max by default" do
+      # Initial session expires after 30 minutes
+      session = session_fixture()
+
+      assert TestUtils.DateTime.datetimes_within?(
+               session.expires_at,
+               Utils.DateTime.adjust_cur_time(session.max_extension_secs, :seconds),
+               2,
+               :seconds
+             )
+
+      expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
+      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 3600})
+
+      assert TestUtils.DateTime.datetimes_within?(
+               session_retval.expires_at,
+               expected_new_exp_time,
+               2,
+               :seconds
+             )
+
+      # Query fresh from the database and verify the new expiration time persisted properly
+      %Malan.Accounts.Session{expires_at: expires_at} = Accounts.get_session!(session.id)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_new_exp_time, 2, :seconds)
+    end
+
+    test "A record of extensions is kept in the database" do
+      s1 =
+        session_fixture(%{}, %{
+          "expires_in_seconds" => 30,
+          "max_extension_secs" => 360,
+          "extendable_until_seconds" => 3600
+        })
+
+      user_id = s1.user_id
+      session_id = s1.id
+      expected_expiration_time_1 = Utils.DateTime.adjust_cur_time(30, :seconds)
+      expected_extendable_until_time = Utils.DateTime.adjust_cur_time(3600, :seconds)
+
+      assert s1.max_extension_secs == 360
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s1.expires_at,
+               expected_expiration_time_1,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s1.extendable_until,
+               expected_extendable_until_time,
+               2,
+               :seconds
+             )
+
+      assert [] == Accounts.list_session_extensions(s1.id, 0, 10)
+
+      # Extend the session by 1 minute
+      assert {:ok, {s2, se2}} =
+               Accounts.extend_session(s1, %{expire_in_seconds: 60}, %{
+                 authed_user_id: user_id,
+                 authed_session_id: session_id
+               })
+
+      expected_expiration_time_2 = Utils.DateTime.adjust_cur_time(1, :minutes)
+
+      # max_extension_secs should stay the same after all extensions
+      assert s2.max_extension_secs == 360
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s2.expires_at,
+               expected_expiration_time_2,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s2.extendable_until,
+               expected_extendable_until_time,
+               2,
+               :seconds
+             )
+
+      assert %Malan.Accounts.SessionExtension{
+        updated_at: extension1_updated_at,
+        inserted_at: extension1_inserted_at,
+        extended_by_session: ^session_id,
+        extended_by_user: ^user_id,
+        extended_by_seconds: 60,
+        new_expires_at: extension1_new_expires_at,
+        old_expires_at: extension1_old_expires_at,
+        id: extension1_id
+      } = se2
+
+      assert extension1_new_expires_at == s2.expires_at
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension1_old_expires_at,
+               expected_expiration_time_1,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension1_new_expires_at,
+               expected_expiration_time_2,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.within_last?(extension1_updated_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension1_inserted_at, 2, :seconds)
+
+      assert [
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension1_updated_at,
+                 inserted_at: ^extension1_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 60,
+                 new_expires_at: ^extension1_new_expires_at,
+                 old_expires_at: ^extension1_old_expires_at,
+                 id: ^extension1_id
+               }
+             ] = Accounts.list_session_extensions(s2.id, 0, 10)
+
+      # Extend the session a second time, by 2 minute
+      assert {:ok, {s3, se3}} =
+               Accounts.extend_session(s2, %{expire_in_seconds: 120}, %{
+                 authed_user_id: user_id,
+                 authed_session_id: session_id
+               })
+
+      expected_expiration_time_3 = Utils.DateTime.adjust_cur_time(2, :minutes)
+
+      assert s3.max_extension_secs == 360
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s3.expires_at,
+               expected_expiration_time_3,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s3.extendable_until,
+               expected_extendable_until_time,
+               2,
+               :seconds
+             )
+
+      assert %Malan.Accounts.SessionExtension{
+        updated_at: extension2_updated_at,
+        inserted_at: extension2_inserted_at,
+        extended_by_session: ^session_id,
+        extended_by_user: ^user_id,
+        extended_by_seconds: 120,
+        new_expires_at: extension2_new_expires_at,
+        old_expires_at: extension2_old_expires_at,
+        id: extension2_id
+      } = se3
+
+      assert extension2_new_expires_at == s3.expires_at
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension2_old_expires_at,
+               expected_expiration_time_2,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension2_new_expires_at,
+               expected_expiration_time_3,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.within_last?(extension2_updated_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension2_inserted_at, 2, :seconds)
+
+      assert [
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension1_updated_at,
+                 inserted_at: ^extension1_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 60,
+                 new_expires_at: ^extension1_new_expires_at,
+                 old_expires_at: ^extension1_old_expires_at,
+                 id: ^extension1_id
+               },
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension2_updated_at,
+                 inserted_at: ^extension2_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 120,
+                 new_expires_at: ^extension2_new_expires_at,
+                 old_expires_at: ^extension2_old_expires_at,
+                 id: ^extension2_id
+               }
+             ] = Accounts.list_session_extensions(s3.id, 0, 10)
+
+      # Extend the session a third time by 90 seconds
+      assert {:ok, {s4, se4}} =
+               Accounts.extend_session(s3, %{expire_in_seconds: 90}, %{
+                 authed_user_id: user_id,
+                 authed_session_id: session_id
+               })
+
+      expected_expiration_time_4 = Utils.DateTime.adjust_cur_time(90, :seconds)
+
+      assert s4.max_extension_secs == 360
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s4.expires_at,
+               expected_expiration_time_4,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               s4.extendable_until,
+               expected_extendable_until_time,
+               2,
+               :seconds
+             )
+
+      assert %Malan.Accounts.SessionExtension{
+        updated_at: extension3_updated_at,
+        inserted_at: extension3_inserted_at,
+        extended_by_session: ^session_id,
+        extended_by_user: ^user_id,
+        extended_by_seconds: 90,
+        new_expires_at: extension3_new_expires_at,
+        old_expires_at: extension3_old_expires_at,
+        id: extension3_id
+      } = se4
+
+      assert extension3_new_expires_at == s4.expires_at
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension3_old_expires_at,
+               expected_expiration_time_3,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.datetimes_within?(
+               extension3_new_expires_at,
+               expected_expiration_time_4,
+               2,
+               :seconds
+             )
+
+      assert TestUtils.DateTime.within_last?(extension3_updated_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension3_inserted_at, 2, :seconds)
+
+      assert [
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension1_updated_at,
+                 inserted_at: ^extension1_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 60,
+                 new_expires_at: ^extension1_new_expires_at,
+                 old_expires_at: ^extension1_old_expires_at,
+                 id: ^extension1_id
+               },
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension2_updated_at,
+                 inserted_at: ^extension2_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 120,
+                 new_expires_at: ^extension2_new_expires_at,
+                 old_expires_at: ^extension2_old_expires_at,
+                 id: ^extension2_id
+               },
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension3_updated_at,
+                 inserted_at: ^extension3_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 90,
+                 new_expires_at: ^extension3_new_expires_at,
+                 old_expires_at: ^extension3_old_expires_at,
+                 id: ^extension3_id
+               }
+             ] = Accounts.list_session_extensions(s4.id, 0, 10)
     end
   end
 

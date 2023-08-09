@@ -31,9 +31,23 @@ config :malan, Malan.Config.RateLimits,
       "3" |> String.to_integer() # 1 per period
 
 config :malan, Malan.Accounts.Session,
-  # One week
+  # If client doesn't specify token expiration time, use this value.
+  # 604,800 seconds is 7 days (One week)
   default_token_expiration_secs:
-    System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") || "604800" |> String.to_integer()
+    System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") || "604800" |> String.to_integer(),
+  # If client doesn't specify session extension limit, use this value.  This will be
+  # used to determine an absolute maximum datetime beyond which a session cannot be extended
+  # 2,419,200 seconds is 28 days
+  default_max_extension_time_secs:
+    System.get_env("DEFAULT_MAX_EXTENSION_TIME_SECS") || "2419200" |> String.to_integer(),
+  # If client doesn't specify session extension limit per extension, use this value.
+  # 604,800 is 7 days (one week)
+  default_max_extension_secs:
+    System.get_env("DEFAULT_MAX_EXTENSION_SECS") || "604800" |> String.to_integer(),
+  # Most that a session can be extended, despite client settings.
+  # 7,862,400 is approximately 90 days (13 weeks specifically)
+  max_max_extension_secs:
+    System.get_env("MAX_MAX_EXTENSION_SECS") || "7862400" |> String.to_integer()
 
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
@@ -113,7 +127,7 @@ config :sentry,
 # https://hexdocs.pm/sentry/Sentry.LoggerBackend.html
 config :logger, Sentry.LoggerBackend,
   # Also send warn messages
-  level: :warn,
+  level: :warning,
   # Send messages from Plug/Cowboy
   excluded_domains: [],
   # Include metadata added with `Logger.metadata([foo_bar: "value"])`
