@@ -887,6 +887,9 @@ defmodule Malan.Utils.DateTime do
   def utc_now_trunc(),
     do: DateTime.truncate(DateTime.utc_now(), :second)
 
+  def truncate(dt),
+    do: DateTime.truncate(dt, :second)
+
   @doc "Return a DateTime about 200 years into the future"
   def distant_future() do
     round(52.5 * 200 * 7 * 24 * 60 * 60)
@@ -975,6 +978,9 @@ defmodule Malan.Utils.DateTime do
 
   def expired?(expires_at),
     do: in_the_past?(expires_at, DateTime.utc_now())
+
+  def less_than_or_equal_to?(time1, time2),
+    do: DateTime.compare(time1, time2) != :gt
 end
 
 defmodule Malan.Utils.IPv4 do

@@ -251,9 +251,10 @@ defmodule Malan.Test.Helpers.Accounts do
   end
 
   def set_expires_at(session, expires_at) do
-    {:ok, session} = session
-    |> Session.admin_changeset(%{expires_at: expires_at})
-    |> Repo.update()
+    {:ok, session} =
+      session
+      |> Session.admin_changeset(%{expires_at: expires_at})
+      |> Repo.update()
 
     session
   end
@@ -266,5 +267,29 @@ defmodule Malan.Test.Helpers.Accounts do
   def set_revoked_at(session, revoked_at) do
     {:ok, session} = Accounts.revoke_session_at(session, revoked_at)
     session
+  end
+
+  def session_valid?(id) when is_binary(id) do
+    Accounts.get_session!(id)
+    |> session_valid?()
+  end
+
+  def session_valid?(session) do
+    Accounts.session_valid_bool?(session.expires_at, session.revoked_at)
+  end
+
+  def session_revoked?(id) when is_binary(id) do
+    Accounts.get_session!(id)
+    |> Accounts.session_revoked?()
+  end
+
+  def session_expired?(id) when is_binary(id) do
+    Accounts.get_session!(id)
+    |> Accounts.session_expired?()
+  end
+
+  def session_revoked_or_expired?(session_id) when is_binary(session_id) do
+    Accounts.get_session!(session_id)
+    |> Accounts.session_revoked_or_expired?()
   end
 end

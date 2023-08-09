@@ -5,7 +5,7 @@ defmodule Malan.MixProject do
     [
       app: :malan,
       version: "0.1.0",
-      elixir: "~> 1.13",
+      elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -55,7 +55,7 @@ defmodule Malan.MixProject do
       {:eqrcode, "~> 0.1.10"},
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.17"},
-      {:plug_cloudflare, "~> 1.2.1"},
+      {:plug_cloudflare, "~> 1.3.0"},
       # {:iptools, "~> 0.0.4"},
       {:iptools_fb, "~> 0.0.7"},
       {:hammer, "~> 6.0"},

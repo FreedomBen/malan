@@ -111,7 +111,11 @@ defmodule MalanWeb.Router do
     # Not piped through "owner" because no User ID is passed and it will only delete the current session
     get "/sessions/active", SessionController, :index_active
     get "/sessions/current", SessionController, :show_current
+    put "/sessions/current/extend", SessionController, :extend_current
     delete "/sessions/current", SessionController, :delete_current
+
+    get "/session_extensions/:id", SessionExtensionController, :show
+    get "/sessions/:session_id/extensions", SessionExtensionController, :index
 
     get "/logs", LogController, :user_index
     get "/logs/:id", LogController, :show
@@ -123,6 +127,8 @@ defmodule MalanWeb.Router do
     resources "/users", UserController, only: [] do
       # Delete all active sessions for this user
       get "/sessions/active", SessionController, :user_index_active
+      put "/sessions/current/extend", SessionController, :extend_current
+      put "/sessions/:id/extend", SessionController, :extend
       delete "/sessions", SessionController, :delete_all
       resources "/sessions", SessionController, only: [:index, :show, :delete]
 
