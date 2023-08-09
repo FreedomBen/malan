@@ -77,6 +77,21 @@ defmodule Malan.Test.Utils.DateTime do
   def first_after_second_within?(dt1, dt2, num, :weeks),
     do: first_after_second_within?(dt1, dt2, num * 7, :days)
 
+  def datetimes_within?(dt1, dt2, num, :seconds),
+    do: inner_compare(dt1, dt2, Range.new(0, num))
+
+  def datetimes_within?(dt1, dt2, num, :minutes),
+    do: datetimes_within?(dt1, dt2, num * 60, :seconds)
+
+  def datetimes_within?(dt1, dt2, num, :hours),
+    do: datetimes_within?(dt1, dt2, num * 60, :minutes)
+
+  def datetimes_within?(dt1, dt2, num, :days),
+    do: datetimes_within?(dt1, dt2, num * 24, :hours)
+
+  def datetimes_within?(dt1, dt2, num, :weeks),
+    do: datetimes_within?(dt1, dt2, num * 7, :days)
+
   @doc ~S"""
   Check if the specified datetime references a time within the last `num` of units
   """

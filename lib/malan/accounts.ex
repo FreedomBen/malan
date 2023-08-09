@@ -1025,6 +1025,12 @@ defmodule Malan.Accounts do
     end
   end
 
+  def session_revoked?(%Session{revoked_at: revoked_at}),
+    do: session_revoked?(revoked_at)
+
+  # session doesn't have the revoked_at set so it is nil
+  def session_revoked?(%Session{}), do: false
+
   def session_revoked?(revoked_at), do: !!revoked_at
 
   def session_expired?(%Session{expires_at: expires_at}),
@@ -1032,6 +1038,12 @@ defmodule Malan.Accounts do
 
   def session_expired?(expires_at),
     do: DateTime.compare(expires_at, DateTime.utc_now()) == :lt
+
+  def session_revoked_or_expired?(nil),
+    do: true
+
+  def session_revoked_or_expired?(%Session{expires_at: expires_at, revoked_at: revoked_at}),
+    do: session_revoked?(revoked_at) || session_expired?(expires_at)
 
   @doc ~S"""
   This is a very *simple* check for validity that returns a boolean.  This should **NOT** be relied on for security!  It only considers expiration and revocation, and does not consider other important things like IP address of the requester.
@@ -1096,6 +1108,13 @@ defmodule Malan.Accounts do
   def revoke_session_at(%Session{} = session, %DateTime{} = datetime) do
     session
     |> Session.revoke_changeset(%{revoked_at: datetime})
+    |> Repo.update()
+  end
+
+  # Refuse to extend a session that has been revoked or expired
+  def extend_session(%Session{} = session, attrs, authed_ids \\ %{}) do
+    session
+    |> Session.extend_changeset(attrs, authed_ids)
     |> Repo.update()
   end
 

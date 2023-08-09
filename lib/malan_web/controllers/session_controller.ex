@@ -13,7 +13,8 @@ defmodule MalanWeb.SessionController do
 
   action_fallback MalanWeb.FallbackController
 
-  plug :require_pagination, [default_page_size: 10, max_page_size: 100]
+  plug :require_pagination,
+       [default_page_size: 10, max_page_size: 100]
        when action in [:admin_index, :index, :index_active, :user_index_active]
 
   def admin_index(conn, _params) do
@@ -144,6 +145,68 @@ defmodule MalanWeb.SessionController do
   end
 
   def show_current(conn, %{}), do: show(conn, %{"id" => conn.assigns.authed_session_id})
+
+  def extend(conn, attrs = %{"id" => id}) do
+    session = Accounts.get_session!(id)
+
+    # Make sure the session being extended isn't revoked or expired
+    case Accounts.session_revoked_or_expired?(session) do
+      true ->
+        conn
+        |> put_status(403)
+        |> put_view(ErrorView)
+        |> render("403.json", session_revoked_or_expired: true)
+
+      false ->
+        extend_session(conn, session, attrs)
+    end
+  end
+
+  def extend_current(conn, attrs),
+    do: extend(conn, Map.merge(attrs, %{"id" => conn.assigns.authed_session_id}))
+
+  defp extend_session(conn, session, attrs) do
+    authed_ids = %{
+      authed_user_id: conn.assigns.authed_user_id,
+      authed_session_id: conn.assigns.authed_session_id
+    }
+
+    changeset =
+      Session.extend_changeset(
+        session,
+        %{
+          extend_by_seconds: attrs["extend_by_seconds"]
+        },
+        authed_ids
+      )
+
+    with {:ok, %Session{} = session} <- Accounts.extend_session(session, attrs, authed_ids) do
+      record_log(
+        conn,
+        true,
+        session.user_id,
+        "PUT",
+        "#SessionController.extend/2",
+        changeset
+      )
+
+      render(conn, "show.json", code: 200, session: session)
+    else
+      {:error, err} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+        record_log(
+          conn,
+          false,
+          session.user_id,
+          "PUT",
+          "#SessionController.extend/2 - Session extension failed: #{err_str}",
+          changeset
+        )
+
+        {:error, err}
+    end
+  end
 
   def delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)

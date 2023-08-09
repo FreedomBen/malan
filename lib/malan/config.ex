@@ -42,6 +42,24 @@ defmodule Malan.Config do
         :default_token_expiration_secs
       ]
     end
+
+    def default_max_extension_time_secs do
+      Application.get_env(:malan, Malan.Accounts.Session)[
+        :default_max_extension_time_secs
+      ]
+    end
+
+    def default_max_extension_secs do
+      Application.get_env(:malan, Malan.Accounts.Session)[
+        :default_max_extension_secs
+      ]
+    end
+
+    def max_max_extension_secs do
+      Application.get_env(:malan, Malan.Accounts.Session)[
+        :max_max_extension_secs
+      ]
+    end
   end
 
   defmodule User do
