@@ -4,7 +4,7 @@ defmodule Malan.Accounts.Session do
   import Ecto.Changeset
   # import Malan.Utils.Ecto.Changeset, only: [validate_ip_addr: 2]
 
-  alias Malan.Accounts.{User, SessionExtension}
+  alias Malan.Accounts.User
   alias Malan.Utils
 
   @primary_key {:id, :binary_id, autogenerate: true}

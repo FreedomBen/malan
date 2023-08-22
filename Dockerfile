@@ -1,4 +1,4 @@
-FROM almalinux:8.6
+FROM almalinux:8.8
 
 ENV USER_HOME /home/docker
 ENV LANG en_US.UTF-8
@@ -6,7 +6,7 @@ ENV LANG en_US.UTF-8
 # Ensure locale is UTF-8
 RUN dnf install --assumeyes \
     glibc-langpack-en \
-    glibc-locale-source \ 
+    glibc-locale-source \
  && localedef --force --inputfile=en_US --charmap=UTF-8 en_US.UTF-8 \
  && echo "LANG=en_US.UTF-8" > /etc/locale.conf \
  && dnf clean all \
@@ -19,7 +19,7 @@ RUN groupadd --gid 1000 docker \
 
 # Install EPEL and base packages
 RUN dnf install --assumeyes glibc-langpack-en \
- && dnf install --assumeyes https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
+ && dnf install --assumeyes https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm \
  && dnf install --assumeyes dnf-plugins-core \
  && dnf config-manager --set-enabled powertools \
  && dnf update --assumeyes \
@@ -38,19 +38,19 @@ RUN dnf install --assumeyes glibc-langpack-en \
  && dnf clean all \
  && rm -rf /var/cache/dnf /var/cache/yum
 
- #Install nodejs and enable module nodejs:16
+# Install nodejs and enable module nodejs:16
 RUN dnf module reset --assumeyes nodejs \
  && dnf module enable --assumeyes nodejs:16 \
- && dnf module install --assumeyes nodejs:16 
+ && dnf module install --assumeyes nodejs:16
 
-#Install elixir version 1.13.0 and erlang version 25.0.3
-RUN wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/elixir_1.13.0-1~centos~8_all.rpm \
- && wget https://packages.erlang-solutions.com/erlang/rpm/centos/8/x86_64/esl-erlang_24.1.7-1~centos~8_amd64.rpm \
+# Install elixir version 1.15.4 and erlang version 26.0.2
+RUN wget https://binaries2.erlang-solutions.com/centos/8/elixir_1.15.4_1_otp_26.0.2~centos~8_noarch.rpm \
+ && wget https://binaries2.erlang-solutions.com/centos/8/esl-erlang_26.0.2_1~centos~8_x86_64.rpm \
  && dnf install --assumeyes \
-    elixir_1.13.0-1~centos~8_all.rpm \ 
-    esl-erlang_24.1.7-1~centos~8_amd64.rpm \
- && rm -rf esl-erlang_24.1.7-1~centos~8_amd64.rpm \
-   elixir_1.13.0-1~centos~8_all.rpm
+    elixir_*~centos~*_noarch.rpm \
+    esl-erlang_*~centos~*_x86_64.rpm \
+ && rm -rf esl-erlang_*~centos~*_x86_64.rpm \
+   elixir_*~centos~*_noarch.rpm
 
 # Install extra utilities
 RUN dnf module enable --assumeyes postgresql:12 \

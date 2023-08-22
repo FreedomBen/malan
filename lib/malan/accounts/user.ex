@@ -58,7 +58,7 @@ defmodule Malan.Accounts.User do
     field :password_reset_token, :string, virtual: true
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
-    field :approved_ips, {:array, :string}, null: false, default: []
+    field :approved_ips, {:array, :string}, default: []
 
     has_many :addresses, Accounts.Address, foreign_key: :user_id
     has_many :phone_numbers, Accounts.PhoneNumber, foreign_key: :user_id

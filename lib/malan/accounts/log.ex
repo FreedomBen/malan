@@ -16,16 +16,16 @@ defmodule Malan.Accounts.Log do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "logs" do
-    field :success, :boolean, null: false     # Was the operation successful?
-    field :type_enum, :integer, null: false   # Enum:  users || sessions
-    field :verb_enum, :integer, null: false   # Action:  GET || POST || PUT || DELETE
-    field :what, :string, null: false         # What was done (Human readable string)
-    field :when, :utc_datetime, null: false   # When this change happened (may not match created_at)
-    field :user_id, :binary_id, null: true    # User making change (owner of the token that changed something)
-    field :session_id, :binary_id, null: true # Session making the change (session owning the token that changed something)
-    field :who, :binary_id, null: true        # Which user was modified/changed/created/etc
-    field :who_username, :string, null: true  # Which user was modified/changed/created/etc
-    field :remote_ip, :string, null: false    # Remote IP of user who did this thing
+    field :success, :boolean      # Was the operation successful?
+    field :type_enum, :integer    # Enum:  users || sessions
+    field :verb_enum, :integer    # Action:  GET || POST || PUT || DELETE
+    field :what, :string          # What was done (Human readable string)
+    field :when, :utc_datetime    # When this change happened (may not match created_at)
+    field :user_id, :binary_id    # User making change (owner of the token that changed something)
+    field :session_id, :binary_id # Session making the change (session owning the token that changed something)
+    field :who, :binary_id        # Which user was modified/changed/created/etc
+    field :who_username, :string  # Which user was modified/changed/created/etc
+    field :remote_ip, :string     # Remote IP of user who did this thing
 
     # Important Note:  This is often not the exact changeset that was involved,
     # particularly in the case of a successful change.  It will take some
