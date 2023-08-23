@@ -207,16 +207,21 @@ defmodule Malan.PaginationTest do
 
     test "#validate_page_size/1 with changeset" do
       assert true ==
-               Pagination.validate_page_size(Ecto.Changeset.change(%Pagination{}, %{})).valid?
+               Pagination.validate_page_size(
+                 Ecto.Changeset.change(%Pagination{}, %{})
+                 |> Pagination.set_max_page_size()
+               ).valid?
 
       assert true ==
                Pagination.validate_page_size(
                  Ecto.Changeset.change(%Pagination{}, %{page_size: 5})
+                 |> Pagination.set_max_page_size()
                ).valid?
 
       assert false ==
                Pagination.validate_page_size(
                  Ecto.Changeset.change(%Pagination{}, %{page_size: -5})
+                 |> Pagination.set_max_page_size()
                ).valid?
     end
   end
