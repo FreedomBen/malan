@@ -1,4 +1,4 @@
-FROM elixir:1.13
+FROM elixir:1.15
 
 ENV USER_HOME /home/docker
 

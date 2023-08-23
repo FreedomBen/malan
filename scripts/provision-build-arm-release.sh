@@ -13,7 +13,7 @@
 #
 #  Capture the JSON into a file because it's huge
 #
-#   To find the image ID (not this takes a LONG time it's 262MB!):
+#   To find the image ID (note this takes a LONG time it's 262MB!):
 #     aws ec2 describe-images | jq -r ".Images" > images.json
 #
 #   Best way to extract the image ID:
@@ -50,7 +50,7 @@
 # # If need to extract the AMI ID.  See next if alreay have it
 # imageid="$(ruby -r 'json' -r 'date' -e 'puts JSON.parse(File.read("images.json")).filter{|i| i["OwnerId"] == "099720109477" && i["Architecture"] == "arm64" && i["State"] == "available" && i["Name"] =~ /ubuntu-jammy/i && i["Name"] =~ /^ubuntu\/images\//i}.sort{|i1, i2| DateTime.parse(i2["CreationDate"]) <=> DateTime.parse(i1["CreationDate"])}.first.to_json' | jq -r '.ImageId')"
 # # If already have it:
-# imageid="ami-0ee02425a4c7e78bb"
+# imageid="ami-06edaf01ee52adb1e"     # 2023-08-23
 #
 # # Create the ec2 instance using imageid variable from previous step
 # aws ec2 run-instances --image-id "${imageid}" --count 1 --instance-type c6g.xlarge --key-name ben_0
