@@ -110,7 +110,6 @@ defmodule Malan.Accounts.Session do
       :revoked_at,
       :api_token_hash,
       :expires_at,
-      :extendable_until,
       :authenticated_at,
       :ip_address
     ])
