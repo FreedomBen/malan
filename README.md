@@ -208,9 +208,7 @@ NOTE:  In order to optimize the logs table for _writes_, the indexes are minimal
 
 3.  Run your queries.  There are some examples in the next section:
 
-####
-
-Postgres example queries:
+#### Postgres example queries:
 
 Get entire log history for a user with ID `ffa9c147-900b-4813-b738-9b924237fdc7` (Note this could be huge!  Use caution in production)
 
