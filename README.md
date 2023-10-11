@@ -184,6 +184,86 @@ All commits, merges, and tags added to the `main` branch will automatically trig
 1.  `scripts/push-release.sh:  This script contains the instructions that push the application image to the registry.
 1.  `scripts/deploy-release.sh:  This script contains the instructions that deploy the change to Kubernetes.  It contains the bulk of the CD logic.
 
+## Logs
+
+Many actions are logged, such as:
+
+While there aren't currently any REST API endpoints for logs they can be accessed through the database, either using `iex` or using Postgres (examples shown using `psql`).
+
+NOTE:  In order to optimize the logs table for _writes_, the indexes are minimal.  This means there is a long and beefy table scan for querying.  Keep this in mind if you have a large production table!
+
+### Using psql
+
+1.  Get a shell in a running container.  If using Kubernetes, you can use `kubectl exec`.  Substitute the pod name for a current pod in your environment.  You can list them with `kubectl -n malan-staging get pods`
+
+  ```bash
+  $ kubectl -n malan-staging exec -it <valid-pod-name> -- bash
+  ```
+
+2.  Start a `psql` shell.  There is a convenient alias in the bashrc already that you can use to connect to the database for that pod:
+
+  ``` bash
+  $ psql-malan
+  ```
+
+3.  Run your queries.  There are some examples in the next section:
+
+####
+
+Postgres example queries:
+
+Get entire log history for a user with ID `ffa9c147-900b-4813-b738-9b924237fdc7` (Note this could be huge!  Use caution in production)
+
+```SQL
+SELECT *
+FROM logs
+WHERE user_id = 'ffa9c147-900b-4813-b738-9b924237fdc7'
+ORDER BY logs.inserted_at DESC;
+```
+
+Get 10 most recent logs for a user with ID `ffa9c147-900b-4813-b738-9b924237fdc7`
+
+```SQL
+SELECT *
+FROM logs
+WHERE user_id = 'ffa9c147-900b-4813-b738-9b924237fdc7'
+ORDER BY logs.inserted_at DESC
+LIMIT 10;
+```
+
+Get 10 most recent logs for a user with email address `hello@example.com`
+
+```SQL
+SELECT logs.*
+FROM logs
+JOIN users ON logs.user_id = users.id
+WHERE users.email = 'hello@example.com'
+ORDER BY logs.inserted_at DESC
+LIMIT 10;
+```
+
+Get the 10 most recent logs for user with ID `ef886248-32b9-48c1-bd4d-303c1cda1f94` that were "Unauthorized login attempt":
+
+```SQL
+SELECT *
+FROM logs
+WHERE user_id = 'ef886248-32b9-48c1-bd4d-303c1cda1f94'
+  AND what LIKE '%Unauthorized%'
+ORDER BY inserted_at DESC
+LIMIT 10;
+```
+
+Get the 10 most recent logs for user email `hello@example.com` that were "Unauthorized login attempt":
+
+```SQL
+SELECT logs.*
+FROM logs
+JOIN users ON logs.user_id = users.id
+WHERE users.email = 'hello@example.com'
+  AND logs.what LIKE '%Unauthorized%'
+ORDER BY logs.inserted_at DESC
+LIMIT 10;
+```
 
 ## Frequently Asked Questions (FAQs)
 
