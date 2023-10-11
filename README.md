@@ -184,11 +184,25 @@ All commits, merges, and tags added to the `main` branch will automatically trig
 1.  `scripts/push-release.sh:  This script contains the instructions that push the application image to the registry.
 1.  `scripts/deploy-release.sh:  This script contains the instructions that deploy the change to Kubernetes.  It contains the bulk of the CD logic.
 
-## Logs
+## Audit Logs
 
-Many actions are logged, such as:
+Many actions are logged in the audit log.  Whether the action result is success or failure, it is logged.  The data that is sent as part of the request is recorded for later analysis.
 
-While there aren't currently any REST API endpoints for logs they can be accessed through the database, either using `iex` or using Postgres (examples shown using `psql`).
+Here is a (non comprehensive) list of actions logged:
+
+* Creating a user.  Includes the original creation data except password
+* Updating a user.  Includes the changed data
+* Locking a user
+* Unlocking a user
+* Deleting a user
+* Requesting a password reset token
+* Using a password reset token
+* Changing a user password
+* Creating a session (aka "logging in")
+* Deleting a session (aka "logging out")
+* Extending a session
+
+While there aren't (currently) any REST API endpoints for logs they can be accessed through the database, either using `iex` or using Postgres (examples shown using `psql`).
 
 NOTE:  In order to optimize the logs table for _writes_, the indexes are minimal.  This means there is a long and beefy table scan for querying.  Keep this in mind if you have a large production table!
 
