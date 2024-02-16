@@ -1,4 +1,4 @@
-FROM almalinux:8.8
+FROM almalinux:8.9
 
 ENV USER_HOME /home/docker
 ENV LANG en_US.UTF-8
