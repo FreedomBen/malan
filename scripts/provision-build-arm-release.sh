@@ -50,7 +50,7 @@
 # # If need to extract the AMI ID.  See next if alreay have it
 # imageid="$(ruby -r 'json' -r 'date' -e 'puts JSON.parse(File.read("images.json")).filter{|i| i["OwnerId"] == "099720109477" && i["Architecture"] == "arm64" && i["State"] == "available" && i["Name"] =~ /ubuntu-jammy/i && i["Name"] =~ /^ubuntu\/images\//i}.sort{|i1, i2| DateTime.parse(i2["CreationDate"]) <=> DateTime.parse(i1["CreationDate"])}.first.to_json' | jq -r '.ImageId')"
 # # If already have it:
-# imageid="ami-06edaf01ee52adb1e"     # 2023-08-23
+# imageid="ami-0a62a741df1d21fab"     # 2024-02-16
 #
 # # Create the ec2 instance using imageid variable from previous step
 # aws ec2 run-instances --image-id "${imageid}" --count 1 --instance-type c6g.xlarge --key-name ben_0
@@ -66,8 +66,9 @@
 # ssh ubuntu@${vmip} 'mkdir -p /home/ubuntu/.docker && sudo mkdir -p /root/.docker'
 # scp /home/ben/.docker/config.json ubuntu@${vmip}:/home/ubuntu/.docker/config.json
 # ssh ubuntu@${vmip} 'sudo cp /home/ubuntu/.docker/config.json /root/.docker/config.json'
-# # Invoke the script
+# # Copy the script
 # scp scripts/provision-build-arm-release.sh ubuntu@${vmip}:/home/ubuntu/
+# # Invoke the script
 # # automatic doesn't work due to a terminal issue
 # # ssh ubuntu@${vmip} 'sudo ./provision-build-arm-release.sh'
 # ssh ubuntu@${vmip}
