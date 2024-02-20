@@ -22,6 +22,7 @@ services:
       DB_USERNAME: 'postgres'
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
+      LOG_LEVEL: 'debug'
     depends_on:
       - 'postgres'
 

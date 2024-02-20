@@ -17,7 +17,4 @@ config :malan, MalanWeb.Endpoint,
     "https://accounts.ameelio.org"
   ]
 
-# Do not print debug messages in production
-config :logger, level: :info
-
 config :malan, :sentry, enabled: true

@@ -29,6 +29,33 @@ if System.get_env("HOST") && System.get_env("RELEASE_NAME") do
   config :malan, MalanWeb.Endpoint, server: true
 end
 
+### Begin LOG_LEVEL configuration
+
+# Set the default log level based on the environment
+allowed_log_levels = [:debug, :info, :warning, :error]
+default_log_level = case config_env() do
+                      :prod -> "info"
+                      :test -> "warning"
+                      :dev -> "debug"
+                    end
+
+# Fetch the LOG_LEVEL environment variable and configure logging
+# Be permissive on the input, like "DEBUG", "debug", ":debug", etc.
+log_level = System.get_env("LOG_LEVEL", default_log_level)
+            |> String.trim_leading(":") # Remove leading colon if present
+            |> String.downcase()        # Convert to lowercase
+            |> String.to_atom()         # Convert to atom
+
+if log_level in allowed_log_levels do
+  Utils.Logger.info("Setting log level to #{log_level}")
+  config :logger, level: log_level
+else
+  Utils.Logger.error("Invalid log level: #{log_level}.  Valid levels are: " <> Malan.Utils.to_string(allowed_log_levels))
+  raise ArgumentError, "Invalid LOG_LEVEL environment variable value: #{log_level}.  Allowed values are: #{Malan.Utils.to_string(allowed_log_levels)}"
+end
+
+### End LOG_LEVEL configuration
+
 # If it's non-prod, and MAILGUN_API_KEY is set, and MAILGUN_DISABLE is not set
 if config_env() != :prod && !!System.get_env("MAILGUN_API_KEY") &&
      !System.get_env("MAILGUN_DISABLE") do
