@@ -146,6 +146,12 @@ if config_env() == :prod do
       host: external_host,
       port: Utils.Number.to_int(external_port)
     ],
+    #check_origin: :conn
+    check_origin: [
+      "https://accounts.ameelio.org",
+      "https://accounts.ameelio.xyz",
+      external_scheme <> "://" <> external_host
+    ],
     # http: and https: are what's actually used for binding to an interface.
     http: [
       # Enable IPv6 and bind on all interfaces.

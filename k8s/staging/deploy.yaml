@@ -89,7 +89,7 @@ metadata:
   name: malan-web-config
   namespace: malan-staging
 data:
-  LOG_LEVEL: 'debug'
+  LOG_LEVEL: 'info'
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '3'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
