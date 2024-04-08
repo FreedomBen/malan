@@ -1069,7 +1069,7 @@ defmodule Malan.Utils.Phoenix.View.Helpers do
       ```
   """
   def comment(assigns) do
-    import Phoenix.LiveView.Helpers, only: [sigil_H: 2]
+    import Phoenix.Component
     ~H//
   end
 end
