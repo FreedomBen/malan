@@ -1,5 +1,6 @@
 defmodule MalanWeb.LiveHelpers do
-  import Phoenix.LiveView.Helpers
+  #import Phoenix.LiveView.Helpers
+  use Phoenix.Component
 
   @doc """
   Renders a component inside the `MalanWeb.ModalComponent` component.
