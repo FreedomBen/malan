@@ -28,6 +28,8 @@ defmodule MalanWeb.ConnCase do
 
       # The default endpoint for testing
       @endpoint MalanWeb.Endpoint
+
+      use MalanWeb, :verified_routes
     end
   end
 

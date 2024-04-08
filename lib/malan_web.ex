@@ -17,6 +17,8 @@ defmodule MalanWeb do
   and import those modules here.
   """
 
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
   def controller do
     # For tweaking log output in production:
     # https://www.verypossible.com/insights/thoughtful-logging-in-elixir-a-phoenix-story
@@ -27,6 +29,8 @@ defmodule MalanWeb do
       import MalanWeb.Gettext
       import Malan.AuthController
       alias MalanWeb.Router.Helpers, as: Routes
+
+      unquote(verified_routes())
     end
   end
 
@@ -98,6 +102,17 @@ defmodule MalanWeb do
       alias MalanWeb.Router.Helpers, as: Routes
 
       import Malan.Utils.Phoenix.View.Helpers
+
+      unquote(verified_routes())
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: MalanWeb.Endpoint,
+        router: MalanWeb.Router,
+        statics: MalanWeb.static_paths()
     end
   end
 
