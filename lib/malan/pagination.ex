@@ -115,4 +115,9 @@ defmodule Malan.Pagination do
       {:error, _} -> raise PageOutOfBounds, page_size: page_size
     end
   end
+
+  def num_pages(total_count, page_size) do
+    div(total_count, page_size) + 1
+  end
+
 end
