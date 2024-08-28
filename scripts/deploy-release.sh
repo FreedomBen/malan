@@ -9,9 +9,10 @@ declare -rx color_yellow='\033[1;33m'
 
 declare -rx SLEEP_SECONDS_AFTER_APPLY='3'
 declare -rx KUBECTL_EXTERNAL_DIFF='diff --color -N -u'
+declare -rx K8S_CA_CERT_TEMP_FILE='/tmp/k8s.ca.crt'
 
 declare -x MIGRATION_TIMEOUT_SECS='1800'
-declare -x DEPLOY_TIMEOUT_SECS='600'
+declare -x DEPLOY_TIMEOUT_SECS='900'
 declare -x MIGRATION_DELETE_SECS='10'
 
 die ()
@@ -82,6 +83,12 @@ k8s_ca ()
   # https://github.com/kubernetes/kubernetes/issues/48767
 
   local filename="k8s/ca-cert/${ENV}.ca.crt"
+
+  # If the temp file which comes from an env var is set, use that instead
+  if [ -f "${K8S_CA_CERT_TEMP_FILE}" ]; then
+    filename="${K8S_CA_CERT_TEMP_FILE}"
+  fi
+
   if [ -f "${filename}" ]; then
     #echo "--certificate-authority '${filename}'"
     echo "--insecure-skip-tls-verify=true"
@@ -150,10 +157,17 @@ check_dir_for_files ()
   if is_enabled "${SAVE_MIGRATION}" || is_enabled "${APPLY_MIGRATION}"; then
     check_file "k8s/${ENV}/migrate.yaml"
   fi
+
   if is_enabled "${SAVE_DEPLOY}" || is_enabled "${APPLY_DEPLOY}"; then
     check_file "k8s/${ENV}/deploy.yaml"
   fi
-  check_file "k8s/ca-cert/${ENV}.ca.crt"
+
+  if [ -n "${K8S_CA_CERT}" ]; then
+    echo "${K8S_CA_CERT}" > "${K8S_CA_CERT_TEMP_FILE}"
+    check_file "${K8S_CA_CERT_TEMP_FILE}"
+  else
+    check_file "k8s/ca-cert/${ENV}.ca.crt"
+  fi
 }
 
 check_for_migration_manifest ()
@@ -334,8 +348,10 @@ apply_deploy_manifest ()
 
 get_deployment_name ()
 {
+  # Always use the first Deployment in the file if there are more than one
   kubectl $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(deploy_manifest) \
     | grep '^deployment.apps' \
+    | head -1 \
     | awk '{ print $1 }'
 }
 
@@ -361,9 +377,11 @@ get_namespace ()
   #  -f "${manifest}" \
   #  -o jsonpath='{.items[0].metadata.namespace}'
 
-  local num_namespaces="$(cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq | wc -l)"
+  local namespaces="$(cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq)"
+  local num_namespaces="$(echo "${namespaces}" | wc -l)"
+
   if (( "${num_namespaces}" != 1 )); then
-    die "Expected 1 namespace but found ${num_namespaces}.  "
+    die "Expected 1 namespace but found ${num_namespaces}.  '$(echo ${namespaces} | xargs)'"
   else
     cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq
   fi
