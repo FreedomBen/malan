@@ -1,1 +1,3 @@
 Hello, you have found a well known but poorly advertised text file.
+
+Adding a second line to trigger the CI/CD workflow.
