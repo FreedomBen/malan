@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "88S25855SR.com.ameelio.connect",
+        "paths": [
+           "/users/reset_password/*"
+        ]
+      }
+    ]
+  }
