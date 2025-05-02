@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.connectmobile",
+      "sha256_cert_fingerprints": [
+        "17:FD:38:BA:E2:CE:82:CD:D7:84:C2:2C:60:3F:2F:37:D4:67:D2:B6:54:7F:A1:CA:BC:A9:F5:A5:D6:5F:18:EC"
+      ]
+    }
+  }
+]
