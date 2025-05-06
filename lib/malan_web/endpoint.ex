@@ -25,17 +25,16 @@ defmodule MalanWeb.Endpoint do
   #
   # You should set gzip to true if you are running phx.digest
   # when deploying your static files in production.
+  # Use a custom plug to serve the Apple App Site Association file with the correct MIME type
+  plug MalanWeb.Plugs.AppleAppSiteAssociationMime
+
   plug Plug.Static,
     at: "/",
     from: :malan,
     gzip: true,
     only: MalanWeb.static_paths(),
     content_types: %{
-      ".well-known/assetlinks.json" => "application/json",
-      ".well-known/apple-app-site-association" => "application/json"
-    },
-    headers: %{
-      ".well-known/apple-app-site-association" => [{"content-type", "application/json"}]
+      ".well-known/assetlinks.json" => "application/json"
     }
 
   # Code reloading can be explicitly enabled under the
