@@ -37,3 +37,5 @@ pgdata/
 k8s/*/secrets.yaml
 
 node_modules
+
+**/.claude/settings.local.json

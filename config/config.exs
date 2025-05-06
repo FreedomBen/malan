@@ -88,6 +88,11 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure MIME types
+config :mime, :types, %{
+  "application/json" => ["json"]
+}
+
 # Supplement Plug's list of statuses
 # https://github.com/elixir-plug/plug/blob/master/lib/plug/conn/status.ex#L8-L72
 config :plug, :statuses, %{
