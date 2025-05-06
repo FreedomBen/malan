@@ -33,6 +33,9 @@ defmodule MalanWeb.Endpoint do
     content_types: %{
       ".well-known/assetlinks.json" => "application/json",
       ".well-known/apple-app-site-association" => "application/json"
+    },
+    headers: %{
+      ".well-known/apple-app-site-association" => [{"content-type", "application/json"}]
     }
 
   # Code reloading can be explicitly enabled under the
