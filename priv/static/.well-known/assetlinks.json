@@ -1,21 +1,25 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.connectmobile.staging",
-      "sha256_cert_fingerprints": [
-        "3E:7E:9E:A3:95:BA:1A:31:55:A3:66:BE:A2:E0:2B:78:4B:41:9F:CA:48:E2:97:40:C3:D0:B5:A6:98:90:9B:06"
-      ]
-    }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.connectmobile",
       "sha256_cert_fingerprints": [
-        "8F:A7:38:21:FD:96:5B:AA:0E:3D:15:8D:17:ED:4F:09:EF:73:F0:FC:72:44:81:38:C9:BE:3E:57:20:29:5A:89"
+        "17:FD:38:BA:E2:CE:82:CD:D7:84:C2:2C:60:3F:2F:37:D4:67:D2:B6:54:7F:A1:CA:BC:A9:F5:A5:D6:5F:18:EC"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.connectmobile.staging",
+      "sha256_cert_fingerprints": [
+        "92:1E:0F:8C:01:70:A8:C1:9F:FB:60:1E:B6:FE:1D:53:06:62:F0:7B:A8:99:11:2F:EC:10:43:6C:74:F5:37:AB"
       ]
     }
   }
