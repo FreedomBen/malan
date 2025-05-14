@@ -7,6 +7,12 @@
         "paths": [
            "/users/reset_password/*"
         ]
+      },
+      {
+        "appID": "88S25855SR.com.ameelio.connect.staging",
+        "paths": [
+           "/users/reset_password/*"
+        ]
       }
     ]
   }
