@@ -317,27 +317,27 @@ defmodule Malan.UtilsTest do
     test "#map_to_string/1" do
       assert "michael: 'knight'" == Utils.map_to_string(%{michael: "knight"})
 
-      assert "michael: 'knight', kitt: 'karr'" ==
+      assert "kitt: 'karr', michael: 'knight'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"})
     end
 
     test "#map_to_string/2 masks specified values" do
-      assert "michael: 'knight', kitt: '****'" ==
+      assert "kitt: '****', michael: 'knight'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt])
 
-      assert "michael: '******', kitt: '****'" ==
+      assert "kitt: '****', michael: '******'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, [:kitt, :michael])
 
-      assert "michael: '******', kitt: '****', carr: 'hart'" ==
+      assert "carr: 'hart', kitt: '****', michael: '******'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr", "carr" => "hart"}, [
                  "kitt",
                  "michael"
                ])
 
-      assert "michael: '******', kitt: '****'" ==
+      assert "kitt: '****', michael: '******'" ==
                Utils.map_to_string(%{"michael" => "knight", "kitt" => "karr"}, [:kitt, :michael])
 
-      assert "michael: '******', kitt: '****'" ==
+      assert "kitt: '****', michael: '******'" ==
                Utils.map_to_string(%{michael: "knight", kitt: "karr"}, ["kitt", "michael"])
     end
 
@@ -365,7 +365,7 @@ defmodule Malan.UtilsTest do
       output = Utils.map_to_string(input, ["mask", "kitt"])
 
       expected =
-        "michael: 'knight', kitt: '****', errors: 'one, level: 'fatal, true'', courses: 'johnson: 'philosophy: 'year: '2015', name: 'Big Questions of Philosophy', mask: '******''', ehrman: 'new_testament: 'New Testament'''"
+        "courses: 'ehrman: 'new_testament: 'New Testament'', johnson: 'philosophy: 'mask: '******', name: 'Big Questions of Philosophy', year: '2015'''', errors: 'one, level: 'fatal, true'', kitt: '****', michael: 'knight'"
 
       assert output == expected
     end
@@ -378,11 +378,11 @@ defmodule Malan.UtilsTest do
 
     test "#struct_to_string/2 works" do
       ts = %TestStruct{one: "one", two: "two"}
-      assert "two: 'two', three: '', one: 'one'" == Utils.struct_to_string(ts)
-      assert "two: 'two', three: '', one: '***'" == Utils.struct_to_string(ts, [:one])
+      assert "one: 'one', three: '', two: 'two'" == Utils.struct_to_string(ts)
+      assert "one: '***', three: '', two: 'two'" == Utils.struct_to_string(ts, [:one])
       ts = %TestStruct{one: "one", two: "two", three: ts}
 
-      assert "two: 'two', three: 'two: 'two', three: '', one: '***', __struct__: 'Elixir.Malan.UtilsTest.TestStruct'', one: '***'" ==
+      assert "one: '***', three: '__struct__: 'Elixir.Malan.UtilsTest.TestStruct', one: '***', three: '', two: 'two'', two: 'two'" ==
                Utils.struct_to_string(ts, [:one])
     end
 
