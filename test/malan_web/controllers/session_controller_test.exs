@@ -172,8 +172,11 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, s3} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s6} = Helpers.Accounts.create_session(au)
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
@@ -189,14 +192,14 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert data
              |> TestUtils.lists_equal_ignore_order(
-               sessions_to_retval([s1, s2, s3, s4, s5]),
+               sessions_to_retval([s6, s5, s4, s3, s2]),
                & &1["id"]
              )
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 1, page_size: 5)
       assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
-      assert data |> TestUtils.lists_equal_ignore_order(sessions_to_retval([s6]))
+      assert data |> TestUtils.lists_equal_ignore_order(sessions_to_retval([s1]))
     end
   end
 
@@ -336,8 +339,11 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, s3} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s6} = Helpers.Accounts.create_session(au)
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
@@ -376,8 +382,11 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, s3} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
+      Process.sleep(1100)
       {:ok, s6} = Helpers.Accounts.create_session(au)
 
       # page_num: 0 page_size: 3
