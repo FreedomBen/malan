@@ -29,6 +29,7 @@ defmodule Malan.Accounts do
     from(
       u in User,
       select: u,
+      order_by: [asc: u.inserted_at],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
