@@ -455,7 +455,7 @@ defmodule Malan.Utils do
 
   def map_to_string(%{} = map, mask_keys) do
     Map.to_list(map)
-    |> Enum.reverse()
+    |> Enum.sort_by(fn {key, _val} -> Kernel.to_string(key) end)
     |> Enum.map(fn {key, val} ->
       case val do
         %{} -> {key, map_to_string(val, mask_keys)}
