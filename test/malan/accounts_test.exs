@@ -1653,7 +1653,7 @@ defmodule Malan.AccountsTest do
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
       assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 3600})
 
-      assert TestUtils.DateTime.datetimes_within?(
+      assert TestUtils.DateTime.plus_or_minus?(
                session_retval.expires_at,
                expected_new_exp_time,
                2,
@@ -1662,7 +1662,7 @@ defmodule Malan.AccountsTest do
 
       # Query fresh from the database and verify the new expiration time persisted properly
       %Malan.Accounts.Session{expires_at: expires_at} = Accounts.get_session!(session.id)
-      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_new_exp_time, 2, :seconds)
+      assert TestUtils.DateTime.plus_or_minus?(expires_at, expected_new_exp_time, 2, :seconds)
     end
 
     test "A record of extensions is kept in the database" do
