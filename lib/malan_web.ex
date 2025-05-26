@@ -52,7 +52,7 @@ defmodule MalanWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {MalanWeb.LayoutView, "live.html"}
+        layout: {MalanWeb.LayoutView, :live}
 
       unquote(view_helpers())
     end

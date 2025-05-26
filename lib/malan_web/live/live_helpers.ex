@@ -1,6 +1,7 @@
 defmodule MalanWeb.LiveHelpers do
   #import Phoenix.LiveView.Helpers
   use Phoenix.Component
+  import Phoenix.Component
 
   @doc """
   Renders a component inside the `MalanWeb.ModalComponent` component.
@@ -18,7 +19,16 @@ defmodule MalanWeb.LiveHelpers do
   """
   def live_modal(component, opts) do
     path = Keyword.fetch!(opts, :return_to)
-    modal_opts = [id: :modal, return_to: path, component: component, opts: opts]
-    live_component(MalanWeb.ModalComponent, modal_opts)
+    
+    assigns = %{
+      id: :modal,
+      return_to: path,
+      component: component,
+      opts: opts
+    }
+    
+    ~H"""
+    <.live_component module={MalanWeb.ModalComponent} {assigns} />
+    """
   end
 end
