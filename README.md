@@ -4,6 +4,10 @@ Malan is a basic authentication service that you can drop into you microservice 
 
 ## Use Malan
 
+### API Documentation
+
+API documentation is available in [API_DOCUMENTATION.md](https://github.com/FreedomBen/malan/blob/main/API_DOCUMENTATION.md).
+
 ### Basic endpoints you'll use
 
 If using Malan as an authentication service, there are 3 main endpoints you'll use:
