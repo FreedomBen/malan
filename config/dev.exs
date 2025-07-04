@@ -94,3 +94,4 @@ config :phoenix, :plug_init_mode, :runtime
 config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Logger
 
 config :malan, :sentry, enabled: false
+config :malan, Malan.Repo, password: "postgres"

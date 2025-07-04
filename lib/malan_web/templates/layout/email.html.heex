@@ -1,17 +1,21 @@
 <html lang="en" dir="ltr">
   <head>
-    <meta charset="utf-8">
-    <title><%= @email.subject %></title>
+    <meta charset="utf-8" />
+    <title>{@email.subject}</title>
   </head>
   <body>
     <div>
-      <%# This doesn't actually render in most email clients including gmail %>
-      <%# render(MalanWeb.PageView, "_ameelio_logo.svg", assigns) %>
+      <%!-- This doesn't actually render in most email clients including gmail --%>
+      <%!-- render(MalanWeb.PageView, "_ameelio_logo.svg", assigns) --%>
 
-      <%# Use web-hosted link instead %>
-      <img src={MalanWeb.Endpoint.url() <> Routes.static_path(MalanWeb.Endpoint, "/images/ameelio-logo-113x22.png")} alt="Ameelio Logo" width="113" />
+      <%!-- Use web-hosted link instead --%>
+      <img
+        src={MalanWeb.Endpoint.url() <> Routes.static_path(MalanWeb.Endpoint, "/images/ameelio-logo-113x22.png")}
+        alt="Ameelio Logo"
+        width="113"
+      />
     </div>
 
-    <%= @inner_content %>
+    {@inner_content}
   </body>
 </html>
