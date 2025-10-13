@@ -14,7 +14,9 @@ config :malan,
 config :malan, Malan.Accounts.User,
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
-      "86400" |> String.to_integer() # 24 hours
+      "86400" |> String.to_integer(), # 24 hours
+  min_password_length:
+    (System.get_env("MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
 
 config :malan, Malan.Config.RateLimits,
   password_reset_lower_limit_msecs:
