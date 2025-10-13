@@ -204,56 +204,56 @@ defmodule Malan.UserSchemaTest do
       # Test with default minimum length (6)
       # Should pass with 6 characters
       changeset6 =
-        Ecto.Changeset.cast(%User{}, %{password: "pass12"}, [:password])
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass12"}, [:password])
         |> User.validate_password()
 
       assert changeset6.valid? == true
+      assert changeset6.changes.password_hash != nil
 
-      # Should fail with 5 characters (below default min of 6)
+      # Should fail with 5 characters
       changeset5 =
-        Ecto.Changeset.cast(%User{}, %{password: "pass1"}, [:password])
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass1"}, [:password])
         |> User.validate_password()
 
       assert changeset5.valid? == false
-
-      assert errors_on(changeset5).password
-             |> Enum.any?(fn x -> x =~ ~r/should be at least 6 character/ end)
+      errors = errors_on(changeset5)
+      assert "should be at least 6 character(s)" in errors[:password]
 
       # Test with MIN_PASSWORD_LENGTH=8
-      # First save the original config
+      # Mock the config to return 8
       original_config = Application.get_env(:malan, Malan.Accounts.User)
-
-      # Update the config to require 8 characters
       Application.put_env(:malan, Malan.Accounts.User,
-        Keyword.merge(original_config, min_password_length: 8)
-      )
+        Keyword.put(original_config, :min_password_length, 8))
 
-      # Should pass with 8 characters
-      changeset8 =
-        Ecto.Changeset.cast(%User{}, %{password: "password"}, [:password])
-        |> User.validate_password()
-
-      assert changeset8.valid? == true
-
-      # Should fail with 7 characters (below configured min of 8)
+      # Should fail with 7 characters
       changeset7 =
-        Ecto.Changeset.cast(%User{}, %{password: "pass123"}, [:password])
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass123"}, [:password])
         |> User.validate_password()
 
       assert changeset7.valid? == false
+      errors7 = errors_on(changeset7)
+      assert "should be at least 8 character(s)" in errors7[:password]
 
-      assert errors_on(changeset7).password
-             |> Enum.any?(fn x -> x =~ ~r/should be at least 8 character/ end)
-
-      # Should fail with 6 characters when min is 8
-      changeset6_fail =
-        Ecto.Changeset.cast(%User{}, %{password: "pass12"}, [:password])
+      # Should pass with 8 characters
+      changeset8 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass1234"}, [:password])
         |> User.validate_password()
 
-      assert changeset6_fail.valid? == false
+      assert changeset8.valid? == true
+      assert changeset8.changes.password_hash != nil
 
-      assert errors_on(changeset6_fail).password
-             |> Enum.any?(fn x -> x =~ ~r/should be at least 8 character/ end)
+      # Should pass with more than 8 characters
+      changeset10 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "password10"}, [:password])
+        |> User.validate_password()
+
+      assert changeset10.valid? == true
+      assert changeset10.changes.password_hash != nil
 
       # Restore original config
       Application.put_env(:malan, Malan.Accounts.User, original_config)
