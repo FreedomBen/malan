@@ -32,6 +32,7 @@ config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Test
 config :phoenix, :plug_init_mode, :runtime
 
 config :malan, :sentry, enabled: false
+config :malan, :log_silence_record_log_warning, true
 
 # config :malan, Malan.Accounts.User,
 #   # Basically no rate limiting in test
