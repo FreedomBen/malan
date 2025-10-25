@@ -1,3 +1,5 @@
 defmodule MalanWeb.PageHTML do
-  use MalanWeb, :view
+  use MalanWeb, :html
+
+  embed_templates "page_html/*"
 end
