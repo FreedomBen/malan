@@ -8,7 +8,6 @@ defmodule Malan.MixProject do
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
       aliases: aliases(),
       deps: deps()
     ]

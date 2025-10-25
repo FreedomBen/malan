@@ -1,16 +1,18 @@
 defmodule MalanWeb.PhoneNumberJSON do
-  use MalanWeb, :view
-  alias __MODULE__
+  alias Malan.Accounts.PhoneNumber
 
-  def render("index.json", %{phone_numbers: phone_numbers}) do
-    %{ok: true, data: render_many(phone_numbers, PhoneNumberJSON, "phone_number.json", as: :phone_number)}
+  def index(%{phone_numbers: phone_numbers}) do
+    %{ok: true, data: Enum.map(phone_numbers, &phone_number_data/1)}
   end
 
-  def render("show.json", %{phone_number: phone_number}) do
-    %{ok: true, data: render_one(phone_number, PhoneNumberJSON, "phone_number.json", as: :phone_number)}
+  def show(%{phone_number: phone_number}) do
+    %{ok: true, data: phone_number_data(phone_number)}
   end
 
-  def render("phone_number.json", %{phone_number: phone_number}) do
+  def phone_number(%{phone_number: phone_number}), do: phone_number_data(phone_number)
+  def phone_number(phone_number), do: phone_number_data(phone_number)
+
+  defp phone_number_data(%PhoneNumber{} = phone_number) do
     %{
       id: phone_number.id,
       user_id: phone_number.user_id,

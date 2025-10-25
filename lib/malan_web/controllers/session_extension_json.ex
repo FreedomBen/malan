@@ -1,8 +1,7 @@
 defmodule MalanWeb.SessionExtensionJSON do
-  use MalanWeb, :view
-  alias __MODULE__
+  alias Malan.Accounts.SessionExtension
 
-  def render("index.json", %{
+  def index(%{
         code: code,
         page_num: page_num,
         page_size: page_size,
@@ -13,19 +12,19 @@ defmodule MalanWeb.SessionExtensionJSON do
       code: code,
       page_num: page_num,
       page_size: page_size,
-      data: render_many(session_extensions, SessionExtensionJSON, "session_extension.json", as: :session_extension)
+      data: Enum.map(session_extensions, &session_extension_data/1)
     }
   end
 
-  def render("show.json", %{code: code, session_extension: session_extension}) do
+  def show(%{code: code, session_extension: session_extension}) do
     %{
       ok: true,
       code: code,
-      data: render_one(session_extension, SessionExtensionJSON, "session_extension.json", as: :session_extension)
+      data: session_extension_data(session_extension)
     }
   end
 
-  def render("session_extension.json", %{session_extension: session_extension}) do
+  defp session_extension_data(%SessionExtension{} = session_extension) do
     %{
       id: session_extension.id,
       old_expires_at: session_extension.old_expires_at,

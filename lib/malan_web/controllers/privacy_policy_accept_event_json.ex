@@ -1,13 +1,14 @@
 defmodule MalanWeb.PrivacyPolicyAcceptEventJSON do
-  use MalanWeb, :view
+  alias Malan.Accounts.User.PrivacyPolicyAcceptEvent
 
-  def render("privacy_policy_accept_event.json", %{
-        privacy_policy_accept_event: privacy_policy_accept_event
-      }) do
+  def privacy_policy_accept_event(%{privacy_policy_accept_event: event}), do: event_data(event)
+  def privacy_policy_accept_event(event), do: event_data(event)
+
+  defp event_data(%PrivacyPolicyAcceptEvent{} = event) do
     %{
-      accept: privacy_policy_accept_event.accept,
-      privacy_policy_version: privacy_policy_accept_event.privacy_policy_version,
-      timestamp: privacy_policy_accept_event.timestamp
+      accept: event.accept,
+      privacy_policy_version: event.privacy_policy_version,
+      timestamp: event.timestamp
     }
   end
 end

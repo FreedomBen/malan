@@ -1,18 +1,15 @@
 defmodule MalanWeb.LogJSON do
-  use MalanWeb, :view
-
   alias Malan.Accounts.Log
-  alias __MODULE__
 
-  def render("index.json", %{logs: logs}) do
-    %{ok: true, data: render_many(logs, LogJSON, "log.json", as: :log)}
+  def index(%{logs: logs}) do
+    %{ok: true, data: Enum.map(logs, &log_data/1)}
   end
 
-  def render("show.json", %{log: log}) do
-    %{ok: true, data: render_one(log, LogJSON, "log.json", as: :log)}
+  def show(%{log: log}) do
+    %{ok: true, data: log_data(log)}
   end
 
-  def render("log.json", %{log: log}) do
+  defp log_data(%Log{} = log) do
     %{
       id: log.id,
       success: log.success,
