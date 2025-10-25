@@ -294,4 +294,3 @@ LIMIT 10;
 ### 1.  Where does the name "malan" come from?
 
 It's an extremely nerdy name based [on a character from the Stormlight Archive series](https://coppermind.net/wiki/Malan) by Brandon Sanderson.
-
