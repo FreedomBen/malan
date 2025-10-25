@@ -29,7 +29,7 @@ defmodule Malan.Accounts do
     from(
       u in User,
       select: u,
-      order_by: [asc: u.inserted_at],
+      order_by: [asc: u.inserted_at, asc: u.id],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
@@ -491,7 +491,7 @@ defmodule Malan.Accounts do
       from s in Session,
         select: s,
         where: s.user_id == ^user_id,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -501,7 +501,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from s in Session,
         select: s,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -515,7 +515,7 @@ defmodule Malan.Accounts do
       from s in Session,
         where: s.user_id == ^user_id,
         where: is_nil(s.revoked_at) or s.expires_at < ^DateTime.utc_now(),
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
