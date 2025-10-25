@@ -1491,6 +1491,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.user_id),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1500,6 +1501,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.user_id == ^user_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1518,6 +1520,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.session_id),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1527,6 +1530,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.session_id == ^session_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1545,6 +1549,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.who),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1554,6 +1559,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.who == ^user_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
