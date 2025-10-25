@@ -99,7 +99,7 @@ defmodule Malan.Utils do
 
       conn
       |> put_status(:not_found)
-      |> put_view(MalanWeb.ErrorView)
+      |> put_view(MalanWeb.ErrorJSON)
       |> render(:"404")
       |> pry_pipe()
 
@@ -1003,7 +1003,7 @@ defmodule Malan.Utils.Phoenix.Controller do
 
     conn
     |> put_status(status)
-    |> Phoenix.Controller.put_view(MalanWeb.ErrorView)
+    |> Phoenix.Controller.put_view(MalanWeb.ErrorJSON)
     |> Phoenix.Controller.render("#{status}.json", details)
     |> halt()
   end

@@ -1,6 +1,7 @@
 defmodule MalanWeb.LayoutView do
   use MalanWeb, :view
   use Phoenix.Component
+  alias MalanWeb.Router.Helpers, as: Routes
 
   # Phoenix LiveDashboard is available only in development by default,
   # so we instruct Elixir to not warn if the dashboard route is missing.

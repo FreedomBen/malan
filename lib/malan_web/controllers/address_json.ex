@@ -1,13 +1,13 @@
-defmodule MalanWeb.AddressView do
+defmodule MalanWeb.AddressJSON do
   use MalanWeb, :view
-  alias MalanWeb.AddressView
+  alias __MODULE__
 
   def render("index.json", %{addresses: addresses}) do
-    %{ok: true, data: render_many(addresses, AddressView, "address.json")}
+    %{ok: true, data: render_many(addresses, AddressJSON, "address.json", as: :address)}
   end
 
   def render("show.json", %{address: address}) do
-    %{ok: true, data: render_one(address, AddressView, "address.json")}
+    %{ok: true, data: render_one(address, AddressJSON, "address.json", as: :address)}
   end
 
   def render("address.json", %{address: address}) do

@@ -1,7 +1,7 @@
-defmodule MalanWeb.ErrorView do
+defmodule MalanWeb.ErrorJSON do
   use MalanWeb, :view
 
-  import MalanWeb.ChangesetView, only: [translate_errors: 1]
+  import MalanWeb.ChangesetJSON, only: [translate_errors: 1]
 
   def render("400.json", _assigns) do
     %{

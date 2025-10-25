@@ -1,4 +1,4 @@
-defmodule MalanWeb.TosAcceptEventView do
+defmodule MalanWeb.TosAcceptEventJSON do
   use MalanWeb, :view
 
   def render("tos_accept_event.json", %{tos_accept_event: tos_accept_event}) do

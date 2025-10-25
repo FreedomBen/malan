@@ -15,7 +15,7 @@ defmodule MalanWeb.LiveHelpers do
         id: @page.id || :new,
         action: @live_action,
         page: @page,
-        return_to: Routes.page_index_path(@socket, :index) %>
+        return_to: ~p"/" %>
   """
   def live_modal(component, opts) do
     path = Keyword.fetch!(opts, :return_to)

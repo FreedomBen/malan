@@ -1,4 +1,4 @@
-defmodule MalanWeb.PreferencesView do
+defmodule MalanWeb.PreferencesJSON do
   use MalanWeb, :view
 
   def render("preferences.json", %{preferences: preferences}) do

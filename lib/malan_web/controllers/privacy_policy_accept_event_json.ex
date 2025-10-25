@@ -1,4 +1,4 @@
-defmodule MalanWeb.PrivacyPolicyAcceptEventView do
+defmodule MalanWeb.PrivacyPolicyAcceptEventJSON do
   use MalanWeb, :view
 
   def render("privacy_policy_accept_event.json", %{

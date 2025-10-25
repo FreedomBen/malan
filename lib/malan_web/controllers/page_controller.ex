@@ -1,7 +1,7 @@
 defmodule MalanWeb.PageController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:html]}
 
   def index(conn, _params) do
-    render(conn, "index.html")
+    render(conn, :index)
   end
 end
