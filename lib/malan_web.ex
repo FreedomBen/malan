@@ -71,6 +71,14 @@ defmodule MalanWeb do
     end
   end
 
+  def html do
+    quote do
+      use Phoenix.Component
+
+      unquote(view_helpers())
+    end
+  end
+
   def router do
     quote do
       use Phoenix.Router
