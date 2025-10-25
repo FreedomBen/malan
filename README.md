@@ -122,6 +122,14 @@ mix ecto.setup
 mix phx.server
 ```
 
+### Basic development operations
+
+- `mix setup` installs Elixir and npm deps, creates the dev database, and seeds baseline data. Run it any time dependencies change.
+- `mix phx.server` (or `iex -S mix phx.server` if you want an IEx shell) boots the Phoenix app locally on `http://localhost:4000`. Use `mix phx.server --no-halt` when running inside containers.
+- `mix test` executes the full Elixir test suite. Target a single file with `mix test test/malan/accounts_test.exs` or a specific test using the `:line` option, e.g. `mix test test/malan/accounts_test.exs:42`.
+- `mix credo --strict` enforces the formatting and lint rules used in CI; run it before opening a PR to catch style issues early.
+- `mix assets.deploy` compiles and digests static assets when you need a production-ready build (the command outputs to `priv/static`).
+
 ## Malan API
 
 The Malan API is a pretty standard REST interface.  For details, please visit [API.md](https://github.com/FreedomBen/malan/blob/main/API.md).
