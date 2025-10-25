@@ -1,5 +1,5 @@
 defmodule MalanWeb.UserResetPasswordLiveTest do
-  use MalanWeb.ConnCase, async: true
+  use MalanWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Swoosh.TestAssertions
@@ -8,8 +8,8 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
   alias Malan.RateLimits.PasswordReset
   alias Malan.Test.Helpers.Accounts, as: AccountsHelpers
 
-  setup %{conn: conn} do
-    set_swoosh_global()
+  setup %{conn: conn} = context do
+    set_swoosh_global(context)
 
     {:ok, conn: put_req_header(conn, "accept", "text/html")}
   end
@@ -27,7 +27,7 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     html = render_submit(view, "send_reset_email", %{"email" => "missing@example.com"})
 
     assert html =~ "No user matching that email address was found"
-    refute_receive {:email, _}
+    assert_no_email_sent()
   end
 
   test "sends reset email and surfaces success message", %{conn: conn} do
@@ -42,10 +42,11 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
     assert html =~ "Reset request received"
 
-    assert_receive {:email, delivered}
-    assert delivered.subject == "Your requested password reset token"
-    assert Enum.any?(delivered.to, fn {_name, address} -> address == user.email end)
-    refute_receive {:email, _}
+    assert_email_sent(fn delivered ->
+      assert delivered.subject == "Your requested password reset token"
+      assert Enum.any?(delivered.to, fn {_name, address} -> address == user.email end)
+      true
+    end)
 
     db_user = Accounts.get_user_by_email(user.email)
     refute is_nil(db_user.password_reset_token_hash)
