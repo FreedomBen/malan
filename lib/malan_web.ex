@@ -23,10 +23,11 @@ defmodule MalanWeb do
     # For tweaking log output in production:
     # https://www.verypossible.com/insights/thoughtful-logging-in-elixir-a-phoenix-story
     quote do
-      use Phoenix.Controller, namespace: MalanWeb, log: :info
+      use Phoenix.Controller, log: :info
+
+      use Gettext, backend: MalanWeb.Gettext
 
       import Plug.Conn
-      import MalanWeb.Gettext
       import Malan.AuthController
       alias MalanWeb.Router.Helpers, as: Routes
 
@@ -80,14 +81,16 @@ defmodule MalanWeb do
   def channel do
     quote do
       use Phoenix.Channel
-      import MalanWeb.Gettext
+      use Gettext, backend: MalanWeb.Gettext
     end
   end
 
   defp view_helpers do
     quote do
       # Use all HTML functionality (forms, tags, etc)
-      use Phoenix.HTML
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
+      use PhoenixHTMLHelpers
 
       # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
       #import Phoenix.LiveView.Helpers
@@ -98,7 +101,7 @@ defmodule MalanWeb do
       import Phoenix.View
 
       import MalanWeb.ErrorHelpers
-      import MalanWeb.Gettext
+      use Gettext, backend: MalanWeb.Gettext
       alias MalanWeb.Router.Helpers, as: Routes
 
       import Malan.Utils.Phoenix.View.Helpers
