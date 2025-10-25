@@ -1,5 +1,5 @@
 defmodule MalanWeb.SessionExtensionController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   require Logger
 
@@ -25,11 +25,11 @@ defmodule MalanWeb.SessionExtensionController do
 
   def show(conn, %{"id" => id}) do
     session_extension = Accounts.get_session_extension!(id)
-    render(conn, "show.json", code: 200, session_extension: session_extension)
+    render(conn, :show, code: 200, session_extension: session_extension)
   end
 
   defp render_index(conn, session_extensions, page_num, page_size) do
-    render(conn, "index.json",
+    render(conn, :index,
       code: 200,
       session_extensions: session_extensions,
       page_num: page_num,

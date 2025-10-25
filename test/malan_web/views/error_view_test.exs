@@ -1,11 +1,11 @@
-defmodule MalanWeb.ErrorViewTest do
+defmodule MalanWeb.ErrorJSONTest do
   use MalanWeb.ConnCase, async: true
 
   # Bring render/3 and render_to_string/3 for testing custom views
   import Phoenix.View
 
   test "renders 400.json" do
-    assert render(MalanWeb.ErrorView, "400.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "400.json", []) == %{
              ok: false,
              code: 400,
              detail: "Bad Request",
@@ -14,7 +14,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 401.json" do
-    assert render(MalanWeb.ErrorView, "401.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "401.json", []) == %{
              ok: false,
              code: 401,
              detail: "Unauthorized",
@@ -24,7 +24,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 403.json" do
-    assert render(MalanWeb.ErrorView, "403.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "403.json", []) == %{
              ok: false,
              code: 403,
              detail: "Forbidden",
@@ -34,7 +34,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 404.json" do
-    assert render(MalanWeb.ErrorView, "404.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "404.json", []) == %{
              ok: false,
              code: 404,
              detail: "Not Found",
@@ -48,7 +48,7 @@ defmodule MalanWeb.ErrorViewTest do
       sam: "winchester"
     }
 
-    assert render(MalanWeb.ErrorView, "422.json", pagination_error: nil, errors: errors) == %{
+    assert render(MalanWeb.ErrorJSON, "422.json", pagination_error: nil, errors: errors) == %{
              ok: false,
              code: 422,
              detail: "Unprocessable Entity",
@@ -57,7 +57,7 @@ defmodule MalanWeb.ErrorViewTest do
              errors: errors
            }
 
-    assert render(MalanWeb.ErrorView, "422.json", pagination_error: nil, errors: errors) == %{
+    assert render(MalanWeb.ErrorJSON, "422.json", pagination_error: nil, errors: errors) == %{
              ok: false,
              code: 422,
              detail: "Unprocessable Entity",
@@ -68,7 +68,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 423.json" do
-    assert render(MalanWeb.ErrorView, "423.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "423.json", []) == %{
              ok: false,
              code: 423,
              detail: "Locked",
@@ -77,7 +77,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 429.json" do
-    assert render(MalanWeb.ErrorView, "429.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "429.json", []) == %{
              ok: false,
              code: 429,
              detail: "Too Many Requests",
@@ -87,7 +87,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 461.json" do
-    assert render(MalanWeb.ErrorView, "461.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "461.json", []) == %{
              ok: false,
              code: 461,
              detail: "Terms of Service Required",
@@ -97,7 +97,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 462.json" do
-    assert render(MalanWeb.ErrorView, "462.json", []) == %{
+    assert render(MalanWeb.ErrorJSON, "462.json", []) == %{
              ok: false,
              code: 462,
              detail: "Privacy Policy Required",
@@ -107,7 +107,7 @@ defmodule MalanWeb.ErrorViewTest do
   end
 
   test "renders 500.json" do
-    assert render(MalanWeb.ErrorView, "500.json", []) ==
+    assert render(MalanWeb.ErrorJSON, "500.json", []) ==
              %{
                ok: false,
                code: 500,

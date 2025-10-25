@@ -8,8 +8,8 @@
     <.live_title suffix=" · Ameelio">
       <%= assigns[:page_title] || "Password Reset" %>
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
-    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"}/>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
   </head>
   <body class="h-full">
     <div
@@ -19,9 +19,9 @@
       <div class="mx-auto max-w-7xl px-4 sm:px-6">
         <div class="flex items-center justify-between border-b-2 border-gray-100 py-6 md:justify-start md:space-x-10">
           <div class="flex justify-start lg:w-0 lg:flex-1">
-            <.link navigate={Routes.live_path(@conn, MalanWeb.UserLive.ResetPassword)}>
+            <.link navigate={~p"/users/reset_password"}>
               <span class="sr-only">Ameelio</span>
-              <img class="h-8 w-auto sm:h-10" src={Routes.static_path(@conn, "/images/ameelio_logo_square.png")} alt="Ameelio Logo">
+              <img class="h-8 w-auto sm:h-10" src={~p"/images/ameelio_logo_square.png"} alt="Ameelio Logo">
             </.link>
           </div>
           <div class="-my-2 -mr-2 md:hidden">
@@ -77,7 +77,7 @@
           <div class="px-5 pt-5 pb-6">
             <div class="flex items-center justify-between">
               <div>
-                <img class="h-8 w-auto" src={Routes.static_path(@conn, "/images/ameelio_logo_square.png")} alt="Ameelio Logo">
+                <img class="h-8 w-auto" src={~p"/images/ameelio_logo_square.png"} alt="Ameelio Logo">
               </div>
               <div class="-mr-2">
                 <button

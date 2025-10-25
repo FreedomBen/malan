@@ -1,5 +1,5 @@
 defmodule MalanWeb.LogController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   import MalanWeb.PaginationController, only: [require_pagination: 2, pagination_info: 1]
 
@@ -28,7 +28,7 @@ defmodule MalanWeb.LogController do
     {page_num, page_size} = pagination_info(conn)
     logs = Accounts.list_logs(user_id_or_username, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -44,7 +44,7 @@ defmodule MalanWeb.LogController do
     {page_num, page_size} = pagination_info(conn)
     logs = Accounts.list_logs(page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -57,7 +57,7 @@ defmodule MalanWeb.LogController do
     user = Accounts.get_user_by_id_or_username(user_id)
     logs = Accounts.list_logs(user, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -69,7 +69,7 @@ defmodule MalanWeb.LogController do
     {page_num, page_size} = pagination_info(conn)
     logs = Accounts.list_logs_by_session_id(session_id, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -81,7 +81,7 @@ defmodule MalanWeb.LogController do
     {page_num, page_size} = pagination_info(conn)
     logs = Accounts.list_logs_by_who(user_id, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -91,7 +91,7 @@ defmodule MalanWeb.LogController do
   # Log ID
   def show(conn, %{"id" => id}) do
     log = Accounts.get_log!(id)
-    render(conn, "show.json", log: log)
+    render(conn, :show, log: log)
   end
 
   # Logs can't be created directly.
@@ -100,7 +100,7 @@ defmodule MalanWeb.LogController do
   #   with {:ok, %Log{} = log} <- Accounts.create_log(log_params) do
   #     conn
   #     |> put_status(:created)
-  #     |> put_resp_header("location", Routes.log_path(conn, :show, log))
+  #     |> put_resp_header("location", ~p"/api/logs/#{log}")
   #     |> render("show.json", log: log)
   #   end
   # end

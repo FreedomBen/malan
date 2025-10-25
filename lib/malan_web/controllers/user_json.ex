@@ -1,20 +1,20 @@
-defmodule MalanWeb.UserView do
+defmodule MalanWeb.UserJSON do
   use MalanWeb, :view
 
   alias Malan.Accounts.User
 
-  alias MalanWeb.UserView
-  alias MalanWeb.TosAcceptEventView
-  alias MalanWeb.PrivacyPolicyAcceptEventView
-  alias MalanWeb.PreferencesView
-  alias MalanWeb.AddressView
-  alias MalanWeb.PhoneNumberView
+  alias __MODULE__
+  alias MalanWeb.TosAcceptEventJSON
+  alias MalanWeb.PrivacyPolicyAcceptEventJSON
+  alias MalanWeb.PreferencesJSON
+  alias MalanWeb.AddressJSON
+  alias MalanWeb.PhoneNumberJSON
 
   def render("index.json", %{code: code, users: users, page_num: page_num, page_size: page_size}) do
     %{
       ok: true,
       code: code,
-      data: render_many(users, UserView, "user.json"),
+      data: render_many(users, UserJSON, "user.json", as: :user),
       page_num: page_num,
       page_size: page_size
     }
@@ -24,19 +24,19 @@ defmodule MalanWeb.UserView do
         code: code,
         user: %User{addresses: %Ecto.Association.NotLoaded{}} = user
       }) do
-    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
+    %{ok: true, code: code, data: render_one(user, UserJSON, "user.json", as: :user)}
   end
 
   def render("show.json", %{
         code: code,
         user: %User{phone_numbers: %Ecto.Association.NotLoaded{}} = user
       }) do
-    %{ok: true, code: code, data: render_one(user, UserView, "user.json")}
+    %{ok: true, code: code, data: render_one(user, UserJSON, "user.json", as: :user)}
   end
 
   # def render("show.json", %{user: %User{phone_numbers: _} = user}) do
   def render("show.json", %{code: code, user: %User{} = user}) do
-    %{ok: true, code: code, data: render_one(user, UserView, "user_full.json")}
+    %{ok: true, code: code, data: render_one(user, UserJSON, "user_full.json", as: :user)}
   end
 
   # def render("show.json", %{user: user}) do
@@ -68,15 +68,18 @@ defmodule MalanWeb.UserView do
       privacy_policy_accepted:
         user.latest_pp_accept_ver == Malan.Accounts.PrivacyPolicy.current_version(),
       tos_accept_events:
-        render_many(user.tos_accept_events, TosAcceptEventView, "tos_accept_event.json"),
+        render_many(user.tos_accept_events, TosAcceptEventJSON, "tos_accept_event.json",
+          as: :tos_accept_event
+        ),
       privacy_policy_accept_events:
         render_many(
           user.privacy_policy_accept_events,
-          PrivacyPolicyAcceptEventView,
-          "privacy_policy_accept_event.json"
+          PrivacyPolicyAcceptEventJSON,
+          "privacy_policy_accept_event.json",
+          as: :privacy_policy_accept_event
         ),
       roles: user.roles,
-      preferences: render_one(user.preferences, PreferencesView, "preferences.json"),
+      preferences: render_one(user.preferences, PreferencesJSON, "preferences.json", as: :preferences),
       custom_attrs: user.custom_attrs,
       locked_at: user.locked_at,
       locked_by: user.locked_by,
@@ -88,10 +91,10 @@ defmodule MalanWeb.UserView do
 
   def render("user_full.json", %{user: user}) do
     render("user.json", %{user: user})
-    |> Map.put(:addresses, render_many(user.addresses, AddressView, "address.json"))
+    |> Map.put(:addresses, render_many(user.addresses, AddressJSON, "address.json", as: :address))
     |> Map.put(
       :phone_numbers,
-      render_many(user.phone_numbers, PhoneNumberView, "phone_number.json")
+      render_many(user.phone_numbers, PhoneNumberJSON, "phone_number.json", as: :phone_number)
     )
   end
 

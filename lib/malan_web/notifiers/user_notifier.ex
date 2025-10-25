@@ -1,5 +1,5 @@
 defmodule MalanWeb.UserNotifier do
-  alias MalanWeb.Router.Helpers, as: Routes
+  use MalanWeb, :verified_routes
 
   alias Malan.Utils.Logger
 
@@ -31,17 +31,9 @@ defmodule MalanWeb.UserNotifier do
       user: user,
       url:
         MalanWeb.Endpoint.url() <>
-          Routes.live_path(
-            MalanWeb.Endpoint,
-            MalanWeb.UserLive.ResetPasswordToken,
-            user.password_reset_token
-          )
+          ~p"/users/reset_password/#{user.password_reset_token}"
       # url:
-      #   Routes.live_path(
-      #     MalanWeb.Endpoint,
-      #     MalanWeb.UserLive.ResetPasswordToken,
-      #     user.password_reset_token
-      #   )
+      #   ~p"/users/reset_password/#{user.password_reset_token}"
       #   |> Malan.Config.App.external_link(),
     })
   end

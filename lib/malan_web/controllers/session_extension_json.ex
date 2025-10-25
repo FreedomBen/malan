@@ -1,6 +1,6 @@
-defmodule MalanWeb.SessionExtensionView do
+defmodule MalanWeb.SessionExtensionJSON do
   use MalanWeb, :view
-  alias MalanWeb.SessionExtensionView
+  alias __MODULE__
 
   def render("index.json", %{
         code: code,
@@ -13,7 +13,7 @@ defmodule MalanWeb.SessionExtensionView do
       code: code,
       page_num: page_num,
       page_size: page_size,
-      data: render_many(session_extensions, SessionExtensionView, "session_extension.json")
+      data: render_many(session_extensions, SessionExtensionJSON, "session_extension.json", as: :session_extension)
     }
   end
 
@@ -21,7 +21,7 @@ defmodule MalanWeb.SessionExtensionView do
     %{
       ok: true,
       code: code,
-      data: render_one(session_extension, SessionExtensionView, "session_extension.json")
+      data: render_one(session_extension, SessionExtensionJSON, "session_extension.json", as: :session_extension)
     }
   end
 

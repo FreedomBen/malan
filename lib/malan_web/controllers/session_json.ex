@@ -1,16 +1,16 @@
-defmodule MalanWeb.SessionView do
+defmodule MalanWeb.SessionJSON do
   use MalanWeb, :view
 
   alias Malan.Accounts
 
-  alias MalanWeb.SessionView
+  alias __MODULE__
 
   def render("index.json", %{code: code, sessions: sessions}) do
-    %{ok: true, code: code, data: render_many(sessions, SessionView, "session.json")}
+    %{ok: true, code: code, data: render_many(sessions, SessionJSON, "session.json", as: :session)}
   end
 
   def render("show.json", %{code: code, session: session}) do
-    %{ok: true, code: code, data: render_one(session, SessionView, "session.json")}
+    %{ok: true, code: code, data: render_one(session, SessionJSON, "session.json", as: :session)}
   end
 
   def render("session.json", %{session: session}) do
