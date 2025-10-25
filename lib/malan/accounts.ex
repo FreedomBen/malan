@@ -1750,8 +1750,13 @@ defmodule Malan.Accounts do
     # In envs with Sentry, this will cause a double message to sentry
     # because we enabled the Sentry Logger backend.  The Sentry call
     # provides better info, but only works if the DSN is setup
-    Logger.warning(msg, opts)
-    Sentry.capture_message(msg, opts)
+    unless Application.get_env(:malan, :log_silence_record_log_warning, false) do
+      Logger.warning(msg, opts)
+    end
+
+    if Application.get_env(:sentry, :dsn) do
+      Sentry.capture_message(msg, opts)
+    end
 
     # TODO:  Switch to Malan.Sentry.capture_message to avoid log messages
     # about missing DSN in environments where there is no DSN
