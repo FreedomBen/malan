@@ -1,19 +1,28 @@
 defmodule MalanWeb.SessionJSON do
-  use MalanWeb, :view
-
   alias Malan.Accounts
+  alias Malan.Accounts.Session
 
-  alias __MODULE__
-
-  def render("index.json", %{code: code, sessions: sessions}) do
-    %{ok: true, code: code, data: render_many(sessions, SessionJSON, "session.json", as: :session)}
+  def index(%{code: code, sessions: sessions}) do
+    %{ok: true, code: code, data: Enum.map(sessions, &session_data/1)}
   end
 
-  def render("show.json", %{code: code, session: session}) do
-    %{ok: true, code: code, data: render_one(session, SessionJSON, "session.json", as: :session)}
+  def show(%{code: code, session: session}) do
+    %{ok: true, code: code, data: session_data(session)}
   end
 
-  def render("session.json", %{session: session}) do
+  def delete_all(%{code: code, num_revoked: num_revoked}) do
+    %{
+      ok: true,
+      code: code,
+      data: %{
+        status: true,
+        num_revoked: num_revoked,
+        message: "Successfully revoked #{num_revoked} session"
+      }
+    }
+  end
+
+  defp session_data(%Session{} = session) do
     %{
       id: session.id,
       user_id: session.user_id,
@@ -27,21 +36,9 @@ defmodule MalanWeb.SessionJSON do
       location: session.location,
       is_valid: Accounts.session_valid_bool?(session.expires_at, session.revoked_at),
       extendable_until: session.extendable_until,
-      max_extension_secs: session.max_extension_secs,
+      max_extension_secs: session.max_extension_secs
     }
-    |> Enum.reject(fn {k, v} -> k == :api_token && is_nil(v) end)
-    |> Enum.into(%{})
-  end
-
-  def render("delete_all.json", %{code: code, num_revoked: num_revoked}) do
-    %{
-      ok: true,
-      code: code,
-      data: %{
-        status: true,
-        num_revoked: num_revoked,
-        message: "Successfully revoked #{num_revoked} session"
-      }
-    }
+    |> Enum.reject(fn {key, value} -> key == :api_token && is_nil(value) end)
+    |> Map.new()
   end
 end

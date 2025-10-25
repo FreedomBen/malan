@@ -1,16 +1,18 @@
 defmodule MalanWeb.AddressJSON do
-  use MalanWeb, :view
-  alias __MODULE__
+  alias Malan.Accounts.Address
 
-  def render("index.json", %{addresses: addresses}) do
-    %{ok: true, data: render_many(addresses, AddressJSON, "address.json", as: :address)}
+  def index(%{addresses: addresses}) do
+    %{ok: true, data: Enum.map(addresses, &address_data/1)}
   end
 
-  def render("show.json", %{address: address}) do
-    %{ok: true, data: render_one(address, AddressJSON, "address.json", as: :address)}
+  def show(%{address: address}) do
+    %{ok: true, data: address_data(address)}
   end
 
-  def render("address.json", %{address: address}) do
+  def address(%{address: address}), do: address_data(address)
+  def address(address), do: address_data(address)
+
+  defp address_data(%Address{} = address) do
     %{
       id: address.id,
       user_id: address.user_id,

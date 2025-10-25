@@ -1,11 +1,14 @@
 defmodule MalanWeb.TosAcceptEventJSON do
-  use MalanWeb, :view
+  alias Malan.Accounts.User.TosAcceptEvent
 
-  def render("tos_accept_event.json", %{tos_accept_event: tos_accept_event}) do
+  def tos_accept_event(%{tos_accept_event: event}), do: event_data(event)
+  def tos_accept_event(event), do: event_data(event)
+
+  defp event_data(%TosAcceptEvent{} = event) do
     %{
-      accept: tos_accept_event.accept,
-      tos_version: tos_accept_event.tos_version,
-      timestamp: tos_accept_event.timestamp
+      accept: event.accept,
+      tos_version: event.tos_version,
+      timestamp: event.timestamp
     }
   end
 end
