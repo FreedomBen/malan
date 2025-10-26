@@ -965,19 +965,21 @@ defmodule MalanWeb.SessionControllerTest do
 
       # Check that a log was created when we revoked all active sessions,
       # which happened because we locked the user
-      assert [
-               %Log{
-                 success: true,
-                 user_id: nil,
-                 session_id: nil,
-                 type_enum: 1,
-                 verb_enum: 3,
-                 who: ^user_id,
-                 who_username: nil,
-                 when: when_utc,
-                 remote_ip: ^remote_ip
-               } = log_locked
-             ] = Accounts.list_logs_by_who(user_id, 0, 10)
+      logs_before_attempt = Accounts.list_logs_by_who(user_id, 0, 10)
+      assert length(logs_before_attempt) == 1
+
+      log_locked = hd(logs_before_attempt)
+      assert %Log{
+               success: true,
+               user_id: nil,
+               session_id: nil,
+               type_enum: 1,
+               verb_enum: 3,
+               who: ^user_id,
+               who_username: nil,
+               when: when_utc,
+               remote_ip: ^remote_ip
+             } = log_locked
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 10, :seconds)
 
@@ -993,25 +995,35 @@ defmodule MalanWeb.SessionControllerTest do
                "message" => _
              } = json_response(conn, 423)
 
-      assert [
-               ^log_locked,
-               %Log{
-                 success: false,
-                 user_id: ^user_id,
-                 session_id: nil,
-                 type_enum: 1,
-                 verb_enum: 1,
-                 who: ^user_id,
-                 who_username: ^username,
-                 when: when_utc,
-                 remote_ip: "127.0.0.1"
-               } = log
-             ] = Accounts.list_logs_by_who(user_id, 0, 10)
+      logs_by_who = Accounts.list_logs_by_who(user_id, 0, 10)
+      assert length(logs_by_who) == 2
+
+      log_locked_after = Enum.find(logs_by_who, fn l -> l.remote_ip == remote_ip end)
+      refute is_nil(log_locked_after)
+      assert log_locked_after.id == log_locked.id
+
+      log_failed = Enum.find(logs_by_who, fn l -> l.remote_ip == "127.0.0.1" end)
+      refute is_nil(log_failed)
+      assert %Log{
+               success: false,
+               user_id: ^user_id,
+               session_id: nil,
+               type_enum: 1,
+               verb_enum: 1,
+               who: ^user_id,
+               who_username: ^username,
+               when: when_utc
+             } = log_failed
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 10, :seconds)
-      assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
-      assert [log_locked, log] == Accounts.list_logs_by_session_id(nil, 0, 10)
-      assert [log_locked, log] == Accounts.list_logs_by_who(user_id, 0, 10)
+      assert [log_failed] == Accounts.list_logs_by_user_id(user_id, 0, 10)
+
+      sorted_logs = Enum.sort_by(logs_by_who, &{&1.inserted_at, &1.id})
+      assert sorted_logs == Enum.sort_by([log_locked, log_failed], &{&1.inserted_at, &1.id})
+
+      logs_by_session = Accounts.list_logs_by_session_id(nil, 0, 10)
+      sorted_session_logs = Enum.sort_by(logs_by_session, &{&1.inserted_at, &1.id})
+      assert sorted_session_logs == sorted_logs
     end
 
     test "Create session fails when user doesn't exist; creates Log", %{conn: conn} do
@@ -1553,35 +1565,44 @@ defmodule MalanWeb.SessionControllerTest do
       _conn = delete(conn, Routes.user_session_path(conn, :delete_all, user.id))
 
       # :delete_all triggers revoking of all sessions which creates a log
-      assert [
-               %Log{
-                 success: true,
-                 user_id: nil,
-                 session_id: nil,
-                 type_enum: 1,
-                 verb_enum: 3,
-                 who: ^user_id,
-                 who_username: nil,
-                 when: when_utc_locked
-               } = log_locked,
-               %Log{
-                 success: true,
-                 user_id: ^user_id,
-                 session_id: ^s1_id,
-                 type_enum: 1,
-                 verb_enum: 3,
-                 who: ^user_id,
-                 who_username: nil,
-                 when: when_utc,
-                 remote_ip: "127.0.0.1"
-               } = log
-             ] = Accounts.list_logs_by_who(user_id, 0, 10)
+      logs_by_who = Accounts.list_logs_by_who(user_id, 0, 10)
+      assert length(logs_by_who) == 2
+
+      log_locked = Enum.find(logs_by_who, fn l -> l.remote_ip == Log.dummy_ip() end)
+      refute is_nil(log_locked)
+      assert %Log{
+               success: true,
+               user_id: nil,
+               session_id: nil,
+               type_enum: 1,
+               verb_enum: 3,
+               who: ^user_id,
+               who_username: nil,
+               when: when_utc_locked
+             } = log_locked
+
+      log = Enum.find(logs_by_who, fn l -> l.remote_ip == "127.0.0.1" end)
+      refute is_nil(log)
+      assert %Log{
+               success: true,
+               user_id: ^user_id,
+               session_id: ^s1_id,
+               type_enum: 1,
+               verb_enum: 3,
+               who: ^user_id,
+               who_username: nil,
+               when: when_utc,
+               remote_ip: "127.0.0.1"
+             } = log
+
+      assert Enum.sort_by(logs_by_who, &{&1.inserted_at, &1.id}) == Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
 
       assert true == TestUtils.DateTime.within_last?(when_utc_locked, 2, :seconds)
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(s1_id, 0, 10)
-      assert [log_locked, log] == Accounts.list_logs_by_who(user_id, 0, 10)
+      assert Enum.sort_by(Accounts.list_logs_by_who(user_id, 0, 10), &{&1.inserted_at, &1.id}) ==
+               Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
     end
 
     test "Does not change previously closed sessions", %{conn: conn} do
