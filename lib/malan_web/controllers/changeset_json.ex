@@ -1,4 +1,4 @@
-defmodule MalanWeb.ChangesetView do
+defmodule MalanWeb.ChangesetJSON do
   use MalanWeb, :view
 
   @doc """

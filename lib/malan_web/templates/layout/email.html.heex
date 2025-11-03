@@ -6,10 +6,10 @@
   <body>
     <div>
       <%# This doesn't actually render in most email clients including gmail %>
-      <%# render(MalanWeb.PageView, "_ameelio_logo.svg", assigns) %>
+      <%# render(MalanWeb.PageHTML, "_ameelio_logo.svg", assigns) %>
 
       <%# Use web-hosted link instead %>
-      <img src={MalanWeb.Endpoint.url() <> Routes.static_path(MalanWeb.Endpoint, "/images/ameelio-logo-113x22.png")} alt="Ameelio Logo" width="113" />
+      <img src={MalanWeb.Endpoint.url() <> ~p"/images/ameelio-logo-113x22.png"} alt="Ameelio Logo" width="113" />
     </div>
 
     <%= @inner_content %>

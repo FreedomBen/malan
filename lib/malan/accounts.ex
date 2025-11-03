@@ -29,7 +29,7 @@ defmodule Malan.Accounts do
     from(
       u in User,
       select: u,
-      order_by: [asc: u.inserted_at],
+      order_by: [asc: u.inserted_at, asc: u.id],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
@@ -491,7 +491,7 @@ defmodule Malan.Accounts do
       from s in Session,
         select: s,
         where: s.user_id == ^user_id,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -501,7 +501,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from s in Session,
         select: s,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -515,7 +515,7 @@ defmodule Malan.Accounts do
       from s in Session,
         where: s.user_id == ^user_id,
         where: is_nil(s.revoked_at) or s.expires_at < ^DateTime.utc_now(),
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1491,6 +1491,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.user_id),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1500,6 +1501,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.user_id == ^user_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1518,6 +1520,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.session_id),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1527,6 +1530,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.session_id == ^session_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1545,6 +1549,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: is_nil(l.who),
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1554,6 +1559,7 @@ defmodule Malan.Accounts do
     Repo.all(
       from l in Log,
         where: l.who == ^user_id,
+        order_by: [asc: l.inserted_at, asc: l.id],
         limit: ^page_size,
         offset: ^(page_num * page_size)
     )
@@ -1750,8 +1756,13 @@ defmodule Malan.Accounts do
     # In envs with Sentry, this will cause a double message to sentry
     # because we enabled the Sentry Logger backend.  The Sentry call
     # provides better info, but only works if the DSN is setup
-    Logger.warning(msg, opts)
-    Sentry.capture_message(msg, opts)
+    unless Application.get_env(:malan, :log_silence_record_log_warning, false) do
+      Logger.warning(msg, opts)
+    end
+
+    if Application.get_env(:sentry, :dsn) do
+      Sentry.capture_message(msg, opts)
+    end
 
     # TODO:  Switch to Malan.Sentry.capture_message to avoid log messages
     # about missing DSN in environments where there is no DSN

@@ -19,16 +19,21 @@ defmodule MalanWeb do
 
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt .well-known)
 
-  def controller do
+  def controller(opts \\ []) do
     # For tweaking log output in production:
     # https://www.verypossible.com/insights/thoughtful-logging-in-elixir-a-phoenix-story
+    opts =
+      opts
+      |> Keyword.put_new(:log, :info)
+      |> Keyword.put_new(:layouts, [html: MalanWeb.LayoutView])
+
     quote do
-      use Phoenix.Controller, namespace: MalanWeb, log: :info
+      use Phoenix.Controller, unquote(Macro.escape(opts))
+
+      use Gettext, backend: MalanWeb.Gettext
 
       import Plug.Conn
-      import MalanWeb.Gettext
       import Malan.AuthController
-      alias MalanWeb.Router.Helpers, as: Routes
 
       unquote(verified_routes())
     end
@@ -66,6 +71,14 @@ defmodule MalanWeb do
     end
   end
 
+  def html do
+    quote do
+      use Phoenix.Component
+
+      unquote(view_helpers())
+    end
+  end
+
   def router do
     quote do
       use Phoenix.Router
@@ -80,14 +93,16 @@ defmodule MalanWeb do
   def channel do
     quote do
       use Phoenix.Channel
-      import MalanWeb.Gettext
+      use Gettext, backend: MalanWeb.Gettext
     end
   end
 
   defp view_helpers do
     quote do
       # Use all HTML functionality (forms, tags, etc)
-      use Phoenix.HTML
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
+      use PhoenixHTMLHelpers
 
       # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
       #import Phoenix.LiveView.Helpers
@@ -98,9 +113,7 @@ defmodule MalanWeb do
       import Phoenix.View
 
       import MalanWeb.ErrorHelpers
-      import MalanWeb.Gettext
-      alias MalanWeb.Router.Helpers, as: Routes
-
+      use Gettext, backend: MalanWeb.Gettext
       import Malan.Utils.Phoenix.View.Helpers
 
       unquote(verified_routes())
@@ -119,7 +132,13 @@ defmodule MalanWeb do
   @doc """
   When used, dispatch to the appropriate controller/view/etc.
   """
+  defmacro __using__(which)
+
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
+  end
+
+  defmacro __using__({which, opts}) when is_atom(which) and is_list(opts) do
+    apply(__MODULE__, which, [opts])
   end
 end

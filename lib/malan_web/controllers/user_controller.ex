@@ -1,5 +1,5 @@
 defmodule MalanWeb.UserController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   require Logger
 
@@ -10,6 +10,7 @@ defmodule MalanWeb.UserController do
   alias Malan.Accounts.User
   alias Malan.Mailer
   alias Malan.Utils
+  alias MalanWeb.ErrorJSON
 
   action_fallback MalanWeb.FallbackController
 
@@ -32,7 +33,7 @@ defmodule MalanWeb.UserController do
   def index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
     users = Accounts.list_users(page_num, page_size)
-    render(conn, "index.json", code: 200, users: users, page_num: page_num, page_size: page_size)
+    render(conn, :index, code: 200, users: users, page_num: page_num, page_size: page_size)
   end
 
   def create(conn, %{"user" => user_params}) do
@@ -44,8 +45,8 @@ defmodule MalanWeb.UserController do
       conn
       |> record_log(true, id, username, "POST", "#UserController.create/2", changeset)
       |> put_status(:created)
-      |> put_resp_header("location", Routes.user_path(conn, :show, user))
-      |> render("show.json", code: 201, user: user)
+      |> put_resp_header("location", ~p"/api/users/#{user}")
+      |> render(:show, code: 201, user: user)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -97,7 +98,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", code: 200, user: user)
+        render(conn, :show, code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -136,7 +137,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", code: 200, user: user)
+        render(conn, :show, code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -175,7 +176,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", code: 200, user: user)
+        render(conn, :show, code: 200, user: user)
       else
         {:error, %Ecto.Changeset{} = cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(cs)
@@ -227,7 +228,7 @@ defmodule MalanWeb.UserController do
           changeset
         )
 
-        render(conn, "show.json", code: 200, user: user)
+        render(conn, :show, code: 200, user: user)
       else
         {:error, err} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -344,7 +345,9 @@ defmodule MalanWeb.UserController do
             changeset
           )
 
-          render(conn, "500.json")
+          conn
+          |> put_view(ErrorJSON)
+          |> render(:'500')
 
           {:error, :too_many_requests}
 
@@ -355,7 +358,9 @@ defmodule MalanWeb.UserController do
             changeset
           )
 
-          render(conn, "429.json")
+          conn
+          |> put_view(ErrorJSON)
+          |> render(:'429')
 
         {:error, err_cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
@@ -560,7 +565,7 @@ defmodule MalanWeb.UserController do
        ) do
     render(
       conn,
-      "whoami.json",
+      :whoami,
       code: 200,
       user_id: user_id,
       session_id: session_id,
@@ -577,17 +582,17 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       conn
       |> put_status(:not_found)
-      |> put_view(MalanWeb.ErrorView)
+      |> put_view(ErrorJSON)
       |> render(:"404")
     else
-      render(conn, "show.json", code: 200, user: user)
+      render(conn, :show, code: 200, user: user)
     end
   end
 
   defp render_admin_password_reset(conn, user) do
     render(
       conn,
-      "password_reset.json",
+      :password_reset,
       code: 200,
       password_reset_token: user.password_reset_token,
       password_reset_token_expires_at: user.password_reset_token_expires_at
@@ -613,9 +618,11 @@ defmodule MalanWeb.UserController do
   defp render_token_error(conn, status, details \\ %{}) do
     conn
     |> put_status(status)
-    |> put_view(MalanWeb.ErrorView)
-    |> render("#{status}.json", details)
+    |> put_view(ErrorJSON)
+    |> render(status_atom(status), details)
   end
+
+  defp status_atom(status) when is_integer(status), do: :"#{status}"
 
   defp is_self_or_admin(conn, _opts) do
     if is_self?(conn) || is_admin?(conn) do

@@ -1,7 +1,7 @@
 defmodule MalanWeb.RedirectController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:html]}
 
   def reset_password(conn, _params) do
-    redirect(conn, to: Routes.live_path(conn, MalanWeb.UserLive.ResetPassword))
+    redirect(conn, to: ~p"/users/reset_password")
   end
 end

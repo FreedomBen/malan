@@ -1,5 +1,5 @@
 defmodule MalanWeb.HealthCheckController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   action_fallback MalanWeb.FallbackController
 

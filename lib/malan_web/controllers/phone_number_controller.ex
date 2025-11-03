@@ -1,5 +1,5 @@
 defmodule MalanWeb.PhoneNumberController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   alias Malan.Accounts
   alias Malan.Accounts.PhoneNumber
@@ -8,7 +8,7 @@ defmodule MalanWeb.PhoneNumberController do
 
   def index(conn, _params) do
     phone_numbers = Accounts.list_phone_numbers()
-    render(conn, "index.json", phone_numbers: phone_numbers)
+    render(conn, :index, phone_numbers: phone_numbers)
   end
 
   def create(conn, %{"user_id" => user_id, "phone_number" => phone_number_params}) do
@@ -16,17 +16,14 @@ defmodule MalanWeb.PhoneNumberController do
            Accounts.create_phone_number(user_id, phone_number_params) do
       conn
       |> put_status(:created)
-      |> put_resp_header(
-        "location",
-        Routes.user_phone_number_path(conn, :show, user_id, phone_number)
-      )
-      |> render("show.json", phone_number: phone_number)
+      |> put_resp_header("location", ~p"/api/users/#{user_id}/phone_numbers/#{phone_number}")
+      |> render(:show, phone_number: phone_number)
     end
   end
 
   def show(conn, %{"user_id" => _user_id, "id" => id}) do
     phone_number = Accounts.get_phone_number!(id)
-    render(conn, "show.json", phone_number: phone_number)
+    render(conn, :show, phone_number: phone_number)
   end
 
   def update(conn, %{"user_id" => _user_id, "id" => id, "phone_number" => phone_number_params}) do
@@ -34,7 +31,7 @@ defmodule MalanWeb.PhoneNumberController do
 
     with {:ok, %PhoneNumber{} = phone_number} <-
            Accounts.update_phone_number(phone_number, phone_number_params) do
-      render(conn, "show.json", phone_number: phone_number)
+      render(conn, :show, phone_number: phone_number)
     end
   end
 

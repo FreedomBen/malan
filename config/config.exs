@@ -54,8 +54,8 @@ config :malan, Malan.Accounts.Session,
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
   url: [host: System.get_env("BIND_ADDR") || "127.0.0.1"],
-  # render_errors: [view: MalanWeb.ErrorView, accepts: ~w(html json), layout: false],
-  render_errors: [view: MalanWeb.ErrorView, accepts: ~w(json), layout: false],
+  # render_errors: [view: MalanWeb.ErrorJSON, accepts: ~w(html json), layout: false],
+  render_errors: [view: MalanWeb.ErrorJSON, accepts: ~w(json), layout: false],
   pubsub_server: Malan.PubSub,
   live_view: [signing_salt: "S5EXJrIi"]
 
@@ -73,7 +73,7 @@ config :swoosh, :api_client, Swoosh.ApiClient.Hackney
 
 # Configure esbuild (the version is required)
 config :esbuild,
-  version: "0.14.0",
+  version: "0.21.4",
   default: [
     args:
       ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),

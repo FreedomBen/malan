@@ -68,11 +68,12 @@ config :malan, MalanWeb.Endpoint,
 # Watch static and templates for browser reloading.
 config :malan, MalanWeb.Endpoint,
   live_reload: [
+    web_console_logger: true,
     patterns: [
-      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/malan_web/(live|views)/.*(ex)$",
-      ~r"lib/malan_web/templates/.*(eex)$"
+      ~r"lib/malan_web/(controllers|live|components|router)/.*(ex|heex)$",
+      ~r"lib/malan_web/(views|templates)/.*(ex|eex|heex)$"
     ]
   ]
 

@@ -1,5 +1,5 @@
 defmodule MalanWeb.SessionController do
-  use MalanWeb, :controller
+  use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   require Logger
 
@@ -9,7 +9,7 @@ defmodule MalanWeb.SessionController do
   alias Malan.{Accounts, Utils}
   alias Malan.Accounts.{Session, SessionExtension}
 
-  alias MalanWeb.ErrorView
+  alias MalanWeb.ErrorJSON
 
   action_fallback MalanWeb.FallbackController
 
@@ -21,7 +21,7 @@ defmodule MalanWeb.SessionController do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       code: 200,
       sessions: sessions,
       page_num: page_num,
@@ -47,7 +47,7 @@ defmodule MalanWeb.SessionController do
         log_changeset
       )
 
-      render(conn, "show.json", code: 200, session: session)
+      render(conn, :show, code: 200, session: session)
     else
       {:error, err_cs} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
@@ -69,7 +69,7 @@ defmodule MalanWeb.SessionController do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_sessions(user_id, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       code: 200,
       sessions: sessions,
       page_num: page_num,
@@ -88,7 +88,7 @@ defmodule MalanWeb.SessionController do
     {page_num, page_size} = pagination_info(conn)
     sessions = Accounts.list_active_sessions(user_id, page_num, page_size)
 
-    render(conn, "index.json",
+    render(conn, :index,
       code: 200,
       sessions: sessions,
       page_num: page_num,
@@ -126,22 +126,22 @@ defmodule MalanWeb.SessionController do
       {:error, :user_locked} ->
         conn
         |> put_status(423)
-        |> put_view(ErrorView)
-        |> render("423.json")
+        |> put_view(ErrorJSON)
+        |> render(:"423")
 
       # {:error, :not_a_user} ->
       # {:error, :unauthorized} ->
       _err ->
         conn
         |> put_status(403)
-        |> put_view(ErrorView)
-        |> render("403.json", invalid_credentials: true)
+        |> put_view(ErrorJSON)
+        |> render(:"403", invalid_credentials: true)
     end
   end
 
   def show(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
-    render(conn, "show.json", code: 200, session: session)
+    render(conn, :show, code: 200, session: session)
   end
 
   def show_current(conn, %{}), do: show(conn, %{"id" => conn.assigns.authed_session_id})
@@ -154,8 +154,8 @@ defmodule MalanWeb.SessionController do
       true ->
         conn
         |> put_status(403)
-        |> put_view(ErrorView)
-        |> render("403.json", session_revoked_or_expired: true)
+        |> put_view(ErrorJSON)
+        |> render(:"403", session_revoked_or_expired: true)
 
       false ->
         extend_session(conn, session, attrs)
@@ -187,7 +187,7 @@ defmodule MalanWeb.SessionController do
         changeset
       )
 
-      render(conn, "show.json", code: 200, session: session)
+      render(conn, :show, code: 200, session: session)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -223,7 +223,7 @@ defmodule MalanWeb.SessionController do
         changeset
       )
 
-      render(conn, "show.json", code: 200, session: session)
+      render(conn, :show, code: 200, session: session)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
@@ -249,7 +249,7 @@ defmodule MalanWeb.SessionController do
         num_revoked: num_revoked
       })
 
-      render(conn, "delete_all.json", code: 200, num_revoked: num_revoked)
+      render(conn, :delete_all, code: 200, num_revoked: num_revoked)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
