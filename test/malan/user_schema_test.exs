@@ -200,6 +200,65 @@ defmodule Malan.UserSchemaTest do
       )
     end
 
+    test "#validate_password respects configured minimum length" do
+      # Test with default minimum length (6)
+      # Should pass with 6 characters
+      changeset6 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass12"}, [:password])
+        |> User.validate_password()
+
+      assert changeset6.valid? == true
+      assert changeset6.changes.password_hash != nil
+
+      # Should fail with 5 characters
+      changeset5 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass1"}, [:password])
+        |> User.validate_password()
+
+      assert changeset5.valid? == false
+      errors = errors_on(changeset5)
+      assert "should be at least 6 character(s)" in errors[:password]
+
+      # Test with MIN_PASSWORD_LENGTH=8
+      # Mock the config to return 8
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+      Application.put_env(:malan, Malan.Accounts.User,
+        Keyword.put(original_config, :min_password_length, 8))
+
+      # Should fail with 7 characters
+      changeset7 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass123"}, [:password])
+        |> User.validate_password()
+
+      assert changeset7.valid? == false
+      errors7 = errors_on(changeset7)
+      assert "should be at least 8 character(s)" in errors7[:password]
+
+      # Should pass with 8 characters
+      changeset8 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "pass1234"}, [:password])
+        |> User.validate_password()
+
+      assert changeset8.valid? == true
+      assert changeset8.changes.password_hash != nil
+
+      # Should pass with more than 8 characters
+      changeset10 =
+        %User{}
+        |> Ecto.Changeset.cast(%{password: "password10"}, [:password])
+        |> User.validate_password()
+
+      assert changeset10.valid? == true
+      assert changeset10.changes.password_hash != nil
+
+      # Restore original config
+      Application.put_env(:malan, Malan.Accounts.User, original_config)
+    end
+
     test "accept/reject ToS can be accepted/rejected" do
       Enum.each([true, false], fn accept ->
         changeset =

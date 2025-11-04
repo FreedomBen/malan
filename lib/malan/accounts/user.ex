@@ -290,9 +290,11 @@ defmodule Malan.Accounts.User do
   end
 
   defp_testable validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
+    min_length = Malan.Config.User.min_password_length() || 6
+
     changeset
     |> validate_required([:password])
-    |> validate_length(:password, min: 6, max: 100)
+    |> validate_length(:password, min: min_length, max: 100)
     |> put_pass_hash()
   end
 
