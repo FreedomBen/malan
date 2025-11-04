@@ -99,6 +99,7 @@ data:
   EXTERNAL_PORT: '443'
   EXTERNAL_SCHEME: 'https'
   DATABASE_TLS_ENABLED: 'true'
+  MIN_PASSWORD_LENGTH: '8'
   # Vars from secrets
   # DATABASE_URL
   # MAILGUN_API_KEY
