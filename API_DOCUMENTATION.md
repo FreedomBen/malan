@@ -1,839 +1,268 @@
-# Malan Authentication Service API Documentation
+# Malan HTTP API
 
-Malan is a comprehensive authentication service providing user management, session handling, and administrative features. This documentation covers all available API endpoints with examples.
+Malan is a Phoenix 1.8 (app version `0.1.0`) authentication service that issues API tokens and manages users, sessions, and audit logs.
 
-## Base URL
-
+## Base URLs
 - Development: `http://localhost:4000`
-- Staging: `https://malan-staging.ameelio.org`
-- Production: `https://malan.ameelio.org`
+- Staging: `https://malan-staging.ameelio.xyz` (also served via `https://accounts.ameelio.xyz`)
+- Production: `https://malan.ameelio.org` (alias `https://accounts.ameelio.org`)
 
-## Authentication
+## Authentication & Tokens
+- Pass the token returned from **POST /api/sessions** as `Authorization: Bearer <token>`.
+- Most `/api` routes require a token; unauthenticated exceptions are called out below.
+- Terms of Service and Privacy Policy acceptance may be enforced depending on deployment configuration. If you receive HTTP 461 or 462, update your user with `accept_tos: true` and/or `accept_privacy_policy: true`.
 
-Most endpoints require an API token passed as a Bearer token in the Authorization header:
-
-```bash
-Authorization: Bearer YOUR_API_TOKEN
-```
-
-## Response Format
-
-All responses follow a consistent JSON structure:
-
+## Common Response Shape
+Successful responses:
 ```json
-{
-  "data": { /* response data */ },
-  "message": "Success message",
-  "status": "success"
-}
+{ "ok": true, "code": 200, "data": { ... } }
 ```
-
 Error responses:
-
 ```json
-{
-  "errors": { /* field-specific errors */ },
-  "message": "Error message",
-  "status": "error"
-}
+{ "ok": false, "code": 422, "detail": "Unprocessable Entity", "message": "...", "errors": {...} }
 ```
 
-## HTTP Status Codes
+## Error Codes
+- 400 Bad Request
+- 401 Unauthorized (authenticated but not allowed)
+- 403 Forbidden (missing/invalid token or expired session)
+- 404 Not Found
+- 422 Unprocessable Entity (validation/pagination errors)
+- 423 Locked (locked user)
+- 429 Too Many Requests (rate limits)
+- 461 Terms of Service Required
+- 462 Privacy Policy Required
+- 500 Internal Server Error
 
-- `200` - OK
-- `201` - Created
-- `204` - No Content
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
-- `422` - Unprocessable Entity
-- `500` - Internal Server Error
+## Pagination
+Endpoints that list records accept `page_num` (default `0`) and `page_size` (default `10`, max `100` where enforced). User and session-extension list responses include these values; other lists return just the data array.
 
----
+## Rate Limits
+- Password reset requests: 1 every 3 minutes, up to 3 per 24 hours (configurable via env vars `PASSWORD_RESET_*`).
+- General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 
-## Authentication Endpoints
+## Public Endpoints (no token required)
 
 ### Create User
+`POST /api/users`
 
-Creates a new user account.
-
-**Endpoint:** `POST /api/users`  
-**Authentication:** None required  
-
-**Request Body:**
+Body:
 ```json
 {
   "user": {
     "email": "user@example.com",
-    "username": "username",
+    "username": "user@example.com",
     "password": "password123",
-    "first_name": "John",
-    "last_name": "Doe"
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "custom_attrs": { "source": "signup-form" },
+    "approved_ips": ["1.2.3.4"]
   }
 }
 ```
 
-**Example:**
-```bash
-curl \
-  --request POST \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --data '{"user":{"email":"user@example.com","username":"username","password":"password123","first_name":"John","last_name":"Doe"}}' \
-  http://localhost:4000/api/users
-```
-
-**Response (201 Created):**
+Response (`201 Created`):
 ```json
 {
+  "ok": true,
+  "code": 201,
   "data": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "id": "c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1",
+    "username": "user@example.com",
     "email": "user@example.com",
-    "username": "username",
-    "first_name": "John",
-    "last_name": "Doe",
     "roles": ["user"],
-    "inserted_at": "2023-01-01T00:00:00Z",
-    "updated_at": "2023-01-01T00:00:00Z"
+    "latest_tos_accept_ver": null,
+    "latest_pp_accept_ver": null,
+    "preferences": { ... },
+    "approved_ips": ["1.2.3.4"]
   }
 }
 ```
 
 ### Create Session (Login)
+`POST /api/sessions`
 
-Authenticates a user and returns an API token.
-
-**Endpoint:** `POST /api/sessions`  
-**Authentication:** None required  
-
-**Request Body:**
+Body:
 ```json
 {
   "session": {
-    "username": "username",
+    "username": "user@example.com",
     "password": "password123",
-    "expires_in_seconds": 3600,
-    "never_expires": false
+    "expires_in_seconds": 3600,               // optional, default 7 days
+    "extendable_until_seconds": 2419200,      // optional, default 28 days
+    "max_extension_secs": 604800,             // optional, default 7 days
+    "valid_only_for_ip": false,
+    "valid_only_for_approved_ips": false
   }
 }
 ```
 
-**Parameters:**
-- `username` (required) - Username or email address
-- `password` (required) - User password
-- `expires_in_seconds` (optional) - Token expiration time in seconds
-- `never_expires` (optional) - Set to `true` for permanent tokens
-
-**Example:**
-```bash
-curl \
-  --request POST \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --data '{"session":{"username":"username","password":"password123"}}' \
-  http://localhost:4000/api/sessions
-```
-
-**Forever Token Example:**
-```bash
-curl \
-  --request POST \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --data '{"session":{"username":"username","password":"password123","never_expires":true}}' \
-  http://localhost:4000/api/sessions
-```
-
-**Response (201 Created):**
+Response (`201 Created`):
 ```json
 {
+  "ok": true,
+  "code": 201,
   "data": {
+    "id": "c2f8c1aa-9a3e-4d58-9f3b-e7f0c2c94a10",
+    "user_id": "c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1",
     "api_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expires_at": "2023-01-01T01:00:00Z",
-    "user_id": "123e4567-e89b-12d3-a456-426614174000"
+    "authenticated_at": "2024-12-16T12:00:00Z",
+    "ip_address": "203.0.113.10",
+    "location": null,
+    "expires_at": "2025-01-01T12:00:00Z",
+    "extendable_until": "2025-01-29T12:00:00Z",
+    "max_extension_secs": 604800,
+    "valid_only_for_ip": false,
+    "valid_only_for_approved_ips": false,
+    "is_valid": true
   }
 }
 ```
 
-### Check Authentication Status
+### Who Am I
+`GET /api/users/whoami`
 
-Returns the current user's information if authenticated.
-
-**Endpoint:** `GET /api/users/whoami`  
-**Authentication:** None required (but returns user info if token provided)  
-
-**Example:**
-```bash
-# Get current user info
-api_token="$(curl --request POST --header "Accept: application/json" --header "Content-Type: application/json" --data '{"session":{"username":"username","password":"password123"}}' http://localhost:4000/api/sessions | jq -r .data.api_token)"
-
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/whoami
-```
-
-**Response (200 OK) when authenticated:**
+Returns the token context if present; otherwise 403.
 ```json
 {
+  "ok": true,
+  "code": 200,
   "data": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "email": "user@example.com",
-    "username": "username",
-    "first_name": "John",
-    "last_name": "Doe",
-    "roles": ["user"]
+    "user_id": "c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1",
+    "session_id": "c2f8c1aa-9a3e-4d58-9f3b-e7f0c2c94a10",
+    "ip_address": "127.0.0.1",
+    "valid_only_for_ip": false,
+    "user_roles": ["user"],
+    "expires_at": "2025-01-01T12:00:00Z",
+    "terms_of_service": 2,
+    "privacy_policy": 1
   }
 }
 ```
 
-**Response (200 OK) when not authenticated:**
+### Password Reset
+- `POST /api/users/:id/reset_password` (id or username) — issues a reset token and emails it.
+- `PUT /api/users/:id/reset_password/:token`
+- `PUT /api/users/reset_password/:token`
+
+Body for token exchange:
 ```json
-{
-  "data": null
-}
+{ "new_password": "newpassword123" }
 ```
+
+Success: `{"ok": true, "code": 200}`. Invalid/missing/expired tokens return 401 with an error message.
+
+### Health Checks
+- `GET /health_check/liveness`
+- `GET /health_check/readiness`
 
 ---
 
-## User Management Endpoints
+## Authenticated User Endpoints
+Bearer token required; ToS/Privacy acceptance may be enforced (461/462) depending on deployment settings.
 
-### Get Current User
+### Current User
+- `GET /api/users/current` (alias `GET /api/users/me`, deprecated)
+- `GET /api/users/:id` (owner or admin)
 
-Returns detailed information about the authenticated user.
-
-**Endpoint:** `GET /api/users/current`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/current
-```
-
-### Get User by ID
-
-Returns information about a specific user. Users can only access their own data unless they're an admin.
-
-**Endpoint:** `GET /api/users/:id`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000
-```
+Returns full user data including addresses and phone numbers when loaded.
 
 ### Update User
+`PUT /api/users/:id`
 
-Updates user information. Users can only update their own data unless they're an admin.
-
-**Endpoint:** `PUT /api/users/:id`  
-**Authentication:** Required  
-
-**Request Body:**
+Body may include profile fields and flags:
 ```json
 {
   "user": {
     "first_name": "Jane",
-    "last_name": "Smith",
-    "email": "newemail@example.com"
+    "last_name": "Doe",
+    "password": "newpassword123",
+    "accept_tos": true,
+    "accept_privacy_policy": true,
+    "approved_ips": ["1.2.3.4"],
+    "custom_attrs": { "plan": "pro" }
   }
 }
-```
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  --data '{"user":{"first_name":"Jane","last_name":"Smith"}}' \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000
-```
-
-### Change Password
-
-Updates a user's password.
-
-**Endpoint:** `PUT /api/users/:id`  
-**Authentication:** Required  
-
-**Request Body:**
-```json
-{
-  "user": {
-    "password": "newpassword123"
-  }
-}
-```
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  --data '{"user":{"password":"newpassword123"}}' \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000
 ```
 
 ### Delete User
+`DELETE /api/users/:id`
 
-Deletes a user account. Users can only delete their own account unless they're an admin.
+### Sessions (User)
+- `GET /api/sessions/active` — active sessions for the current token (paginated)
+- `GET /api/sessions/current`
+- `PUT /api/sessions/current/extend` — body `{ "expire_in_seconds": 3600 }`
+- `PUT /api/users/:user_id/sessions/current/extend` — owner/admin alias of the above
+- `DELETE /api/sessions/current`
+- `GET /api/users/:user_id/sessions` — paginated, owner or admin
+- `GET /api/users/:user_id/sessions/:id`
+- `PUT /api/users/:user_id/sessions/:id/extend` — same body as above
+- `DELETE /api/users/:user_id/sessions/:id`
+- `DELETE /api/users/:user_id/sessions` — revoke all active sessions for the user
+- `GET /api/users/:user_id/sessions/active` — active only
 
-**Endpoint:** `DELETE /api/users/:id`  
-**Authentication:** Required  
+### Session Extensions
+- `GET /api/sessions/:session_id/extensions`
+- `GET /api/session_extensions/:id`
 
-**Example:**
-```bash
-curl \
-  --request DELETE \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000
-```
+Each record includes `old_expires_at`, `new_expires_at`, `extended_by_seconds`, and auditing fields.
 
----
+### Contact Information
+All routes require the owner or an admin.
 
-## Session Management Endpoints
+**Phone Numbers** (`/api/users/:user_id/phone_numbers`)
+- `GET /` — list
+- `GET /:id`
+- `POST /` — body `{ "phone_number": { "number": "+1234567890", "primary": true } }`
+- `PUT /:id`
+- `DELETE /:id`
 
-### Get Current Session
+**Addresses** (`/api/users/:user_id/addresses`)
+- `GET /`
+- `GET /:id`
+- `POST /` — body `{ "address": { "name": "Home", "line_1": "123 Main St", "city": "Anytown", "state": "CA", "postal": "12345", "country": "US" } }`
+- `PUT /:id`
+- `DELETE /:id`
 
-Returns information about the current session.
-
-**Endpoint:** `GET /api/sessions/current`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/sessions/current
-```
-
-### Get Active Sessions
-
-Returns all active sessions for the authenticated user.
-
-**Endpoint:** `GET /api/sessions/active`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/sessions/active
-```
-
-### Extend Current Session
-
-Extends the expiration time of the current session.
-
-**Endpoint:** `PUT /api/sessions/current/extend`  
-**Authentication:** Required  
-
-**Request Body:**
-```json
-{
-  "expires_in_seconds": 3600
-}
-```
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  --data '{"expires_in_seconds": 3600}' \
-  http://localhost:4000/api/sessions/current/extend
-```
-
-### Delete Current Session (Logout)
-
-Deletes the current session, effectively logging out the user.
-
-**Endpoint:** `DELETE /api/sessions/current`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request DELETE \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/sessions/current
-```
-
-### Get User Sessions
-
-Returns all sessions for a specific user. Users can only access their own sessions unless they're an admin.
-
-**Endpoint:** `GET /api/users/:user_id/sessions`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000/sessions
-```
-
-### Delete User Session
-
-Deletes a specific session for a user.
-
-**Endpoint:** `DELETE /api/users/:user_id/sessions/:id`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request DELETE \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000/sessions/456e7890-e89b-12d3-a456-426614174000
-```
-
-### Delete All User Sessions
-
-Deletes all sessions for a user.
-
-**Endpoint:** `DELETE /api/users/:user_id/sessions`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request DELETE \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/users/123e4567-e89b-12d3-a456-426614174000/sessions
-```
+### Logs (User)
+- `GET /api/logs` — paginated logs for the authenticated user
+- `GET /api/logs/:id` — only if you own the log or are admin
+- `GET /api/users/:user_id/logs` — owner/admin alias to fetch logs for a specific user
 
 ---
 
-## Password Reset Endpoints
+## Admin Endpoints
+Require an admin token (`roles` includes `"admin"`). These routes skip ToS/Privacy plugs.
 
-### Request Password Reset Token
+### Users
+- `GET /api/admin/users` — paginated list
+- `PUT /api/admin/users/:id` — update any user (roles, locks, password, etc.)
+- `PUT /api/admin/users/:id/lock`
+- `PUT /api/admin/users/:id/unlock`
 
-Requests a password reset token for a user.
+### Password Reset (Admin)
+- `POST /api/admin/users/:id/reset_password` — issue reset token
+- `PUT /api/admin/users/:id/reset_password/:token`
+- `PUT /api/admin/users/reset_password/:token`
 
-**Endpoint:** `POST /api/users/:id/reset_password`  
-**Authentication:** None required  
+### Sessions (Admin)
+- `GET /api/admin/sessions` — paginated
+- `DELETE /api/admin/sessions/:id`
 
-**Request Body:**
-```json
-{
-  "new_password": "newpassword123"
-}
-```
-
-**Example:**
-```bash
-curl \
-  --request POST \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --data '{"new_password":"newpassword123"}' \
-  http://localhost:4000/api/users/username/reset_password
-```
-
-### Use Password Reset Token
-
-Uses a password reset token to set a new password.
-
-**Endpoint:** `PUT /api/users/reset_password/:token`  
-**Authentication:** None required  
-
-**Request Body:**
-```json
-{
-  "new_password": "newpassword123"
-}
-```
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --data '{"new_password":"newpassword123"}' \
-  http://localhost:4000/api/users/reset_password/abc123token
-```
+### Logs (Admin)
+- `GET /api/admin/logs` — all logs, paginated
+- `GET /api/admin/logs/:id`
+- `GET /api/admin/logs/users/:user_id` — actions performed by user
+- `GET /api/admin/logs/sessions/:session_id` — actions performed by session
+- `GET /api/admin/logs/who/:user_id` — actions that targeted the user
 
 ---
 
-## Contact Information Endpoints
-
-### Phone Numbers
-
-#### List User Phone Numbers
-
-**Endpoint:** `GET /api/users/:user_id/phone_numbers`  
-**Authentication:** Required (owner or admin)  
-
-#### Get Phone Number
-
-**Endpoint:** `GET /api/users/:user_id/phone_numbers/:id`  
-**Authentication:** Required (owner or admin)  
-
-#### Create Phone Number
-
-**Endpoint:** `POST /api/users/:user_id/phone_numbers`  
-**Authentication:** Required (owner or admin)  
-
-**Request Body:**
-```json
-{
-  "phone_number": {
-    "number": "+1234567890",
-    "type": "mobile"
-  }
-}
-```
-
-#### Update Phone Number
-
-**Endpoint:** `PUT /api/users/:user_id/phone_numbers/:id`  
-**Authentication:** Required (owner or admin)  
-
-#### Delete Phone Number
-
-**Endpoint:** `DELETE /api/users/:user_id/phone_numbers/:id`  
-**Authentication:** Required (owner or admin)  
-
-### Addresses
-
-#### List User Addresses
-
-**Endpoint:** `GET /api/users/:user_id/addresses`  
-**Authentication:** Required (owner or admin)  
-
-#### Get Address
-
-**Endpoint:** `GET /api/users/:user_id/addresses/:id`  
-**Authentication:** Required (owner or admin)  
-
-#### Create Address
-
-**Endpoint:** `POST /api/users/:user_id/addresses`  
-**Authentication:** Required (owner or admin)  
-
-**Request Body:**
-```json
-{
-  "address": {
-    "street": "123 Main St",
-    "city": "Anytown",
-    "state": "CA",
-    "zip": "12345",
-    "country": "US"
-  }
-}
-```
-
-#### Update Address
-
-**Endpoint:** `PUT /api/users/:user_id/addresses/:id`  
-**Authentication:** Required (owner or admin)  
-
-#### Delete Address
-
-**Endpoint:** `DELETE /api/users/:user_id/addresses/:id`  
-**Authentication:** Required (owner or admin)  
-
----
-
-## Audit Log Endpoints
-
-### Get User Logs
-
-Returns audit logs for the authenticated user.
-
-**Endpoint:** `GET /api/logs`  
-**Authentication:** Required  
-
-**Query Parameters:**
-- `limit` - Number of logs to return (default: 50)
-- `offset` - Number of logs to skip (default: 0)
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  "http://localhost:4000/api/logs?limit=10&offset=0"
-```
-
-### Get Specific Log
-
-Returns a specific audit log entry.
-
-**Endpoint:** `GET /api/logs/:id`  
-**Authentication:** Required  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${api_token}" \
-  http://localhost:4000/api/logs/789e0123-e89b-12d3-a456-426614174000
-```
-
----
-
-## Administrative Endpoints
-
-All administrative endpoints require admin privileges.
-
-### List All Users
-
-**Endpoint:** `GET /api/admin/users`  
-**Authentication:** Required (admin)  
-
-**Query Parameters:**
-- `limit` - Number of users to return
-- `offset` - Number of users to skip
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  "http://localhost:4000/api/admin/users?limit=10&offset=0"
-```
-
-### Admin Update User
-
-Allows admins to update any user, including roles and administrative fields.
-
-**Endpoint:** `PUT /api/admin/users/:id`  
-**Authentication:** Required (admin)  
-
-**Request Body:**
-```json
-{
-  "user": {
-    "roles": ["admin", "user"],
-    "locked_at": null,
-    "password": "newpassword123"
-  }
-}
-```
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Content-Type: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  --data '{"user":{"roles":["admin","user"]}}' \
-  http://localhost:4000/api/admin/users/123e4567-e89b-12d3-a456-426614174000
-```
-
-### Lock User
-
-Locks a user account, preventing login.
-
-**Endpoint:** `PUT /api/admin/users/:id/lock`  
-**Authentication:** Required (admin)  
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  http://localhost:4000/api/admin/users/123e4567-e89b-12d3-a456-426614174000/lock
-```
-
-### Unlock User
-
-Unlocks a user account.
-
-**Endpoint:** `PUT /api/admin/users/:id/unlock`  
-**Authentication:** Required (admin)  
-
-**Example:**
-```bash
-curl \
-  --request PUT \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  http://localhost:4000/api/admin/users/123e4567-e89b-12d3-a456-426614174000/unlock
-```
-
-### List All Sessions
-
-**Endpoint:** `GET /api/admin/sessions`  
-**Authentication:** Required (admin)  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  http://localhost:4000/api/admin/sessions
-```
-
-### Admin Delete Session
-
-**Endpoint:** `DELETE /api/admin/sessions/:id`  
-**Authentication:** Required (admin)  
-
-**Example:**
-```bash
-curl \
-  --request DELETE \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  http://localhost:4000/api/admin/sessions/456e7890-e89b-12d3-a456-426614174000
-```
-
-### Admin Reset Password
-
-Allows admins to reset any user's password.
-
-**Endpoint:** `POST /api/admin/users/:id/reset_password`  
-**Authentication:** Required (admin)  
-
-### Admin Use Reset Token
-
-**Endpoint:** `PUT /api/admin/users/:id/reset_password/:token`  
-**Authentication:** Required (admin)  
-
-### Admin Audit Logs
-
-#### Get All Logs
-
-**Endpoint:** `GET /api/admin/logs`  
-**Authentication:** Required (admin)  
-
-**Example:**
-```bash
-curl \
-  --request GET \
-  --header "Accept: application/json" \
-  --header "Authorization: Bearer ${admin_token}" \
-  "http://localhost:4000/api/admin/logs?limit=100&offset=0"
-```
-
-#### Get User Logs
-
-**Endpoint:** `GET /api/admin/logs/users/:user_id`  
-**Authentication:** Required (admin)  
-
-#### Get Session Logs
-
-**Endpoint:** `GET /api/admin/logs/sessions/:session_id`  
-**Authentication:** Required (admin)  
-
-#### Get User Activity
-
-**Endpoint:** `GET /api/admin/logs/who/:user_id`  
-**Authentication:** Required (admin)  
-
----
-
-## Health Check Endpoints
-
-### Liveness Check
-
-**Endpoint:** `GET /health_check/liveness`  
-**Authentication:** None required  
-
-**Example:**
-```bash
-curl http://localhost:4000/health_check/liveness
-```
-
-### Readiness Check
-
-**Endpoint:** `GET /health_check/readiness`  
-**Authentication:** None required  
-
-**Example:**
-```bash
-curl http://localhost:4000/health_check/readiness
-```
-
----
-
-## Error Handling
-
-### Common Error Responses
-
-**401 Unauthorized:**
-```json
-{
-  "message": "Unauthorized",
-  "status": "error"
-}
-```
-
-**403 Forbidden:**
-```json
-{
-  "message": "Forbidden",
-  "status": "error"
-}
-```
-
-**422 Validation Error:**
-```json
-{
-  "errors": {
-    "email": ["can't be blank"],
-    "password": ["is too short (minimum is 8 characters)"]
-  },
-  "message": "Validation failed",
-  "status": "error"
-}
-```
-
-### Rate Limiting
-
-The API implements rate limiting to prevent abuse. When rate limits are exceeded, you'll receive a `429 Too Many Requests` response.
-
----
-
-## SDK and Libraries
-
-For TypeScript/JavaScript applications, consider using [libmalan](https://github.com/FreedomBen/libmalan), which provides a convenient wrapper around these API endpoints.
-
----
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [malan repository](https://github.com/FreedomBen/malan/issues)
-- Email: Contact the development team
-
----
-
-*This documentation was generated for Malan Authentication Service v0.1.0*
+## Field Notes
+- Path parameters `:id` for users accept either UUID or username.
+- Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if enabled, token usage is restricted accordingly.
+- If a user has `approved_ips` set, login is only allowed from those IPs even if `valid_only_for_approved_ips` is false.
+- Default session expiry is 7 days; default per-extension limit is 7 days; absolute extension cap is 90 days unless overridden by configuration.
+- Minimum password length defaults to 6 characters (`MIN_PASSWORD_LENGTH`).
+
+For quick examples, see `scripts/curl/` in the repo.

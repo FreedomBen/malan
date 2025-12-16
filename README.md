@@ -1,20 +1,21 @@
 # Malan Authentication Service
 
-Malan is a basic authentication service that you can drop into you microservice ecosystem, or even use as a base for a new Phoenix project.
+Malan is a basic authentication service that you can drop into your microservice ecosystem, or even use as a base for a new Phoenix project.
 
 ## Use Malan
 
 ### API Documentation
 
-API documentation is available in [API_DOCUMENTATION.md](https://github.com/FreedomBen/malan/blob/main/API_DOCUMENTATION.md).
+API documentation is available in [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) with a concise map in [`API.md`](./API.md).
 
 ### Basic endpoints you'll use
 
-If using Malan as an authentication service, there are 3 main endpoints you'll use:
+If using Malan as an authentication service, the most common endpoints are:
 
-1.  Create a user:  `POST /api/users`
-1.  Login (get an auth token) for a user:  `POST /api/sessions`
-1.  Check auth status:  `GET /api/users/whoami`
+1. Create a user: `POST /api/users`
+1. Login (get an auth token): `POST /api/sessions`
+1. Current user details: `GET /api/users/current`
+1. Token status: `GET /api/users/whoami`
 
 ### Structuring your app with Malan
 
@@ -24,15 +25,15 @@ Another common option is to maintain a minimal User table in your app that conta
 
 ## Run Malan
 
-If you have a clone of this repo, you can start Malan easily using Docker Compose:
+If you have a clone of this repo, you can start Malan easily using Docker Compose (this builds the image from the local source):
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 ### Adding Malan service to an eco-system
 
-If you are adding Malan to your current application, you can make use of [the example docker-compose file](https://github.com/FreedomBen/malan/blob/main/docker-compose-example.yml).  You will need to add Malan, and a Postgres for Malan to use as its data store.
+If you are adding Malan to your current application, you can make use of [the example docker-compose file](./docker-compose-example.yml). You will need to add Malan and a Postgres service for Malan to use as its data store.
 
 ```yaml
 version: "3.9"
@@ -46,7 +47,7 @@ services:
       POSTGRES_PASSWORD: 'postgres'
 
   malan:
-    image: 'docker.io/freedomben/malan-dev:latest'
+    image: 'docker.io/freedomben/malan:latest'
     ports:
       - "4000:4000"
     environment:
@@ -64,9 +65,9 @@ volumes:
 
 ### Setting up a local development environment
 
-  You'll need to:
+You'll need to:
 
-#### 1.  Install Elixir and Mix
+#### 1. Install Elixir (and Erlang)
 
 Setup instructions vary by platform.
 
@@ -82,49 +83,51 @@ Ubuntu:
 apt install -y elixir
 ```
 
-Mac OS:
+macOS:
 
 ```bash
 brew install elixir
 ```
 
-#### 2.  Setup Hex
+#### 2. Bootstrap build tools
 
 ```bash
-mix local.hex
+mix local.hex --force
+mix local.rebar --force
+# Optional: install the Phoenix project generator that matches mix.exs (phoenix ~> 1.8)
+mix archive.install hex phx_new
 ```
 
-If you need to install Phoenix separately, you can do so with hex:
+#### 3. Clone this repo
 
 ```bash
-mix archive.install hex phx_new 1.5.8
-```
-
-#### 3.  Clone this repo and install dependencies
-
-```bash
-git clone https://github.com/freedomben/malan.git \
+git clone git@github.com:FreedomBen/malan.git
 cd malan
-mix deps.get
 ```
 
-#### 4.  Run migrations
+#### 4. Start Postgres
 
-Note:  You'll need Postgres to be running before completing this step.   If you are not using docker-compose, you can make use of the script at `script/start-postgres.sh` to quickly get a database running.
+Use `docker compose up postgres` or run `scripts/start-postgres.sh` for a quick local instance. The default creds are `postgres/postgres` on host `localhost` unless you override env vars.
+
+#### 5. Install deps, migrate, and seed
 
 ```bash
-mix ecto.setup
+mix setup
 ```
 
-#### 5.  Start the Phoenix server
+This alias runs `deps.get`, creates the DB, runs migrations, and seeds baseline data. Rerun it whenever dependencies change.
+
+#### 6. Start the Phoenix server
 
 ```bash
 mix phx.server
 ```
 
+Use `iex -S mix phx.server` for an interactive shell or `mix phx.server --no-halt` inside containers.
+
 ### Basic development operations
 
-- `mix setup` installs Elixir and npm deps, creates the dev database, and seeds baseline data. Run it any time dependencies change.
+- `mix setup` installs Mix deps and npm deps, creates the dev database, and seeds baseline data. Run it any time dependencies change.
 - `mix phx.server` (or `iex -S mix phx.server` if you want an IEx shell) boots the Phoenix app locally on `http://localhost:4000`. Use `mix phx.server --no-halt` when running inside containers.
 - `mix test` executes the full Elixir test suite. Target a single file with `mix test test/malan/accounts_test.exs` or a specific test using the `:line` option, e.g. `mix test test/malan/accounts_test.exs:42`.
 - `mix credo --strict` enforces the formatting and lint rules used in CI; run it before opening a PR to catch style issues early.
@@ -132,18 +135,17 @@ mix phx.server
 
 ## Malan API
 
-The Malan API is a pretty standard REST interface.  For details, please visit [API.md](https://github.com/FreedomBen/malan/blob/main/API.md).
+The Malan API is a REST interface; see [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) for full payloads and [`API.md`](./API.md) for a quick map of routes. Some deployments enforce Terms of Service and Privacy Policy acceptance (HTTP 461/462 if missing); you can opt in by setting `accept_tos` / `accept_privacy_policy` on the user record.
 
 If your client will be in TypeScript, you can also consider using [libmalan](https://github.com/FreedomBen/libmalan), a simple utility package that provides TypeScript methods.
 
 ## CI/CD and Deployment
 
-Staging deploys automatically upon merge to main.  Prod deploys after being tagged:
+CI/CD is handled by GitHub Actions in `.github/workflows/build-test-deploy.yaml` and the helper scripts under `scripts/`:
 
-```bash
-git tag "prod-$(date '+%Y-%m-%d-%H-%M-%S')"
-git push --tags
-```
+- Staging: every push/merge to `main` builds, tests, publishes, and deploys to staging automatically.
+- Production: push a tag (e.g., `prod-$(date '+%Y-%m-%d-%H-%M-%S')`) to trigger a production deploy.
+- Build/publish/deploy logic lives in `scripts/build-release.sh`, `scripts/push-release.sh`, and `scripts/deploy-release.sh`.
 
 ### Configuring PostgreSQL users
 
@@ -173,29 +175,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE
   * Source: https://github.com/phoenixframework/phoenix
 
 
-## CI/CD
-
-The CI/CD system utilizes Github Actions to run automated builds, tests, and deployments to all environments.
-
-### Environments
-
-#### Prod
-
-The Production environment is where the production instances of the application are running.  Deployments to Production are fully automated but are not automatic.  Deploys to Production are triggered using git tags.
-
-#### Staging
-
-The staging environment.  Staging is typically a small change ahead of production to allow for testing in a "prod-like" environment
-
-All commits, merges, and tags added to the `main` branch will automatically trigger a deployment to staging.
-
-### The pieces to CI/CD in this repo are these
-
-1.  `.github/workflows/build-test-deploy.yaml`:  This yaml file contains the Github-specific configuration.  It tells Github Actions how to run the build, push the image, run the tests, and deploy the change.
-1.  `scripts/build-release.sh:  This script contains the instructions that build the release into an image.
-1.  `scripts/push-release.sh:  This script contains the instructions that push the application image to the registry.
-1.  `scripts/deploy-release.sh:  This script contains the instructions that deploy the change to Kubernetes.  It contains the bulk of the CD logic.
-
 ## Audit Logs
 
 Many actions are logged in the audit log.  Whether the action result is success or failure, it is logged.  The data that is sent as part of the request is recorded for later analysis.
@@ -214,7 +193,7 @@ Here is a (non comprehensive) list of actions logged:
 * Deleting a session (aka "logging out")
 * Extending a session
 
-While there aren't (currently) any REST API endpoints for logs they can be accessed through the database, either using `iex` or using Postgres (examples shown using `psql`).
+Logs are exposed over the API (`/api/logs` for users, `/api/admin/logs*` for admins). You can also query them directly from the database via `iex` or `psql` if you need ad-hoc analysis (examples below).
 
 NOTE:  In order to optimize the logs table for _writes_, the indexes are minimal.  This means there is a long and beefy table scan for querying.  Keep this in mind if you have a large production table!
 
