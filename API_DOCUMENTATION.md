@@ -185,8 +185,34 @@ Body may include profile fields and flags:
 }
 ```
 
+Example:
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer ${api_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"user":{"first_name":"Jane","accept_tos":true,"accept_privacy_policy":true}}' \
+  http://localhost:4000/api/users/current
+```
+
+Response (`200 OK`):
+```json
+{
+  "ok": true,
+  "code": 200,
+  "data": {
+    "id": "c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1",
+    "first_name": "Jane",
+    "latest_tos_accept_ver": 2,
+    "latest_pp_accept_ver": 1,
+    "roles": ["user"]
+  }
+}
+```
+
 ### Delete User
 `DELETE /api/users/:id`
+
+Response: `204 No Content`
 
 ### Sessions (User)
 - `GET /api/sessions/active` — active sessions for the current token (paginated)
@@ -201,11 +227,65 @@ Body may include profile fields and flags:
 - `DELETE /api/users/:user_id/sessions` — revoke all active sessions for the user
 - `GET /api/users/:user_id/sessions/active` — active only
 
+Examples:
+- List sessions (paginated):
+  ```bash
+  curl -H "Authorization: Bearer ${api_token}" \
+    "http://localhost:4000/api/users/current/sessions?page_num=0&page_size=5"
+  ```
+  Response:
+  ```json
+  { "ok": true, "code": 200, "page_num": 0, "page_size": 5, "data": [
+    { "id": "sess-1", "user_id": "...", "expires_at": "2025-01-01T12:00:00Z", "revoked_at": null, "is_valid": true }
+  ]}
+  ```
+- Extend current session:
+  ```bash
+  curl -X PUT \
+    -H "Authorization: Bearer ${api_token}" \
+    -H "Content-Type: application/json" \
+    -d '{"expire_in_seconds":3600}' \
+    http://localhost:4000/api/sessions/current/extend
+  ```
+- Revoke a session:
+  ```bash
+  curl -X DELETE -H "Authorization: Bearer ${api_token}" \
+    http://localhost:4000/api/users/current/sessions/sess-1
+  ```
+
 ### Session Extensions
 - `GET /api/sessions/:session_id/extensions`
 - `GET /api/session_extensions/:id`
 
 Each record includes `old_expires_at`, `new_expires_at`, `extended_by_seconds`, and auditing fields.
+
+Example list:
+```bash
+curl -H "Authorization: Bearer ${api_token}" \
+  "http://localhost:4000/api/sessions/${session_id}/extensions?page_num=0&page_size=5"
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "code": 200,
+  "page_num": 0,
+  "page_size": 5,
+  "data": [
+    {
+      "id": "ext-1",
+      "old_expires_at": "2025-01-01T12:00:00Z",
+      "new_expires_at": "2025-01-02T12:00:00Z",
+      "extended_by_seconds": 86400,
+      "extended_by_session": "sess-1",
+      "extended_by_user": "user-1",
+      "session_id": "sess-1",
+      "user_id": "user-1"
+    }
+  ]
+}
+```
 
 ### Contact Information
 All routes require the owner or an admin.
@@ -217,6 +297,20 @@ All routes require the owner or an admin.
 - `PUT /:id`
 - `DELETE /:id`
 
+Create example:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer ${api_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number":{"number":"+14155550123","primary":true}}' \
+  http://localhost:4000/api/users/current/phone_numbers
+```
+
+Response (`201 Created`):
+```json
+{ "ok": true, "data": { "id": "ph-1", "user_id": "user-1", "number": "+14155550123", "primary": true } }
+```
+
 **Addresses** (`/api/users/:user_id/addresses`)
 - `GET /`
 - `GET /:id`
@@ -224,10 +318,42 @@ All routes require the owner or an admin.
 - `PUT /:id`
 - `DELETE /:id`
 
+Create example:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer ${api_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"address":{"name":"Home","line_1":"123 Main St","city":"Anytown","state":"CA","postal":"12345","country":"US"}}' \
+  http://localhost:4000/api/users/current/addresses
+```
+
+Response (`201 Created`):
+```json
+{ "ok": true, "data": { "id": "addr-1", "user_id": "user-1", "name": "Home", "city": "Anytown", "state": "CA" } }
+```
+
 ### Logs (User)
 - `GET /api/logs` — paginated logs for the authenticated user
 - `GET /api/logs/:id` — only if you own the log or are admin
 - `GET /api/users/:user_id/logs` — owner/admin alias to fetch logs for a specific user
+
+Example:
+```bash
+curl -H "Authorization: Bearer ${api_token}" \
+  "http://localhost:4000/api/logs?page_num=0&page_size=10"
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "data": [
+    { "id": "log-1", "verb": "POST", "type": "sessions", "what": "#SessionController.create/2", "when": "2024-12-16T12:00:00Z" }
+  ],
+  "page_num": 0,
+  "page_size": 10
+}
+```
 
 ---
 
@@ -240,10 +366,28 @@ Require an admin token (`roles` includes `"admin"`). These routes skip ToS/Priva
 - `PUT /api/admin/users/:id/lock`
 - `PUT /api/admin/users/:id/unlock`
 
+Examples:
+- List users:
+  ```bash
+  curl -H "Authorization: Bearer ${admin_token}" \
+    "http://localhost:4000/api/admin/users?page_num=0&page_size=10"
+  ```
+- Lock a user:
+  ```bash
+  curl -X PUT -H "Authorization: Bearer ${admin_token}" \
+    http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1/lock
+  ```
+
 ### Password Reset (Admin)
 - `POST /api/admin/users/:id/reset_password` — issue reset token
 - `PUT /api/admin/users/:id/reset_password/:token`
 - `PUT /api/admin/users/reset_password/:token`
+
+Issue token example:
+```bash
+curl -X POST -H "Authorization: Bearer ${admin_token}" \
+  http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1/reset_password
+```
 
 ### Sessions (Admin)
 - `GET /api/admin/sessions` — paginated
@@ -255,6 +399,12 @@ Require an admin token (`roles` includes `"admin"`). These routes skip ToS/Priva
 - `GET /api/admin/logs/users/:user_id` — actions performed by user
 - `GET /api/admin/logs/sessions/:session_id` — actions performed by session
 - `GET /api/admin/logs/who/:user_id` — actions that targeted the user
+
+Example (by user):
+```bash
+curl -H "Authorization: Bearer ${admin_token}" \
+  "http://localhost:4000/api/admin/logs/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1?page_size=20"
+```
 
 ---
 
