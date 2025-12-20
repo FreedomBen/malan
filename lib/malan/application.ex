@@ -15,6 +15,8 @@ defmodule Malan.Application do
       Malan.Repo,
       # Start the Telemetry supervisor
       MalanWeb.Telemetry,
+      # Start rate limiter backend
+      {Malan.RateLimiter, Application.get_env(:malan, Malan.RateLimiter, [])},
       # Start the PubSub system
       {Phoenix.PubSub, name: Malan.PubSub},
       # Start the Endpoint (http/https)

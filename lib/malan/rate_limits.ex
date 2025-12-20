@@ -2,14 +2,29 @@ defmodule Malan.RateLimits do
   @spec check_rate(bucket :: String.t(), scale_ms :: integer, limit :: integer) ::
           {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
-  def check_rate(bucket, msecs, count) do
-    Hammer.check_rate(bucket, msecs, count)
+  def check_rate(bucket, scale_ms, limit) do
+    case Malan.RateLimiter.hit(bucket, scale_ms, limit) do
+      {:allow, count} ->
+        {:allow, count}
+
+      {:deny, _timeout} ->
+        {:deny, limit}
+    end
   end
 
   @spec clear(bucket :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
 
   def clear(bucket) do
-    Hammer.delete_buckets(bucket)
+    deleted =
+      case :ets.whereis(Malan.RateLimiter) do
+        :undefined ->
+          0
+
+        _ ->
+          :ets.select_delete(Malan.RateLimiter, [{{{bucket, :_}, :_, :_}, [], [true]}])
+      end
+
+    {:ok, deleted}
   end
 
   defmodule PasswordReset do
@@ -28,7 +43,7 @@ defmodule Malan.RateLimits do
       # check upper limit rate first, then lower limit rate
       # For example, check daily limit first, then per minute limit
       with {:allow, _c1} <- UpperLimit.check_rate(user_id),
-           {:allow,  c2} <- LowerLimit.check_rate(user_id) do
+           {:allow, c2} <- LowerLimit.check_rate(user_id) do
         {:allow, c2}
       end
     end
@@ -37,7 +52,7 @@ defmodule Malan.RateLimits do
 
     def clear(user_id) do
       with {:ok, _c1} <- UpperLimit.clear(user_id),
-           {:ok,  c2} <- LowerLimit.clear(user_id) do
+           {:ok, c2} <- LowerLimit.clear(user_id) do
         {:ok, c2}
       end
     end

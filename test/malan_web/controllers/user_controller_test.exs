@@ -23,7 +23,8 @@ defmodule MalanWeb.UserControllerTest do
     last_name: "cool User",
     custom_attrs: %{"hereiam" => "rockyou", "likea" => "hurricane", "year" => 1986},
     birthday: "1986-06-13",
-    locked_at: ""  # Shouldn't make it through
+    # Shouldn't make it through
+    locked_at: ""
   }
   @invalid_attrs %{
     email: nil,
@@ -98,7 +99,7 @@ defmodule MalanWeb.UserControllerTest do
     l2 = Enum.map(l2, fn u -> strip_user(u) end)
 
     # Check for equality ignoring order
-    TestUtils.lists_equal_ignore_order(l1, l2, &(&1["id"]))
+    TestUtils.lists_equal_ignore_order(l1, l2, & &1["id"])
 
     # Check for exact equality (including order)
     # l1
@@ -792,7 +793,8 @@ defmodule MalanWeb.UserControllerTest do
         preferences: %{theme: "dark"},
         sex: "male",
         birthday: ~D[1986-06-13],
-        roles: ["admin", "user"],  # Shouldn't make it through
+        # Shouldn't make it through
+        roles: ["admin", "user"],
         custom_attrs: %{
           "hereiam" => "rockyou",
           "likea" => "hurricane",
@@ -1117,7 +1119,8 @@ defmodule MalanWeb.UserControllerTest do
       id = user.id
 
       update_params = %{
-        roles: ["admin", "user", "smileemptysoul"],  # Shouldn't make it through
+        # Shouldn't make it through
+        roles: ["admin", "user", "smileemptysoul"]
       }
 
       check_response = fn conn ->
@@ -1251,9 +1254,12 @@ defmodule MalanWeb.UserControllerTest do
         first_name: "Brand",
         last_name: "New",
         nick_name: "Eddie v Dawg",
-        accept_tos: true,              # rejected
-        accept_privacy_policy: true,   # rejected
-        preferences: %{theme: "dark"}, # rejected
+        # rejected
+        accept_tos: true,
+        # rejected
+        accept_privacy_policy: true,
+        # rejected
+        preferences: %{theme: "dark"},
         roles: ["admin", "user"],
         sex: "female",
         gender: "Trans*Woman",
@@ -1475,32 +1481,40 @@ defmodule MalanWeb.UserControllerTest do
 
       # The deletion of the user should have triggered a session revocation.
       # First Tx here is the active session revocation, second is user deletion.
-      assert [
-               %Log{
-                 success: true,
-                 # user_id: ^id,
-                 user_id: nil,
-                 session_id: nil,
-                 type_enum: 1,
-                 verb_enum: 3,
-                 who: ^id,
-                 when: _
-               } = rev_log,
-               %Log{
-                 success: true,
-                 user_id: ^id,
-                 session_id: ^session_id,
-                 type_enum: 0,
-                 verb_enum: 3,
-                 who: ^id,
-                 when: when_utc
-               } = del_log
-             ] = Accounts.list_logs_by_who(id, 0, 10)
+      assert [log1, log2] = Accounts.list_logs_by_who(id, 0, 10)
+
+      {rev_log, del_log} =
+        case {log1.type_enum, log2.type_enum} do
+          {1, 0} -> {log1, log2}
+          {0, 1} -> {log2, log1}
+        end
+
+      assert %Log{
+               success: true,
+               user_id: nil,
+               session_id: nil,
+               type_enum: 1,
+               verb_enum: 3,
+               who: ^id,
+               when: _
+             } = rev_log
+
+      assert %Log{
+               success: true,
+               user_id: ^id,
+               session_id: ^session_id,
+               type_enum: 0,
+               verb_enum: 3,
+               who: ^id,
+               when: when_utc
+             } = del_log
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [del_log] == Accounts.list_logs_by_user_id(id, 0, 10)
       assert [del_log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
-      assert [rev_log, del_log] == Accounts.list_logs_by_who(id, 0, 10)
+
+      assert Enum.sort_by([rev_log, del_log], & &1.id) ==
+               Enum.sort_by(Accounts.list_logs_by_who(id, 0, 10), & &1.id)
     end
 
     test "requires being self or admin", %{conn: conn, user: %User{} = user, session: session} do

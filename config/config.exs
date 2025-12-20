@@ -12,25 +12,29 @@ config :malan,
   generators: [binary_id: true]
 
 config :malan, Malan.Accounts.User,
+  # 24 hours
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
-      "86400" |> String.to_integer(), # 24 hours
-  min_password_length:
-    (System.get_env("MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
+      "86400" |> String.to_integer(),
+  min_password_length: (System.get_env("MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
 
 config :malan, Malan.Config.RateLimits,
+  # 3 minutes (180 seconds)
   password_reset_lower_limit_msecs:
     System.get_env("PASSWORD_RESET_LOWER_LIMIT_MSECS") ||
-      "180000" |> String.to_integer(), # 3 minutes (180 seconds)
+      "180000" |> String.to_integer(),
+  # 1 per period
   password_reset_lower_limit_count:
     System.get_env("PASSWORD_RESET_LOWER_LIMIT_COUNT") ||
-      "1" |> String.to_integer(), # 1 per period
+      "1" |> String.to_integer(),
+  # 24 hours (86,400 seconds)
   password_reset_upper_limit_msecs:
     System.get_env("PASSWORD_RESET_UPPER_LIMIT_MSECS") ||
-      "86400000" |> String.to_integer(), # 24 hours (86,400 seconds)
+      "86400000" |> String.to_integer(),
+  # 1 per period
   password_reset_upper_limit_count:
     System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
-      "3" |> String.to_integer() # 1 per period
+      "3" |> String.to_integer()
 
 config :malan, Malan.Accounts.Session,
   # If client doesn't specify token expiration time, use this value.
@@ -104,30 +108,25 @@ config :plug, :statuses, %{
 
 # Known Plug Statuses:  https://hexdocs.pm/plug/Plug.Conn.Status.html#code/1-known-status-codes
 
-config :hammer,
-  backend: {
-    Hammer.Backend.ETS,
-    [
-      expiry_ms: 60_000 * 60 * 4,       # 4 hours
-      cleanup_interval_ms: 60_000 * 10  # 10 minutes
-    ]
-  }
+config :malan, Malan.RateLimiter,
+  clean_period: :timer.minutes(10),
+  key_older_than: :timer.hours(4)
 
 # Sentry config.  DSN is runtime env var
 # This handles most exceptions and Plug events
 # https://hexdocs.pm/sentry/Sentry.html#content
 config :sentry,
   filter: Malan.SentryEventFilter,
-  before_send_event: {Malan.Sentry, :before_send},
+  before_send: {Malan.Sentry, :before_send},
   environment_name: config_env(),
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),
   tags: %{
     env: config_env(),
-    version: System.get_env("RELEASE_VERSION"), # set at buildtime by CI script
+    # set at buildtime by CI script
+    version: System.get_env("RELEASE_VERSION"),
     compiled_at: DateTime.utc_now() |> DateTime.to_string()
-  },
-  included_environments: [:prod, :staging]
+  }
 
 # Sentry Logger backend catches things that may get missed
 # by plug if out of process, or just log messages for example.

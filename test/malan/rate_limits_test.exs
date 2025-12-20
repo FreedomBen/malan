@@ -31,7 +31,7 @@ defmodule Malan.RateLimitsTest do
 
   describe "Malan.RateLimits.PasswordReset.LowerLimit" do
     def user_id_ll, do: "12344567890"
-    def test_bucket_ll, do: UpperLimit.bucket(user_id_ll())
+    def test_bucket_ll, do: LowerLimit.bucket(user_id_ll())
 
     test "#bucket/1" do
       assert "generate_password_reset_lower_limit:#{user_id_ll()}" ==
@@ -45,17 +45,19 @@ defmodule Malan.RateLimitsTest do
       assert 1 == Malan.Config.RateLimit.password_reset_lower_limit_count()
       assert 180_000 == Malan.Config.RateLimit.password_reset_lower_limit_msecs()
 
-      assert {:ok, {0, 1, _, _, _}} = Hammer.inspect_bucket(test_bucket_ll(), 180_000, 1)
+      assert {:ok, 0} = LowerLimit.clear(user_id_ll())
+      assert 0 == Malan.RateLimiter.get(test_bucket_ll(), 180_000)
+
       assert {:allow, 1} = LowerLimit.check_rate(user_id_ll())
 
-      assert {:ok, {0, 1, _, _, _}} = Hammer.inspect_bucket(test_bucket_ll(), 180_000, 1)
+      assert 1 == Malan.RateLimiter.get(test_bucket_ll(), 180_000)
       assert {:deny, 1} = LowerLimit.check_rate(user_id_ll())
 
-      assert {:ok, {0, 1, _, _, _}} = Hammer.inspect_bucket(test_bucket_ll(), 180_000, 1)
+      assert 2 == Malan.RateLimiter.get(test_bucket_ll(), 180_000)
       assert {:deny, 1} = LowerLimit.check_rate(user_id_ll())
 
       assert {:ok, 1} = LowerLimit.clear(user_id_ll())
-      assert {:ok, {0, 1, _, _, _}} = Hammer.inspect_bucket(test_bucket_ll(), 180_000, 1)
+      assert 0 == Malan.RateLimiter.get(test_bucket_ll(), 180_000)
     end
   end
 
@@ -78,27 +80,26 @@ defmodule Malan.RateLimitsTest do
       assert 3 == Malan.Config.RateLimit.password_reset_upper_limit_count()
       assert 86_400_000 == Malan.Config.RateLimit.password_reset_upper_limit_msecs()
 
-      assert {:ok, 0} = UpperLimit.clear(test_bucket_ul())
+      assert {:ok, 0} = UpperLimit.clear(user_id_ul())
+      assert 0 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
-      assert {:ok, {0, 3, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
       assert {:allow, 1} = UpperLimit.check_rate(user_id_ul())
+      assert 1 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
-      assert {:ok, {1, 2, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
       assert {:allow, 2} = UpperLimit.check_rate(user_id_ul())
+      assert 2 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
-      assert {:ok, {2, 1, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
       assert {:allow, 3} = UpperLimit.check_rate(user_id_ul())
+      assert 3 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
-      assert {:ok, {3, 0, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
       assert {:deny, 3} = UpperLimit.check_rate(user_id_ul())
+      assert 4 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
-      assert {:ok, {4, 0, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
       assert {:deny, 3} = UpperLimit.check_rate(user_id_ul())
-
-      assert {:ok, {5, 0, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
+      assert 5 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
 
       assert {:ok, 1} = UpperLimit.clear(user_id_ul())
-      assert {:ok, {0, 3, _, _, _}} = Hammer.inspect_bucket(test_bucket_ul(), 86_400_000, 3)
+      assert 0 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
     end
   end
 end

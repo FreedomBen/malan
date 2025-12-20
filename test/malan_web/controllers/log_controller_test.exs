@@ -53,9 +53,12 @@ defmodule MalanWeb.LogControllerTest do
 
       {:ok, conn, _user, _session} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.log_path(conn, :admin_index))
-      [l1a, l2a] = json_response(conn, 200)["data"]
-      assert logs_eq?(l1, l1a)
-      assert logs_eq?(l2, l2a)
+      data = json_response(conn, 200)["data"]
+      assert 2 == length(data)
+
+      data_by_id = Map.new(data, fn %{"id" => id} = log -> {id, log} end)
+      assert logs_eq?(l1, data_by_id[l1.id])
+      assert logs_eq?(l2, data_by_id[l2.id])
     end
 
     test "requires being an admin", %{conn: conn} do

@@ -26,7 +26,7 @@ defmodule Malan.Sentry do
   @spec capture_exception(Exception.t(), Keyword.t()) :: Sentry.send_result()
   def capture_exception(exception, opts \\ []) do
     if enabled?() do
-      Sentry.capture_message(exception, opts)
+      Sentry.capture_exception(exception, opts)
     end
   end
 
@@ -36,5 +36,4 @@ defmodule Malan.Sentry do
       Sentry.capture_message(msg, opts)
     end
   end
-
 end
