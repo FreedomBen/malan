@@ -1,0 +1,1199 @@
+openapi: 3.1.0
+info:
+  title: Malan Accounts API
+  description: |
+    REST API for the Malan (Ameelio Accounts) service. Paths are derived from
+    `lib/malan_web/router.ex` as of December 23, 2025. Most responses share a
+    common envelope `{ok, code, data}`. Authenticated routes expect an
+    `Authorization: Bearer <token>` header containing an API token issued by
+    `POST /api/sessions`.
+  version: "0.1.0"
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Malan Team
+servers:
+  - url: https://accounts.ameelio.org
+    description: Production
+  - url: https://accounts.ameelio.xyz
+    description: Staging
+  - url: http://localhost:4000
+    description: Local development
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Sessions
+  - name: Session Extensions
+  - name: Addresses
+  - name: Phone Numbers
+  - name: Logs
+  - name: Admin
+paths:
+  /health_check/liveness:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      responses:
+        '200': {description: Service is running}
+  /health_check/readiness:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      responses:
+        '200': {description: Service is ready}
+
+  /api/users:
+    post:
+      tags: [Users]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            example:
+              user:
+                email: "some@email.com"
+                username: "someusername"
+                password: "Sup3rSecret!"
+                first_name: "Some"
+                last_name: "User"
+                nick_name: "CoolCat"
+                preferences:
+                  theme: "light"
+                  display_name_pref: "nick_name"
+                addresses: []
+                phone_numbers: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserResponse' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/users/whoami:
+    get:
+      tags: [Auth]
+      summary: Validate API token and return session info
+      description: Requires a bearer token even though it is on the unauthenticated pipeline.
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/WhoAmIResponse' }}}}
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user (deprecated)
+      deprecated: true
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/users/current:
+    get:
+      tags: [Users]
+      summary: Get current user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get user by id or username
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserFullResponse' }}}}
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Users]
+      summary: Update a user (self or admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdateRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    patch:
+      $ref: '#/paths/~1api~1users~1{id}~1put'
+    delete:
+      tags: [Users]
+      summary: Delete (anonymize) user
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/users/{id}/reset_password:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Users]
+      summary: Request password reset email for user
+      security: []
+      responses:
+        '200':
+          description: Reset email enqueued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OkResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /api/users/{id}/reset_password/{token}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/ResetToken'
+    put:
+      tags: [Users]
+      summary: Complete password reset with token (id + token variant)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetWithTokenRequest' }
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OkResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/users/reset_password/{token}:
+    parameters:
+      - $ref: '#/components/parameters/ResetToken'
+    put:
+      tags: [Users]
+      summary: Complete password reset with token (no id)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetWithTokenRequest' }
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OkResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/sessions:
+    post:
+      tags: [Auth]
+      summary: Create session (log in)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionCreateRequest' }
+            example:
+              session:
+                username: "someusername"
+                password: "Sup3rSecret!"
+                location: "nyc-lab"
+                valid_only_for_ip: false
+      responses:
+        '201': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+        '403': { $ref: '#/components/responses/ForbiddenAuth' }
+        '423': { description: User locked, body uses Error schema }
+
+  /api/sessions/active:
+    get:
+      tags: [Sessions]
+      summary: List active sessions for current user
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionsResponse' }}}}
+
+  /api/sessions/current:
+    get:
+      tags: [Sessions]
+      summary: Get current session
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Sessions]
+      summary: Revoke current session
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+  /api/sessions/current/extend:
+    put:
+      tags: [Sessions]
+      summary: Extend current session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionExtendRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+        '403': { $ref: '#/components/responses/SessionRevokedOrExpired' }
+
+  /api/session_extensions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Session Extensions]
+      summary: Get a session extension record
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionExtensionResponse' }}}}
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/sessions/{session_id}/extensions:
+    parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Session Extensions]
+      summary: List extensions for a session
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionExtensionsResponse' }}}}
+
+  /api/users/{user_id}/sessions:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+    get:
+      tags: [Sessions]
+      summary: List sessions for user (owner or admin)
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionsResponse' }}}}
+    delete:
+      tags: [Sessions]
+      summary: Revoke all active sessions for user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionDeleteAllResponse' }}}}
+
+  /api/users/{user_id}/sessions/active:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Sessions]
+      summary: List active sessions for user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionsResponse' }}}}
+
+  /api/users/{user_id}/sessions/current/extend:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+    put:
+      tags: [Sessions]
+      summary: Extend current session (owner/admin)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionExtendRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+        '403': { $ref: '#/components/responses/SessionRevokedOrExpired' }
+
+  /api/users/{user_id}/sessions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [Sessions]
+      summary: Get session for user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+    delete:
+      tags: [Sessions]
+      summary: Revoke session for user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+    put:
+      tags: [Sessions]
+      summary: Extend a specific session for user
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionExtendRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+        '403': { $ref: '#/components/responses/SessionRevokedOrExpired' }
+
+  /api/users/{user_id}/phone_numbers:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+    get:
+      tags: [Phone Numbers]
+      summary: List phone numbers for user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PhoneNumbersResponse' }}}}
+    post:
+      tags: [Phone Numbers]
+      summary: Add phone number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoneNumberCreateRequest' }
+      responses:
+        '201': { content: { application/json: { schema: { $ref: '#/components/schemas/PhoneNumberResponse' }}}}
+
+  /api/users/{user_id}/phone_numbers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+      - $ref: '#/components/parameters/PhoneNumberId'
+    get:
+      tags: [Phone Numbers]
+      summary: Get phone number
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PhoneNumberResponse' }}}}
+    put:
+      tags: [Phone Numbers]
+      summary: Update phone number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoneNumberUpdateRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PhoneNumberResponse' }}}}
+    patch:
+      $ref: '#/paths/~1api~1users~1{user_id}~1phone_numbers~1{id}~1put'
+    delete:
+      tags: [Phone Numbers]
+      summary: Delete phone number
+      responses:
+        '204': { description: Deleted }
+
+  /api/users/{user_id}/addresses:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+    get:
+      tags: [Addresses]
+      summary: List addresses
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AddressesResponse' }}}}
+    post:
+      tags: [Addresses]
+      summary: Add address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressCreateRequest' }
+      responses:
+        '201': { content: { application/json: { schema: { $ref: '#/components/schemas/AddressResponse' }}}}
+
+  /api/users/{user_id}/addresses/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+      - $ref: '#/components/parameters/AddressId'
+    get:
+      tags: [Addresses]
+      summary: Get address
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AddressResponse' }}}}
+    put:
+      tags: [Addresses]
+      summary: Update address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressUpdateRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AddressResponse' }}}}
+    patch:
+      $ref: '#/paths/~1api~1users~1{user_id}~1addresses~1{id}~1put'
+    delete:
+      tags: [Addresses]
+      summary: Delete address
+      responses:
+        '204': { description: Deleted }
+
+  /api/logs:
+    get:
+      tags: [Logs]
+      summary: List logs for current user
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+  /api/logs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/LogId'
+    get:
+      tags: [Logs]
+      summary: Get log (owner or admin)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogResponse' }}}}
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/users/{user_id}/logs:
+    parameters:
+      - $ref: '#/components/parameters/UserIdNested'
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Logs]
+      summary: List logs for specified user (owner or admin)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: List users (admin only)
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UsersPageResponse' }}}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/admin/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [Admin]
+      summary: Admin update user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminUserUpdateRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/admin/users/{id}/reset_password:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Admin]
+      summary: Admin issue password reset token (returns token)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PasswordResetAdminResponse' }}}}
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/users/{id}/reset_password/{token}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/ResetToken'
+    put:
+      tags: [Admin]
+      summary: Admin complete password reset for user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetWithTokenRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/OkResponse' }}}}
+
+  /api/admin/users/reset_password/{token}:
+    parameters:
+      - $ref: '#/components/parameters/ResetToken'
+    put:
+      tags: [Admin]
+      summary: Admin complete password reset (token without id)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetWithTokenRequest' }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/OkResponse' }}}}
+
+  /api/admin/users/{id}/lock:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [Admin]
+      summary: Lock user account
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+  /api/admin/users/{id}/unlock:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [Admin]
+      summary: Unlock user account
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' }}}}
+
+  /api/admin/sessions:
+    get:
+      tags: [Admin]
+      summary: List all sessions
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionsResponse' }}}}
+  /api/admin/sessions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    delete:
+      tags: [Admin]
+      summary: Revoke session by id
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/SessionResponse' }}}}
+
+  /api/admin/logs:
+    get:
+      tags: [Admin]
+      summary: List all logs
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+  /api/admin/logs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/LogId'
+    get:
+      tags: [Admin]
+      summary: Get log by id
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogResponse' }}}}
+  /api/admin/logs/users/{user_id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Admin]
+      summary: List logs created by a user
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+  /api/admin/logs/sessions/{session_id}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Admin]
+      summary: List logs created by a session
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+  /api/admin/logs/who/{user_id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/PageNum'
+      - $ref: '#/components/parameters/PageSize'
+    get:
+      tags: [Admin]
+      summary: List logs where the target user was modified
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LogsResponse' }}}}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Token
+      description: "Pass Authorization: Bearer <api_token> in the HTTP Authorization header"
+
+  parameters:
+    PageNum:
+      name: page_num
+      in: query
+      description: Zero-based page number (default 0)
+      schema: { type: integer, minimum: 0, default: 0 }
+    PageSize:
+      name: page_size
+      in: query
+      description: Page size (default 10, max 100)
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UserIdNested:
+      name: user_id
+      in: path
+      required: true
+      schema: { type: string }
+      description: User id or username; "current" allowed in some routes
+    SessionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PhoneNumberId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AddressId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    LogId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ResetToken:
+      name: token
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Unauthorized (not admin/owner)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 401
+            detail: "Unauthorized"
+            message: "You are authenticated but do not have access to this method on this object."
+    Forbidden:
+      description: Forbidden or missing token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 403
+            detail: "Forbidden"
+            message: "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
+    ForbiddenAuth:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 403
+            detail: "Forbidden"
+            message: "Username, password and/or location were invalid.  Please verify credentials and try again."
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 404
+            detail: "Not Found"
+            message: "The requested object was not found."
+    Unprocessable:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorWithDetails' }
+    TooManyRequests:
+      description: Rate limited
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 429
+            detail: "Too Many Requests"
+            message: "You have exceeded the allowed number of requests.  Please cool off and try again later."
+    SessionRevokedOrExpired:
+      description: Session revoked or expired
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            ok: false
+            code: 403
+            detail: "Forbidden"
+            message: "Session cannot be extended.  It is expired or revoked"
+            errors:
+              - session: ["revoked_or_expired: true"]
+
+  schemas:
+    OkResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+    Error:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        code: { type: integer }
+        detail: { type: string }
+        message: { type: string }
+        errors:
+          type: array
+          items: { type: object }
+        token_expired: { type: boolean }
+      required: [ok, code, detail, message]
+    ErrorWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            errors:
+              type: object
+    UserResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/User' }
+    UserFullResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/UserFull' }
+    UsersPageResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/User' }
+        page_num: { type: integer }
+        page_size: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        email: { type: string, format: email }
+        email_verified: { type: string, format: date-time, nullable: true }
+        first_name: { type: string }
+        middle_name: { type: string, nullable: true }
+        last_name: { type: string }
+        name_prefix: { type: string, nullable: true }
+        name_suffix: { type: string, nullable: true }
+        nick_name: { type: string, nullable: true }
+        display_name: { type: string, nullable: true }
+        birthday: { type: string, format: date, nullable: true }
+        weight: { type: number, format: float, nullable: true }
+        height: { type: number, format: float, nullable: true }
+        sex: { type: string, enum: ["Male","Female","Other"], nullable: true }
+        gender: { type: string, enum: ["Agender","Androgyne","Androgynes","Androgynous","Bigender","Cis","Cis Female","Cis Male","Cis Man","Cis Woman","Cisgender","Cisgender Female","Cisgender Male","Cisgender Man","Cisgender Woman","Female to Male","FTM","Gender Fluid","Gender Nonconforming","Gender Questioning","Gender Variant","Genderqueer","Intersex","Male to Female","MTF","Neither","Neutrois","Non-binary","Other","Pangender","Trans","Trans Female","Trans Male","Trans Man","Trans Person","Trans*Female","Trans*Male","Trans*Man","Trans*Person","Trans*Woman","Transexual","Transexual Female","Transexual Male","Transexual Man","Transexual Person","Transexual Woman","Transgender Female","Transgender Person","Transmasculine","Two-spirit","Male","Female"], nullable: true }
+        ethnicity: { type: string, enum: ["Hispanic or Latinx","Not Hispanic or Latinx"], nullable: true }
+        race:
+          type: array
+          items:
+            type: string
+            enum: ["American Indian or Alaska Native","Asian","Black or African American","Native Hawaiian or Other Pacific Islander","White"]
+        roles:
+          type: array
+          items: { type: string, enum: ["admin","user","moderator"] }
+        latest_tos_accept_ver: { type: integer, nullable: true }
+        latest_pp_accept_ver: { type: integer, nullable: true }
+        tos_accepted: { type: boolean }
+        privacy_policy_accepted: { type: boolean }
+        tos_accept_events:
+          type: array
+          items: { $ref: '#/components/schemas/TosAcceptEvent' }
+        privacy_policy_accept_events:
+          type: array
+          items: { $ref: '#/components/schemas/PrivacyPolicyAcceptEvent' }
+        preferences: { $ref: '#/components/schemas/Preference' }
+        custom_attrs: { type: object, additionalProperties: true }
+        locked_at: { type: string, format: date-time, nullable: true }
+        locked_by: { type: string, format: uuid, nullable: true }
+        approved_ips:
+          type: array
+          items: { type: string, description: "IPv4 or IPv6" }
+      required: [id, username, email, first_name, last_name, roles]
+    UserFull:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            addresses:
+              type: array
+              items: { $ref: '#/components/schemas/Address' }
+            phone_numbers:
+              type: array
+              items: { $ref: '#/components/schemas/PhoneNumber' }
+    UserCreateRequest:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            username: { type: string }
+            email: { type: string, format: email }
+            password: { type: string, format: password }
+            first_name: { type: string }
+            last_name: { type: string }
+            nick_name: { type: string }
+            display_name: { type: string }
+            birthday: { type: string, format: date }
+            sex: { type: string }
+            gender: { type: string }
+            race:
+              type: array
+              items: { type: string }
+            ethnicity: { type: string }
+            weight: { type: number }
+            custom_attrs: { type: object, additionalProperties: true }
+            approved_ips:
+              type: array
+              items: { type: string }
+            preferences: { $ref: '#/components/schemas/Preference' }
+            addresses:
+              type: array
+              items: { $ref: '#/components/schemas/AddressCreate' }
+            phone_numbers:
+              type: array
+              items: { $ref: '#/components/schemas/PhoneNumberCreate' }
+          required: [username, email, password, first_name, last_name]
+      required: [user]
+    UserUpdateRequest:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            password: { type: string, format: password }
+            accept_tos: { type: boolean }
+            accept_privacy_policy: { type: boolean }
+            nick_name: { type: string }
+            sex: { type: string }
+            gender: { type: string }
+            race:
+              type: array
+              items: { type: string }
+            ethnicity: { type: string }
+            birthday: { type: string, format: date }
+            weight: { type: number }
+            height: { type: number }
+            custom_attrs: { type: object }
+            approved_ips:
+              type: array
+              items: { type: string }
+            preferences: { $ref: '#/components/schemas/Preference' }
+            addresses:
+              type: array
+              items: { $ref: '#/components/schemas/AddressCreate' }
+            phone_numbers:
+              type: array
+              items: { $ref: '#/components/schemas/PhoneNumberCreate' }
+      required: [user]
+    AdminUserUpdateRequest:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            email: { type: string, format: email }
+            username: { type: string }
+            password: { type: string }
+            first_name: { type: string }
+            last_name: { type: string }
+            middle_name: { type: string }
+            name_prefix: { type: string }
+            name_suffix: { type: string }
+            display_name: { type: string }
+            nick_name: { type: string }
+            roles:
+              type: array
+              items: { type: string }
+            reset_password: { type: boolean }
+            sex: { type: string }
+            gender: { type: string }
+            race:
+              type: array
+              items: { type: string }
+            ethnicity: { type: string }
+            birthday: { type: string, format: date }
+            weight: { type: number }
+            height: { type: number }
+            custom_attrs: { type: object }
+            approved_ips:
+              type: array
+              items: { type: string }
+            preferences: { $ref: '#/components/schemas/Preference' }
+            addresses:
+              type: array
+              items: { $ref: '#/components/schemas/AddressCreate' }
+            phone_numbers:
+              type: array
+              items: { $ref: '#/components/schemas/PhoneNumberCreate' }
+      required: [user]
+    Preference:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: ["light", "dark"]
+        display_name_pref:
+          type: string
+          enum: ["full_name", "nick_name", "custom"]
+        display_middle_initial_only: { type: boolean }
+    TosAcceptEvent:
+      type: object
+      properties:
+        accept: { type: boolean }
+        tos_version: { type: integer }
+        timestamp: { type: string, format: date-time }
+    PrivacyPolicyAcceptEvent:
+      type: object
+      properties:
+        accept: { type: boolean }
+        privacy_policy_version: { type: integer }
+        timestamp: { type: string, format: date-time }
+    Address:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        primary: { type: boolean }
+        verified_at: { type: string, format: date-time, nullable: true }
+        name: { type: string }
+        line_1: { type: string }
+        line_2: { type: string }
+        country: { type: string }
+        city: { type: string }
+        state: { type: string }
+        postal: { type: string }
+    AddressCreate:
+      type: object
+      properties:
+        primary: { type: boolean }
+        name: { type: string }
+        line_1: { type: string }
+        line_2: { type: string }
+        country: { type: string }
+        city: { type: string }
+        state: { type: string }
+        postal: { type: string }
+      required: [name, line_1, line_2, country, city, state, postal]
+    AddressCreateRequest:
+      type: object
+      properties:
+        address: { $ref: '#/components/schemas/AddressCreate' }
+      required: [address]
+    AddressUpdateRequest:
+      type: object
+      properties:
+        address: { $ref: '#/components/schemas/AddressCreate' }
+      required: [address]
+    AddressResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Address' }
+    AddressesResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Address' }
+    PhoneNumber:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        primary: { type: boolean }
+        number: { type: string }
+        verified_at: { type: string, format: date-time, nullable: true }
+    PhoneNumberCreate:
+      type: object
+      properties:
+        primary: { type: boolean }
+        number: { type: string }
+      required: [number]
+    PhoneNumberCreateRequest:
+      type: object
+      properties:
+        phone_number: { $ref: '#/components/schemas/PhoneNumberCreate' }
+      required: [phone_number]
+    PhoneNumberUpdateRequest:
+      type: object
+      properties:
+        phone_number: { $ref: '#/components/schemas/PhoneNumberCreate' }
+      required: [phone_number]
+    PhoneNumberResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/PhoneNumber' }
+    PhoneNumbersResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/PhoneNumber' }
+    Session:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        api_token: { type: string, description: "Present in creation response only" }
+        expires_at: { type: string, format: date-time }
+        authenticated_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time, nullable: true }
+        ip_address: { type: string }
+        valid_only_for_ip: { type: boolean }
+        valid_only_for_approved_ips: { type: boolean }
+        location: { type: string, nullable: true }
+        is_valid: { type: boolean }
+        extendable_until: { type: string, format: date-time }
+        max_extension_secs: { type: integer }
+    SessionCreateRequest:
+      type: object
+      properties:
+        session:
+          type: object
+          properties:
+            username: { type: string }
+            password: { type: string }
+            location: { type: string }
+            never_expires: { type: boolean }
+            expires_in_seconds: { type: integer }
+            extendable_until_seconds: { type: integer }
+            max_extension_secs: { type: integer }
+            valid_only_for_ip: { type: boolean }
+            valid_only_for_approved_ips: { type: boolean }
+          required: [username, password]
+      required: [session]
+    SessionExtendRequest:
+      type: object
+      properties:
+        expire_in_seconds: { type: integer, minimum: 0 }
+    SessionResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+        data: { $ref: '#/components/schemas/Session' }
+    SessionsResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        code: { type: integer, example: 200 }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Session' }
+    SessionDeleteAllResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            status: { type: boolean }
+            num_revoked: { type: integer }
+            message: { type: string }
+    SessionExtension:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        old_expires_at: { type: string, format: date-time }
+        new_expires_at: { type: string, format: date-time }
+        extended_by_seconds: { type: integer }
+        extended_by_session: { type: string, format: uuid }
+        extended_by_user: { type: string, format: uuid }
+        session_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+    SessionExtensionResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        code: { type: integer }
+        data: { $ref: '#/components/schemas/SessionExtension' }
+    SessionExtensionsResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        code: { type: integer }
+        page_num: { type: integer }
+        page_size: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/SessionExtension' }
+    Log:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        success: { type: boolean }
+        type: { type: string, enum: ["users","sessions"] }
+        verb: { type: string, enum: ["GET","POST","PUT","DELETE"] }
+        when: { type: string, format: date-time }
+        what: { type: string }
+        who: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        session_id: { type: string, format: uuid }
+    LogResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        data: { $ref: '#/components/schemas/Log' }
+    LogsResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Log' }
+    PasswordResetWithTokenRequest:
+      type: object
+      properties:
+        new_password: { type: string }
+      required: [new_password]
+    PasswordResetAdminResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            password_reset_token: { type: string }
+            password_reset_token_expires_at: { type: string, format: date-time }
+    WhoAmIResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            user_id: { type: string }
+            session_id: { type: string }
+            ip_address: { type: string }
+            valid_only_for_ip: { type: boolean }
+            user_roles:
+              type: array
+              items: { type: string }
+            expires_at: { type: string, format: date-time }
+            terms_of_service: { type: integer }
+            privacy_policy: { type: integer }
