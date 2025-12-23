@@ -35,7 +35,6 @@ config :malan, MalanWeb.Endpoint,
       "tailwindcss",
       "--input=css/app.css",
       "--output=../priv/static/assets/app.css",
-      "--postcss",
       "--watch",
       cd: Path.expand("../assets", __DIR__)
     ]

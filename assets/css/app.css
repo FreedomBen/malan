@@ -1,9 +1,7 @@
-/* This file is for your main application CSS */
-
-/* Import Tailwind CSS */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@source "./js/**/*.{js,ts}";
+@source "../lib/*_web/**/*.*ex";
 
 /* Custom Components */
 @import "./components/alerts.css";
@@ -31,8 +29,8 @@
   * From:  https://pragmaticstudio.com/tutorials/adding-tailwind-css-to-phoenix
   * "Using Custom Component Classes"
   *
-  * If going to use many of these, will probably want them in separate files.  I've already
-  * added postcss-import so you can import like:
+  * If going to use many of these, will probably want them in separate files.
+  * Tailwind CSS v4 handles @import natively, so you can organize components like:
   *
   * @import "./components/buttons.css"
   */

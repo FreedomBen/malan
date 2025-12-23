@@ -1,3 +1,50 @@
+@layer utilities {
+  @keyframes fade-in-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-out-scale {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+}
+
 @layer components {
   .phx-click-loading {
     @apply opacity-50 transition-opacity duration-1000 ease-out;
@@ -8,18 +55,18 @@
   }
 
   .fade-in-scale {
-    @apply animate-fade-in-scale;
+    animation: fade-in-scale 0.25s ease-out both;
   }
 
   .fade-out-scale {
-    @apply animate-fade-out-scale;
+    animation: fade-out-scale 0.2s ease-in forwards;
   }
 
   .fade-in {
-    @apply animate-fade-in;
+    animation: fade-in 0.2s ease-out both;
   }
 
   .fade-out {
-    @apply animate-fade-out;
+    animation: fade-out 0.15s ease-in forwards;
   }
 }
