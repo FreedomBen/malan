@@ -8,6 +8,8 @@ Malan is a basic authentication service that you can drop into your microservice
 
 API documentation is available in [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) with a concise map in [`API.md`](./API.md).
 
+To upgrade Swagger UI docs: bump `swagger-ui-dist` in `assets/package.json`, run `cd assets && npm install` (postinstall runs the sync) or `./scripts/sync-swagger-ui.sh`, then start the app and visit `/docs`.
+
 ### Basic endpoints you'll use
 
 If using Malan as an authentication service, the most common endpoints are:

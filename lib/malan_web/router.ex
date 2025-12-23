@@ -79,6 +79,9 @@ defmodule MalanWeb.Router do
 
     get "/password/reset", RedirectController, :reset_password
     get "/password/forgot", RedirectController, :reset_password
+
+    get "/docs", DocsController, :swagger
+    get "/openapi.yaml", DocsController, :spec
   end
 
   scope "/health_check", MalanWeb, log: false do

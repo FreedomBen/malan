@@ -55,4 +55,3 @@ Accounts.get_user_by!(username: "root")
 # })
 # Malan.Repo.insert!(van)
 # Malan.Repo.insert!(van, on_conflict: :nothing, conflict_target: :username)
-

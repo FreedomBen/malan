@@ -17,7 +17,7 @@ defmodule MalanWeb do
   and import those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt .well-known)
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt .well-known swagger-ui)
 
   def controller(opts \\ []) do
     # For tweaking log output in production:

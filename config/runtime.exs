@@ -33,25 +33,33 @@ end
 
 # Set the default log level based on the environment
 allowed_log_levels = [:debug, :info, :warning, :error]
-default_log_level = case config_env() do
-                      :prod -> "info"
-                      :test -> "warning"
-                      :dev -> "debug"
-                    end
+
+default_log_level =
+  case config_env() do
+    :prod -> "info"
+    :test -> "warning"
+    :dev -> "debug"
+  end
 
 # Fetch the LOG_LEVEL environment variable and configure logging
 # Be permissive on the input, like "DEBUG", "debug", ":debug", etc.
-log_level = System.get_env("LOG_LEVEL", default_log_level)
-            |> String.trim_leading(":") # Remove leading colon if present
-            |> String.downcase()        # Convert to lowercase
-            |> String.to_atom()         # Convert to atom
+log_level =
+  System.get_env("LOG_LEVEL", default_log_level)
+  |> String.trim_leading(":")
+  |> String.downcase()
+  |> String.to_atom()
 
 if log_level in allowed_log_levels do
   Utils.Logger.info("Setting log level to #{log_level}")
   config :logger, level: log_level
 else
-  Utils.Logger.error("Invalid log level: #{log_level}.  Valid levels are: " <> Malan.Utils.to_string(allowed_log_levels))
-  raise ArgumentError, "Invalid LOG_LEVEL environment variable value: #{log_level}.  Allowed values are: #{Malan.Utils.to_string(allowed_log_levels)}"
+  Utils.Logger.error(
+    "Invalid log level: #{log_level}.  Valid levels are: " <>
+      Malan.Utils.to_string(allowed_log_levels)
+  )
+
+  raise ArgumentError,
+        "Invalid LOG_LEVEL environment variable value: #{log_level}.  Allowed values are: #{Malan.Utils.to_string(allowed_log_levels)}"
 end
 
 ### End LOG_LEVEL configuration
@@ -146,7 +154,7 @@ if config_env() == :prod do
       host: external_host,
       port: Utils.Number.to_int(external_port)
     ],
-    #check_origin: :conn
+    # check_origin: :conn
     check_origin: [
       "https://accounts.ameelio.org",
       "https://accounts.ameelio.xyz",

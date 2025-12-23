@@ -68,6 +68,7 @@ defmodule Malan.Config do
         :default_password_reset_token_expiration_secs
       ]
     end
+
     def min_password_length do
       Application.get_env(:malan, Malan.Accounts.User)[:min_password_length]
     end

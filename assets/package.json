@@ -4,10 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deploy": "NODE_ENV=production tailwindcss --minify --input=css/app.css --output=../priv/static/assets/app.css",
+    "deploy": "npm run sync:swagger && NODE_ENV=production tailwindcss --minify --input=css/app.css --output=../priv/static/assets/app.css",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write .",
-    "formatCheck": "prettier --check ."
+    "formatCheck": "prettier --check .",
+    "sync:swagger": "../scripts/sync-swagger-ui.sh",
+    "postinstall": "npm run sync:swagger"
   },
   "author": "Benjamin Porter",
   "license": "ISC",
@@ -16,6 +18,7 @@
     "@tailwindcss/forms": "^0.5.11",
     "alpinejs": "^3.15.3",
     "prettier": "^3.7.4",
+    "swagger-ui-dist": "^5.31.0",
     "tailwindcss": "^4.1.18"
   }
 }
