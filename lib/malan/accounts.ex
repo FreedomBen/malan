@@ -1846,7 +1846,8 @@ defmodule Malan.Accounts do
       [%SessionExtension{}, ...]
 
   """
-  def list_session_extensions(session_id, page_num, page_size) when valid_page(page_num, page_size) do
+  def list_session_extensions(session_id, page_num, page_size)
+      when valid_page(page_num, page_size) do
     from(
       s in SessionExtension,
       select: s,
@@ -1872,5 +1873,4 @@ defmodule Malan.Accounts do
 
   """
   def get_session_extension!(id), do: Repo.get!(SessionExtension, id)
-
 end

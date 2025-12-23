@@ -132,4 +132,3 @@ jobs:
       - name: Deploy new version
         run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
 
-

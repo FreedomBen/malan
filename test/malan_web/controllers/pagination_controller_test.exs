@@ -205,7 +205,12 @@ defmodule MalanWeb.PaginationControllerTest do
               %Pagination{page_num: 2, page_size: 7, default_page_size: 15, max_page_size: 20}} =
                PaginationController.extract_page_info(
                  %Plug.Conn{
-                   params: %{"page_num" => 2, "page_size" => 7, "max_page_size" => 30, "default_page_size" => 28}
+                   params: %{
+                     "page_num" => 2,
+                     "page_size" => 7,
+                     "max_page_size" => 30,
+                     "default_page_size" => 28
+                   }
                  },
                  15,
                  20

@@ -156,26 +156,37 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
       <div class="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
         <form class="space-y-6" phx-change="" phx-submit="reset_password">
           <div>
-            <label for="reset_token" class="block text-sm font-medium text-gray-700"> Password Reset Token (from email): </label>
+            <label for="reset_token" class="block text-sm font-medium text-gray-700">
+               Password Reset Token (from email): 
+            </label>
             <div class="mt-1">
               <.token_text_input
                 reset_token={assigns.reset_token}
-                disabled={!(Utils.nil_or_empty?(assigns.reset_token) || assigns.reset_token == "token")}
+                disabled={
+                  !(Utils.nil_or_empty?(assigns.reset_token) || assigns.reset_token == "token")
+                }
               />
             </div>
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700"> New Password: </label>
+            <label for="password" class="block text-sm font-medium text-gray-700">
+               New Password: 
+            </label>
             <div class="mt-1">
-              <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
             </div>
           </div>
 
           <div>
-            <button
-              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
+            <button class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
               Set new password
             </button>
           </div>

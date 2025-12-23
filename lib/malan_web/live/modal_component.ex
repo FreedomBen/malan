@@ -4,9 +4,10 @@ defmodule MalanWeb.ModalComponent do
   @impl true
   def render(assigns) do
     ~H"""
-      If you want to use this component, you need to update the live_patch and live_component 
-      functions below.  See:  https://hexdocs.pm/phoenix_live_view/changelog.html#0-18-0-2022-09-20
+    If you want to use this component, you need to update the live_patch and live_component
+    functions below.  See:  https://hexdocs.pm/phoenix_live_view/changelog.html#0-18-0-2022-09-20
     """
+
     # ~H"""
     # <div
     #   id={@id}

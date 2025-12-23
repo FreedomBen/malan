@@ -203,7 +203,6 @@ defmodule MalanWeb.AuthControllerTest do
       assert conn.assigns.authed_user_is_admin == true
       assert conn.assigns.authed_user_is_moderator == false
     end
-
   end
 
   describe "#is_authenticated/2" do
@@ -227,11 +226,12 @@ defmodule MalanWeb.AuthControllerTest do
       assert conn.status == 403
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token.",
-      } = json_response(conn, 403)
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" =>
+                 "Anonymous access to this method on this object is not allowed.  You must authenticate and pass a valid token."
+             } = json_response(conn, 403)
     end
 
     test "halts with 403 when token expired", %{conn: conn} do
@@ -254,12 +254,12 @@ defmodule MalanWeb.AuthControllerTest do
       assert c2.status == 403
 
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true
-      } = json_response(c2, 403)
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
+             } = json_response(c2, 403)
     end
 
     test "halts with 403 when token revoked", %{conn: conn} do
@@ -280,13 +280,14 @@ defmodule MalanWeb.AuthControllerTest do
 
       assert c2.halted == true
       assert c2.status == 403
+
       assert %{
-        "ok" => false,
-        "code" => 403,
-        "detail" => "Forbidden",
-        "message" => "API token is expired or revoked",
-        "token_expired" => true
-      } = json_response(c2, 403)
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => "API token is expired or revoked",
+               "token_expired" => true
+             } = json_response(c2, 403)
     end
   end
 

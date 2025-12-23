@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
   <head>
-    <meta charset="utf-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <%= csrf_meta_tag() %>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {csrf_meta_tag()}
     <.live_title suffix=" · Ameelio">
-      <%= assigns[:page_title] || "Password Reset" %>
+      {assigns[:page_title] || "Password Reset"}
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"}/>
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
   </head>
   <body class="h-full">
     <div
@@ -21,7 +22,11 @@
           <div class="flex justify-start lg:w-0 lg:flex-1">
             <.link navigate={~p"/users/reset_password"}>
               <span class="sr-only">Ameelio</span>
-              <img class="h-8 w-auto sm:h-10" src={~p"/images/ameelio_logo_square.png"} alt="Ameelio Logo">
+              <img
+                class="h-8 w-auto sm:h-10"
+                src={~p"/images/ameelio_logo_square.png"}
+                alt="Ameelio Logo"
+              />
             </.link>
           </div>
           <div class="-my-2 -mr-2 md:hidden">
@@ -33,17 +38,54 @@
             >
               <span class="sr-only">Open menu</span>
               <!-- Heroicon name: outline/bars-3 -->
-              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              <svg
+                class="h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                />
               </svg>
             </button>
           </div>
           <nav class="hidden space-x-10 md:flex">
-            <a href="https://www.ameelio.org" class="text-base font-medium text-gray-500 hover:text-gray-900">Ameelio.org</a>
-            <a href="https://www.ameelio.org/child-products/ameelio-mail-letters-postcards" class="text-base font-medium text-gray-500 hover:text-gray-900">Letters</a>
-            <a href="https://pathways.ameelio.org" class="text-base font-medium text-gray-500 hover:text-gray-900">Pathways</a>
-            <a href="https://connect.ameelio.org" class="text-base font-medium text-gray-500 hover:text-gray-900">Connect</a>
-            <a href="https://app.ameelio.org" class="text-base font-medium text-gray-500 hover:text-gray-900">Connect (Providers)</a>
+            <a
+              href="https://www.ameelio.org"
+              class="text-base font-medium text-gray-500 hover:text-gray-900"
+            >
+              Ameelio.org
+            </a>
+            <a
+              href="https://www.ameelio.org/child-products/ameelio-mail-letters-postcards"
+              class="text-base font-medium text-gray-500 hover:text-gray-900"
+            >
+              Letters
+            </a>
+            <a
+              href="https://pathways.ameelio.org"
+              class="text-base font-medium text-gray-500 hover:text-gray-900"
+            >
+              Pathways
+            </a>
+            <a
+              href="https://connect.ameelio.org"
+              class="text-base font-medium text-gray-500 hover:text-gray-900"
+            >
+              Connect
+            </a>
+            <a
+              href="https://app.ameelio.org"
+              class="text-base font-medium text-gray-500 hover:text-gray-900"
+            >
+              Connect (Providers)
+            </a>
           </nav>
           <div class="hidden items-center justify-end md:flex md:flex-1 lg:w-0">
             <!-- Not implemented yet for accounts
@@ -53,8 +95,8 @@
           </div>
         </div>
       </div>
-
-      <!--
+      
+<!--
         Mobile menu, show/hide based on mobile menu state.
 
         Entering: "duration-200 ease-out"
@@ -77,7 +119,11 @@
           <div class="px-5 pt-5 pb-6">
             <div class="flex items-center justify-between">
               <div>
-                <img class="h-8 w-auto" src={~p"/images/ameelio_logo_square.png"} alt="Ameelio Logo">
+                <img
+                  class="h-8 w-auto"
+                  src={~p"/images/ameelio_logo_square.png"}
+                  alt="Ameelio Logo"
+                />
               </div>
               <div class="-mr-2">
                 <button
@@ -87,7 +133,15 @@
                 >
                   <span class="sr-only">Close menu</span>
                   <!-- Heroicon name: outline/x-mark -->
-                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                  <svg
+                    class="h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -95,11 +149,17 @@
             </div>
             <div class="mt-6">
               <nav class="grid gap-y-8">
-                <a href="https://www.ameelio.org" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                <a
+                  href="https://www.ameelio.org"
+                  class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50"
+                >
                   <span class="ml-3 text-base font-medium text-gray-900">Ameelio.org</span>
                 </a>
 
-                <a href="https://www.ameelio.org/child-products/ameelio-mail-letters-postcards" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                <a
+                  href="https://www.ameelio.org/child-products/ameelio-mail-letters-postcards"
+                  class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50"
+                >
                   <!-- Heroicon name: outline/cursor-arrow-rays -->
                   <!--
                   <svg class="h-6 w-6 flex-shrink-0 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -109,18 +169,28 @@
                   <span class="ml-3 text-base font-medium text-gray-900">Letters</span>
                 </a>
 
-                <a href="https://pathways.ameelio.org" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                <a
+                  href="https://pathways.ameelio.org"
+                  class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50"
+                >
                   <span class="ml-3 text-base font-medium text-gray-900">Pathways</span>
                 </a>
 
-                <a href="https://connect.ameelio.org" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
+                <a
+                  href="https://connect.ameelio.org"
+                  class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50"
+                >
                   <span class="ml-3 text-base font-medium text-gray-900">Connect</span>
                 </a>
 
-                <a href="https://app.ameelio.org" class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50">
-                  <span class="ml-3 text-base font-medium text-gray-900">Connect for Providers</span>
+                <a
+                  href="https://app.ameelio.org"
+                  class="-m-3 flex items-center rounded-md p-3 hover:bg-gray-50"
+                >
+                  <span class="ml-3 text-base font-medium text-gray-900">
+                    Connect for Providers
+                  </span>
                 </a>
-
               </nav>
             </div>
           </div>
@@ -128,6 +198,6 @@
       </div>
     </div>
 
-    <%= @inner_content %>
+    {@inner_content}
   </body>
 </html>

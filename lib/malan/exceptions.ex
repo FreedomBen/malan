@@ -53,8 +53,8 @@ defmodule Malan.Pagination.NotPaginated do
   def exception(opts) do
     assigns_str =
       Keyword.get(opts, :conn, nil)
-        |> Map.get(:assigns, %{})
-        |> Utils.map_to_string()
+      |> Map.get(:assigns, %{})
+      |> Utils.map_to_string()
 
     msg = "conn was not paginated.  Assigns: #{assigns_str}"
 

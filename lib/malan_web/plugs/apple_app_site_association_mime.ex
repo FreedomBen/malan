@@ -12,8 +12,9 @@ defmodule MalanWeb.Plugs.AppleAppSiteAssociationMime do
   def call(conn, _opts) do
     if conn.request_path == "/.well-known/apple-app-site-association" do
       # Path to the file
-      file_path = Path.join([:code.priv_dir(:malan), "static", ".well-known", "apple-app-site-association"])
-      
+      file_path =
+        Path.join([:code.priv_dir(:malan), "static", ".well-known", "apple-app-site-association"])
+
       # Read the file
       case File.read(file_path) do
         {:ok, content} ->
@@ -21,6 +22,7 @@ defmodule MalanWeb.Plugs.AppleAppSiteAssociationMime do
           |> put_resp_content_type("application/json")
           |> send_resp(200, content)
           |> halt()
+
         {:error, _} ->
           conn
       end

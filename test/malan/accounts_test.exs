@@ -1207,6 +1207,7 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 returns a user id, roles, and expires_at when the session is valid" do
       session = session_fixture(%{"username" => "randomusername1"})
+
       assert {:ok, user_id, username, session_id, ip_address, valid_only_for_ip, roles, exp, tos,
               pp} = Accounts.validate_session(session.api_token, "1.1.1.1")
 
@@ -1451,8 +1452,8 @@ defmodule Malan.AccountsTest do
         }
 
       assert {:ok, ^user_id, "fakeusername1", ^session_id, ^ip_address, ^valid_only_for_ip,
-              ^roles, ^expires_at, ^latest_tos_accept_ver,
-              ^latest_pp_accept_ver} = Accounts.session_valid?(args, nil)
+              ^roles, ^expires_at, ^latest_tos_accept_ver, ^latest_pp_accept_ver} =
+               Accounts.session_valid?(args, nil)
     end
 
     test "session_valid?/2 with map expired but not revoked is expired" do
@@ -1598,7 +1599,9 @@ defmodule Malan.AccountsTest do
              )
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
-      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 3600})
+
+      assert {:ok, {session_retval, _session_extension_retval}} =
+               Accounts.extend_session(session, %{expire_in_seconds: 3600})
 
       assert TestUtils.DateTime.datetimes_within?(
                session_retval.expires_at,
@@ -1613,7 +1616,9 @@ defmodule Malan.AccountsTest do
     end
 
     test "Trying to extend beyond the extendable_until point results in extension to that point" do
-      session = session_fixture(%{}, %{"expires_in_seconds" => 1800, "extendable_until_seconds" => 3600})
+      session =
+        session_fixture(%{}, %{"expires_in_seconds" => 1800, "extendable_until_seconds" => 3600})
+
       cur_exp_time = session.expires_at
 
       assert TestUtils.DateTime.datetimes_within?(
@@ -1625,7 +1630,8 @@ defmodule Malan.AccountsTest do
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
       # 2,000 seconds more than what should be allowed based on our limit set above
-      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 5600})
+      assert {:ok, {session_retval, _session_extension_retval}} =
+               Accounts.extend_session(session, %{expire_in_seconds: 5600})
 
       assert TestUtils.DateTime.datetimes_within?(
                session_retval.expires_at,
@@ -1651,7 +1657,9 @@ defmodule Malan.AccountsTest do
              )
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
-      assert {:ok, {session_retval, _session_extension_retval}} = Accounts.extend_session(session, %{expire_in_seconds: 3600})
+
+      assert {:ok, {session_retval, _session_extension_retval}} =
+               Accounts.extend_session(session, %{expire_in_seconds: 3600})
 
       assert TestUtils.DateTime.plus_or_minus?(
                session_retval.expires_at,
@@ -1723,15 +1731,15 @@ defmodule Malan.AccountsTest do
              )
 
       assert %Malan.Accounts.SessionExtension{
-        updated_at: extension1_updated_at,
-        inserted_at: extension1_inserted_at,
-        extended_by_session: ^session_id,
-        extended_by_user: ^user_id,
-        extended_by_seconds: 60,
-        new_expires_at: extension1_new_expires_at,
-        old_expires_at: extension1_old_expires_at,
-        id: extension1_id
-      } = se2
+               updated_at: extension1_updated_at,
+               inserted_at: extension1_inserted_at,
+               extended_by_session: ^session_id,
+               extended_by_user: ^user_id,
+               extended_by_seconds: 60,
+               new_expires_at: extension1_new_expires_at,
+               old_expires_at: extension1_old_expires_at,
+               id: extension1_id
+             } = se2
 
       assert extension1_new_expires_at == s2.expires_at
 
@@ -1791,15 +1799,15 @@ defmodule Malan.AccountsTest do
              )
 
       assert %Malan.Accounts.SessionExtension{
-        updated_at: extension2_updated_at,
-        inserted_at: extension2_inserted_at,
-        extended_by_session: ^session_id,
-        extended_by_user: ^user_id,
-        extended_by_seconds: 120,
-        new_expires_at: extension2_new_expires_at,
-        old_expires_at: extension2_old_expires_at,
-        id: extension2_id
-      } = se3
+               updated_at: extension2_updated_at,
+               inserted_at: extension2_inserted_at,
+               extended_by_session: ^session_id,
+               extended_by_user: ^user_id,
+               extended_by_seconds: 120,
+               new_expires_at: extension2_new_expires_at,
+               old_expires_at: extension2_old_expires_at,
+               id: extension2_id
+             } = se3
 
       assert extension2_new_expires_at == s3.expires_at
 
@@ -1869,15 +1877,15 @@ defmodule Malan.AccountsTest do
              )
 
       assert %Malan.Accounts.SessionExtension{
-        updated_at: extension3_updated_at,
-        inserted_at: extension3_inserted_at,
-        extended_by_session: ^session_id,
-        extended_by_user: ^user_id,
-        extended_by_seconds: 90,
-        new_expires_at: extension3_new_expires_at,
-        old_expires_at: extension3_old_expires_at,
-        id: extension3_id
-      } = se4
+               updated_at: extension3_updated_at,
+               inserted_at: extension3_inserted_at,
+               extended_by_session: ^session_id,
+               extended_by_user: ^user_id,
+               extended_by_seconds: 90,
+               new_expires_at: extension3_new_expires_at,
+               old_expires_at: extension3_old_expires_at,
+               id: extension3_id
+             } = se4
 
       assert extension3_new_expires_at == s4.expires_at
 

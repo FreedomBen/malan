@@ -218,8 +218,10 @@ defmodule MalanWeb.JsonRenderingTest do
                SessionJSON.index(%{code: 200, sessions: [session]})
 
       refute Map.has_key?(rendered, :api_token)
+
       assert %{ok: true, code: 200, data: rendered_show} =
                SessionJSON.show(%{code: 200, session: session})
+
       assert rendered_show == rendered
 
       assert %{
@@ -327,6 +329,7 @@ defmodule MalanWeb.JsonRenderingTest do
       assert %{ok: true, code: 200, data: data} = UserJSON.show(%{code: 200, user: user})
       assert [%{id: "addr-1"}] = data[:addresses]
       assert [%{id: "phone-2"}] = data[:phone_numbers]
+
       assert %{
                theme: "light",
                display_name_pref: "full_name",

@@ -43,9 +43,10 @@ defmodule Malan.Accounts.Log.Changes do
 
   def map_from_changeset(changeset, blacklisted_attrs \\ []) do
     bl_attrs = blattrs(blacklisted_attrs)
+
     %{
       errors: changeset.errors |> Utils.Ecto.Changeset.errors_to_str_list(),
-      #changes: changeset.changes |> Utils.mask_map_key_values(bl_attrs),
+      # changes: changeset.changes |> Utils.mask_map_key_values(bl_attrs),
       changes: changeset.changes |> clean_changeset_changes(bl_attrs),
       data: changeset.data |> clean_changeset_data(bl_attrs),
       data_type: changeset.data.__meta__.source,
@@ -61,7 +62,7 @@ defmodule Malan.Accounts.Log.Changes do
   def changeset(log_changes, attrs) do
     log_changes
     |> cast(attrs, [:errors, :changes, :data, :data_type, :action, :valid?])
-    #|> validate_required([:errors, :changes, :data, :data_type, :valid?])
+    # |> validate_required([:errors, :changes, :data, :data_type, :valid?])
     |> validate_data_type()
   end
 

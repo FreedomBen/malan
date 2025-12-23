@@ -44,28 +44,28 @@ defmodule Malan.Pagination do
   def set_default_page_size(changeset) do
     case get_field(changeset, :default_page_size) do
       nil -> put_change(changeset, :default_page_size, @default_page_size)
-        _ -> changeset
+      _ -> changeset
     end
   end
 
   def set_max_page_size(changeset) do
     case get_field(changeset, :max_page_size) do
       nil -> put_change(changeset, :max_page_size, @default_max_page_size)
-        _ -> changeset
+      _ -> changeset
     end
   end
 
   def infer_default_page_num(changeset) do
     case get_field(changeset, :page_num) do
       nil -> put_change(changeset, :page_num, @default_page_num)
-        _ -> changeset
+      _ -> changeset
     end
   end
 
   def infer_default_page_size(changeset) do
     case get_field(changeset, :page_size) do
       nil -> put_change(changeset, :page_size, get_field(changeset, :default_page_size))
-        _ -> changeset
+      _ -> changeset
     end
   end
 
@@ -126,5 +126,4 @@ defmodule Malan.Pagination do
   def num_pages(total_count, page_size) do
     div(total_count, page_size) + 1
   end
-
 end

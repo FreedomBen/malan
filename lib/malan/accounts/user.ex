@@ -19,10 +19,10 @@ defmodule Malan.Accounts.User do
   @deleted_user_uuid_len 37
   @deleted_user_sentinel "|"
   @deleted_user_sentinel_len 1
-  @deleted_user_prefix_length (@deleted_user_uuid_len + @deleted_user_sentinel_len)
+  @deleted_user_prefix_length @deleted_user_uuid_len + @deleted_user_sentinel_len
 
-  @max_email_length (@max_email_size + @deleted_user_prefix_length)
-  @max_username_length (@max_username_size + @deleted_user_prefix_length)
+  @max_email_length @max_email_size + @deleted_user_prefix_length
+  @max_username_length @max_username_size + @deleted_user_prefix_length
 
   # @valid_roles ["admin", "user", "moderator"]
 
@@ -75,7 +75,7 @@ defmodule Malan.Accounts.User do
     field :ethnicity, :string, virtual: true
 
     embeds_many :tos_accept_events, TosAcceptEvent, on_replace: :raise do
-      #@derive {Jason.Encoder, except: [:__meta__]}
+      # @derive {Jason.Encoder, except: [:__meta__]}
       @derive Jason.Encoder
       # true == accept, false == reject
       field :accept, :boolean
@@ -84,7 +84,7 @@ defmodule Malan.Accounts.User do
     end
 
     embeds_many :privacy_policy_accept_events, PrivacyPolicyAcceptEvent, on_replace: :raise do
-      #@derive {Jason.Encoder, except: [:__meta__]}
+      # @derive {Jason.Encoder, except: [:__meta__]}
       @derive Jason.Encoder
       # true == accept, false == reject
       field :accept, :boolean

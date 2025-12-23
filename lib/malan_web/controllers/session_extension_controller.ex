@@ -13,12 +13,18 @@ defmodule MalanWeb.SessionExtensionController do
 
   def index(conn, %{"session_id" => session_id}) do
     {page_num, page_size} = pagination_info(conn)
+
     conn
-    |> render_index(Accounts.list_session_extensions(session_id, page_num, page_size), page_num, page_size)
+    |> render_index(
+      Accounts.list_session_extensions(session_id, page_num, page_size),
+      page_num,
+      page_size
+    )
   end
 
   def index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
+
     conn
     |> render_index(Accounts.list_session_extensions(page_num, page_size), page_num, page_size)
   end

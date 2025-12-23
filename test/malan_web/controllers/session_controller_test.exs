@@ -190,7 +190,8 @@ defmodule MalanWeb.SessionControllerTest do
 
       # All our created sessions should be present
       for session_id <- created_session_ids do
-        assert session_id in actual_session_ids, "Session #{session_id} should be in admin results"
+        assert session_id in actual_session_ids,
+               "Session #{session_id} should be in admin results"
       end
 
       # Should be ordered by newest first
@@ -213,7 +214,10 @@ defmodule MalanWeb.SessionControllerTest do
 
       # At least some of our created sessions should be in the first 5 (newest)
       actual_session_ids = Enum.map(data, & &1["id"])
-      overlap = MapSet.intersection(MapSet.new(created_session_ids), MapSet.new(actual_session_ids))
+
+      overlap =
+        MapSet.intersection(MapSet.new(created_session_ids), MapSet.new(actual_session_ids))
+
       assert MapSet.size(overlap) >= 3, "Expected at least 3 of our sessions in the first page"
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
@@ -406,7 +410,11 @@ defmodule MalanWeb.SessionControllerTest do
       expected_admin_session_ids = [s6.id, s2.id]
       actual_admin_session_ids = Enum.map(jr, & &1["id"])
       assert length(jr) == 2
-      assert MapSet.equal?(MapSet.new(expected_admin_session_ids), MapSet.new(actual_admin_session_ids))
+
+      assert MapSet.equal?(
+               MapSet.new(expected_admin_session_ids),
+               MapSet.new(actual_admin_session_ids)
+             )
 
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 5)
@@ -416,7 +424,11 @@ defmodule MalanWeb.SessionControllerTest do
       expected_all_session_ids = [s5.id, s4.id, s3.id, s1.id]
       actual_all_session_ids = Enum.map(jr, & &1["id"])
       assert length(jr) == 4
-      assert MapSet.equal?(MapSet.new(expected_all_session_ids), MapSet.new(actual_all_session_ids))
+
+      assert MapSet.equal?(
+               MapSet.new(expected_all_session_ids),
+               MapSet.new(actual_all_session_ids)
+             )
     end
   end
 
@@ -439,7 +451,10 @@ defmodule MalanWeb.SessionControllerTest do
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 3)
 
       c2 =
-        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 3)
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id),
+          page_num: 0,
+          page_size: 3
+        )
 
       c3 =
         get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
@@ -465,9 +480,13 @@ defmodule MalanWeb.SessionControllerTest do
         # Verify sessions are ordered by timestamp descending (newest first)
         # Use a more lenient check that accounts for possible timing variations
         sorted_timestamps = Enum.sort(timestamps, :desc)
+
         # If timestamps are very close, ordering might vary, so check if the result is "close enough"
-        timestamp_diff_count = length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
-        assert timestamp_diff_count <= 2  # Allow for minor reordering due to timing
+        timestamp_diff_count =
+          length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
+
+        # Allow for minor reordering due to timing
+        assert timestamp_diff_count <= 2
       end
 
       # page_num: 1 page_size: 3
@@ -475,7 +494,10 @@ defmodule MalanWeb.SessionControllerTest do
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 1, page_size: 3)
 
       c2 =
-        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 1, page_size: 3)
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id),
+          page_num: 1,
+          page_size: 3
+        )
 
       c3 =
         get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
@@ -499,7 +521,10 @@ defmodule MalanWeb.SessionControllerTest do
       c1 = get(c1, Routes.session_path(c1, :index_active), page_num: 0, page_size: 5)
 
       c2 =
-        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id), page_num: 0, page_size: 5)
+        get(c2, Routes.user_session_path(c2, :user_index_active, ru.id),
+          page_num: 0,
+          page_size: 5
+        )
 
       c3 =
         get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
@@ -525,16 +550,23 @@ defmodule MalanWeb.SessionControllerTest do
         # Verify sessions are ordered by timestamp descending (newest first)
         # Use a more lenient check that accounts for possible timing variations
         sorted_timestamps = Enum.sort(timestamps, :desc)
+
         # If timestamps are very close, ordering might vary, so check if the result is "close enough"
-        timestamp_diff_count = length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
-        assert timestamp_diff_count <= 2  # Allow for minor reordering due to timing
+        timestamp_diff_count =
+          length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
+
+        # Allow for minor reordering due to timing
+        assert timestamp_diff_count <= 2
       end
 
       # as admin.  page_num: 0 page_size: 3
       c2 = c3 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
 
       c2 =
-        get(c2, Routes.user_session_path(c2, :user_index_active, au.id), page_num: 0, page_size: 3)
+        get(c2, Routes.user_session_path(c2, :user_index_active, au.id),
+          page_num: 0,
+          page_size: 3
+        )
 
       c3 =
         get(c3, Routes.user_session_path(c3, :user_index_active, "current"),
@@ -549,7 +581,10 @@ defmodule MalanWeb.SessionControllerTest do
       c1 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
 
       c1 =
-        get(c1, Routes.user_session_path(c1, :user_index_active, ru.id), page_num: 0, page_size: 3)
+        get(c1, Routes.user_session_path(c1, :user_index_active, ru.id),
+          page_num: 0,
+          page_size: 3
+        )
 
       # Verify that the response contains the expected sessions (order may vary due to timing)
       response_data = json_response(c1, 200)["data"]
@@ -563,8 +598,12 @@ defmodule MalanWeb.SessionControllerTest do
       # Verify sessions are ordered by timestamp descending (with tolerance for timing)
       timestamps = Enum.map(response_data, & &1["authenticated_at"])
       sorted_timestamps = Enum.sort(timestamps, :desc)
-      timestamp_diff_count = length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
-      assert timestamp_diff_count <= 2  # Allow for minor reordering due to timing
+
+      timestamp_diff_count =
+        length(timestamps -- sorted_timestamps) + length(sorted_timestamps -- timestamps)
+
+      # Allow for minor reordering due to timing
+      assert timestamp_diff_count <= 2
     end
 
     test "Must be authenticated", %{conn: conn} do
@@ -969,6 +1008,7 @@ defmodule MalanWeb.SessionControllerTest do
       assert length(logs_before_attempt) == 1
 
       log_locked = hd(logs_before_attempt)
+
       assert %Log{
                success: true,
                user_id: nil,
@@ -1004,6 +1044,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       log_failed = Enum.find(logs_by_who, fn l -> l.remote_ip == "127.0.0.1" end)
       refute is_nil(log_failed)
+
       assert %Log{
                success: false,
                user_id: ^user_id,
@@ -1570,6 +1611,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       log_locked = Enum.find(logs_by_who, fn l -> l.remote_ip == Log.dummy_ip() end)
       refute is_nil(log_locked)
+
       assert %Log{
                success: true,
                user_id: nil,
@@ -1583,6 +1625,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       log = Enum.find(logs_by_who, fn l -> l.remote_ip == "127.0.0.1" end)
       refute is_nil(log)
+
       assert %Log{
                success: true,
                user_id: ^user_id,
@@ -1595,12 +1638,14 @@ defmodule MalanWeb.SessionControllerTest do
                remote_ip: "127.0.0.1"
              } = log
 
-      assert Enum.sort_by(logs_by_who, &{&1.inserted_at, &1.id}) == Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
+      assert Enum.sort_by(logs_by_who, &{&1.inserted_at, &1.id}) ==
+               Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
 
       assert true == TestUtils.DateTime.within_last?(when_utc_locked, 2, :seconds)
       assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(s1_id, 0, 10)
+
       assert Enum.sort_by(Accounts.list_logs_by_who(user_id, 0, 10), &{&1.inserted_at, &1.id}) ==
                Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
     end
@@ -1658,8 +1703,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 90 # Global absolute limit of extensions
-      max_extension_secs = 45     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 90
+      # Limit for each extension
+      max_extension_secs = 45
 
       conn =
         post(conn, Routes.session_path(conn, :create),
@@ -1731,8 +1778,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 360 # Global absolute limit of extensions
-      max_extension_secs = 300     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 360
+      # Limit for each extension
+      max_extension_secs = 300
 
       conn =
         post(conn, Routes.session_path(conn, :create),
@@ -1803,8 +1852,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 30 # Global absolute limit of extensions
-      max_extension_secs = 20     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 30
+      # Limit for each extension
+      max_extension_secs = 20
 
       conn =
         post(conn, Routes.session_path(conn, :create),
@@ -1964,8 +2015,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 30 # Global absolute limit of extensions
-      max_extension_secs = 20     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 30
+      # Limit for each extension
+      max_extension_secs = 20
 
       conn =
         post(conn, Routes.session_path(conn, :create),
@@ -2187,8 +2240,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 90 # Global absolute limit of extensions
-      max_extension_secs = 45     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 90
+      # Limit for each extension
+      max_extension_secs = 45
       extension_secs = 30
 
       conn =
@@ -2316,8 +2371,10 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
       user_id = user.id
 
-      extendable_until_seconds = 90 # Global absolute limit of extensions
-      max_extension_secs = 45     # Limit for each extension
+      # Global absolute limit of extensions
+      extendable_until_seconds = 90
+      # Limit for each extension
+      max_extension_secs = 45
       extension_secs = 30
 
       conn =

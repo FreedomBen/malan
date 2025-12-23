@@ -1,5 +1,5 @@
 defmodule MalanWeb.LiveHelpers do
-  #import Phoenix.LiveView.Helpers
+  # import Phoenix.LiveView.Helpers
   use Phoenix.Component
   import Phoenix.Component
 
@@ -19,14 +19,14 @@ defmodule MalanWeb.LiveHelpers do
   """
   def live_modal(component, opts) do
     path = Keyword.fetch!(opts, :return_to)
-    
+
     assigns = %{
       id: :modal,
       return_to: path,
       component: component,
       opts: opts
     }
-    
+
     ~H"""
     <.live_component module={MalanWeb.ModalComponent} {assigns} />
     """

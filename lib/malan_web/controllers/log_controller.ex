@@ -9,7 +9,8 @@ defmodule MalanWeb.LogController do
 
   plug :is_log_user_or_admin when action in [:show]
 
-  plug :require_pagination, [default_page_size: 10, max_page_size: 100]
+  plug :require_pagination,
+       [default_page_size: 10, max_page_size: 100]
        when action in [
               :user_index,
               :admin_index,

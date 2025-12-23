@@ -164,7 +164,9 @@ defmodule MalanWeb.PhoneNumberControllerTest do
 
     test "requires being authenticated", %{conn: conn} do
       conn =
-        post(conn, Routes.user_phone_number_path(conn, :create, "42"), phone_number: @create_attrs)
+        post(conn, Routes.user_phone_number_path(conn, :create, "42"),
+          phone_number: @create_attrs
+        )
 
       assert conn.status == 403
     end

@@ -228,13 +228,14 @@ defmodule Malan.UtilsTest do
 
     test "struct_to_map/2 works" do
       assert %{
-        one: "Erik",
-        two: "Sigefrid",
-        three: nil
-      } == Utils.struct_to_map(%TestStruct{
-        one: "Erik",
-        two: "Sigefrid"
-      })
+               one: "Erik",
+               two: "Sigefrid",
+               three: nil
+             } ==
+               Utils.struct_to_map(%TestStruct{
+                 one: "Erik",
+                 two: "Sigefrid"
+               })
     end
 
     def ts1_struct,
@@ -897,10 +898,10 @@ defmodule Malan.UtilsTest do
 
     test "#each_ident/2 works" do
       l1 = ["Henry Fonda", "Jimmy Stewart", "John Wayne"]
-      assert l1 == Malan.Utils.Enum.each_ident(l1, &(assert Enum.member?(l1, &1)))
+      assert l1 == Malan.Utils.Enum.each_ident(l1, &assert(Enum.member?(l1, &1)))
 
       l2 = [henry: "Henry Fonda", james: "Jimmy Stewart", john: "John Wayne"]
-      assert l2 == Malan.Utils.Enum.each_ident(l2, &(assert Enum.member?(l2, &1)))
+      assert l2 == Malan.Utils.Enum.each_ident(l2, &assert(Enum.member?(l2, &1)))
     end
 
     test "#map_add/2 works" do

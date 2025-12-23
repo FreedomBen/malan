@@ -25,7 +25,7 @@ defmodule MalanWeb do
     opts =
       opts
       |> Keyword.put_new(:log, :info)
-      |> Keyword.put_new(:layouts, [html: MalanWeb.LayoutView])
+      |> Keyword.put_new(:layouts, html: MalanWeb.LayoutView)
 
     quote do
       use Phoenix.Controller, unquote(Macro.escape(opts))
@@ -105,7 +105,7 @@ defmodule MalanWeb do
       use PhoenixHTMLHelpers
 
       # Import LiveView and .heex helpers (live_render, live_patch, <.form>, etc)
-      #import Phoenix.LiveView.Helpers
+      # import Phoenix.LiveView.Helpers
       import MalanWeb.LiveHelpers
       import Phoenix.Component
 

@@ -26,7 +26,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
 
       _user ->
         # TODO:  Use pattern matching so that we can remove the Accounts.get_user_by_email call above.
-        #with %User{} = user <- Accounts.get_user_by_email(email),
+        # with %User{} = user <- Accounts.get_user_by_email(email),
         with user <- Accounts.get_user_by_email(email),
              log_changeset <- User.password_reset_create_changeset(user),
              {:ok, %User{} = user} <- Accounts.generate_password_reset(user),

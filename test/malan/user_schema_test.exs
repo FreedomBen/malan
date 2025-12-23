@@ -224,8 +224,12 @@ defmodule Malan.UserSchemaTest do
       # Test with MIN_PASSWORD_LENGTH=8
       # Mock the config to return 8
       original_config = Application.get_env(:malan, Malan.Accounts.User)
-      Application.put_env(:malan, Malan.Accounts.User,
-        Keyword.put(original_config, :min_password_length, 8))
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        Keyword.put(original_config, :min_password_length, 8)
+      )
 
       # Should fail with 7 characters
       changeset7 =

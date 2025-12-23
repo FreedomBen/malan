@@ -177,7 +177,8 @@ defmodule MalanWeb.SessionController do
         %{expire_in_seconds: attrs["expire_in_seconds"]}
       )
 
-    with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}} <- Accounts.extend_session(session, attrs, authed_ids) do
+    with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}} <-
+           Accounts.extend_session(session, attrs, authed_ids) do
       record_log(
         conn,
         true,
