@@ -44,7 +44,6 @@ RUN dnf install --assumeyes glibc-langpack-en \
     perl \
     npm \
     nodejs \
-    nmap \
     make \
     ncurses-devel \
     openssl-devel \
