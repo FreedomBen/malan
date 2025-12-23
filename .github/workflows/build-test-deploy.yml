@@ -64,6 +64,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Lint OpenAPI
+        run: npx -y @stoplight/spectral-cli@6 lint openapi.yaml
+
       - name: Test
         run: ./scripts/run-ci.sh
 
@@ -131,4 +134,3 @@ jobs:
 
       - name: Deploy new version
         run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
-
