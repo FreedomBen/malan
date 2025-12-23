@@ -105,10 +105,10 @@ RUN mix deps.get --only prod
 RUN mix deps.compile
 
 COPY --chown=docker:docker assets/package*.json /app/assets/
+COPY --chown=docker:docker scripts /app/scripts
 RUN cd assets && npm install
 
 COPY --chown=docker:docker config /app/config
-COPY --chown=docker:docker scripts /app/scripts
 COPY --chown=docker:docker priv /app/priv
 COPY --chown=docker:docker lib /app/lib
 COPY --chown=docker:docker assets /app/assets
