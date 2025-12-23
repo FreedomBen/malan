@@ -5,10 +5,10 @@
   </head>
   <body>
     <div>
-      <%# This doesn't actually render in most email clients including gmail %>
-      <%# render(MalanWeb.PageHTML, "_ameelio_logo.svg", assigns) %>
+      <%!-- This doesn't actually render in most email clients including gmail --%>
+      <%!-- render(MalanWeb.PageHTML, "_ameelio_logo.svg", assigns) --%>
 
-      <%# Use web-hosted link instead %>
+      <%!-- Use web-hosted link instead --%>
       <img src={MalanWeb.Endpoint.url() <> ~p"/images/ameelio-logo-113x22.png"} alt="Ameelio Logo" width="113" />
     </div>
 

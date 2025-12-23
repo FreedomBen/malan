@@ -2480,8 +2480,8 @@ defmodule MalanWeb.UserControllerTest do
 
           {:ok, when_utc}
         rescue
-          me in MatchError -> {:error, me}
-          e in StandardError -> {:error, e}
+          me in [MatchError] -> {:error, me}
+          e -> {:error, e}
         end
       end
 
@@ -3262,8 +3262,8 @@ defmodule MalanWeb.UserControllerTest do
 
           {:ok, when_utc}
         rescue
-          me in MatchError -> {:error, me}
-          e in StandardError -> {:error, e}
+          me in [MatchError] -> {:error, me}
+          e -> {:error, e}
         end
       end
 

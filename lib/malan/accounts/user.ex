@@ -632,7 +632,8 @@ defmodule Malan.Accounts.User do
     Utils.uuidgen() <> @deleted_user_sentinel <> val
   end
 
-  defp_testable deleted_val_to_val(deleted_val) do
+  @doc false
+  def deleted_val_to_val(deleted_val) do
     deleted_val
     |> String.slice((@deleted_user_prefix_length - 1)..String.length(deleted_val))
   end

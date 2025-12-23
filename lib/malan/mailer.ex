@@ -8,7 +8,7 @@ defmodule Malan.Mailer do
 
   @spec send_mail(Swoosh.Email.t()) :: {:ok, term} | {:error, term}
   def send_mail(email) do
-    Logger.debug(__ENV__, "Sending mail to '#{Utils.to_string(email.to())}'")
+    Logger.debug(__ENV__, "Sending mail to '#{Utils.to_string(email.to)}'")
 
     deliver(email)
     |> log_delivery(email, __ENV__)
@@ -59,5 +59,5 @@ defmodule Malan.Mailer do
     {:error, error}
   end
 
-  defp to(email), do: Utils.to_string(email.to())
+  defp to(email), do: Utils.to_string(email.to)
 end

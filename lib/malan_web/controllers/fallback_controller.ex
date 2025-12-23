@@ -15,20 +15,20 @@ defmodule MalanWeb.FallbackController do
     conn
     |> put_status(:not_found)
     |> put_view(MalanWeb.ErrorJSON)
-    |> render(:'404')
+    |> render(:"404")
   end
 
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)
     |> put_view(MalanWeb.ErrorJSON)
-    |> render(:'422', errors: translate_errors(changeset))
+    |> render(:"422", errors: translate_errors(changeset))
   end
 
   def call(conn, {:error, :too_many_requests}) do
     conn
     |> put_status(:too_many_requests)
     |> put_view(MalanWeb.ErrorJSON)
-    |> render(:'429')
+    |> render(:"429")
   end
 end

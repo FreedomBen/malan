@@ -98,6 +98,13 @@ defmodule Malan.Pagination do
     end
   end
 
+  def validate_page_size(page_size) when is_integer(page_size) do
+    cond do
+      page_size >= 0 -> {:ok, page_size}
+      true -> {:error, page_size}
+    end
+  end
+
   def validate_page_size(%Ecto.Changeset{} = changeset) do
     changeset
     |> validate_number(:page_size, greater_than_or_equal_to: 0)
@@ -109,7 +116,7 @@ defmodule Malan.Pagination do
 
   Returns `page_size` or raises `Malan.PageOutOfBounds`
   """
-  def validate_page_size!(page_size) do
+  def validate_page_size!(page_size) when is_integer(page_size) do
     case validate_page_size(page_size) do
       {:ok, _} -> page_size
       {:error, _} -> raise PageOutOfBounds, page_size: page_size

@@ -347,7 +347,7 @@ defmodule MalanWeb.UserController do
 
           conn
           |> put_view(ErrorJSON)
-          |> render(:'500')
+          |> render(:"500")
 
           {:error, :too_many_requests}
 
@@ -360,7 +360,7 @@ defmodule MalanWeb.UserController do
 
           conn
           |> put_view(ErrorJSON)
-          |> render(:'429')
+          |> render(:"429")
 
         {:error, err_cs} ->
           err_str = Utils.Ecto.Changeset.errors_to_str(err_cs)
