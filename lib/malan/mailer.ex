@@ -32,7 +32,7 @@ defmodule Malan.Mailer do
     msg =
       "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
 
-    opts = [error: err, email: Utils.to_string(email)]
+    opts = [extra: %{error: err, email: Utils.to_string(email)}]
 
     Logger.error(env, msg)
     Sentry.capture_message(msg, opts)
@@ -45,7 +45,7 @@ defmodule Malan.Mailer do
       "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
 
     Logger.error(env, msg)
-    Sentry.capture_message(msg, %{error: error, email: email})
+    Sentry.capture_message(msg, extra: %{error: error, email: email})
 
     {:error, error}
   end

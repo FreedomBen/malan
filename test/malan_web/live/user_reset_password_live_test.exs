@@ -8,6 +8,16 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
   alias Malan.RateLimits.PasswordReset
   alias Malan.Test.Helpers.Accounts, as: AccountsHelpers
 
+  defmodule FailingMailAdapter do
+    @behaviour Swoosh.Adapter
+
+    @impl true
+    def deliver(_email, _config), do: {:error, {401, "unauthorized"}}
+
+    @impl true
+    def validate_config(_config), do: :ok
+  end
+
   setup %{conn: conn} = context do
     set_swoosh_global(context)
 
@@ -53,4 +63,34 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
   end
 
   defp reset_path, do: ~p"/users/reset_password"
+
+  test "shows rate limit error when reset requested too frequently", %{conn: conn} do
+    {:ok, user} = AccountsHelpers.regular_user(%{})
+
+    on_exit(fn -> PasswordReset.clear(user.id) end)
+
+    assert {:ok, _} = Accounts.generate_password_reset(user)
+
+    {:ok, view, _html} = live(conn, reset_path())
+
+    html = render_submit(view, "send_reset_email", %{"email" => user.email})
+
+    assert html =~ "Too many requests"
+    assert_no_email_sent()
+  end
+
+  test "surfaces internal error when mail provider rejects credentials", %{conn: conn} do
+    prev_mailer_config = Application.get_env(:malan, Malan.Mailer)
+    Application.put_env(:malan, Malan.Mailer, Keyword.put(prev_mailer_config, :adapter, FailingMailAdapter))
+
+    on_exit(fn -> Application.put_env(:malan, Malan.Mailer, prev_mailer_config) end)
+
+    {:ok, user} = AccountsHelpers.regular_user(%{})
+
+    {:ok, view, _html} = live(conn, reset_path())
+
+    html = render_submit(view, "send_reset_email", %{"email" => user.email})
+
+    assert html =~ "experienced an internal error"
+  end
 end
