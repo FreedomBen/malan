@@ -470,7 +470,7 @@ paths:
     get:
       tags:
       - Session Extensions
-      summary: List extensions for a session
+      summary: List extensions for a session (newest first)
       responses:
         '200':
           content:

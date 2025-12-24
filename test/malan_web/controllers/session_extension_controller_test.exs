@@ -118,22 +118,22 @@ defmodule MalanWeb.SessionExtensionControllerTest do
                "page_size" => @default_page_size,
                "data" => [
                  %{
-                   "id" => ^se2_id,
-                   "user_id" => ^user_id,
-                   "session_id" => ^s1_id,
-                   "old_expires_at" => ^s2_old_expires_at,
-                   "new_expires_at" => ^s2_new_expires_at,
-                   "extended_by_seconds" => 30,
-                   "extended_by_user" => ^user_id,
-                   "extended_by_session" => ^s1_id
-                 },
-                 %{
                    "id" => se3_id,
                    "user_id" => ^user_id,
                    "session_id" => ^s1_id,
                    "old_expires_at" => s3_old_expires_at,
                    "new_expires_at" => s3_new_expires_at,
                    "extended_by_seconds" => 60,
+                   "extended_by_user" => ^user_id,
+                   "extended_by_session" => ^s1_id
+                 },
+                 %{
+                   "id" => ^se2_id,
+                   "user_id" => ^user_id,
+                   "session_id" => ^s1_id,
+                   "old_expires_at" => ^s2_old_expires_at,
+                   "new_expires_at" => ^s2_new_expires_at,
+                   "extended_by_seconds" => 30,
                    "extended_by_user" => ^user_id,
                    "extended_by_session" => ^s1_id
                  }
@@ -190,12 +190,12 @@ defmodule MalanWeb.SessionExtensionControllerTest do
                "page_size" => @default_page_size,
                "data" => [
                  %{
-                   "id" => ^se2_id,
+                   "id" => se4_id,
                    "user_id" => ^user_id,
                    "session_id" => ^s1_id,
-                   "old_expires_at" => ^s2_old_expires_at,
-                   "new_expires_at" => ^s2_new_expires_at,
-                   "extended_by_seconds" => 30,
+                   "old_expires_at" => s4_old_expires_at,
+                   "new_expires_at" => s4_new_expires_at,
+                   "extended_by_seconds" => 90,
                    "extended_by_user" => ^user_id,
                    "extended_by_session" => ^s1_id
                  },
@@ -210,12 +210,12 @@ defmodule MalanWeb.SessionExtensionControllerTest do
                    "extended_by_session" => ^s1_id
                  },
                  %{
-                   "id" => se4_id,
+                   "id" => ^se2_id,
                    "user_id" => ^user_id,
                    "session_id" => ^s1_id,
-                   "old_expires_at" => s4_old_expires_at,
-                   "new_expires_at" => s4_new_expires_at,
-                   "extended_by_seconds" => 90,
+                   "old_expires_at" => ^s2_old_expires_at,
+                   "new_expires_at" => ^s2_new_expires_at,
+                   "extended_by_seconds" => 30,
                    "extended_by_user" => ^user_id,
                    "extended_by_session" => ^s1_id
                  }

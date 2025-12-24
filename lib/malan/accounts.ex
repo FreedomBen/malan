@@ -1831,6 +1831,7 @@ defmodule Malan.Accounts do
     from(
       s in SessionExtension,
       select: s,
+      order_by: [desc: s.inserted_at, desc: s.new_expires_at],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
@@ -1852,6 +1853,7 @@ defmodule Malan.Accounts do
       s in SessionExtension,
       select: s,
       where: s.session_id == ^session_id,
+      order_by: [desc: s.inserted_at, desc: s.new_expires_at],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )

@@ -1830,16 +1830,6 @@ defmodule Malan.AccountsTest do
 
       assert [
                %Malan.Accounts.SessionExtension{
-                 updated_at: ^extension1_updated_at,
-                 inserted_at: ^extension1_inserted_at,
-                 extended_by_session: ^session_id,
-                 extended_by_user: ^user_id,
-                 extended_by_seconds: 60,
-                 new_expires_at: ^extension1_new_expires_at,
-                 old_expires_at: ^extension1_old_expires_at,
-                 id: ^extension1_id
-               },
-               %Malan.Accounts.SessionExtension{
                  updated_at: ^extension2_updated_at,
                  inserted_at: ^extension2_inserted_at,
                  extended_by_session: ^session_id,
@@ -1848,6 +1838,16 @@ defmodule Malan.AccountsTest do
                  new_expires_at: ^extension2_new_expires_at,
                  old_expires_at: ^extension2_old_expires_at,
                  id: ^extension2_id
+               },
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension1_updated_at,
+                 inserted_at: ^extension1_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 60,
+                 new_expires_at: ^extension1_new_expires_at,
+                 old_expires_at: ^extension1_old_expires_at,
+                 id: ^extension1_id
                }
              ] = Accounts.list_session_extensions(s3.id, 0, 10)
 
@@ -1908,16 +1908,6 @@ defmodule Malan.AccountsTest do
 
       assert [
                %Malan.Accounts.SessionExtension{
-                 updated_at: ^extension1_updated_at,
-                 inserted_at: ^extension1_inserted_at,
-                 extended_by_session: ^session_id,
-                 extended_by_user: ^user_id,
-                 extended_by_seconds: 60,
-                 new_expires_at: ^extension1_new_expires_at,
-                 old_expires_at: ^extension1_old_expires_at,
-                 id: ^extension1_id
-               },
-               %Malan.Accounts.SessionExtension{
                  updated_at: ^extension2_updated_at,
                  inserted_at: ^extension2_inserted_at,
                  extended_by_session: ^session_id,
@@ -1936,6 +1926,16 @@ defmodule Malan.AccountsTest do
                  new_expires_at: ^extension3_new_expires_at,
                  old_expires_at: ^extension3_old_expires_at,
                  id: ^extension3_id
+               },
+               %Malan.Accounts.SessionExtension{
+                 updated_at: ^extension1_updated_at,
+                 inserted_at: ^extension1_inserted_at,
+                 extended_by_session: ^session_id,
+                 extended_by_user: ^user_id,
+                 extended_by_seconds: 60,
+                 new_expires_at: ^extension1_new_expires_at,
+                 old_expires_at: ^extension1_old_expires_at,
+                 id: ^extension1_id
                }
              ] = Accounts.list_session_extensions(s4.id, 0, 10)
     end
