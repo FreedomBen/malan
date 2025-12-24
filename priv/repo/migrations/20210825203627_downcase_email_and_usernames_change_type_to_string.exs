@@ -1,10 +1,6 @@
 defmodule Malan.Repo.Migrations.DowncaseEmailAndUsernamesChangeTypeToString do
   use Ecto.Migration
 
-  alias Malan.Repo
-  alias Malan.Accounts
-  alias Malan.Accounts.User
-
   #
   # This migration was needed to bring an existing database up
   # to new state, but for new databases it will fail.  hence
