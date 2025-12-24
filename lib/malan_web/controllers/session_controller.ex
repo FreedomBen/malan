@@ -5,9 +5,11 @@ defmodule MalanWeb.SessionController do
 
   import MalanWeb.PaginationController, only: [require_pagination: 2, pagination_info: 1]
   import Malan.Utils.Phoenix.Controller, only: [remote_ip_s: 1]
+  import Malan.AuthController, only: [is_admin?: 1, authed_user_and_session: 1]
 
   alias Malan.{Accounts, Utils}
   alias Malan.Accounts.{Session, SessionExtension}
+  alias Malan.RateLimits
 
   alias MalanWeb.ErrorJSON
 
@@ -166,43 +168,65 @@ defmodule MalanWeb.SessionController do
     do: extend(conn, Map.merge(attrs, %{"id" => conn.assigns.authed_session_id}))
 
   defp extend_session(conn, session, attrs) do
-    authed_ids = %{
-      authed_user_id: conn.assigns.authed_user_id,
-      authed_session_id: conn.assigns.authed_session_id
-    }
+    with :ok <- enforce_extension_rate_limit(conn) do
+      authed_ids = %{
+        authed_user_id: conn.assigns.authed_user_id,
+        authed_session_id: conn.assigns.authed_session_id
+      }
 
-    changeset =
-      Session.extend_changeset(
-        session,
-        %{expire_in_seconds: attrs["expire_in_seconds"]}
-      )
+      changeset =
+        Session.extend_changeset(
+          session,
+          %{expire_in_seconds: attrs["expire_in_seconds"]}
+        )
 
-    with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}} <-
-           Accounts.extend_session(session, attrs, authed_ids) do
-      record_log(
-        conn,
-        true,
-        session.user_id,
-        "PUT",
-        "#SessionController.extend/2",
-        changeset
-      )
-
-      render(conn, :show, code: 200, session: session)
-    else
-      {:error, err} ->
-        err_str = Utils.Ecto.Changeset.errors_to_str(err)
-
+      with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}} <-
+             Accounts.extend_session(session, attrs, authed_ids) do
         record_log(
           conn,
-          false,
+          true,
           session.user_id,
           "PUT",
-          "#SessionController.extend/2 - Session extension failed: #{err_str}",
+          "#SessionController.extend/2",
           changeset
         )
 
-        {:error, err}
+        render(conn, :show, code: 200, session: session)
+      else
+        {:error, err} ->
+          err_str = Utils.Ecto.Changeset.errors_to_str(err)
+
+          record_log(
+            conn,
+            false,
+            session.user_id,
+            "PUT",
+            "#SessionController.extend/2 - Session extension failed: #{err_str}",
+            changeset
+          )
+
+          {:error, err}
+      end
+    end
+  end
+
+  defp enforce_extension_rate_limit(conn) do
+    case is_admin?(conn) do
+      true ->
+        :ok
+
+      false ->
+        case RateLimits.SessionExtension.check_rate(conn.assigns.authed_user_id) do
+          {:allow, _count} ->
+            :ok
+
+          {:deny, _limit} ->
+            conn
+            |> put_status(:too_many_requests)
+            |> put_view(ErrorJSON)
+            |> render(:"429")
+            |> halt()
+        end
     end
   end
 

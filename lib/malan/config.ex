@@ -106,6 +106,18 @@ defmodule Malan.Config do
     def password_reset_upper_limit do
       {password_reset_upper_limit_msecs(), password_reset_upper_limit_count()}
     end
+
+    def session_extension_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_msecs]
+    end
+
+    def session_extension_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_count]
+    end
+
+    def session_extension_limit do
+      {session_extension_limit_msecs(), session_extension_limit_count()}
+    end
   end
 
   defmodule Sentry do

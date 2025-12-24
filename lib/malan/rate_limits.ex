@@ -27,6 +27,32 @@ defmodule Malan.RateLimits do
     {:ok, deleted}
   end
 
+  defmodule SessionExtension do
+    @doc """
+    Rate limit session extension attempts per user (non-admin).
+
+    Returns {:allow, count} or {:deny, limit}.
+    """
+    @spec check_rate(user_id :: String.t()) ::
+            {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+    def check_rate(user_id) do
+      {msecs, count} = Malan.Config.RateLimit.session_extension_limit()
+
+      user_id
+      |> bucket()
+      |> Malan.RateLimits.check_rate(msecs, count)
+    end
+
+    @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+    def clear(user_id) do
+      user_id
+      |> bucket()
+      |> Malan.RateLimits.clear()
+    end
+
+    def bucket(user_id), do: "session_extension_limit:#{user_id}"
+  end
+
   defmodule PasswordReset do
     alias Malan.RateLimits.PasswordReset.{UpperLimit, LowerLimit}
 

@@ -34,7 +34,14 @@ config :malan, Malan.Config.RateLimits,
   # 1 per period
   password_reset_upper_limit_count:
     System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
-      "3" |> String.to_integer()
+      "3" |> String.to_integer(),
+  # Session extension rate limit (non-admin). 10 requests per minute by default.
+  session_extension_limit_msecs:
+    System.get_env("SESSION_EXTENSION_LIMIT_MSECS") ||
+      "60000" |> String.to_integer(),
+  session_extension_limit_count:
+    System.get_env("SESSION_EXTENSION_LIMIT_COUNT") ||
+      "10" |> String.to_integer()
 
 config :malan, Malan.Accounts.Session,
   # If client doesn't specify token expiration time, use this value.

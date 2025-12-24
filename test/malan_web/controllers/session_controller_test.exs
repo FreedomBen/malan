@@ -1697,6 +1697,55 @@ defmodule MalanWeb.SessionControllerTest do
   end
 
   describe "extend user sessions" do
+    test "non-admin session extensions are rate limited", %{conn: _conn} do
+      {:ok, conn, user, session} =
+        Helpers.Accounts.regular_user_session_conn(build_conn(), %{}, %{
+          "extendable_until_seconds" => 600,
+          "max_extension_secs" => 60,
+          "expires_in_seconds" => 60
+        })
+
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      # Ensure a clean bucket for deterministic testing
+      {:ok, _} = Malan.RateLimits.SessionExtension.clear(user.id)
+
+      {_, limit} = Malan.Config.RateLimit.session_extension_limit()
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      # First `limit` requests should succeed
+      Enum.each(1..limit, fn _i ->
+        assert %{"ok" => true} =
+                 conn
+                 |> put(Routes.session_path(conn, :extend_current), %{expire_in_seconds: 10})
+                 |> json_response(200)
+      end)
+
+      # Next one should be rate limited
+      assert %{"code" => 429, "ok" => false} =
+               conn
+               |> put(Routes.session_path(conn, :extend_current), %{expire_in_seconds: 10})
+               |> json_response(429)
+    end
+
+    test "admins bypass session extension rate limits", %{conn: _conn} do
+      {:ok, conn, user, session} = Helpers.Accounts.admin_user_session_conn(build_conn())
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      {:ok, _} = Malan.RateLimits.SessionExtension.clear(user.id)
+      {_, limit} = Malan.Config.RateLimit.session_extension_limit()
+
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      Enum.each(1..(limit + 2), fn _i ->
+        assert %{"ok" => true} =
+                 conn
+                 |> put(Routes.session_path(conn, :extend_current), %{expire_in_seconds: 10})
+                 |> json_response(200)
+      end)
+    end
+
     test "Session extension works (happy path) (IDs in path)", %{conn: conn} do
       # Create the new session for the user
       {:ok, user} = Helpers.Accounts.regular_user()
