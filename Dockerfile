@@ -38,6 +38,7 @@ RUN dnf install --assumeyes glibc-langpack-en \
     jq \
     make \
     perl \
+    nmap \
     npm \
     ncurses-devel \
     openssl-devel \
