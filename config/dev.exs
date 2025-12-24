@@ -71,10 +71,10 @@ config :malan, MalanWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
-      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"priv/gettext/.*(po)$",
-      ~r"lib/malan_web/(controllers|live|components|router)/.*(ex|heex)$",
-      ~r"lib/malan_web/(views|templates)/.*(ex|eex|heex)$"
+      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$"E,
+      ~r"priv/gettext/.*(po)$"E,
+      ~r"lib/malan_web/(controllers|live|components|router)/.*(ex|heex)$"E,
+      ~r"lib/malan_web/(views|templates)/.*(ex|eex|heex)$"E
     ]
   ]
 
