@@ -44,7 +44,9 @@ defmodule MalanWeb.LogControllerTest do
     test "lists all logs empty", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.log_path(conn, :admin_index))
-      assert json_response(conn, 200)["data"] == []
+
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10, "code" => 200, "ok" => true} =
+               json_response(conn, 200)
     end
 
     test "lists all logs", %{conn: conn} do
@@ -53,7 +55,10 @@ defmodule MalanWeb.LogControllerTest do
 
       {:ok, conn, _user, _session} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.log_path(conn, :admin_index))
-      data = json_response(conn, 200)["data"]
+
+      %{"data" => data, "page_num" => 0, "page_size" => 10, "code" => 200, "ok" => true} =
+        json_response(conn, 200)
+
       assert 2 == length(data)
 
       data_by_id = Map.new(data, fn %{"id" => id} = log -> {id, log} end)
@@ -95,18 +100,18 @@ defmodule MalanWeb.LogControllerTest do
       # First make request as a user that has no logs
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.log_path(conn, :user_index))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
 
       # Now make request as user 1
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.log_path(conn, :user_index))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request as user 2
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.log_path(conn, :user_index))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -117,30 +122,30 @@ defmodule MalanWeb.LogControllerTest do
       # First make request as a user that has no logs
       {:ok, conn, u3, _s3} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u3.id))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
 
       # Now make request as user 1
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u1.id))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request as user 2
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u2.id))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
 
       # Now make request as user 1 using username
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u1.username))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request as user 2 using username
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u2.username))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -156,13 +161,13 @@ defmodule MalanWeb.LogControllerTest do
       # Now make request as user 1
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, "current"))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request as user 2
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_log_path(conn, :user_index, "current"))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -183,20 +188,20 @@ defmodule MalanWeb.LogControllerTest do
       # Now make request as admin for user 1 logs
       {:ok, conn, _au1, _as4} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, u1.id))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
     end
 
     test "lists all logs for user empty without id", %{conn: conn} do
       {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.log_path(conn, :user_index))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     test "lists all logs for user empty with id", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, user.id))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     test "requires authentication without user id", %{conn: conn} do
@@ -212,7 +217,7 @@ defmodule MalanWeb.LogControllerTest do
     test "non-existent user id", %{conn: conn} do
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, "notarealuser"))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     # Uncomment when ready to require ToS and PP
@@ -372,25 +377,25 @@ defmodule MalanWeb.LogControllerTest do
       # Now make request for user 1
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :users, u1.id))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request for user 2
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :users, u2.id))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
 
       # Now make request for user 1 using username
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :users, u1.username))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request for user 2 using username
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :users, u2.username))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -412,7 +417,7 @@ defmodule MalanWeb.LogControllerTest do
       {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = get(conn, Routes.log_path(conn, :users, "notarealuser"))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     # Uncomment when ready to require ToS and PP
@@ -442,13 +447,13 @@ defmodule MalanWeb.LogControllerTest do
       # Now make request for user 1
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :sessions, s1.id))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request for user 2
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :sessions, s2.id))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -470,7 +475,7 @@ defmodule MalanWeb.LogControllerTest do
       {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = get(conn, Routes.log_path(conn, :sessions, Ecto.UUID.generate()))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     # Uncomment when ready to require ToS and PP
@@ -500,13 +505,13 @@ defmodule MalanWeb.LogControllerTest do
       # Now make request for user 1
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :who, u1.id))
-      [l1a] = json_response(conn, 200)["data"]
+      %{"data" => [l1a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l1, l1a)
 
       # Now make request for user 2
       conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
       conn = get(conn, Routes.log_path(conn, :who, u2.id))
-      [l2a] = json_response(conn, 200)["data"]
+      %{"data" => [l2a], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
       assert logs_eq?(l2, l2a)
     end
 
@@ -528,7 +533,7 @@ defmodule MalanWeb.LogControllerTest do
       {:ok, _au, as} = Helpers.Accounts.admin_user_with_session()
       conn = Helpers.Accounts.put_token(conn, as.api_token)
       conn = get(conn, Routes.log_path(conn, :who, Ecto.UUID.generate()))
-      assert json_response(conn, 200)["data"] == []
+      assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
     end
 
     # Uncomment when ready to require ToS and PP

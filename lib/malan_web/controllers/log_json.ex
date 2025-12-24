@@ -1,8 +1,14 @@
 defmodule MalanWeb.LogJSON do
   alias Malan.Accounts.Log
 
-  def index(%{logs: logs}) do
-    %{ok: true, data: Enum.map(logs, &log_data/1)}
+  def index(%{code: code, logs: logs, page_num: page_num, page_size: page_size}) do
+    %{
+      ok: true,
+      code: code,
+      page_num: page_num,
+      page_size: page_size,
+      data: Enum.map(logs, &log_data/1)
+    }
   end
 
   def show(%{log: log}) do

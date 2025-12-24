@@ -30,6 +30,7 @@ defmodule MalanWeb.LogController do
     logs = Accounts.list_logs(user_id_or_username, page_num, page_size)
 
     render(conn, :index,
+      code: 200,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -46,6 +47,7 @@ defmodule MalanWeb.LogController do
     logs = Accounts.list_logs(page_num, page_size)
 
     render(conn, :index,
+      code: 200,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -59,6 +61,7 @@ defmodule MalanWeb.LogController do
     logs = Accounts.list_logs(user, page_num, page_size)
 
     render(conn, :index,
+      code: 200,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -71,6 +74,7 @@ defmodule MalanWeb.LogController do
     logs = Accounts.list_logs_by_session_id(session_id, page_num, page_size)
 
     render(conn, :index,
+      code: 200,
       logs: logs,
       page_num: page_num,
       page_size: page_size
@@ -83,6 +87,7 @@ defmodule MalanWeb.LogController do
     logs = Accounts.list_logs_by_who(user_id, page_num, page_size)
 
     render(conn, :index,
+      code: 200,
       logs: logs,
       page_num: page_num,
       page_size: page_size

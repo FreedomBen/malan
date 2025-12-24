@@ -2207,6 +2207,10 @@ components:
         code:
           type: integer
           example: 200
+        page_num:
+          type: integer
+        page_size:
+          type: integer
         data:
           type: array
           items:
@@ -2323,6 +2327,12 @@ components:
       properties:
         ok:
           type: boolean
+        code:
+          type: integer
+        page_num:
+          type: integer
+        page_size:
+          type: integer
         data:
           type: array
           items:

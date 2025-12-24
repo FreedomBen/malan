@@ -102,7 +102,9 @@ defmodule MalanWeb.JsonRenderingTest do
         session_id: "session-1"
       }
 
-      assert %{ok: true, data: [rendered]} = LogJSON.index(%{logs: [log]})
+      assert %{ok: true, code: 200, page_num: 0, page_size: 10, data: [rendered]} =
+               LogJSON.index(%{code: 200, logs: [log], page_num: 0, page_size: 10})
+
       assert rendered[:type] == "users"
       assert rendered[:verb] == "POST"
       assert rendered[:id] == "log-1"
@@ -214,8 +216,13 @@ defmodule MalanWeb.JsonRenderingTest do
         max_extension_secs: 300
       }
 
-      assert %{ok: true, code: 200, data: [rendered]} =
-               SessionJSON.index(%{code: 200, sessions: [session]})
+      assert %{ok: true, code: 200, page_num: 0, page_size: 10, data: [rendered]} =
+               SessionJSON.index(%{
+                 code: 200,
+                 sessions: [session],
+                 page_num: 0,
+                 page_size: 10
+               })
 
       refute Map.has_key?(rendered, :api_token)
 

@@ -98,6 +98,8 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{
                "ok" => true,
                "code" => 200,
+               "page_num" => 0,
+               "page_size" => 10,
                "data" => data
              } = json_response(conn, 200)
 
@@ -181,7 +183,14 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
-      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "page_num" => 0,
+               "page_size" => 10,
+               "data" => data
+             } = json_response(conn, 200)
 
       # Test that admin index without pagination returns all sessions (including our 6)
       # May include sessions from other concurrent tests, so check for inclusion rather than exact match
@@ -200,7 +209,14 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 0, page_size: 5)
-      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "page_num" => 0,
+               "page_size" => 5,
+               "data" => data
+             } = json_response(conn, 200)
 
       # Test that page 0 with size 5 returns exactly 5 sessions (the newest ones)
       # and includes our created sessions, but may include others from concurrent tests
@@ -222,7 +238,15 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index), page_num: 1, page_size: 5)
-      assert %{"ok" => true, "code" => 200, "data" => data} = json_response(conn, 200)
+
+      assert %{
+               "ok" => true,
+               "code" => 200,
+               "page_num" => 1,
+               "page_size" => 5,
+               "data" => data
+             } = json_response(conn, 200)
+
       # Test that page 1 with size 5 contains some remaining sessions
       # Since this is admin function with global sessions, just test basic pagination behavior
       assert is_list(data)
@@ -327,6 +351,8 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{
                "ok" => true,
                "code" => 200,
+               "page_num" => 0,
+               "page_size" => 10,
                "data" => data
              } = json_response(conn, 200)
 
@@ -344,6 +370,8 @@ defmodule MalanWeb.SessionControllerTest do
       assert %{
                "ok" => true,
                "code" => 200,
+               "page_num" => 0,
+               "page_size" => 10,
                "data" => data
              } = json_response(ca, 200)
 
@@ -381,7 +409,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 3)
 
-      jr = json_response(conn, 200)["data"]
+      %{"data" => jr, "page_num" => 0, "page_size" => 3} = json_response(conn, 200)
 
       # Test that page 0 returns the 3 newest sessions for the user
       expected_session_ids = [s5.id, s4.id, s3.id]
@@ -396,7 +424,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 1, page_size: 3)
-      jr = json_response(conn, 200)["data"]
+      %{"data" => jr, "page_num" => 1, "page_size" => 3} = json_response(conn, 200)
 
       # Test that page 1 returns the remaining session for the user
       assert length(jr) == 1
@@ -404,7 +432,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, au.id), page_num: 0, page_size: 3)
-      jr = json_response(conn, 200)["data"]
+      %{"data" => jr, "page_num" => 0, "page_size" => 3} = json_response(conn, 200)
 
       # Test admin user sessions (s6, s2)
       expected_admin_session_ids = [s6.id, s2.id]
@@ -418,7 +446,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       conn = Helpers.Accounts.put_token(build_conn(), s1.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 5)
-      jr = json_response(conn, 200)["data"]
+      %{"data" => jr, "page_num" => 0, "page_size" => 5} = json_response(conn, 200)
 
       # Test all regular user sessions with larger page size
       expected_all_session_ids = [s5.id, s4.id, s3.id, s1.id]
@@ -466,7 +494,10 @@ defmodule MalanWeb.SessionControllerTest do
       expected_session_ids = [s5.id, s4.id, s3.id]
 
       for c <- [c1, c2, c3] do
-        response_data = json_response(c, 200)["data"]
+        resp = json_response(c, 200)
+        assert resp["page_num"] == 0
+        assert resp["page_size"] == 3
+        response_data = resp["data"]
 
         # Should return exactly 3 sessions
         assert length(response_data) == 3
@@ -507,7 +538,10 @@ defmodule MalanWeb.SessionControllerTest do
 
       # Test that second page returns the remaining session for the regular user
       for c <- [c1, c2, c3] do
-        response_data = json_response(c, 200)["data"]
+        resp = json_response(c, 200)
+        assert resp["page_num"] == 1
+        assert resp["page_size"] == 3
+        response_data = resp["data"]
 
         # Should return exactly 1 session
         assert length(response_data) == 1
@@ -536,7 +570,10 @@ defmodule MalanWeb.SessionControllerTest do
       expected_all_session_ids = [s5.id, s4.id, s3.id, s1.id]
 
       for c <- [c1, c2, c3] do
-        response_data = json_response(c, 200)["data"]
+        resp = json_response(c, 200)
+        assert resp["page_num"] == 0
+        assert resp["page_size"] == 5
+        response_data = resp["data"]
 
         # Should return exactly 4 sessions
         assert length(response_data) == 4
@@ -574,8 +611,12 @@ defmodule MalanWeb.SessionControllerTest do
           page_size: 3
         )
 
-      for c <- [c2, c3],
-          do: assert(json_response(c, 200)["data"] == sessions_to_retval([s6, s2]))
+      for c <- [c2, c3] do
+        resp = json_response(c, 200)
+        assert resp["page_num"] == 0
+        assert resp["page_size"] == 3
+        assert resp["data"] == sessions_to_retval([s6, s2])
+      end
 
       # as admin requesting regular user.  page_num: 0 page_size: 3
       c1 = Helpers.Accounts.put_token(build_conn(), s2.api_token)
@@ -587,7 +628,7 @@ defmodule MalanWeb.SessionControllerTest do
         )
 
       # Verify that the response contains the expected sessions (order may vary due to timing)
-      response_data = json_response(c1, 200)["data"]
+      %{"page_num" => 0, "page_size" => 3, "data" => response_data} = json_response(c1, 200)
       expected_data = sessions_to_retval([s5, s4, s3])
 
       # Check that we have the right sessions by ID

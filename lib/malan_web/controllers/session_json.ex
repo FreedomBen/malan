@@ -2,8 +2,14 @@ defmodule MalanWeb.SessionJSON do
   alias Malan.Accounts
   alias Malan.Accounts.Session
 
-  def index(%{code: code, sessions: sessions}) do
-    %{ok: true, code: code, data: Enum.map(sessions, &session_data/1)}
+  def index(%{code: code, sessions: sessions, page_num: page_num, page_size: page_size}) do
+    %{
+      ok: true,
+      code: code,
+      data: Enum.map(sessions, &session_data/1),
+      page_num: page_num,
+      page_size: page_size
+    }
   end
 
   def show(%{code: code, session: session}) do
