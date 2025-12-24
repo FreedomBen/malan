@@ -264,5 +264,46 @@ defmodule MalanWeb.SessionExtensionControllerTest do
                "message" => _
              } = json_response(conn, 403)
     end
+
+    test "only owner or admin can view extension history", %{conn: _conn} do
+      # user 1
+      {:ok, c1, _u1, _s1} = Helpers.Accounts.regular_user_session_conn(build_conn())
+      # user 2
+      {:ok, _c2, u2, s2} = Helpers.Accounts.regular_user_session_conn(build_conn())
+
+      # Create an extension for user 2's session so there is data to see
+      {:ok, {_s2_after, se2}} =
+        Accounts.extend_session(s2, %{"expire_in_seconds" => 30}, %{
+          authed_user_id: u2.id,
+          authed_session_id: s2.id
+        })
+
+      # Owner (user 2) can view
+      c_owner = Helpers.Accounts.put_token(build_conn(), s2.api_token)
+
+      assert %{"ok" => true, "data" => [_ | _]} =
+               c_owner
+               |> get(Routes.session_extension_path(c_owner, :index, s2.id))
+               |> json_response(200)
+
+      # Different user cannot view
+      assert %{"ok" => false, "code" => 401} =
+               c1
+               |> get(Routes.session_extension_path(c1, :index, s2.id))
+               |> json_response(401)
+
+      assert %{"ok" => false, "code" => 401} =
+               c1
+               |> get(Routes.session_extension_path(c1, :show, se2.id))
+               |> json_response(401)
+
+      # Admin can view
+      {:ok, c_admin, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      assert %{"ok" => true, "data" => [_ | _]} =
+               c_admin
+               |> get(Routes.session_extension_path(c_admin, :index, s2.id))
+               |> json_response(200)
+    end
   end
 end
