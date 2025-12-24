@@ -346,6 +346,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
           description: Created
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests (login rate limit exceeded)
         '403':
           $ref: '#/components/responses/ForbiddenAuth'
           description: Forbidden

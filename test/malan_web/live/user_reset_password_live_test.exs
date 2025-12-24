@@ -81,7 +81,12 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
   test "surfaces internal error when mail provider rejects credentials", %{conn: conn} do
     prev_mailer_config = Application.get_env(:malan, Malan.Mailer)
-    Application.put_env(:malan, Malan.Mailer, Keyword.put(prev_mailer_config, :adapter, FailingMailAdapter))
+
+    Application.put_env(
+      :malan,
+      Malan.Mailer,
+      Keyword.put(prev_mailer_config, :adapter, FailingMailAdapter)
+    )
 
     on_exit(fn -> Application.put_env(:malan, Malan.Mailer, prev_mailer_config) end)
 

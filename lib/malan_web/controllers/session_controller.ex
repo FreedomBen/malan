@@ -131,6 +131,12 @@ defmodule MalanWeb.SessionController do
         |> put_view(ErrorJSON)
         |> render(:"423")
 
+      {:error, :too_many_requests} ->
+        conn
+        |> put_status(:too_many_requests)
+        |> put_view(ErrorJSON)
+        |> render(:"429")
+
       # {:error, :not_a_user} ->
       # {:error, :unauthorized} ->
       _err ->

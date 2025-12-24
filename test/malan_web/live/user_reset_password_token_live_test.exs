@@ -22,6 +22,7 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
     html = render_submit(view, "reset_password", %{"password" => "newpass123"})
 
     assert html =~ "The password was successfully changed."
+
     assert {:ok, _} =
              Accounts.authenticate_by_username_pass(user.username, "newpass123", "127.0.0.1")
 

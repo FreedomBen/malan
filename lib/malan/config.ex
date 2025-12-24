@@ -118,6 +118,18 @@ defmodule Malan.Config do
     def session_extension_limit do
       {session_extension_limit_msecs(), session_extension_limit_count()}
     end
+
+    def login_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_limit_msecs]
+    end
+
+    def login_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_limit_count]
+    end
+
+    def login_limit do
+      {login_limit_msecs(), login_limit_count()}
+    end
   end
 
   defmodule Sentry do

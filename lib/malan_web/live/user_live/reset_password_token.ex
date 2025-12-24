@@ -157,7 +157,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
         <form class="space-y-6" phx-change="" phx-submit="reset_password">
           <div>
             <label for="reset_token" class="block text-sm font-medium text-gray-700">
-               Password Reset Token (from email): 
+              Password Reset Token (from email):
             </label>
             <div class="mt-1">
               <.token_text_input
@@ -171,7 +171,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
 
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700">
-               New Password: 
+              New Password:
             </label>
             <div class="mt-1">
               <input

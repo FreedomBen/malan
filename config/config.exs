@@ -41,7 +41,14 @@ config :malan, Malan.Config.RateLimits,
       "60000" |> String.to_integer(),
   session_extension_limit_count:
     System.get_env("SESSION_EXTENSION_LIMIT_COUNT") ||
-      "10" |> String.to_integer()
+      "2" |> String.to_integer(),
+  # Login attempts per username. 5 attempts per 60 seconds by default.
+  login_limit_msecs:
+    System.get_env("LOGIN_LIMIT_MSECS") ||
+      "60000" |> String.to_integer(),
+  login_limit_count:
+    System.get_env("LOGIN_LIMIT_COUNT") ||
+      "5" |> String.to_integer()
 
 config :malan, Malan.Accounts.Session,
   # If client doesn't specify token expiration time, use this value.

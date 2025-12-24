@@ -1745,7 +1745,103 @@ defmodule MalanWeb.SessionControllerTest do
                  |> json_response(200)
       end)
     end
+  end
 
+  describe "login rate limit" do
+    setup do
+      original = {
+        Malan.Config.RateLimit.login_limit_msecs(),
+        Malan.Config.RateLimit.login_limit_count()
+      }
+
+      on_exit(fn ->
+        Application.put_env(:malan, Malan.Config.RateLimits,
+          login_limit_msecs: elem(original, 0),
+          login_limit_count: elem(original, 1),
+          password_reset_lower_limit_msecs:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :password_reset_lower_limit_msecs
+            ],
+          password_reset_lower_limit_count:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :password_reset_lower_limit_count
+            ],
+          password_reset_upper_limit_msecs:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :password_reset_upper_limit_msecs
+            ],
+          password_reset_upper_limit_count:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :password_reset_upper_limit_count
+            ],
+          session_extension_limit_msecs:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :session_extension_limit_msecs
+            ],
+          session_extension_limit_count:
+            Application.get_env(:malan, Malan.Config.RateLimits)[
+              :session_extension_limit_count
+            ]
+        )
+      end)
+
+      # Tighten login limit for test
+      Application.put_env(:malan, Malan.Config.RateLimits,
+        login_limit_msecs: 60000,
+        login_limit_count: 2,
+        password_reset_lower_limit_msecs:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_lower_limit_msecs],
+        password_reset_lower_limit_count:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_lower_limit_count],
+        password_reset_upper_limit_msecs:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_upper_limit_msecs],
+        password_reset_upper_limit_count:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_upper_limit_count],
+        session_extension_limit_msecs:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_msecs],
+        session_extension_limit_count:
+          Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_count]
+      )
+
+      :ok
+    end
+
+    test "username is rate limited after repeated failed logins", %{conn: conn} do
+      username = "user_login_rl"
+      password = "GoodPass123!"
+
+      {:ok, _user} =
+        Helpers.Accounts.regular_user(%{username: username, password: password})
+
+      # clear bucket
+      {:ok, _} = Malan.RateLimits.Login.clear(username)
+
+      # First two wrong attempts -> 403
+      conn =
+        post(conn, Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 403} = json_response(conn, 403)
+
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 403} = json_response(conn, 403)
+
+      # Third attempt (still wrong) -> 429
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 429} = json_response(conn, 429)
+    end
+  end
+
+  describe "extend user sessions 2" do
     test "Session extension works (happy path) (IDs in path)", %{conn: conn} do
       # Create the new session for the user
       {:ok, user} = Helpers.Accounts.regular_user()

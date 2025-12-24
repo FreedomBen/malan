@@ -53,6 +53,32 @@ defmodule Malan.RateLimits do
     def bucket(user_id), do: "session_extension_limit:#{user_id}"
   end
 
+  defmodule Login do
+    @doc """
+    Rate limit login attempts by username (applies even if the username is unknown).
+
+    Returns {:allow, count} or {:deny, limit}.
+    """
+    @spec check_rate(username :: String.t()) ::
+            {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+    def check_rate(username) do
+      {msecs, count} = Malan.Config.RateLimit.login_limit()
+
+      username
+      |> bucket()
+      |> Malan.RateLimits.check_rate(msecs, count)
+    end
+
+    @spec clear(username :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+    def clear(username) do
+      username
+      |> bucket()
+      |> Malan.RateLimits.clear()
+    end
+
+    def bucket(username), do: "login_limit:#{username}"
+  end
+
   defmodule PasswordReset do
     alias Malan.RateLimits.PasswordReset.{UpperLimit, LowerLimit}
 

@@ -619,17 +619,23 @@ defmodule Malan.Accounts do
           {:error, :user_locked}
           {:error, :unauthorized}
           {:error, :not_a_user}
+          {:error, :too_many_requests}
   """
   def authenticate_by_username_pass(username, given_pass, remote_ip) do
-    case get_user_id_pass_hash_by_username(username) do
-      {user_id, password_hash, nil, approved_ips} ->
-        verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
+    with {:allow, _} <- Malan.RateLimits.Login.check_rate(username) do
+      case get_user_id_pass_hash_by_username(username) do
+        {user_id, password_hash, nil, approved_ips} ->
+          verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
 
-      {user_id, password_hash, locked_at, _} ->
-        verify_pass_locked(user_id, given_pass, password_hash, locked_at)
+        {user_id, password_hash, locked_at, _} ->
+          verify_pass_locked(user_id, given_pass, password_hash, locked_at)
 
-      nil ->
-        fake_pass_verify(:not_a_user)
+        nil ->
+          fake_pass_verify(:not_a_user)
+      end
+    else
+      {:deny, _limit} ->
+        {:error, :too_many_requests}
     end
   end
 
@@ -759,6 +765,7 @@ defmodule Malan.Accounts do
       {:error, :ip_addr} -> record_create_session_bad_ip(username, remote_ip, attrs)
       {:error, :unauthorized} -> record_create_session_unauthorized(username, remote_ip, attrs)
       {:error, :not_a_user} -> record_create_session_not_a_user(username, remote_ip, attrs)
+      {:error, :too_many_requests} -> {:error, :too_many_requests}
     end
   end
 
