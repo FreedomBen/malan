@@ -13,7 +13,7 @@ defmodule Malan.Repo.Migrations.CreateAddresses do
       add :city, :string
       add :state, :string
       add :postal, :string
-      add :user_id, references(:users, on_delete: :nothing, type: :binary_id, null: false)
+      add :user_id, references(:users, on_delete: :nothing, type: :binary_id), null: false
 
       timestamps(type: :utc_datetime)
     end
