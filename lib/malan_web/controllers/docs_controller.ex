@@ -7,7 +7,7 @@ defmodule MalanWeb.DocsController do
   def spec(conn, _params) do
     conn
     |> put_resp_content_type("application/yaml")
-    |> send_resp(200, File.read!(spec_path()))
+    |> send_file(200, spec_path())
   end
 
   @doc """
@@ -48,5 +48,5 @@ defmodule MalanWeb.DocsController do
     |> send_resp(200, html)
   end
 
-  defp spec_path, do: Path.expand("../../../openapi.yaml", __DIR__)
+  defp spec_path, do: Application.app_dir(:malan, "priv/openapi/openapi.yaml")
 end
