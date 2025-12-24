@@ -5,18 +5,22 @@ defmodule MalanWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  @endpoint_config Application.compile_env(:malan, MalanWeb.Endpoint, [])
+
   @session_options [
     store: :cookie,
     key: "_malan_key",
     signing_salt: "36hUTpHh",
-    encryption_salt: "3043FHjkW"
+    encryption_salt: "3043FHjkW",
+    same_site: Keyword.get(@endpoint_config, :session_same_site, "Lax"),
+    secure: Keyword.get(@endpoint_config, :session_secure?, false)
   ]
 
   # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [:peer_data, session: @session_options]]
 
-  # If running behind CLoudflare, read the CF-Connection-IP header
+  # If running behind Cloudflare, read the CF-Connection-IP header
   # and use that for `conn.remote_ip`
   # https://github.com/c-rack/plug_cloudflare
   # plug Plug.CloudFlare
