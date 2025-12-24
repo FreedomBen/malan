@@ -1,11 +1,11 @@
 <main class="container">
-  <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
-    {Phoenix.Flash.get(@flash, :info)}
-  </p>
+  <%= if info = Phoenix.Flash.get(@flash, :info) do %>
+    <p class="alert alert-info" role="alert" phx-click="lv:clear-flash" phx-value-key="info"><%= info %></p>
+  <% end %>
 
-  <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
-    {Phoenix.Flash.get(@flash, :error)}
-  </p>
+  <%= if error = Phoenix.Flash.get(@flash, :error) do %>
+    <p class="alert alert-danger" role="alert" phx-click="lv:clear-flash" phx-value-key="error"><%= error %></p>
+  <% end %>
 
-  {@inner_content}
+  <%= @inner_content %>
 </main>
