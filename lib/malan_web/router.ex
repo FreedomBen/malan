@@ -12,6 +12,13 @@ defmodule MalanWeb.Router do
     plug :retrieve_user
   end
 
+  # Lightweight pipeline for docs and the OpenAPI spec.
+  # Accept JSON/YAML so Swagger UI's request headers are never rejected with 406.
+  pipeline :docs do
+    plug :accepts, ["html", "json", "yaml"]
+    plug :put_secure_browser_headers
+  end
+
   pipeline :unauthed_api do
     plug :accepts, ["json"]
     plug :fetch_session
@@ -89,6 +96,10 @@ defmodule MalanWeb.Router do
 
     get "/password/reset", RedirectController, :reset_password
     get "/password/forgot", RedirectController, :reset_password
+  end
+
+  scope "/", MalanWeb do
+    pipe_through :docs
 
     get "/docs", DocsController, :swagger
     get "/openapi.yaml", DocsController, :spec

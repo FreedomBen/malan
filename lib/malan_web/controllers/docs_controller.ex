@@ -1,12 +1,12 @@
 defmodule MalanWeb.DocsController do
-  use MalanWeb, {:controller, formats: [:html], layouts: []}
+  use MalanWeb, {:controller, formats: [:html, :json, :yaml], layouts: []}
 
   @doc """
   Serve the OpenAPI specification file.
   """
   def spec(conn, _params) do
     conn
-    |> put_resp_content_type("application/yaml")
+    |> put_resp_content_type("application/vnd.oai.openapi+yaml")
     |> send_file(200, spec_path())
   end
 
@@ -31,8 +31,10 @@ defmodule MalanWeb.DocsController do
       <script src=\"/swagger-ui/swagger-ui-standalone-preset.js\"></script>
       <script>
         window.onload = () => {
+          const specUrl = new URL('openapi.yaml', window.location.href).pathname;
+
           SwaggerUIBundle({
-            url: '/openapi.yaml',
+            url: specUrl,
             dom_id: '#swagger-ui',
             presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
             layout: 'BaseLayout'

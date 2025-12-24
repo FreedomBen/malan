@@ -457,7 +457,6 @@ paths:
           $ref: '#/components/responses/NotFound'
           description: Not Found
       operationId: get_api_session_extensions_by_id
-      description: Get a session extension record
       parameters:
       - name: id
         in: path

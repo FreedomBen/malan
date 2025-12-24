@@ -110,7 +110,22 @@ config :phoenix, :json_library, Jason
 
 # Configure MIME types
 config :mime, :types, %{
-  "application/json" => ["json"]
+  "application/json" => ["json"],
+  "application/yaml" => ["yaml"],
+  "text/yaml" => ["yaml"],
+  "application/x-yaml" => ["yaml"],
+  "application/vnd.oai.openapi" => ["openapi"],
+  "application/vnd.oai.openapi+json" => ["openapi-json"],
+  "application/vnd.oai.openapi+yaml" => ["openapi-yaml"]
+}
+
+# Disambiguate extensions that map to multiple YAML MIME types.
+config :mime, :extensions, %{
+  "yaml" => "application/yaml",
+  "yml" => "application/yaml",
+  "openapi" => "application/vnd.oai.openapi+yaml",
+  "openapi-json" => "application/vnd.oai.openapi+json",
+  "openapi-yaml" => "application/vnd.oai.openapi+yaml"
 }
 
 # Supplement Plug's list of statuses
