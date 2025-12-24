@@ -102,6 +102,7 @@ defmodule MalanWeb.Router do
     pipe_through :docs
 
     get "/docs", DocsController, :swagger
+    get "/docs/openapi.yaml", DocsController, :spec
     get "/openapi.yaml", DocsController, :spec
   end
 
