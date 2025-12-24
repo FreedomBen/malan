@@ -20,6 +20,8 @@ info:
   contact:
     name: Malan Team
 servers:
+- url: /
+  description: Same origin (matches host serving Swagger UI)
 - url: https://accounts.ameelio.org
   description: Production
 - url: https://accounts.ameelio.xyz
