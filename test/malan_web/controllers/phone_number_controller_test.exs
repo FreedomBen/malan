@@ -128,6 +128,32 @@ defmodule MalanWeb.PhoneNumberControllerTest do
     # end
   end
 
+  describe "authorization bypass with mismatched user_id" do
+    test "index does not leak other users' phone numbers", %{conn: conn} do
+      {:ok, victim, _victim_session} = Helpers.Accounts.regular_user_with_session()
+      victim_number = fixture(:phone_number, victim.id)
+
+      {:ok, conn, attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.user_phone_number_path(conn, :index, attacker.id))
+      data = json_response(conn, 200)["data"]
+
+      refute Enum.any?(data, fn pn -> pn["id"] == victim_number.id end),
+             "index should not return another user's phone number"
+    end
+
+    test "show should reject when id belongs to another user even if path user_id matches attacker",
+         %{conn: conn} do
+      {:ok, victim, _victim_session} = Helpers.Accounts.regular_user_with_session()
+      victim_number = fixture(:phone_number, victim.id)
+
+      {:ok, conn, attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, attacker.id, victim_number.id))
+      assert conn.status in [401, 403]
+    end
+  end
+
   describe "create phone_number" do
     test "renders phone_number when data is valid", %{conn: conn} do
       {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
@@ -214,8 +240,13 @@ defmodule MalanWeb.PhoneNumberControllerTest do
              } = json_response(conn, 200)["data"]
     end
 
-    test "renders errors when data is invalid", %{conn: conn, phone_number: phone_number} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "renders errors when data is invalid", %{
+      conn: conn,
+      user: user,
+      session: session,
+      phone_number: phone_number
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn =
         put(conn, Routes.user_phone_number_path(conn, :update, user.id, phone_number),
@@ -279,14 +310,18 @@ defmodule MalanWeb.PhoneNumberControllerTest do
   describe "delete phone_number" do
     setup [:create_phone_number]
 
-    test "deletes chosen phone_number", %{conn: conn, phone_number: phone_number} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "deletes chosen phone_number", %{
+      conn: conn,
+      user: user,
+      session: session,
+      phone_number: phone_number
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.user_phone_number_path(conn, :delete, user.id, phone_number))
       assert response(conn, 204)
 
-      assert_error_sent 404, fn ->
-        get(conn, Routes.user_phone_number_path(conn, :show, user.id, phone_number))
-      end
+      conn = get(conn, Routes.user_phone_number_path(conn, :show, user.id, phone_number))
+      assert conn.status == 404
     end
 
     test "Requires being authenticated", %{conn: conn, phone_number: phone_number} do

@@ -2,12 +2,14 @@ defmodule MalanWeb.LogController do
   use MalanWeb, {:controller, formats: [:json], layouts: []}
 
   import MalanWeb.PaginationController, only: [require_pagination: 2, pagination_info: 1]
+  import Malan.AuthController, only: [is_admin?: 1, halt_not_owner: 1]
 
   alias Malan.Accounts
 
   action_fallback MalanWeb.FallbackController
 
   plug :is_log_user_or_admin when action in [:show]
+  plug :ensure_user_log_owner when action in [:user_index]
 
   plug :require_pagination,
        [default_page_size: 10, max_page_size: 100]
@@ -139,6 +141,31 @@ defmodule MalanWeb.LogController do
       is_admin?(conn) -> conn
       is_log_user?(conn, opts) -> conn
       true -> halt_not_owner(conn)
+    end
+  end
+
+  defp ensure_user_log_owner(conn, _opts) do
+    requested_user = Map.get(conn.params, "user_id")
+
+    cond do
+      is_admin?(conn) ->
+        conn
+
+      is_nil(requested_user) or requested_user == "current" ->
+        conn
+
+      true ->
+        case Accounts.get_user_by_id_or_username(requested_user) do
+          nil ->
+            conn
+
+          %{id: requested_id} ->
+            if requested_id == conn.assigns.authed_user_id do
+              conn
+            else
+              halt_not_owner(conn)
+            end
+        end
     end
   end
 end

@@ -122,6 +122,32 @@ defmodule MalanWeb.AddressControllerTest do
     # end
   end
 
+  describe "authorization bypass with mismatched user_id" do
+    test "index does not leak other users' addresses", %{conn: conn} do
+      {:ok, victim, _victim_session} = Helpers.Accounts.regular_user_with_session()
+      victim_address = fixture(:address, victim.id)
+
+      {:ok, conn, attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.user_address_path(conn, :index, attacker.id))
+      data = json_response(conn, 200)["data"]
+
+      refute Enum.any?(data, fn addr -> addr["id"] == victim_address.id end),
+             "index should not return another user's address"
+    end
+
+    test "show rejects when id belongs to another user even if path user_id matches attacker",
+         %{conn: conn} do
+      {:ok, victim, _victim_session} = Helpers.Accounts.regular_user_with_session()
+      victim_address = fixture(:address, victim.id)
+
+      {:ok, conn, attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.user_address_path(conn, :show, attacker.id, victim_address.id))
+      assert conn.status in [401, 403]
+    end
+  end
+
   describe "create address" do
     test "renders address when data is valid", %{conn: conn} do
       temp = @create_attrs
@@ -184,8 +210,13 @@ defmodule MalanWeb.AddressControllerTest do
   describe "update address" do
     setup [:create_address]
 
-    test "renders address when data is valid", %{conn: conn, address: %Address{id: id} = address} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "renders address when data is valid", %{
+      conn: conn,
+      user: user,
+      session: session,
+      address: %Address{id: id} = address
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn =
         put(conn, Routes.user_address_path(conn, :update, user.id, address),
@@ -210,8 +241,13 @@ defmodule MalanWeb.AddressControllerTest do
              } = json_response(conn, 200)["data"]
     end
 
-    test "renders errors when data is invalid", %{conn: conn, address: address} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "renders errors when data is invalid", %{
+      conn: conn,
+      user: user,
+      session: session,
+      address: address
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       conn =
         put(conn, Routes.user_address_path(conn, :update, user.id, address),
@@ -252,14 +288,13 @@ defmodule MalanWeb.AddressControllerTest do
   describe "delete address" do
     setup [:create_address]
 
-    test "deletes chosen address", %{conn: conn, address: address} do
-      {:ok, conn, user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+    test "deletes chosen address", %{conn: conn, user: user, session: session, address: address} do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = delete(conn, Routes.user_address_path(conn, :delete, user.id, address))
       assert response(conn, 204)
 
-      assert_error_sent 404, fn ->
-        get(conn, Routes.user_address_path(conn, :show, user.id, address))
-      end
+      conn = get(conn, Routes.user_address_path(conn, :show, user.id, address))
+      assert conn.status == 404
     end
 
     test "Requires being authenticated", %{conn: conn, address: address} do

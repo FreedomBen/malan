@@ -30,6 +30,11 @@ defmodule MalanWeb.Router do
     plug :validate_token    # Adds token and auth info to conn.assigns
     plug :is_authenticated  # Ensures user is authenticated
     plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
+    #
+    # NOTE: For owner-scoped controllers, also add MalanWeb.Plugs.EnsureOwnerOrAdmin
+    # on member actions so the loaded record's user_id is verified (path user_id alone
+    # is not sufficient). See phone/address/session controllers for the pattern.
+    #
   end
 
   pipeline :authed_api do
@@ -49,6 +54,11 @@ defmodule MalanWeb.Router do
     plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
     plug :has_accepted_tos  # Ensures latest ToS have been accepted
     plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    #
+    # NOTE: For owner-scoped controllers, also add MalanWeb.Plugs.EnsureOwnerOrAdmin
+    # on member actions so the loaded record's user_id is verified (path user_id alone
+    # is not sufficient). See phone/address/session controllers for the pattern.
+    #
   end
 
   pipeline :moderator_api do

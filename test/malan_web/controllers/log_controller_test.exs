@@ -214,6 +214,15 @@ defmodule MalanWeb.LogControllerTest do
       assert conn.status == 403
     end
 
+    test "user cannot list another user's logs via query param route", %{conn: conn} do
+      {:ok, victim, _victim_session, _log} = log_fixture()
+      {:ok, conn, _attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.log_path(conn, :user_index), user_id: victim.id)
+      # Should be unauthorized, but currently succeeds and returns victim's logs
+      assert conn.status in [401, 403]
+    end
+
     test "non-existent user id", %{conn: conn} do
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, "notarealuser"))

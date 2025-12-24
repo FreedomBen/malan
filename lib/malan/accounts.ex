@@ -497,6 +497,10 @@ defmodule Malan.Accounts do
     )
   end
 
+  def get_session_owned(id, user_id) do
+    Repo.get_by(Session, id: id, user_id: user_id)
+  end
+
   def list_sessions(page_num, page_size) do
     Repo.all(
       from s in Session,
@@ -1243,7 +1247,24 @@ defmodule Malan.Accounts do
 
   """
   def list_phone_numbers do
-    Repo.all(PhoneNumber)
+    Repo.all(
+      from p in PhoneNumber,
+        order_by: [asc: p.inserted_at, asc: p.id]
+    )
+  end
+
+  def list_phone_numbers_for_user(user_id) do
+    Repo.all(
+      from p in PhoneNumber,
+        where: p.user_id == ^user_id,
+        order_by: [asc: p.inserted_at, asc: p.id]
+    )
+  end
+
+  def get_phone_number(id), do: Repo.get(PhoneNumber, id)
+
+  def get_phone_number_owned(id, user_id) do
+    Repo.get_by(PhoneNumber, id: id, user_id: user_id)
   end
 
   @doc """
@@ -1335,7 +1356,24 @@ defmodule Malan.Accounts do
 
   """
   def list_addresses do
-    Repo.all(Address)
+    Repo.all(
+      from a in Address,
+        order_by: [asc: a.inserted_at, asc: a.id]
+    )
+  end
+
+  def list_addresses_for_user(user_id) do
+    Repo.all(
+      from a in Address,
+        where: a.user_id == ^user_id,
+        order_by: [asc: a.inserted_at, asc: a.id]
+    )
+  end
+
+  def get_address(id), do: Repo.get(Address, id)
+
+  def get_address_owned(id, user_id) do
+    Repo.get_by(Address, id: id, user_id: user_id)
   end
 
   @doc """
@@ -1429,6 +1467,7 @@ defmodule Malan.Accounts do
   def list_logs(page_num, page_size) do
     from(l in Log,
       select: l,
+      order_by: [asc: l.inserted_at, asc: l.id],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )
@@ -1488,6 +1527,7 @@ defmodule Malan.Accounts do
       join: u in User,
       on: u.username == ^username,
       where: l.user_id == u.id,
+      order_by: [asc: l.inserted_at, asc: l.id],
       limit: ^page_size,
       offset: ^(page_num * page_size)
     )

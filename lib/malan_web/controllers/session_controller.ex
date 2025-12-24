@@ -10,6 +10,7 @@ defmodule MalanWeb.SessionController do
   alias Malan.{Accounts, Utils}
   alias Malan.Accounts.{Session, SessionExtension}
   alias Malan.RateLimits
+  alias MalanWeb.Plugs.EnsureOwnerOrAdmin
 
   alias MalanWeb.ErrorJSON
 
@@ -18,6 +19,10 @@ defmodule MalanWeb.SessionController do
   plug :require_pagination,
        [default_page_size: 10, max_page_size: 100]
        when action in [:admin_index, :index, :index_active, :user_index_active]
+
+  plug EnsureOwnerOrAdmin,
+       [loader: &Accounts.get_session/1, id_param: "id", assign_as: :session]
+       when action in [:show, :extend, :delete]
 
   def admin_index(conn, _params) do
     {page_num, page_size} = pagination_info(conn)
@@ -148,14 +153,14 @@ defmodule MalanWeb.SessionController do
   end
 
   def show(conn, %{"id" => id}) do
-    session = Accounts.get_session!(id)
+    session = Map.get(conn.assigns, :session) || Accounts.get_session!(id)
     render(conn, :show, code: 200, session: session)
   end
 
   def show_current(conn, %{}), do: show(conn, %{"id" => conn.assigns.authed_session_id})
 
   def extend(conn, attrs = %{"id" => id}) do
-    session = Accounts.get_session!(id)
+    session = Map.get(conn.assigns, :session) || Accounts.get_session!(id)
 
     # Make sure the session being extended isn't revoked or expired
     case Accounts.session_revoked_or_expired?(session) do
@@ -237,7 +242,7 @@ defmodule MalanWeb.SessionController do
   end
 
   def delete(conn, %{"id" => id}) do
-    session = Accounts.get_session!(id)
+    session = Map.get(conn.assigns, :session) || Accounts.get_session!(id)
 
     changeset =
       Session.revoke_changeset(session, %{

@@ -460,6 +460,19 @@ defmodule MalanWeb.SessionControllerTest do
     end
   end
 
+  describe "authorization bypass with mismatched user_id for sessions" do
+    test "regular user cannot fetch another user's session when path user_id is self", %{
+      conn: conn
+    } do
+      {:ok, _victim, victim_session} = Helpers.Accounts.regular_user_with_session()
+
+      {:ok, conn, attacker, _attacker_session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.user_session_path(conn, :show, attacker.id, victim_session.id))
+      assert conn.status in [401, 403]
+    end
+  end
+
   describe "index_active and user_index_active paginated" do
     test "lists all active sessions for user and works with current", %{conn: conn} do
       {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
