@@ -28,8 +28,6 @@ config :malan, MalanWeb.Endpoint,
   debug_errors: true,
   # debug_errors: false,
   secret_key_base: "udX5bFf0B1XDP3LQdGk/neU0RDWp7LUf/ocaUT9lzJ80056EUKKuS7VKm71YYFhy",
-  session_secure?: false,
-  session_same_site: "Lax",
   watchers: [
     # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},

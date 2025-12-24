@@ -23,9 +23,7 @@ config :malan, Malan.Repo,
 config :malan, MalanWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "jhOV8WgGOt2XZ5iHeEKZ3/m2trLP5CJJSmZbaClcTXjquvkToAwRjaOET3zZhmho",
-  server: false,
-  session_secure?: false,
-  session_same_site: "Lax"
+  server: false
 
 # In test we don't send emails.
 config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Test

@@ -15,9 +15,6 @@ config :malan, MalanWeb.Endpoint,
     "https://malan.ameelio.org",
     "https://malan-prod.ameelio.org",
     "https://accounts.ameelio.org"
-  ],
-  session_secure?: true,
-  session_same_site: "Lax",
-  force_ssl: [hsts: false, rewrite_on: [:x_forwarded_proto, :x_forwarded_host, :x_forwarded_port]]
+  ]
 
 config :malan, :sentry, enabled: true
