@@ -1,15 +1,16 @@
 # Malan HTTP API
 
-Malan is a Phoenix 1.8 (app version `0.1.0`) authentication service that issues API tokens and manages users, sessions, and audit logs.
+Malan is a Phoenix 1.8 (app version `0.1.0`) authentication service that issues API tokens and manages users, sessions, and audit logs. The OpenAPI 3.1 spec in `priv/openapi/openapi.yaml` is generated from the router as of December 23, 2025.
 
 ## Base URLs
+- Same-origin (Swagger UI): `/`
+- Production: `https://accounts.ameelio.org`
+- Staging: `https://accounts.ameelio.xyz`
 - Development: `http://localhost:4000`
-- Staging: `https://malan-staging.ameelio.xyz` (also served via `https://accounts.ameelio.xyz`)
-- Production: `https://malan.ameelio.org` (alias `https://accounts.ameelio.org`)
 
 ## Authentication & Tokens
 - Pass the token returned from **POST /api/sessions** as `Authorization: Bearer <token>`.
-- Most `/api` routes require a token; unauthenticated exceptions are called out below.
+- Most `/api` routes require a token; unauthenticated exceptions are called out below. Login failures return `403` (`ForbiddenAuth`) and locked accounts return `423`.
 - Terms of Service and Privacy Policy acceptance may be enforced depending on deployment configuration. If you receive HTTP 461 or 462, update your user with `accept_tos: true` and/or `accept_privacy_policy: true`.
 
 ## Common Response Shape
@@ -24,8 +25,9 @@ Error responses:
 
 ## Error Codes
 - 400 Bad Request
-- 401 Unauthorized (authenticated but not allowed)
-- 403 Forbidden (missing/invalid token or expired session)
+- 401 Unauthorized (authenticated but not allowed; e.g., not owner/admin)
+- 403 Forbidden (missing/invalid token, expired/revoked session)
+- 403 ForbiddenAuth (invalid username/password/location on login)
 - 404 Not Found
 - 422 Unprocessable Entity (validation/pagination errors)
 - 423 Locked (locked user)
@@ -38,6 +40,7 @@ Error responses:
 Endpoints that list records accept `page_num` (default `0`) and `page_size` (default `10`, max `100` where enforced). User and session-extension list responses include these values; other lists return just the data array.
 
 ## Rate Limits
+- Login: 429 when the credential rate limiter is exceeded.
 - Password reset requests: 1 every 3 minutes, up to 3 per 24 hours (configurable via env vars `PASSWORD_RESET_*`).
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 
@@ -55,11 +58,39 @@ Body:
     "password": "password123",
     "first_name": "Jane",
     "last_name": "Doe",
+    "display_name": "Jane Doe",
+    "nick_name": "JD",
+    "gender": "Non-binary",
+    "race": ["Asian"],
+    "ethnicity": "Hispanic or Latinx",
+    "preferences": {
+      "theme": "light",
+      "display_name_pref": "full_name",
+      "display_middle_initial_only": false
+    },
     "custom_attrs": { "source": "signup-form" },
-    "approved_ips": ["1.2.3.4"]
+    "approved_ips": ["1.2.3.4"],
+    "addresses": [{
+      "name": "Home",
+      "line_1": "123 Main St",
+      "line_2": "Apt 5",
+      "city": "Anytown",
+      "state": "CA",
+      "postal": "12345",
+      "country": "US",
+      "primary": true
+    }],
+    "phone_numbers": [{
+      "number": "+14155550123",
+      "primary": true
+    }]
   }
 }
 ```
+- Required fields: `username`, `email`, `password`, `first_name`, `last_name`.
+- Optional profile data: middle/suffix/prefix names, `display_name`, `nick_name`, `birthday`, `sex`, `gender` (enumerated; e.g., Cis Female, Trans Man, Non-binary), `race` (American Indian or Alaska Native, Asian, Black or African American, Native Hawaiian or Other Pacific Islander, White), `ethnicity` (Hispanic or Latinx / Not Hispanic or Latinx), `weight`, `height`.
+- Preferences enum: `theme` (`light`|`dark`), `display_name_pref` (`full_name`|`nick_name`|`custom`), `display_middle_initial_only` (bool).
+- You may inline `addresses` and `phone_numbers` during creation; address fields require `line_2` in this API.
 
 Response (`201 Created`):
 ```json
@@ -78,6 +109,7 @@ Response (`201 Created`):
   }
 }
 ```
+- Additional fields present on the `data` object: `email_verified` timestamp (nullable), `locked_at/locked_by` when locked, `tos_accepted` / `privacy_policy_accepted`, acceptance event histories, and any `custom_attrs` you provided.
 
 ### Create Session (Login)
 `POST /api/sessions`
@@ -88,7 +120,9 @@ Body:
   "session": {
     "username": "user@example.com",
     "password": "password123",
-    "expires_in_seconds": 3600,               // optional, default 7 days
+    "location": "nyc-lab",                    // optional audit tag
+    "never_expires": false,                   // optional, default false
+    "expires_in_seconds": 3600,               // optional, default 7 days (604800)
     "extendable_until_seconds": 2419200,      // optional, default 28 days
     "max_extension_secs": 604800,             // optional, default 7 days
     "valid_only_for_ip": false,
@@ -118,11 +152,15 @@ Response (`201 Created`):
   }
 }
 ```
+- `api_token` is only present in the creation response; subsequent session fetches omit it.
+- Invalid credentials return `403 ForbiddenAuth`; locked users return `423`; excessive login attempts return `429 Too Many Requests`.
+- `never_expires: true` issues a non-expiring session that can still be revoked; `valid_only_for_ip` and `valid_only_for_approved_ips` further restrict token use.
 
 ### Who Am I
 `GET /api/users/whoami`
 
 Returns the token context if present; otherwise 403.
+Requires a bearer token even though the route is on the unauthenticated pipeline.
 ```json
 {
   "ok": true,
@@ -151,6 +189,7 @@ Body for token exchange:
 ```
 
 Success: `{"ok": true, "code": 200}`. Invalid/missing/expired tokens return 401 with an error message.
+Notes: Reset email requests return 404 when the user is unknown and 429 when rate limited.
 
 ### Health Checks
 - `GET /health_check/liveness`
@@ -176,14 +215,43 @@ Body may include profile fields and flags:
   "user": {
     "first_name": "Jane",
     "last_name": "Doe",
+    "display_name": "Jane Q. Doe",
+    "nick_name": "JD",
+    "gender": "Cis Female",
+    "race": ["White"],
+    "ethnicity": "Not Hispanic or Latinx",
+    "height": 167,
+    "weight": 63,
+    "birthday": "1995-01-01",
     "password": "newpassword123",
     "accept_tos": true,
     "accept_privacy_policy": true,
     "approved_ips": ["1.2.3.4"],
-    "custom_attrs": { "plan": "pro" }
+    "preferences": {
+      "theme": "dark",
+      "display_name_pref": "full_name",
+      "display_middle_initial_only": true
+    },
+    "custom_attrs": { "plan": "pro" },
+    "addresses": [{
+      "name": "Home",
+      "line_1": "123 Main St",
+      "line_2": "Apt 5",
+      "city": "Anytown",
+      "state": "CA",
+      "postal": "12345",
+      "country": "US",
+      "primary": true
+    }],
+    "phone_numbers": [{
+      "number": "+14155550123",
+      "primary": true
+    }]
   }
 }
 ```
+- `user` is required; any fields not supplied remain unchanged. Gender uses an enumerated list (Cis/Cisgender, Trans*, Non-binary, Two-spirit, etc.); race and ethnicity are enumerated as above.
+- `user_id` in the path may be the UUID, username, or `current` (for nested routes). Addresses and phone numbers use the same shapes as their dedicated endpoints.
 
 Example:
 ```bash
@@ -212,7 +280,7 @@ Response (`200 OK`):
 ### Delete User
 `DELETE /api/users/:id`
 
-Response: `204 No Content`
+Response: `204 No Content` (user record is anonymized)
 
 ### Sessions (User)
 - `GET /api/sessions/active` — active sessions for the current token (paginated)
@@ -226,6 +294,11 @@ Response: `204 No Content`
 - `DELETE /api/users/:user_id/sessions/:id`
 - `DELETE /api/users/:user_id/sessions` — revoke all active sessions for the user
 - `GET /api/users/:user_id/sessions/active` — active only
+
+Notes:
+- Extension endpoints return `403 SessionRevokedOrExpired` when the session is no longer valid.
+- `DELETE /api/users/:user_id/sessions` responds with `{status, num_revoked, message}` so you can confirm how many tokens were revoked.
+- `page_num` / `page_size` apply to list endpoints; tokens are only returned on session creation, not on reads.
 
 Examples:
 - List sessions (paginated):
@@ -257,7 +330,7 @@ Examples:
 - `GET /api/sessions/:session_id/extensions`
 - `GET /api/session_extensions/:id`
 
-Each record includes `old_expires_at`, `new_expires_at`, `extended_by_seconds`, and auditing fields.
+Each record includes `old_expires_at`, `new_expires_at`, `extended_by_seconds`, and auditing fields. Lists are ordered newest first. Only the session owner or an admin may view these records; others receive 401/403.
 
 Example list:
 ```bash
@@ -314,7 +387,7 @@ Response (`201 Created`):
 **Addresses** (`/api/users/:user_id/addresses`)
 - `GET /`
 - `GET /:id`
-- `POST /` — body `{ "address": { "name": "Home", "line_1": "123 Main St", "city": "Anytown", "state": "CA", "postal": "12345", "country": "US" } }`
+- `POST /` — body `{ "address": { "name": "Home", "line_1": "123 Main St", "line_2": "Apt 5", "city": "Anytown", "state": "CA", "postal": "12345", "country": "US", "primary": true } }`
 - `PUT /:id`
 - `DELETE /:id`
 
@@ -323,7 +396,7 @@ Create example:
 curl -X POST \
   -H "Authorization: Bearer ${api_token}" \
   -H "Content-Type: application/json" \
-  -d '{"address":{"name":"Home","line_1":"123 Main St","city":"Anytown","state":"CA","postal":"12345","country":"US"}}' \
+  -d '{"address":{"name":"Home","line_1":"123 Main St","line_2":"Apt 5","city":"Anytown","state":"CA","postal":"12345","country":"US","primary":true}}' \
   http://localhost:4000/api/users/current/addresses
 ```
 
@@ -331,6 +404,8 @@ Response (`201 Created`):
 ```json
 { "ok": true, "data": { "id": "addr-1", "user_id": "user-1", "name": "Home", "city": "Anytown", "state": "CA" } }
 ```
+
+Address payloads require `line_2` in this API. Both addresses and phone numbers include `primary` flags and surface `verified_at` timestamps when present.
 
 ### Logs (User)
 - `GET /api/logs` — paginated logs for the authenticated user
@@ -354,6 +429,7 @@ Response:
   "page_size": 10
 }
 ```
+Log payloads use `type` (`users`|`sessions`) and HTTP `verb` (`GET`|`POST`|`PUT`|`DELETE`). All list endpoints take `page_num`/`page_size`.
 
 ---
 
@@ -361,8 +437,8 @@ Response:
 Require an admin token (`roles` includes `"admin"`). These routes skip ToS/Privacy plugs.
 
 ### Users
-- `GET /api/admin/users` — paginated list
-- `PUT /api/admin/users/:id` — update any user (roles, locks, password, etc.)
+- `GET /api/admin/users` — paginated list (`page_num`/`page_size`)
+- `PUT /api/admin/users/:id` — update any user (email/username/password, roles including `moderator`, `reset_password` flag, approved IPs, preferences, addresses, phone numbers)
 - `PUT /api/admin/users/:id/lock`
 - `PUT /api/admin/users/:id/unlock`
 
@@ -377,9 +453,17 @@ Examples:
   curl -X PUT -H "Authorization: Bearer ${admin_token}" \
     http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1/lock
   ```
+- Update roles / force reset:
+  ```bash
+  curl -X PUT \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H "Content-Type: application/json" \
+    -d '{"user":{"roles":["admin","moderator"],"reset_password":true,"approved_ips":["1.2.3.4"]}}' \
+    http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1
+  ```
 
 ### Password Reset (Admin)
-- `POST /api/admin/users/:id/reset_password` — issue reset token
+- `POST /api/admin/users/:id/reset_password` — issue reset token (returns token + expiry)
 - `PUT /api/admin/users/:id/reset_password/:token`
 - `PUT /api/admin/users/reset_password/:token`
 
@@ -387,6 +471,17 @@ Issue token example:
 ```bash
 curl -X POST -H "Authorization: Bearer ${admin_token}" \
   http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1/reset_password
+```
+Response:
+```json
+{
+  "ok": true,
+  "code": 200,
+  "data": {
+    "password_reset_token": "abcd1234",
+    "password_reset_token_expires_at": "2025-01-02T12:00:00Z"
+  }
+}
 ```
 
 ### Sessions (Admin)
@@ -409,10 +504,13 @@ curl -H "Authorization: Bearer ${admin_token}" \
 ---
 
 ## Field Notes
-- Path parameters `:id` for users accept either UUID or username.
-- Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if enabled, token usage is restricted accordingly.
-- If a user has `approved_ips` set, login is only allowed from those IPs even if `valid_only_for_approved_ips` is false.
-- Default session expiry is 7 days; default per-extension limit is 7 days; absolute extension cap is 90 days unless overridden by configuration.
+- Path parameters `:id` for users accept either UUID or username; nested `user_id` routes also allow `current`.
+- Roles supported: `user`, `admin`, `moderator`.
+- User payloads include `email_verified`, `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired` may appear on error payloads.
+- Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.
+- Addresses require `line_2`; address/phone responses include `primary` and `verified_at` when set.
+- Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if a user has `approved_ips`, login is constrained to those addresses even when the flag is false.
+- Session defaults: expires in 7 days, extendable window 28 days, max single extension 7 days. An absolute cap is configurable; lists of session extensions are ordered newest first.
 - Minimum password length defaults to 6 characters (`MIN_PASSWORD_LENGTH`).
 
 For quick examples, see `scripts/curl/` in the repo.
