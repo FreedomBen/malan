@@ -439,7 +439,8 @@ defmodule MalanWeb.UserController do
           conn,
           Accounts.get_user_by_id_or_username(id),
           token,
-          new_password
+          new_password,
+          :admin
         )
 
   def admin_reset_password_token(conn, %{"token" => token, "new_password" => new_password}),
@@ -448,16 +449,37 @@ defmodule MalanWeb.UserController do
         conn,
         Accounts.get_user_by_password_reset_token(token),
         token,
-        new_password
+        new_password,
+        :admin
       )
 
-  defp reset_password_token_p(conn, nil, _token, _new_password),
+  defp reset_password_token_p(conn, user, token, new_password, mode \\ :user)
+
+  defp reset_password_token_p(conn, nil, _token, _new_password, _mode),
     do: render_user(conn, nil)
 
-  defp reset_password_token_p(conn, %User{} = user, token, new_password) do
-    log_changeset = User.update_changeset(user, %{"password" => Utils.mask_str(new_password)})
+  defp reset_password_token_p(conn, %User{} = user, token, new_password, mode) do
+    log_opts =
+      case mode do
+        :admin -> [password_set_by_admin?: true]
+        _ -> []
+      end
 
-    with {:ok, %User{} = _user} <- Accounts.reset_password_with_token(user, token, new_password) do
+    log_changeset =
+      User.update_changeset(
+        user,
+        %{"password" => Utils.mask_str(new_password)},
+        log_opts
+      )
+
+    reset_fun =
+      case mode do
+        :admin -> &Accounts.admin_reset_password_with_token/4
+        _ -> &Accounts.reset_password_with_token/4
+      end
+
+    with {:ok, %User{} = _user} <-
+           reset_fun.(user, token, new_password, remote_ip_s(conn)) do
       record_log(
         conn,
         true,
@@ -472,6 +494,12 @@ defmodule MalanWeb.UserController do
       |> put_status(200)
       |> json(%{ok: true, code: 200})
     else
+      {:error, %Ecto.Changeset{} = cs} ->
+        conn
+        |> record_log_admin_reset_password_token_fail(user, cs, log_changeset)
+        |> put_status(:unprocessable_entity)
+        |> put_view(ErrorJSON)
+        |> render(:"422", errors: MalanWeb.ChangesetJSON.translate_errors(cs))
       {:error, :missing_password_reset_token = err} ->
         conn
         |> record_log_admin_reset_password_token_fail(user, err, log_changeset)
@@ -508,13 +536,19 @@ defmodule MalanWeb.UserController do
   end
 
   defp record_log_admin_reset_password_token_fail(conn, user, err, log_changeset) do
+    err_str =
+      case err do
+        %Ecto.Changeset{} = cs -> Utils.Ecto.Changeset.errors_to_str(cs)
+        _ -> "#{err}"
+      end
+
     record_log(
       conn,
       false,
       user.id,
       user.username,
       "PUT",
-      "#UserController.admin_reset_password_token/3 - Err: #{err}",
+      "#UserController.admin_reset_password_token/3 - Err: #{err_str}",
       log_changeset
     )
 

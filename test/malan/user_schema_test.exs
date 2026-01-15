@@ -201,25 +201,29 @@ defmodule Malan.UserSchemaTest do
     end
 
     test "#validate_password respects configured minimum length" do
-      # Test with default minimum length (6)
-      # Should pass with 6 characters
+      # Test with default minimum length
+      min_length =
+        Application.get_env(:malan, Malan.Accounts.User)
+        |> Keyword.fetch!(:min_password_length)
+
+      # Should pass with min_length characters
       changeset6 =
         %User{}
-        |> Ecto.Changeset.cast(%{password: "pass12"}, [:password])
+        |> Ecto.Changeset.cast(%{password: String.duplicate("a", min_length)}, [:password])
         |> User.validate_password()
 
       assert changeset6.valid? == true
       assert changeset6.changes.password_hash != nil
 
-      # Should fail with 5 characters
+      # Should fail with min_length - 1 characters
       changeset5 =
         %User{}
-        |> Ecto.Changeset.cast(%{password: "pass1"}, [:password])
+        |> Ecto.Changeset.cast(%{password: String.duplicate("a", min_length - 1)}, [:password])
         |> User.validate_password()
 
       assert changeset5.valid? == false
       errors = errors_on(changeset5)
-      assert "should be at least 6 character(s)" in errors[:password]
+      assert "should be at least #{min_length} character(s)" in errors[:password]
 
       # Test with MIN_PASSWORD_LENGTH=8
       # Mock the config to return 8
@@ -258,6 +262,80 @@ defmodule Malan.UserSchemaTest do
 
       assert changeset10.valid? == true
       assert changeset10.changes.password_hash != nil
+
+      # Restore original config
+      Application.put_env(:malan, Malan.Accounts.User, original_config)
+    end
+
+    test "#validate_password respects admin-set and admin-account minimum lengths" do
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        original_config
+        |> Keyword.put(:min_password_length, 8)
+        |> Keyword.put(:admin_set_user_min_password_length, 6)
+        |> Keyword.put(:admin_account_min_password_length, 12)
+      )
+
+      # Regular user self-set -> user minimum
+      changeset7 =
+        %User{roles: ["user"]}
+        |> Ecto.Changeset.cast(%{password: "pass123"}, [:password])
+        |> User.validate_password()
+
+      assert changeset7.valid? == false
+      errors7 = errors_on(changeset7)
+      assert "should be at least 8 character(s)" in errors7[:password]
+
+      changeset8 =
+        %User{roles: ["user"]}
+        |> Ecto.Changeset.cast(%{password: "pass1234"}, [:password])
+        |> User.validate_password()
+
+      assert changeset8.valid? == true
+
+      # Admin sets regular user -> admin-set minimum
+      changeset5_admin =
+        %User{roles: ["user"]}
+        |> Ecto.Changeset.cast(%{password: "pass1"}, [:password])
+        |> User.validate_password(password_set_by_admin?: true)
+
+      assert changeset5_admin.valid? == false
+      errors5_admin = errors_on(changeset5_admin)
+      assert "should be at least 6 character(s)" in errors5_admin[:password]
+
+      changeset6_admin =
+        %User{roles: ["user"]}
+        |> Ecto.Changeset.cast(%{password: "pass12"}, [:password])
+        |> User.validate_password(password_set_by_admin?: true)
+
+      assert changeset6_admin.valid? == true
+
+      # Admin account -> admin-account minimum applies
+      changeset11_admin =
+        %User{roles: ["admin"]}
+        |> Ecto.Changeset.cast(%{password: "password111"}, [:password])
+        |> User.validate_password()
+
+      assert changeset11_admin.valid? == false
+      errors11_admin = errors_on(changeset11_admin)
+      assert "should be at least 12 character(s)" in errors11_admin[:password]
+
+      changeset12_admin =
+        %User{roles: ["admin"]}
+        |> Ecto.Changeset.cast(%{password: "password1111"}, [:password])
+        |> User.validate_password()
+
+      assert changeset12_admin.valid? == true
+
+      changeset11_admin_by_admin =
+        %User{roles: ["admin"]}
+        |> Ecto.Changeset.cast(%{password: "password111"}, [:password])
+        |> User.validate_password(password_set_by_admin?: true)
+
+      assert changeset11_admin_by_admin.valid? == false
 
       # Restore original config
       Application.put_env(:malan, Malan.Accounts.User, original_config)

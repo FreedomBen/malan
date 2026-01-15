@@ -72,6 +72,14 @@ defmodule Malan.Config do
     def min_password_length do
       Application.get_env(:malan, Malan.Accounts.User)[:min_password_length]
     end
+
+    def admin_set_user_min_password_length do
+      Application.get_env(:malan, Malan.Accounts.User)[:admin_set_user_min_password_length]
+    end
+
+    def admin_account_min_password_length do
+      Application.get_env(:malan, Malan.Accounts.User)[:admin_account_min_password_length]
+    end
   end
 
   defmodule RateLimit do

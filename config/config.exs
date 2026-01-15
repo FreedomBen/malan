@@ -11,12 +11,21 @@ config :malan,
   ecto_repos: [Malan.Repo],
   generators: [binary_id: true]
 
+min_password_length_env =
+  System.get_env("MIN_PASSWORD_LENGTH") || "10"
+admin_set_user_min_password_length_env =
+  System.get_env("ADMIN_SET_USER_MIN_PASSWORD_LENGTH") || "6"
+admin_account_min_password_length_env =
+  System.get_env("ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH") || "12"
+
 config :malan, Malan.Accounts.User,
   # 24 hours
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
       "86400" |> String.to_integer(),
-  min_password_length: (System.get_env("MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
+  min_password_length: String.to_integer(min_password_length_env),
+  admin_set_user_min_password_length: String.to_integer(admin_set_user_min_password_length_env),
+  admin_account_min_password_length: String.to_integer(admin_account_min_password_length_env)
 
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds)

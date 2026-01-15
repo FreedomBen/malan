@@ -637,6 +637,44 @@ defmodule Malan.AccountsTest do
       assert %{user | password: nil} == Accounts.get_user!(user_id)
     end
 
+    test "update_user_password/3 enforces configured minimum length by default" do
+      user = user_fixture()
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.update_user_password(user, "12345")
+
+      assert errors_on(changeset).password
+             |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
+    end
+
+    test "admin_update_password/3 allows passwords down to the admin-set minimum" do
+      user = user_fixture()
+
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        original_config
+        |> Keyword.put(:min_password_length, 6)
+        |> Keyword.put(:admin_set_user_min_password_length, 3)
+        |> Keyword.put(:admin_account_min_password_length, 12)
+      )
+
+      assert {:ok, %User{} = updated} =
+               Accounts.admin_update_password(
+                 user,
+                 "123",
+                 "127.0.0.1"
+               )
+
+      assert updated.password == "123"
+      assert norm_attrs(%{updated | password: nil}) ==
+               norm_attrs(Accounts.get_user!(user.id))
+
+      Application.put_env(:malan, Malan.Accounts.User, original_config)
+    end
+
     test "generate_password_reset/1 adds a reset token to the database and an expiration" do
       uf = user_fixture()
       user = Accounts.get_user(uf.id)
@@ -696,6 +734,48 @@ defmodule Malan.AccountsTest do
       uf = user_fixture()
       {:ok, user} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
+    end
+
+    test "reset_password_with_token/4 enforces minimum length by default" do
+      user = user_fixture()
+      {:ok, user} = Accounts.generate_password_reset(user)
+      token = user.password_reset_token
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.reset_password_with_token(user, token, "123")
+
+      assert errors_on(changeset).password
+             |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
+    end
+
+    test "admin_reset_password_with_token/4 allows passwords down to the admin-set minimum" do
+      user = user_fixture()
+      {:ok, user} = Accounts.generate_password_reset(user)
+      token = user.password_reset_token
+
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        original_config
+        |> Keyword.put(:min_password_length, 6)
+        |> Keyword.put(:admin_set_user_min_password_length, 3)
+        |> Keyword.put(:admin_account_min_password_length, 12)
+      )
+
+      assert {:ok, %User{} = updated} =
+               Accounts.admin_reset_password_with_token(
+                 user,
+                 token,
+                 "123",
+                 "127.0.0.1"
+               )
+
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(updated.username, "123", "127.0.0.1")
+
+      Application.put_env(:malan, Malan.Accounts.User, original_config)
     end
 
     test "validate_password_reset_token/2 logic test: returns expired when expired" do

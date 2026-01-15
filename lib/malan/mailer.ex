@@ -34,8 +34,10 @@ defmodule Malan.Mailer do
 
     opts = [extra: %{error: err, email: Utils.to_string(email)}]
 
-    Logger.error(env, msg)
-    Sentry.capture_message(msg, opts)
+    if log_delivery_errors?() do
+      Logger.error(env, msg)
+      Sentry.capture_message(msg, opts)
+    end
 
     {:error, error}
   end
@@ -44,20 +46,28 @@ defmodule Malan.Mailer do
     msg =
       "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
 
-    Logger.error(env, msg)
-    Sentry.capture_message(msg, extra: %{error: error, email: email})
+    if log_delivery_errors?() do
+      Logger.error(env, msg)
+      Sentry.capture_message(msg, extra: %{error: error, email: email})
+    end
 
     {:error, error}
   end
 
   defp log_delivery({:error, error}, email, env) do
-    Logger.warning(
-      env,
-      "Mail provider rejected message for #{to(email)}.  #{Utils.to_string(error)}"
-    )
+    if log_delivery_errors?() do
+      Logger.warning(
+        env,
+        "Mail provider rejected message for #{to(email)}.  #{Utils.to_string(error)}"
+      )
+    end
 
     {:error, error}
   end
 
   defp to(email), do: Utils.to_string(email.to)
+
+  defp log_delivery_errors? do
+    Mix.env() != :test
+  end
 end
