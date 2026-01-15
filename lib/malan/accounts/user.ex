@@ -128,7 +128,7 @@ defmodule Malan.Accounts.User do
   end
 
   @doc false
-  def update_changeset(user, params) do
+  def update_changeset(user, params, opts \\ []) do
     user
     |> cast(params, [
       :password,
@@ -150,7 +150,7 @@ defmodule Malan.Accounts.User do
     |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
     |> put_accept_tos()
     |> put_accept_privacy_policy()
-    |> validate_common()
+    |> validate_common(opts)
   end
 
   @doc false
@@ -187,7 +187,7 @@ defmodule Malan.Accounts.User do
     |> downcase_username()
     |> downcase_email()
     |> put_reset_pass()
-    |> validate_common()
+    |> validate_common(password_set_by_admin?: true)
   end
 
   def delete_changeset(user) do
@@ -238,12 +238,12 @@ defmodule Malan.Accounts.User do
   end
 
   @doc false
-  def validate_common(changeset) do
+  def validate_common(changeset, opts \\ []) do
     changeset
     |> validate_required([:username, :email])
     |> validate_username()
     |> validate_email()
-    |> validate_password()
+    |> validate_password(opts)
     |> validate_roles()
     |> validate_sex()
     |> validate_gender()
@@ -289,8 +289,15 @@ defmodule Malan.Accounts.User do
     |> unique_constraint(:email)
   end
 
-  defp_testable validate_password(%Ecto.Changeset{changes: %{password: _pass}} = changeset) do
-    min_length = Malan.Config.User.min_password_length() || 6
+  defp_testable validate_password(changeset) do
+    validate_password(changeset, [])
+  end
+
+  defp_testable validate_password(
+                  %Ecto.Changeset{changes: %{password: _pass}} = changeset,
+                  opts
+                ) do
+    min_length = password_min_length(changeset, opts)
 
     changeset
     |> validate_required([:password])
@@ -298,8 +305,33 @@ defmodule Malan.Accounts.User do
     |> put_pass_hash()
   end
 
-  defp_testable validate_password(changeset) do
+  defp_testable validate_password(changeset, _opts) do
     changeset
+  end
+
+  defp password_min_length(%Ecto.Changeset{} = changeset, opts) do
+    user_min = Malan.Config.User.min_password_length()
+    admin_set_user_min = Malan.Config.User.admin_set_user_min_password_length()
+    admin_account_min = Malan.Config.User.admin_account_min_password_length()
+
+    password_set_by_admin? =
+      case Keyword.fetch(opts, :password_set_by_admin?) do
+        {:ok, value} -> value
+        :error ->
+          case Keyword.get(opts, :enforce_password_min_length?, true) do
+            false -> true
+            _ -> false
+          end
+      end
+
+    roles = Ecto.Changeset.get_field(changeset, :roles) || []
+    target_admin? = Enum.member?(roles, "admin")
+
+    cond do
+      target_admin? -> admin_account_min
+      password_set_by_admin? -> admin_set_user_min
+      true -> user_min
+    end
   end
 
   defp_testable new_accept_tos(accept_tos, tos_version) do

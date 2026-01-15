@@ -302,16 +302,16 @@ defmodule Malan.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_user(user, attrs, remote_ip \\ dummy_ip())
+  def update_user(user, attrs, remote_ip \\ dummy_ip(), opts \\ [])
 
-  def update_user(%User{} = user, %{"password" => _password} = attrs, rip) do
-    with {:ok, user} <- update_usr(user, attrs, rip),
+  def update_user(%User{} = user, %{"password" => _password} = attrs, rip, opts) do
+    with {:ok, user} <- update_usr(user, attrs, rip, opts),
          {:ok, _num_revoked} <- revoke_active_sessions(user, rip),
          do: {:ok, user}
   end
 
-  def update_user(%User{} = user, attrs, rip),
-    do: update_usr(user, attrs, rip)
+  def update_user(%User{} = user, attrs, rip, opts),
+    do: update_usr(user, attrs, rip, opts)
 
   def update_user_password(user, password, remote_ip \\ dummy_ip())
 
@@ -321,6 +321,16 @@ defmodule Malan.Accounts do
   def update_user_password(user_id, password, rip) do
     get_user(user_id)
     |> update_user_password(password, rip)
+  end
+
+  def admin_update_password(user, password, remote_ip \\ dummy_ip())
+
+  def admin_update_password(%User{} = user, password, rip),
+    do: update_user(user, %{"password" => password}, rip, password_set_by_admin?: true)
+
+  def admin_update_password(user_id, password, rip) do
+    get_user(user_id)
+    |> admin_update_password(password, rip)
   end
 
   @doc """
@@ -416,10 +426,25 @@ defmodule Malan.Accounts do
   def reset_password_with_token(id, token, new_password, rip),
     do: reset_password_with_token(get_user(id), token, new_password, rip)
 
+  def admin_reset_password_with_token(user, token, new_password, remote_ip \\ dummy_ip())
+
+  def admin_reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
+    with {:ok} <- validate_password_reset_token(orig_user, token),
+         {:ok, %User{}} <- clear_password_reset_token(orig_user),
+         {:ok, %User{} = user} <- admin_update_password(orig_user, new_password, rip) do
+      {:ok, user}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def admin_reset_password_with_token(id, token, new_password, rip),
+    do: admin_reset_password_with_token(get_user(id), token, new_password, rip)
+
   # "private utility for the update_user funcs.  Use a public update_user()"
-  defp update_usr(user, attrs, remote_ip) do
+  defp update_usr(user, attrs, remote_ip, opts) do
     user
-    |> User.update_changeset(Map.merge(attrs, %{"remote_ip" => remote_ip}))
+    |> User.update_changeset(Map.merge(attrs, %{"remote_ip" => remote_ip}), opts)
     |> Repo.update()
   end
 

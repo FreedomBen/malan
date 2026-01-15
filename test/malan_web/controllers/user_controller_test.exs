@@ -1836,6 +1836,30 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
+    test "rejects passwords shorter than configured minimum", %{
+      conn: conn,
+      user: %User{id: user_id} = user
+    } do
+      # trigger reset to emit email + token
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :reset_password_token_user, user_id, password_reset_token),
+          new_password: "123"
+        )
+
+      assert conn.status == 422
+      resp = json_response(conn, 422)
+      assert resp["errors"]["password"]
+             |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
+    end
+
     test "Rejects when no password reset token is issued", %{
       conn: conn,
       user: %User{id: user_id}
@@ -2573,6 +2597,124 @@ defmodule MalanWeb.UserControllerTest do
         )
 
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "allows passwords shorter than configured minimum", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
+      short_password = "123"
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        original_config
+        |> Keyword.put(:min_password_length, 6)
+        |> Keyword.put(:admin_set_user_min_password_length, 3)
+        |> Keyword.put(:admin_account_min_password_length, 12)
+      )
+
+      # obtain reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: short_password
+        )
+
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # Verify login with short password works
+      login_conn =
+        post(build_conn(), Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: short_password}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(login_conn, 201)["data"]
+
+      Application.put_env(:malan, Malan.Accounts.User, original_config)
+    end
+
+    test "enforces admin-account minimum when resetting an admin user", %{conn: conn} do
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+      {:ok, %User{id: admin_user_id} = admin_user} = Helpers.Accounts.admin_user()
+
+      original_config = Application.get_env(:malan, Malan.Accounts.User)
+
+      Application.put_env(
+        :malan,
+        Malan.Accounts.User,
+        original_config
+        |> Keyword.put(:min_password_length, 10)
+        |> Keyword.put(:admin_set_user_min_password_length, 6)
+        |> Keyword.put(:admin_account_min_password_length, 12)
+      )
+
+      on_exit(fn ->
+        Application.put_env(:malan, Malan.Accounts.User, original_config)
+      end)
+
+      # obtain reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, admin_user_id))
+
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(
+            conn,
+            :admin_reset_password_token_user,
+            admin_user_id,
+            password_reset_token
+          ),
+          new_password: String.duplicate("a", 11)
+        )
+
+      assert conn.status == 422
+      assert "should be at least 12 character(s)" in json_response(conn, 422)["errors"]["password"]
+
+      # obtain a fresh reset token after failure
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, admin_user_id))
+
+      assert %{
+               "password_reset_token" => password_reset_token_2
+             } = json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(
+            conn,
+            :admin_reset_password_token_user,
+            admin_user_id,
+            password_reset_token_2
+          ),
+          new_password: String.duplicate("a", 12)
+        )
+
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+      assert admin_user.id == admin_user_id
     end
 
     test "Rejects when no password reset token is issued", %{
