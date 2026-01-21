@@ -15,7 +15,6 @@ RUN apt-get update \
     apt-utils \
     apt-transport-https \
     ca-certificates \
-    software-properties-common \
     locales \
  && apt-get install --assume-yes --no-install-recommends \
     tini \
@@ -23,7 +22,7 @@ RUN apt-get update \
     psmisc \
     git \
     build-essential \
-    python \
+    python3 \
     jq \
     nodejs \
     npm \
