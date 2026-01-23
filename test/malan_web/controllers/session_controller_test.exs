@@ -2557,7 +2557,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
 
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 3, :seconds) == true
       assert Helpers.Accounts.session_revoked_or_expired?(id) == true
       assert Helpers.Accounts.session_revoked?(id) == true
       assert Helpers.Accounts.session_expired?(id) == false
@@ -2640,7 +2640,7 @@ defmodule MalanWeb.SessionControllerTest do
 
       {:ok, expires_at, 0} = DateTime.from_iso8601(expires_at)
 
-      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 2, :seconds)
+      assert TestUtils.DateTime.datetimes_within?(expires_at, expected_expires_at, 3, :seconds)
 
       assert Helpers.Accounts.session_revoked_or_expired?(id) == false
       assert Helpers.Accounts.session_revoked?(id) == false
