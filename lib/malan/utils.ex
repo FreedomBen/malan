@@ -1122,7 +1122,24 @@ defmodule Malan.Utils.Ecto.Changeset do
 
   def errors_to_str_list(errors) do
     Enum.map(errors, fn
-      {field, {err_msg, _attrs}} -> "#{field}: #{err_msg}"
+      {field, {err_msg, attrs}} ->
+        "#{field}: #{interpolate_error(err_msg, attrs)}"
+    end)
+  end
+
+  defp interpolate_error(err_msg, attrs) do
+    attrs_map =
+      attrs
+      |> Enum.into(%{}, fn {key, val} -> {Atom.to_string(key), val} end)
+
+    err_msg
+    |> to_string()
+    |> then(fn message ->
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        attrs_map
+        |> Map.get(key, "%{#{key}}")
+        |> to_string()
+      end)
     end)
   end
 

@@ -47,7 +47,8 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
     html = render_submit(view, "reset_password", %{"password" => "123"})
 
     assert html =~ "Encountered an error"
-    assert html =~ "at least"
+    min_length = Malan.Config.User.min_password_length()
+    assert html =~ "at least #{min_length} character(s)"
   end
 
   defp reset_token_path(token), do: ~p"/users/reset_password/#{token}"
