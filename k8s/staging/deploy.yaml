@@ -126,7 +126,7 @@ metadata:
     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
     service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: malan
   ports:
