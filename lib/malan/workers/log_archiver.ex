@@ -1,0 +1,93 @@
+defmodule Malan.Workers.LogArchiver do
+  @moduledoc """
+  Oban cron worker that archives audit log records older than 90 days.
+
+  Moves rows from `logs` to `logs_archived` in configurable-size chunks
+  to avoid long-running transactions and excessive lock contention.
+  Keeps re-enqueueing itself until all eligible rows have been moved,
+  which handles the first-run case where millions of records may need
+  to be archived.
+  """
+
+  use Oban.Worker, queue: :logs, max_attempts: 3
+
+  require Logger
+
+  alias Malan.Repo
+
+  @default_retention_days 90
+  @default_chunk_size 5_000
+
+  @impl Oban.Worker
+  def perform(%Oban.Job{args: args}) do
+    retention_days = Map.get(args, "retention_days", @default_retention_days)
+    chunk_size = Map.get(args, "chunk_size", @default_chunk_size)
+    cutoff = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
+
+    case archive_chunk(cutoff, chunk_size) do
+      {:ok, 0} ->
+        Logger.info("LogArchiver: no more rows to archive")
+        :ok
+
+      {:ok, count} ->
+        Logger.info("LogArchiver: archived #{count} rows, scheduling next chunk")
+        schedule_next_chunk(retention_days, chunk_size)
+        :ok
+
+      {:error, reason} ->
+        Logger.error("LogArchiver: failed to archive chunk: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp archive_chunk(cutoff, chunk_size) do
+    Repo.transaction(fn ->
+      # Select the IDs of rows to move in this chunk
+      %{rows: id_rows, num_rows: count} =
+        Repo.query!(
+          """
+          SELECT id FROM logs
+          WHERE inserted_at < $1
+          ORDER BY inserted_at ASC
+          LIMIT $2
+          """,
+          [cutoff, chunk_size]
+        )
+
+      if count == 0 do
+        0
+      else
+        ids = Enum.map(id_rows, fn [id] -> id end)
+
+        # Copy rows to the archive table
+        Repo.query!(
+          """
+          INSERT INTO logs_archived (
+            id, type_enum, verb_enum, "when", what, user_id, session_id,
+            who, who_username, success, changeset, remote_ip,
+            inserted_at, updated_at
+          )
+          SELECT
+            id, type_enum, verb_enum, "when", what, user_id, session_id,
+            who, who_username, success, changeset, remote_ip,
+            inserted_at, updated_at
+          FROM logs
+          WHERE id = ANY($1)
+          """,
+          [ids]
+        )
+
+        # Delete the moved rows
+        Repo.query!("DELETE FROM logs WHERE id = ANY($1)", [ids])
+
+        count
+      end
+    end)
+  end
+
+  defp schedule_next_chunk(retention_days, chunk_size) do
+    %{"retention_days" => retention_days, "chunk_size" => chunk_size}
+    |> __MODULE__.new()
+    |> Oban.insert!()
+  end
+end

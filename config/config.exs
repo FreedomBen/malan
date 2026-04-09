@@ -197,7 +197,14 @@ config :malan, Malan.PromEx,
 # Oban background job processing
 config :malan, Oban,
   repo: Malan.Repo,
-  queues: [logs: 10]
+  queues: [logs: 10],
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Archive audit logs older than 90 days, daily at 3:00 AM UTC
+       {"0 3 * * *", Malan.Workers.LogArchiver}
+     ]}
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
