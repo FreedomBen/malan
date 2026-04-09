@@ -130,9 +130,6 @@ metadata:
     kind: service
   name: malan
   namespace: malan-staging
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
-    service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
 spec:
   type: ClusterIP
   selector:
@@ -142,52 +139,3 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 4000
-      nodePort: 30000
-
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: malan-staging
-  labels:
-    app: malan
-    tier: web
-    env: staging
-    kind: cloudflarednsrecord
-  namespace: malan-staging
-spec:
-  hostName: malan-staging.ameelio.xyz
-  serviceName: malan
-  proxied: true
-
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: accounts
-  labels:
-    app: malan
-    tier: web
-    env: staging
-    kind: cloudflarednsrecord
-  namespace: malan-staging
-spec:
-  hostName: accounts.ameelio.xyz
-  serviceName: malan
-  proxied: true
-
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: accounts-staging
-  labels:
-    app: malan
-    tier: web
-    env: staging
-    kind: cloudflarednsrecord
-  namespace: malan-staging
-spec:
-  hostName: accounts-staging.ameelio.xyz
-  serviceName: malan
-  proxied: true
