@@ -41,6 +41,7 @@ done
 
 docker run --rm \
   --network "${NETWORK_NAME}" \
+  -e MIX_ENV=test \
   -e DB_HOSTNAME="${POSTGRES_CONTAINER}" \
   -e DB_USERNAME=postgres \
   -e DB_PASSWORD=postgres \
