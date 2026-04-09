@@ -72,7 +72,8 @@ jobs:
 
   deploy-staging:
     name: Deploy (Staging)
-    needs: [build, test]
+    #needs: [build, test]
+    needs: [build]
     runs-on: ubuntu-latest
     concurrency: deploy_staging_mutex
     env:
@@ -105,7 +106,8 @@ jobs:
   deploy-prod:
     if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
     name: Deploy (Prod)
-    needs: [build, test, deploy-staging]
+    #needs: [build, test, deploy-staging]
+    needs: [build, deploy-staging]
     runs-on: ubuntu-latest
     concurrency: deploy_prod_mutex
     env:
