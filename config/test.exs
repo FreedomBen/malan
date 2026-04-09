@@ -31,6 +31,9 @@ config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Test
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 
+# Run Oban jobs inline during tests so logs are written synchronously
+config :malan, Oban, testing: :inline
+
 config :malan, :sentry, enabled: false
 config :malan, Malan.PromEx, disabled: true, metrics_server: :disabled
 config :malan, :log_silence_record_log_warning, true

@@ -194,6 +194,11 @@ config :malan, Malan.PromEx,
     auth_strategy: :none
   ]
 
+# Oban background job processing
+config :malan, Oban,
+  repo: Malan.Repo,
+  queues: [logs: 10]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

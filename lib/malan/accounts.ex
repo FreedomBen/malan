@@ -1775,9 +1775,12 @@ defmodule Malan.Accounts do
   end
 
   @doc ~S"""
-  Record a log with the specified properties. Logs failures and reports to Sentry
+  Record a log with the specified properties via Oban background job.
 
-  Returns {:ok, log} on success or {:error, changeset} on failure
+  The log write is enqueued asynchronously for reliability and performance.
+  Oban guarantees delivery through its persistent job queue and retry mechanism.
+
+  Returns {:ok, %Oban.Job{}} on successful enqueue or {:error, changeset} on failure.
   """
   def record_log(
         success?,
@@ -1791,57 +1794,48 @@ defmodule Malan.Accounts do
         remote_ip,
         log_changeset
       ) do
-    case create_log(
-           success?,
-           user_id,
-           session_id,
-           who,
-           who_username,
-           type,
-           verb,
-           what,
-           remote_ip,
-           log_changeset
-         ) do
-      {:ok, log} ->
-        {:ok, log}
+    serializable_changeset =
+      case log_changeset do
+        %Ecto.Changeset{} -> Log.Changes.map_from_changeset(log_changeset)
+        other -> other
+      end
 
-      {:error, changeset} ->
-        report_log_error(changeset, user_id, session_id, who, who_username, verb, what)
-    end
+    %{
+      "success" => success?,
+      "user_id" => user_id,
+      "session_id" => session_id,
+      "who" => who,
+      "who_username" => who_username,
+      "type" => type,
+      "verb" => verb,
+      "what" => what,
+      "remote_ip" => remote_ip,
+      "changeset" => serializable_changeset,
+      "when" => Utils.DateTime.utc_now_trunc() |> DateTime.to_iso8601()
+    }
+    |> json_safe()
+    |> Malan.Workers.LogWriter.new()
+    |> Oban.insert()
   end
 
-  defp report_log_error(changeset, user_id, session_id, who, who_username, verb, what) do
-    msg =
-      "Error recording log: user_id: '#{user_id}', session_id: '#{session_id}', who: '#{who}', who_username: '#{who_username}', verb: '#{verb}', what: '#{what}' - Changeset Errors to str:  '#{Utils.Ecto.Changeset.errors_to_str(changeset)}'"
+  # Recursively converts structs, atoms, and date/time types to
+  # JSON-safe primitives so Oban can serialize job args.
+  defp json_safe(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
+  defp json_safe(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_iso8601(ndt)
+  defp json_safe(%Date{} = d), do: Date.to_iso8601(d)
 
-    opts = [
-      errors_to_str: Utils.Ecto.Changeset.errors_to_str(changeset),
-      user_id: user_id,
-      session_id: session_id,
-      who: who,
-      who_username: who_username,
-      verb: verb,
-      what: what
-    ]
-
-    # In envs with Sentry, this will cause a double message to sentry
-    # because we enabled the Sentry Logger backend.  The Sentry call
-    # provides better info, but only works if the DSN is setup
-    unless Application.get_env(:malan, :log_silence_record_log_warning, false) do
-      Logger.warning(msg, opts)
-    end
-
-    if Application.get_env(:sentry, :dsn) do
-      Sentry.capture_message(msg, opts)
-    end
-
-    # TODO:  Switch to Malan.Sentry.capture_message to avoid log messages
-    # about missing DSN in environments where there is no DSN
-    # Malan.Sentry.capture_message(msg, opts)
-
-    {:error, changeset}
+  defp json_safe(value) when is_struct(value) do
+    value |> Map.from_struct() |> Map.delete(:__meta__) |> json_safe()
   end
+
+  defp json_safe(value) when is_map(value) do
+    Map.new(value, fn {k, v} -> {to_string(k), json_safe(v)} end)
+  end
+
+  defp json_safe(value) when is_list(value), do: Enum.map(value, &json_safe/1)
+  defp json_safe(value) when is_tuple(value), do: value |> Tuple.to_list() |> json_safe()
+  defp json_safe(value) when is_atom(value) and not is_boolean(value) and not is_nil(value), do: Atom.to_string(value)
+  defp json_safe(value), do: value
 
   @doc """
   Updates a log.  Because logs are immutable and can't

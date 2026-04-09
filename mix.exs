@@ -64,6 +64,7 @@ defmodule Malan.MixProject do
       {:iptools_fb, "~> 0.0.7"},
       {:hammer, "~> 7.0"},
       {:hammer_backend_redis, "~> 7.0"},
+      {:oban, "~> 2.18"},
       {:sentry, "~> 11.0"},
       {:unplug, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
