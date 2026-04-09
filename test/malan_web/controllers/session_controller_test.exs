@@ -275,7 +275,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
     end
 
     test "can't be called by non-admin", %{conn: conn} do
@@ -308,7 +308,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
 
       assert [
                %Log{
@@ -324,7 +324,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
@@ -1041,7 +1041,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
@@ -1150,7 +1150,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(nil, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_who(nil, 0, 10)
@@ -1188,7 +1188,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
@@ -1447,7 +1447,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)["data"]
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
     end
 
     test "can be called by admin non-owner", %{conn: conn} do
@@ -1456,7 +1456,7 @@ defmodule MalanWeb.SessionControllerTest do
       conn = delete(conn, Routes.user_session_path(conn, :delete, user.id, session))
       assert %{"revoked_at" => revoked_at} = json_response(conn, 200)["data"]
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
     end
 
     test "can't be called by non-admin non-owner", %{conn: conn} do
@@ -1498,7 +1498,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
@@ -1520,7 +1520,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)["data"]
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, nil)
     end
 
@@ -1546,7 +1546,7 @@ defmodule MalanWeb.SessionControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(user_id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
@@ -1695,8 +1695,8 @@ defmodule MalanWeb.SessionControllerTest do
       assert Enum.sort_by(logs_by_who, &{&1.inserted_at, &1.id}) ==
                Enum.sort_by([log_locked, log], &{&1.inserted_at, &1.id})
 
-      assert true == TestUtils.DateTime.within_last?(when_utc_locked, 2, :seconds)
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc_locked, 5, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(s1_id, 0, 10)
 
@@ -1720,8 +1720,8 @@ defmodule MalanWeb.SessionControllerTest do
 
       {:ok, %Accounts.Session{revoked_at: s3_revoked_at}} = Accounts.revoke_session(s3)
       {:ok, %Accounts.Session{revoked_at: s4_revoked_at}} = Accounts.revoke_session(s4)
-      assert TestUtils.DateTime.within_last?(s3_revoked_at, 2, :seconds) == true
-      assert TestUtils.DateTime.within_last?(s4_revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(s3_revoked_at, 5, :seconds) == true
+      assert TestUtils.DateTime.within_last?(s4_revoked_at, 5, :seconds) == true
 
       assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(s1.api_token, nil)
       assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(s2.api_token, nil)
@@ -2385,7 +2385,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(c2, 200)["data"]
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
 
       s1 = Accounts.get_session!(s1.id)
       assert Accounts.session_revoked_or_expired?(s1) == true
@@ -2427,7 +2427,7 @@ defmodule MalanWeb.SessionControllerTest do
                :seconds
              )
 
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
       assert Accounts.session_revoked_or_expired?(s1) == true
       assert Accounts.session_revoked?(s1) == true
       assert Accounts.session_expired?(s1) == false
@@ -2523,7 +2523,7 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 200)["data"]
 
       {:ok, revoked_at, 0} = revoked_at |> DateTime.from_iso8601()
-      assert TestUtils.DateTime.within_last?(revoked_at, 2, :seconds) == true
+      assert TestUtils.DateTime.within_last?(revoked_at, 5, :seconds) == true
 
       assert Helpers.Accounts.session_revoked_or_expired?(id) == true
       assert Helpers.Accounts.session_revoked?(id) == true

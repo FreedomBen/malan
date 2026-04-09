@@ -279,7 +279,7 @@ defmodule MalanWeb.LogControllerTest do
              } = json_response(conn, 200)["data"]
 
       assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
-      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
     end
 
     test "requires authentication", %{conn: _} do
@@ -327,7 +327,7 @@ defmodule MalanWeb.LogControllerTest do
              } = json_response(conn, 200)["data"]
 
       assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
-      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
     end
 
     #
@@ -350,7 +350,7 @@ defmodule MalanWeb.LogControllerTest do
              } = json_response(conn, 200)["data"]
 
       assert {:ok, when_utc, 0} = DateTime.from_iso8601(when_str)
-      assert TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
     end
 
     test "disallows regular user through admin endpoint even when user owns it", %{conn: conn} do

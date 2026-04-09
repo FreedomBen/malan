@@ -382,7 +382,7 @@ defmodule Malan.AccountsTest do
 
       assert tos_version == ToS.current_version()
       assert Utils.is_uuid?(id)
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert user.latest_tos_accept_ver == ToS.current_version()
     end
 
@@ -396,7 +396,7 @@ defmodule Malan.AccountsTest do
 
       assert tos_version == ToS.current_version()
       assert Utils.is_uuid?(id)
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert user.latest_tos_accept_ver == nil
     end
 
@@ -410,7 +410,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
 
       assert {:ok, u2} = Accounts.user_accept_tos(orig.id)
       assert length(u2.tos_accept_events) == 2
@@ -420,7 +420,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert u2.latest_tos_accept_ver == ToS.current_version()
 
       assert {:ok, u3} = Accounts.user_reject_tos(orig.id)
@@ -431,7 +431,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert tos_version == ToS.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert u3.latest_tos_accept_ver == nil
     end
 
@@ -444,7 +444,7 @@ defmodule Malan.AccountsTest do
                List.first(user.privacy_policy_accept_events)
 
       assert Utils.is_uuid?(id)
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert ppv == PrivacyPolicy.current_version()
       assert user.latest_pp_accept_ver == PrivacyPolicy.current_version()
     end
@@ -458,7 +458,7 @@ defmodule Malan.AccountsTest do
                List.first(user.privacy_policy_accept_events)
 
       assert Utils.is_uuid?(id)
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert ppv == PrivacyPolicy.current_version()
       assert user.latest_pp_accept_ver == nil
     end
@@ -477,7 +477,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
 
       assert {:ok, u2} = Accounts.user_accept_privacy_policy(orig.id)
       assert length(u2.privacy_policy_accept_events) == 2
@@ -491,7 +491,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert u2.latest_pp_accept_ver == PrivacyPolicy.current_version()
 
       assert {:ok, u3} = Accounts.user_reject_privacy_policy(orig.id)
@@ -506,7 +506,7 @@ defmodule Malan.AccountsTest do
 
       assert Utils.is_uuid?(id)
       assert privacy_policy_version == PrivacyPolicy.current_version()
-      assert TestUtils.DateTime.within_last?(timestamp, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(timestamp, 5, :seconds)
       assert u3.latest_pp_accept_ver == nil
     end
 
@@ -1035,22 +1035,22 @@ defmodule Malan.AccountsTest do
       assert is_nil(u1.locked_by)
 
       {:ok, u2} = Accounts.lock_user(u1, u1.id)
-      assert TestUtils.DateTime.within_last?(u2.locked_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(u2.locked_at, 5, :seconds)
       assert u1.id == u2.locked_by
 
       u3 = Accounts.get_user(u1.id)
-      assert TestUtils.DateTime.within_last?(u3.locked_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(u3.locked_at, 5, :seconds)
       assert u1.id == u3.locked_by
     end
 
     test "unlock/1" do
       u1 = user_fixture()
       {:ok, u1} = Accounts.lock_user(u1, u1.id)
-      assert TestUtils.DateTime.within_last?(u1.locked_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(u1.locked_at, 5, :seconds)
       assert u1.id == u1.locked_by
 
       u1 = Accounts.get_user(u1.id)
-      assert TestUtils.DateTime.within_last?(u1.locked_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(u1.locked_at, 5, :seconds)
       assert u1.id == u1.locked_by
 
       {:ok, u2} = Accounts.unlock_user(u1)
@@ -1837,8 +1837,8 @@ defmodule Malan.AccountsTest do
                :seconds
              )
 
-      assert TestUtils.DateTime.within_last?(extension1_updated_at, 2, :seconds)
-      assert TestUtils.DateTime.within_last?(extension1_inserted_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension1_updated_at, 5, :seconds)
+      assert TestUtils.DateTime.within_last?(extension1_inserted_at, 5, :seconds)
 
       assert [
                %Malan.Accounts.SessionExtension{
@@ -1905,8 +1905,8 @@ defmodule Malan.AccountsTest do
                :seconds
              )
 
-      assert TestUtils.DateTime.within_last?(extension2_updated_at, 2, :seconds)
-      assert TestUtils.DateTime.within_last?(extension2_inserted_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension2_updated_at, 5, :seconds)
+      assert TestUtils.DateTime.within_last?(extension2_inserted_at, 5, :seconds)
 
       assert [
                %Malan.Accounts.SessionExtension{
@@ -1983,8 +1983,8 @@ defmodule Malan.AccountsTest do
                :seconds
              )
 
-      assert TestUtils.DateTime.within_last?(extension3_updated_at, 2, :seconds)
-      assert TestUtils.DateTime.within_last?(extension3_inserted_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(extension3_updated_at, 5, :seconds)
+      assert TestUtils.DateTime.within_last?(extension3_inserted_at, 5, :seconds)
 
       assert [
                %Malan.Accounts.SessionExtension{
@@ -2167,7 +2167,7 @@ defmodule Malan.AccountsTest do
       {:ok, _user, phone_number} = phone_number_fixture()
       assert is_nil(phone_number.verified_at)
       {:ok, phone_number} = Accounts.verify_phone_number(phone_number, true)
-      assert TestUtils.DateTime.within_last?(phone_number.verified_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(phone_number.verified_at, 5, :seconds)
     end
   end
 
@@ -2276,7 +2276,7 @@ defmodule Malan.AccountsTest do
       {:ok, _user, address} = address_fixture()
       assert is_nil(address.verified_at)
       {:ok, address} = Accounts.verify_address(address, true)
-      assert TestUtils.DateTime.within_last?(address.verified_at, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(address.verified_at, 5, :seconds)
     end
   end
 

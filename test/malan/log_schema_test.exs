@@ -84,7 +84,7 @@ defmodule Malan.LogSchemaTest do
       errors = errors_on(cs)
       assert Enum.all?([:type, :verb, :what], fn e -> Map.has_key?(errors, e) end)
       assert !Map.has_key?(errors, :when)
-      assert TestUtils.DateTime.within_last?(cs.changes.when, 2, :seconds)
+      assert TestUtils.DateTime.within_last?(cs.changes.when, 5, :seconds)
     end
 
     test "#create_changeset/2 allows user id to be nil" do

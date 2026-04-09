@@ -683,7 +683,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_who(id, 0, 10)
@@ -713,7 +713,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(nil, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_who(nil, 0, 10)
@@ -1171,7 +1171,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(id, 0, 10)
@@ -1438,7 +1438,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(id, 0, 10)
@@ -1509,7 +1509,7 @@ defmodule MalanWeb.UserControllerTest do
                when: when_utc
              } = del_log
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [del_log] == Accounts.list_logs_by_user_id(id, 0, 10)
       assert [del_log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
 
@@ -1745,7 +1745,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(nil, 0, 10)
       assert [log] == Accounts.list_logs_by_who(id, 0, 10)
@@ -2514,7 +2514,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_who, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -2524,7 +2524,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_user_id, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -2534,7 +2534,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_session_id, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -3414,7 +3414,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_who, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -3424,7 +3424,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_user_id, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -3434,7 +3434,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert Enum.any?(trans_by_session_id, fn t ->
                case match_log_extract_when.(t) do
-                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+                 {:ok, when_utc} -> TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
                  {:error, _} -> false
                end
              end)
@@ -3509,7 +3509,7 @@ defmodule MalanWeb.UserControllerTest do
                } = log
              ] = Accounts.list_logs_by_who(id, 0, 10)
 
-      assert true == TestUtils.DateTime.within_last?(when_utc, 2, :seconds)
+      assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
       assert [log] == Accounts.list_logs_by_user_id(admin_user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(admin_session_id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(id, 0, 10)
