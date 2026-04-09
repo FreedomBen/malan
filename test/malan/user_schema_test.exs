@@ -182,7 +182,7 @@ defmodule Malan.UserSchemaTest do
 
     test "#validate_password invalid 1 because too short" do
       validate_property(
-        &User.validate_password/1,
+        fn cs -> User.validate_password(cs, []) end,
         :password,
         # "password1",
         "pass",
@@ -193,7 +193,7 @@ defmodule Malan.UserSchemaTest do
 
     test "#validate_password valid 1" do
       validate_property(
-        &User.validate_password/1,
+        fn cs -> User.validate_password(cs, []) end,
         :password,
         "password10",
         true
@@ -210,7 +210,7 @@ defmodule Malan.UserSchemaTest do
       changeset6 =
         %User{}
         |> Ecto.Changeset.cast(%{password: String.duplicate("a", min_length)}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset6.valid? == true
       assert changeset6.changes.password_hash != nil
@@ -219,7 +219,7 @@ defmodule Malan.UserSchemaTest do
       changeset5 =
         %User{}
         |> Ecto.Changeset.cast(%{password: String.duplicate("a", min_length - 1)}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset5.valid? == false
       errors = errors_on(changeset5)
@@ -239,7 +239,7 @@ defmodule Malan.UserSchemaTest do
       changeset7 =
         %User{}
         |> Ecto.Changeset.cast(%{password: "pass123"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset7.valid? == false
       errors7 = errors_on(changeset7)
@@ -249,7 +249,7 @@ defmodule Malan.UserSchemaTest do
       changeset8 =
         %User{}
         |> Ecto.Changeset.cast(%{password: "pass1234"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset8.valid? == true
       assert changeset8.changes.password_hash != nil
@@ -258,7 +258,7 @@ defmodule Malan.UserSchemaTest do
       changeset10 =
         %User{}
         |> Ecto.Changeset.cast(%{password: "password10"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset10.valid? == true
       assert changeset10.changes.password_hash != nil
@@ -283,7 +283,7 @@ defmodule Malan.UserSchemaTest do
       changeset7 =
         %User{roles: ["user"]}
         |> Ecto.Changeset.cast(%{password: "pass123"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset7.valid? == false
       errors7 = errors_on(changeset7)
@@ -292,7 +292,7 @@ defmodule Malan.UserSchemaTest do
       changeset8 =
         %User{roles: ["user"]}
         |> Ecto.Changeset.cast(%{password: "pass1234"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset8.valid? == true
 
@@ -317,7 +317,7 @@ defmodule Malan.UserSchemaTest do
       changeset11_admin =
         %User{roles: ["admin"]}
         |> Ecto.Changeset.cast(%{password: "password111"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset11_admin.valid? == false
       errors11_admin = errors_on(changeset11_admin)
@@ -326,7 +326,7 @@ defmodule Malan.UserSchemaTest do
       changeset12_admin =
         %User{roles: ["admin"]}
         |> Ecto.Changeset.cast(%{password: "password1111"}, [:password])
-        |> User.validate_password()
+        |> User.validate_password([])
 
       assert changeset12_admin.valid? == true
 

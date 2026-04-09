@@ -289,10 +289,6 @@ defmodule Malan.Accounts.User do
     |> unique_constraint(:email)
   end
 
-  defp_testable validate_password(changeset) do
-    validate_password(changeset, [])
-  end
-
   defp_testable validate_password(
                   %Ecto.Changeset{changes: %{password: _pass}} = changeset,
                   opts

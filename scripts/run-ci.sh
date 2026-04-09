@@ -8,6 +8,6 @@ else
 fi
 
 docker run --rm  \
-  "docker.io/freedomben/malan:${RELEASE_VERSION}" \
+  "docker.io/freedomben/malan-dev:${RELEASE_VERSION}" \
   mix test
 
