@@ -7,10 +7,6 @@ else
   echo "RELEASE_VERSION already set to '${RELEASE_VERSION}'"
 fi
 
-# Skip tests for now
-echo 'Skipping tests!'
-exit 0
-
 docker run --rm  \
   "docker.io/freedomben/malan:${RELEASE_VERSION}" \
   mix test
