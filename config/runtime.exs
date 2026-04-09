@@ -77,6 +77,19 @@ if config_env() != :prod && !!System.get_env("MAILGUN_API_KEY") &&
     domain: System.get_env("MAILGUN_DOMAIN")
 end
 
+# PromEx metrics server port (default 9568, cluster-internal only)
+metrics_port = System.get_env("METRICS_PORT", "9568") |> String.to_integer()
+
+config :malan, Malan.PromEx,
+  metrics_server: [
+    port: metrics_port,
+    path: "/metrics",
+    protocol: :http,
+    pool_size: 5,
+    cowboy_opts: [],
+    auth_strategy: :none
+  ]
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

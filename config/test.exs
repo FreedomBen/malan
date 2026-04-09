@@ -32,6 +32,7 @@ config :malan, Malan.Mailer, adapter: Swoosh.Adapters.Test
 config :phoenix, :plug_init_mode, :runtime
 
 config :malan, :sentry, enabled: false
+config :malan, Malan.PromEx, disabled: true, metrics_server: :disabled
 config :malan, :log_silence_record_log_warning, true
 
 # So normal tests don't trip login/session extension limits; individual tests can override.

@@ -23,6 +23,10 @@ spec:
         tier: web
         env: staging
         kind: pod
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9568"
+        prometheus.io/path: "/metrics"
       namespace: malan-staging
     spec:
       securityContext:
@@ -35,6 +39,10 @@ spec:
         ports:
         - containerPort: 4000
           protocol: TCP
+          name: http
+        - containerPort: 9568
+          protocol: TCP
+          name: metrics
         readinessProbe:
           httpGet:
             path: /health_check/readiness

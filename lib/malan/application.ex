@@ -15,6 +15,8 @@ defmodule Malan.Application do
       Malan.Repo,
       # Start the Telemetry supervisor
       MalanWeb.Telemetry,
+      # Start PromEx for Prometheus metrics (separate port, cluster-internal)
+      Malan.PromEx,
       # Start rate limiter backend
       {Malan.RateLimiter, Application.get_env(:malan, Malan.RateLimiter, [])},
       # Start the PubSub system
