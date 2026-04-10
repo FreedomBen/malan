@@ -155,16 +155,28 @@ You should run the web application as a non-privileged user that cannot run DDL 
 
 ```SQL
 CREATE ROLE malan WITH LOGIN PASSWORD '<somepassword>';
-GRANT CONNECT ON DATABASE malan_prod TO user;
+GRANT CONNECT ON DATABASE malan_prod TO malan;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO malan;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO malan;
 
+-- Replace 'postgres' with whatever role runs migrations, so that
+-- tables created by future migrations automatically grant to malan.
 ALTER DEFAULT PRIVILEGES FOR ROLE
-    malan
+    postgres
   IN SCHEMA
     public
   GRANT
     SELECT, INSERT, UPDATE, DELETE
   ON TABLES TO
+    malan;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE
+    postgres
+  IN SCHEMA
+    public
+  GRANT
+    USAGE, SELECT
+  ON SEQUENCES TO
     malan;
 ```
 

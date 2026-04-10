@@ -78,13 +78,10 @@ RUN set -eux \
  && ln -sf /usr/local/elixir-otp-28/bin/* /usr/local/bin/ \
  && rm -f "/tmp/${ELIXIR_ZIP}" "/tmp/${ELIXIR_ZIP}.sha256sum"
 
-# Install extra utilities
-#RUN dnf module enable --assumeyes postgresql:12 \
-# && dnf install --assumeyes postgresql \
-# && dnf update \
-# && dnf clean all \
-# && rm -rf /var/cache/dnf /var/cache/yum \
-# && update-ca-trust extract
+# Install PostgreSQL client (psql) for ad-hoc database operations
+RUN dnf install --assumeyes postgresql \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf /var/cache/yum
 
 # Set environment to production
 ENV MIX_ENV prod
