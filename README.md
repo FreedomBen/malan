@@ -159,26 +159,18 @@ GRANT CONNECT ON DATABASE malan_prod TO malan;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO malan;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO malan;
 
--- Replace 'postgres' with whatever role runs migrations, so that
--- tables created by future migrations automatically grant to malan.
-ALTER DEFAULT PRIVILEGES FOR ROLE
-    postgres
-  IN SCHEMA
-    public
-  GRANT
-    SELECT, INSERT, UPDATE, DELETE
-  ON TABLES TO
-    malan;
+-- Set default privileges so tables/sequences created by the migration role
+-- (doadmin on Digital Ocean, postgres on self-managed) automatically grant
+-- to the runtime role.  Replace 'doadmin' with your migration role if different.
+ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO malan;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE
-    postgres
-  IN SCHEMA
-    public
-  GRANT
-    USAGE, SELECT
-  ON SEQUENCES TO
-    malan;
+ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO malan;
 ```
+
+A one-time grant script is also available at `priv/repo/grant_permissions.sql`
+for granting permissions on all existing tables if needed.
 
 ## Helpful links regarding Phoenix
 
