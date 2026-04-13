@@ -197,7 +197,7 @@ config :malan, Malan.PromEx,
 # Oban background job processing
 config :malan, Oban,
   repo: Malan.Repo,
-  queues: [logs: 10],
+  queues: [logs: 10, mailers: 5],
   plugins: [
     {Oban.Plugins.Cron,
      crontab: [

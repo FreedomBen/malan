@@ -79,7 +79,12 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     assert_no_email_sent()
   end
 
-  test "surfaces internal error when mail provider rejects credentials", %{conn: conn} do
+  test "still surfaces success when mail provider rejects credentials (delivery is async)",
+       %{conn: conn} do
+    # Email delivery happens in an Oban worker, so SMTP credential failures
+    # are handled by Oban retries and never reach the user. The LiveView
+    # only reports whether the request was *accepted* (rate limit + token
+    # generation), not whether SMTP eventually succeeded.
     prev_mailer_config = Application.get_env(:malan, Malan.Mailer)
 
     Application.put_env(
@@ -96,6 +101,7 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
     html = render_submit(view, "send_reset_email", %{"email" => user.email})
 
-    assert html =~ "experienced an internal error"
+    assert html =~ "Reset request received"
+    refute html =~ "experienced an internal error"
   end
 end

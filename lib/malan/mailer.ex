@@ -14,8 +14,26 @@ defmodule Malan.Mailer do
     |> log_delivery(email, __ENV__)
   end
 
-  @spec send_password_reset_email(User.t()) :: {:ok, term} | {:error, term}
-  def send_password_reset_email(user) do
+  @doc """
+  Enqueue an Oban job to deliver the password reset email asynchronously.
+  This is the default path used by the HTTP controllers so SMTP latency and
+  transient mail-provider failures don't block the request or leak into the
+  user-visible response.
+  """
+  @spec send_password_reset_email(User.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_password_reset_email(%User{id: user_id, password_reset_token: token})
+      when is_binary(token) do
+    %{user_id: user_id, token: token}
+    |> Malan.Workers.PasswordResetEmail.new()
+    |> Oban.insert()
+  end
+
+  @doc """
+  Deliver the password reset email synchronously. Used by the Oban worker
+  and available for tests / scripts that need the inline behavior.
+  """
+  @spec send_password_reset_email_sync(User.t()) :: {:ok, term} | {:error, term}
+  def send_password_reset_email_sync(user) do
     user
     |> UserNotifier.password_reset_email()
     |> send_mail()
