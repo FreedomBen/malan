@@ -19,7 +19,9 @@ defmodule Malan.Repo.Migrations.CreateLogsArchived do
       timestamps(type: :utc_datetime)
     end
 
-    # Minimal indexes — this table is for compliance/forensics reads only
+    # Initial index set. Superseded by 20260413160000_optimize_logs_archived_indexes
+    # which drops the random-UUID btrees (write-amplification with near-zero read
+    # benefit for a rarely-queried archive) and swaps inserted_at to BRIN.
     create index(:logs_archived, [:inserted_at])
     create index(:logs_archived, [:user_id])
     create index(:logs_archived, [:who])
