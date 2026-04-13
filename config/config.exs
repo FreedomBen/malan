@@ -201,8 +201,8 @@ config :malan, Oban,
   plugins: [
     {Oban.Plugins.Cron,
      crontab: [
-       # Archive audit logs older than 90 days, daily at 3:00 AM UTC
-       {"0 3 * * *", Malan.Workers.LogArchiver}
+       # Archive audit logs older than 90 days, hourly at :00
+       {"0 * * * *", Malan.Workers.LogArchiver}
      ]}
   ]
 
