@@ -160,7 +160,7 @@ defmodule Malan.Workers.LogArchiverTest do
       initial_logs = logs_count()
       initial_archived = archived_count()
 
-      assert :ok = perform_job(LogArchiver, %{"chunk_size" => 100})
+      assert :ok = perform_job(LogArchiver, %{"chunk_size" => 100, "retention_days" => 90})
 
       assert archived_count() == initial_archived + 600
       assert logs_count() == initial_logs - 600
@@ -232,7 +232,7 @@ defmodule Malan.Workers.LogArchiverTest do
 
         assert_enqueued(
           worker: LogArchiver,
-          args: %{"chunk_size" => 1, "delay_seconds" => 5, "retention_days" => 90}
+          args: %{"chunk_size" => 1, "delay_seconds" => 5, "retention_days" => 60}
         )
       end)
     end

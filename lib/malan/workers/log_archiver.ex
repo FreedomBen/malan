@@ -1,6 +1,6 @@
 defmodule Malan.Workers.LogArchiver do
   @moduledoc """
-  Oban cron worker that archives audit log records older than 90 days.
+  Oban cron worker that archives audit log records older than 60 days.
 
   Moves rows from `logs` to `logs_archived` in configurable-size chunks
   to avoid long-running transactions and excessive lock contention.
@@ -28,7 +28,7 @@ defmodule Malan.Workers.LogArchiver do
 
   alias Malan.Repo
 
-  @default_retention_days 90
+  @default_retention_days 60
   @default_chunk_size 1_000
   # Delay between chained chunks. Zero is fine for steady-state (a daily run
   # touches a few hundred rows), but operators should set this to 1-2 seconds
