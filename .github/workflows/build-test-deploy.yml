@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Lint OpenAPI
-        run: npx -y @stoplight/spectral-cli@6 lint openapi.yaml
+        run: npx -y @stoplight/spectral-cli@6 lint priv/openapi/openapi.yaml
 
       - name: Test
         run: ./scripts/run-ci.sh
