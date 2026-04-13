@@ -153,8 +153,15 @@ defmodule Malan.AuthController do
   def is_owner?(conn), do: is_owner?(conn, conn.params["user_id"])
   def is_owner?(_conn, "current"), do: true
 
-  def is_owner?(conn, user_id),
-    do: conn.assigns.authed_user_id == user_id || conn.assigns.authed_username == user_id
+  def is_owner?(conn, user_id) when is_binary(user_id) do
+    authed_user_id = conn.assigns.authed_user_id
+    authed_username = conn.assigns.authed_username
+
+    (is_binary(authed_user_id) and authed_user_id == user_id) or
+      (is_binary(authed_username) and authed_username == user_id)
+  end
+
+  def is_owner?(_conn, _user_id), do: false
 
   def is_not_admin?(conn), do: !is_admin?(conn)
   def is_not_moderator?(conn), do: !is_moderator?(conn)

@@ -558,6 +558,28 @@ defmodule MalanWeb.AuthControllerTest do
                  nil
                )
     end
+
+    test "returns false when both sides are nil (no ownership-by-default)" do
+      assert false ==
+               AuthController.is_owner?(
+                 %{assigns: %{authed_user_id: nil, authed_username: nil}},
+                 nil
+               )
+    end
+
+    test "returns false for non-binary user_id" do
+      assert false ==
+               AuthController.is_owner?(
+                 %{assigns: %{authed_user_id: "abc", authed_username: "def"}},
+                 :atom
+               )
+
+      assert false ==
+               AuthController.is_owner?(
+                 %{assigns: %{authed_user_id: "abc", authed_username: "def"}},
+                 123
+               )
+    end
   end
 
   describe "#is_not_owner?/1" do
