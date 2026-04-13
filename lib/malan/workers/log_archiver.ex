@@ -16,7 +16,10 @@ defmodule Malan.Workers.LogArchiver do
   alias Malan.Repo
 
   @default_retention_days 90
-  @default_chunk_size 5_000
+  @default_chunk_size 1_000
+  # Give each chunk query up to 60s. The SELECT walks an index range and the
+  # DELETE+INSERT is bounded by chunk_size, so this is generous but finite.
+  @query_timeout_ms 60_000
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
@@ -40,49 +43,41 @@ defmodule Malan.Workers.LogArchiver do
     end
   end
 
+  # Single-statement move: a CTE picks the chunk, DELETE removes them with
+  # RETURNING, and the outer INSERT writes them to the archive table. One
+  # pass over the inserted_at index, no round-trip for an id array, and the
+  # whole thing is atomic under a single implicit transaction.
+  #
+  # FOR UPDATE SKIP LOCKED lets overlapping runs coexist safely without
+  # blocking on row locks from another archiver or a concurrent writer.
   defp archive_chunk(cutoff, chunk_size) do
-    Repo.transaction(fn ->
-      # Select the IDs of rows to move in this chunk
-      %{rows: id_rows, num_rows: count} =
-        Repo.query!(
-          """
-          SELECT id FROM logs
-          WHERE inserted_at < $1
-          ORDER BY inserted_at ASC
-          LIMIT $2
-          """,
-          [cutoff, chunk_size]
-        )
+    sql = """
+    WITH to_archive AS (
+      SELECT id FROM logs
+      WHERE inserted_at < $1
+      ORDER BY inserted_at ASC
+      LIMIT $2
+      FOR UPDATE SKIP LOCKED
+    ),
+    deleted AS (
+      DELETE FROM logs
+      WHERE id IN (SELECT id FROM to_archive)
+      RETURNING id, type_enum, verb_enum, "when", what, user_id, session_id,
+                who, who_username, success, changeset, remote_ip,
+                inserted_at, updated_at
+    )
+    INSERT INTO logs_archived (
+      id, type_enum, verb_enum, "when", what, user_id, session_id,
+      who, who_username, success, changeset, remote_ip,
+      inserted_at, updated_at
+    )
+    SELECT * FROM deleted
+    """
 
-      if count == 0 do
-        0
-      else
-        ids = Enum.map(id_rows, fn [id] -> id end)
-
-        # Copy rows to the archive table
-        Repo.query!(
-          """
-          INSERT INTO logs_archived (
-            id, type_enum, verb_enum, "when", what, user_id, session_id,
-            who, who_username, success, changeset, remote_ip,
-            inserted_at, updated_at
-          )
-          SELECT
-            id, type_enum, verb_enum, "when", what, user_id, session_id,
-            who, who_username, success, changeset, remote_ip,
-            inserted_at, updated_at
-          FROM logs
-          WHERE id = ANY($1)
-          """,
-          [ids]
-        )
-
-        # Delete the moved rows
-        Repo.query!("DELETE FROM logs WHERE id = ANY($1)", [ids])
-
-        count
-      end
-    end)
+    case Repo.query(sql, [cutoff, chunk_size], timeout: @query_timeout_ms) do
+      {:ok, %{num_rows: count}} -> {:ok, count}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp schedule_next_chunk(retention_days, chunk_size) do
