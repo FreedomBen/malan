@@ -164,6 +164,40 @@ defmodule MalanWeb.AuthControllerTest do
       assert conn.assigns.authed_session_valid_only_for_ip == nil
     end
 
+    test "Accepts Bearer scheme case-insensitively", %{conn: conn} do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+
+      for scheme <- ["Bearer", "bearer", "BEARER", "BeArEr"] do
+        conn =
+          Plug.Conn.put_req_header(conn, "authorization", "#{scheme} #{session.api_token}")
+          |> AuthController.validate_token(nil)
+
+        assert conn.assigns.authed_user_id == user.id,
+               "scheme #{inspect(scheme)} should authenticate"
+      end
+    end
+
+    test "Rejects non-Bearer schemes as malformed", %{conn: conn} do
+      {:ok, _user, session} = Helpers.Accounts.regular_user_with_session()
+
+      for scheme <- ["Basic", "Token", "JWT", "Anything"] do
+        conn =
+          Plug.Conn.put_req_header(conn, "authorization", "#{scheme} #{session.api_token}")
+          |> AuthController.validate_token(nil)
+
+        assert conn.assigns == conn_assigns_for_invalid_token(:malformed),
+               "scheme #{inspect(scheme)} should be rejected"
+      end
+    end
+
+    test "Rejects Bearer with empty token as malformed", %{conn: conn} do
+      conn =
+        Plug.Conn.put_req_header(conn, "authorization", "Bearer ")
+        |> AuthController.validate_token(nil)
+
+      assert conn.assigns == conn_assigns_for_invalid_token(:malformed)
+    end
+
     test "Ignores token in session cookie — header is the only accepted source", %{conn: conn} do
       {:ok, _user, session} = Helpers.Accounts.admin_user_with_session()
 

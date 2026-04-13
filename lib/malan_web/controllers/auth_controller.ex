@@ -206,9 +206,16 @@ defmodule Malan.AuthController do
   end
 
   defp extract_header_token(auth_string) do
-    case String.split(auth_string, " ") do
-      [_, api_token] -> {:ok, api_token}
-      _ -> {:error, :malformed}
+    case String.split(auth_string, " ", parts: 2) do
+      [scheme, api_token] when api_token != "" ->
+        if String.downcase(scheme) == "bearer" do
+          {:ok, api_token}
+        else
+          {:error, :malformed}
+        end
+
+      _ ->
+        {:error, :malformed}
     end
   end
 
