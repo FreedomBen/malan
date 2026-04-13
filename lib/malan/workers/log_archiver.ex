@@ -17,6 +17,10 @@ defmodule Malan.Workers.LogArchiver do
 
   @default_retention_days 90
   @default_chunk_size 1_000
+  # Delay between chained chunks. Zero is fine for steady-state (a daily run
+  # touches a few hundred rows), but operators should set this to 1-2 seconds
+  # for a multi-million-row backfill so the chain doesn't saturate the DB.
+  @default_delay_seconds 0
   # Give each chunk query up to 60s. The SELECT walks an index range and the
   # DELETE+INSERT is bounded by chunk_size, so this is generous but finite.
   @query_timeout_ms 60_000
@@ -25,6 +29,7 @@ defmodule Malan.Workers.LogArchiver do
   def perform(%Oban.Job{args: args}) do
     retention_days = Map.get(args, "retention_days", @default_retention_days)
     chunk_size = Map.get(args, "chunk_size", @default_chunk_size)
+    delay_seconds = Map.get(args, "delay_seconds", @default_delay_seconds)
     cutoff = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
 
     case archive_chunk(cutoff, chunk_size) do
@@ -34,7 +39,7 @@ defmodule Malan.Workers.LogArchiver do
 
       {:ok, count} ->
         Logger.info("LogArchiver: archived #{count} rows, scheduling next chunk")
-        schedule_next_chunk(retention_days, chunk_size)
+        schedule_next_chunk(retention_days, chunk_size, delay_seconds)
         :ok
 
       {:error, reason} ->
@@ -80,9 +85,13 @@ defmodule Malan.Workers.LogArchiver do
     end
   end
 
-  defp schedule_next_chunk(retention_days, chunk_size) do
-    %{"retention_days" => retention_days, "chunk_size" => chunk_size}
-    |> __MODULE__.new()
+  defp schedule_next_chunk(retention_days, chunk_size, delay_seconds) do
+    %{
+      "retention_days" => retention_days,
+      "chunk_size" => chunk_size,
+      "delay_seconds" => delay_seconds
+    }
+    |> __MODULE__.new(schedule_in: delay_seconds)
     |> Oban.insert!()
   end
 end

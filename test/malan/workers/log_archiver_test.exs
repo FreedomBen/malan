@@ -201,6 +201,27 @@ defmodule Malan.Workers.LogArchiverTest do
       assert remaining_new >= 400
     end
 
+    test "delay_seconds propagates to the next scheduled chunk" do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      old_date = DateTime.utc_now() |> DateTime.add(-91, :day) |> DateTime.truncate(:second)
+
+      # Two old rows so the first chunk leaves more work and re-enqueues
+      for i <- 1..2 do
+        create_log(user, session, DateTime.add(old_date, -i, :second))
+      end
+
+      # Switch to :manual so the chained job stays in the queue for inspection
+      # rather than running inline immediately
+      Oban.Testing.with_testing_mode(:manual, fn ->
+        assert :ok = perform_job(LogArchiver, %{"chunk_size" => 1, "delay_seconds" => 5})
+
+        assert_enqueued(
+          worker: LogArchiver,
+          args: %{"chunk_size" => 1, "delay_seconds" => 5, "retention_days" => 90}
+        )
+      end)
+    end
+
     test "no-ops when there are no rows to archive" do
       initial_archived = archived_count()
       initial_logs = logs_count()
