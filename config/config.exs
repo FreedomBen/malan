@@ -78,13 +78,33 @@ config :malan, Malan.Accounts.Session,
   max_max_extension_secs:
     System.get_env("MAX_MAX_EXTENSION_SECS") || "7862400" |> String.to_integer()
 
+# Cookie signing/encryption salts. These are NOT the secret — `secret_key_base`
+# is — but they're domain separators for derived keys and should not live in
+# source. Read from env at build time; defaults preserve historical values so
+# existing deployments aren't invalidated by this refactor. To rotate, set the
+# env vars at build time and rebuild the release.
+session_signing_salt =
+  System.get_env("SESSION_SIGNING_SALT") || "36hUTpHh"
+
+session_encryption_salt =
+  System.get_env("SESSION_ENCRYPTION_SALT") || "3043FHjkW"
+
+live_view_signing_salt =
+  System.get_env("LIVE_VIEW_SIGNING_SALT") || "S5EXJrIi"
+
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
   url: [host: System.get_env("BIND_ADDR") || "127.0.0.1"],
   # render_errors: [view: MalanWeb.ErrorJSON, accepts: ~w(html json), layout: false],
   render_errors: [view: MalanWeb.ErrorJSON, accepts: ~w(json), layout: false],
   pubsub_server: Malan.PubSub,
-  live_view: [signing_salt: "S5EXJrIi"]
+  live_view: [signing_salt: live_view_signing_salt],
+  session_options: [
+    store: :cookie,
+    key: "_malan_key",
+    signing_salt: session_signing_salt,
+    encryption_salt: session_encryption_salt
+  ]
 
 # Configures the mailer
 #

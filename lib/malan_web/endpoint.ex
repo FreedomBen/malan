@@ -2,15 +2,12 @@ defmodule MalanWeb.Endpoint do
   use Sentry.PlugCapture
   use Phoenix.Endpoint, otp_app: :malan
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
-  @session_options [
-    store: :cookie,
-    key: "_malan_key",
-    signing_salt: "36hUTpHh",
-    encryption_salt: "3043FHjkW"
-  ]
+  # The session is stored in a cookie that is both signed and encrypted.
+  # The salts are pulled from application config (see config/config.exs); they
+  # default to historical values for backward compatibility but can be rotated
+  # at build time via the SESSION_SIGNING_SALT / SESSION_ENCRYPTION_SALT env
+  # vars. Plug.Session compiles these in, so rotation requires a rebuild.
+  @session_options Application.compile_env!(:malan, [MalanWeb.Endpoint, :session_options])
 
   # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/live", Phoenix.LiveView.Socket,
