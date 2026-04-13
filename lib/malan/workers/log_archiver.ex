@@ -9,7 +9,20 @@ defmodule Malan.Workers.LogArchiver do
   to be archived.
   """
 
-  use Oban.Worker, queue: :logs, max_attempts: 3
+  # Uniqueness keeps at most one archiver chain in flight at a time. The
+  # parent chunk is in :executing while it inserts the next chunk, so
+  # :executing is intentionally excluded — the chain still self-perpetuates.
+  # Cron ticks that fire while a chain is already in :available or :scheduled
+  # silently no-op. If a chain dies (state → :discarded), the next cron tick
+  # starts a fresh one.
+  use Oban.Worker,
+    queue: :logs,
+    max_attempts: 3,
+    unique: [
+      period: :infinity,
+      fields: [:worker],
+      states: [:available, :scheduled]
+    ]
 
   require Logger
 

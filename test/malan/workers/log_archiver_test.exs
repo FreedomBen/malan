@@ -201,6 +201,21 @@ defmodule Malan.Workers.LogArchiverTest do
       assert remaining_new >= 400
     end
 
+    test "uniqueness collapses overlapping enqueues into one chain" do
+      # Two cron-tick-style enqueues; the second should be deduped because
+      # the first is sitting in :available
+      Oban.Testing.with_testing_mode(:manual, fn ->
+        assert {:ok, %Oban.Job{conflict?: false}} =
+                 Oban.insert(LogArchiver.new(%{}))
+
+        assert {:ok, %Oban.Job{conflict?: true}} =
+                 Oban.insert(LogArchiver.new(%{}))
+
+        # Only one row sits in the queue
+        assert [_only_one] = all_enqueued(worker: LogArchiver)
+      end)
+    end
+
     test "delay_seconds propagates to the next scheduled chunk" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       old_date = DateTime.utc_now() |> DateTime.add(-91, :day) |> DateTime.truncate(:second)
