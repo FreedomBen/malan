@@ -39,11 +39,7 @@ defmodule MalanWeb.AuthControllerTest do
   # the user's roles
   describe "#validate_token/2" do
     test "Adds proper assign when api_token is missing", %{conn: conn} do
-      conn =
-        conn
-        |> Plug.Test.init_test_session(%{})
-        |> Plug.Conn.fetch_session()
-        |> AuthController.validate_token(nil)
+      conn = AuthController.validate_token(conn, nil)
 
       assert conn.assigns == conn_assigns_for_invalid_token(:no_token)
     end
@@ -168,28 +164,8 @@ defmodule MalanWeb.AuthControllerTest do
       assert conn.assigns.authed_session_valid_only_for_ip == nil
     end
 
-    test "Handles no token in header or in session cookie", %{conn: conn} do
-      conn =
-        conn
-        |> Plug.Test.init_test_session(%{})
-        |> Plug.Conn.fetch_session()
-        |> AuthController.validate_token(nil)
-
-      assert conn.assigns == conn_assigns_for_invalid_token(:no_token)
-    end
-
-    test "Handles invalid token in cookie", %{conn: conn} do
-      conn =
-        conn
-        |> Plug.Test.init_test_session(%{"authorization" => "hey"})
-        |> Plug.Conn.fetch_session()
-        |> AuthController.validate_token(nil)
-
-      assert conn.assigns == conn_assigns_for_invalid_token(:not_found)
-    end
-
-    test "Can get the token from the session cookie (admin user)", %{conn: conn} do
-      {:ok, user, session} = Helpers.Accounts.admin_user_with_session()
+    test "Ignores token in session cookie — header is the only accepted source", %{conn: conn} do
+      {:ok, _user, session} = Helpers.Accounts.admin_user_with_session()
 
       conn =
         conn
@@ -197,11 +173,7 @@ defmodule MalanWeb.AuthControllerTest do
         |> Plug.Conn.fetch_session()
         |> AuthController.validate_token(nil)
 
-      assert conn.assigns.authed_user_id == user.id
-      assert conn.assigns.authed_username == user.username
-      assert conn.assigns.authed_user_roles == ["admin", "user"]
-      assert conn.assigns.authed_user_is_admin == true
-      assert conn.assigns.authed_user_is_moderator == false
+      assert conn.assigns == conn_assigns_for_invalid_token(:no_token)
     end
   end
 
