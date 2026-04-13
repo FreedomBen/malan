@@ -157,7 +157,7 @@ defmodule MalanWeb.LogController do
       true ->
         case Accounts.get_user_by_id_or_username(requested_user) do
           nil ->
-            conn
+            halt_not_owner(conn)
 
           %{id: requested_id} ->
             if requested_id == conn.assigns.authed_user_id do

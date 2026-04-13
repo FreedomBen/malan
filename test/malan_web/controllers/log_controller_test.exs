@@ -223,7 +223,17 @@ defmodule MalanWeb.LogControllerTest do
       assert conn.status in [401, 403]
     end
 
-    test "non-existent user id", %{conn: conn} do
+    test "user cannot probe non-existent user via query param route (enumeration oracle)",
+         %{conn: conn} do
+      {:ok, conn, _user, _session} = Helpers.Accounts.regular_user_session_conn(conn)
+
+      conn = get(conn, Routes.log_path(conn, :user_index), user_id: "notarealuser")
+      # Must match the "exists but not yours" response so unknown/known users
+      # cannot be distinguished by a non-admin probing the query-param route.
+      assert conn.status in [401, 403]
+    end
+
+    test "non-existent user id (admin bypass)", %{conn: conn} do
       {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(conn)
       conn = get(conn, Routes.user_log_path(conn, :user_index, "notarealuser"))
       assert %{"data" => [], "page_num" => 0, "page_size" => 10} = json_response(conn, 200)
