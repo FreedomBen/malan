@@ -9,7 +9,6 @@ defmodule MalanWeb.AdminLive.Shell do
 
   attr :current_admin, :map, required: true
   attr :active, :atom, default: :users
-  attr :search_value, :string, default: ""
   slot :inner_block, required: true
 
   def admin_shell(assigns) do
@@ -59,18 +58,7 @@ defmodule MalanWeb.AdminLive.Shell do
         <div aria-hidden="true" class="h-6 w-px bg-gray-200 lg:hidden dark:bg-white/10"></div>
 
         <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-          <form action={~p"/admin/users"} method="get" class="grid flex-1 grid-cols-1">
-            <input
-              name="q"
-              value={@search_value}
-              placeholder="Search users"
-              aria-label="Search users"
-              class="col-start-1 row-start-1 block size-full bg-white pl-8 text-base text-gray-900 outline-hidden placeholder:text-gray-400 sm:text-sm/6 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
-            />
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="pointer-events-none col-start-1 row-start-1 size-5 self-center text-gray-400">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" />
-            </svg>
-          </form>
+          <div class="flex flex-1"></div>
 
           <div class="flex items-center gap-x-4 lg:gap-x-6">
             <div aria-hidden="true" class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 dark:lg:bg-white/10"></div>
