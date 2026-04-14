@@ -36,6 +36,45 @@ defmodule Malan.Accounts do
     |> Repo.all()
   end
 
+  @doc """
+  List users for the admin console with an optional free-text search against
+  username, email, display name, and first/last name. Returns
+  `{users, total_count}`. `page_num` is zero-indexed.
+  """
+  def admin_list_users(page_num, page_size, opts \\ [])
+      when valid_page(page_num, page_size) do
+    search = opts |> Keyword.get(:search, "") |> to_string() |> String.trim()
+
+    base = from(u in User, where: is_nil(u.deleted_at))
+
+    base =
+      if search == "" do
+        base
+      else
+        like = "%" <> String.downcase(search) <> "%"
+
+        from(u in base,
+          where:
+            ilike(u.username, ^like) or
+              ilike(u.email, ^like) or
+              ilike(coalesce(u.display_name, ""), ^like) or
+              ilike(coalesce(u.first_name, ""), ^like) or
+              ilike(coalesce(u.last_name, ""), ^like)
+        )
+      end
+
+    count_query = from(u in base, select: count(u.id))
+
+    rows_query =
+      from(u in base,
+        order_by: [desc: u.inserted_at, asc: u.id],
+        limit: ^page_size,
+        offset: ^(page_num * page_size)
+      )
+
+    {Repo.all(rows_query), Repo.one(count_query) || 0}
+  end
+
   def get_user(id) do
     Repo.one(from(u in User, where: u.id == ^id and is_nil(u.deleted_at)))
   end

@@ -12,6 +12,15 @@ defmodule MalanWeb.Router do
     plug :retrieve_user
   end
 
+  pipeline :admin_browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, {MalanWeb.LayoutView, :admin_root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   # Lightweight pipeline for docs and the OpenAPI spec.
   # Accept JSON/YAML so Swagger UI's request headers are never rejected with 406.
   pipeline :docs do
@@ -97,6 +106,22 @@ defmodule MalanWeb.Router do
 
     get "/password/reset", RedirectController, :reset_password
     get "/password/forgot", RedirectController, :reset_password
+  end
+
+  scope "/admin", MalanWeb do
+    pipe_through :admin_browser
+
+    live "/sign-in", AdminLive.SignIn
+    post "/sign_in", AdminSessionController, :create
+    delete "/sign_out", AdminSessionController, :delete
+
+    live_session :admin,
+      on_mount: {MalanWeb.AdminAuth, :require_admin},
+      layout: {MalanWeb.LayoutView, :admin} do
+      live "/users", AdminLive.Users
+      live "/users/:id", AdminLive.UserDetail
+      live "/", AdminLive.Users
+    end
   end
 
   scope "/", MalanWeb do

@@ -1,0 +1,185 @@
+<MalanWeb.AdminLive.Shell.admin_shell
+  current_admin={@current_admin}
+  active={:users}
+  breadcrumbs={[
+    %{label: "Users", to: ~p"/admin/users"},
+    %{label: MalanWeb.AdminLive.Shell.display_name(@user)}
+  ]}
+>
+  <section class="admin-pageheader">
+    <div>
+      <div class="admin-pageheader__eyebrow">Dossier · User File</div>
+      <h1 class="admin-pageheader__title">
+        {MalanWeb.AdminLive.Shell.display_name(@user)}
+      </h1>
+      <p class="admin-pageheader__sub">
+        Editable fields are kept intentionally narrow — identity, roles, and
+        credentials are managed through dedicated workflows.
+      </p>
+    </div>
+    <div class="admin-pageheader__stamp">
+      Record ID
+      <strong title={@user.id}>{MalanWeb.AdminLive.Shell.short_id(@user.id)}</strong>
+    </div>
+  </section>
+
+  <div class="admin-detail-grid">
+    <!-- ========== Summary card ========== -->
+    <section class="admin-card">
+      <header class="admin-card__head">
+        <div>
+          <div class="admin-section-head__num">§ I — AT A GLANCE</div>
+          <h2 class="admin-card__title">
+            <em>{@user.username}</em> · filed on {MalanWeb.AdminLive.Shell.format_dt(@user.inserted_at)}
+          </h2>
+        </div>
+        <MalanWeb.AdminLive.Shell.role_pills
+          roles={@user.roles}
+          locked_at={@user.locked_at}
+        />
+      </header>
+
+      <div class="admin-card__body">
+        <div class="admin-meta-row">
+          <div class="admin-meta">
+            <div class="admin-meta__label">Username</div>
+            <div class="admin-meta__value admin-meta__value--mono">{@user.username}</div>
+          </div>
+          <div class="admin-meta">
+            <div class="admin-meta__label">Email</div>
+            <div class="admin-meta__value admin-meta__value--mono">{@user.email}</div>
+          </div>
+          <div class="admin-meta">
+            <div class="admin-meta__label">Roles</div>
+            <div class="admin-meta__value admin-meta__value--mono">
+              {Enum.join(@user.roles || [], ", ")}
+            </div>
+          </div>
+          <div class="admin-meta">
+            <div class="admin-meta__label">Locked</div>
+            <div class="admin-meta__value admin-meta__value--mono">
+              {MalanWeb.AdminLive.Shell.format_dt(@user.locked_at)}
+            </div>
+          </div>
+          <div class="admin-meta">
+            <div class="admin-meta__label">Updated</div>
+            <div class="admin-meta__value admin-meta__value--mono">
+              {MalanWeb.AdminLive.Shell.format_dt(@user.updated_at)}
+            </div>
+          </div>
+          <div class="admin-meta">
+            <div class="admin-meta__label">ToS / PP version</div>
+            <div class="admin-meta__value admin-meta__value--mono">
+              {@user.latest_tos_accept_ver || "—"} / {@user.latest_pp_accept_ver || "—"}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Edit card ========== -->
+    <section class="admin-card">
+      <header class="admin-card__head">
+        <div>
+          <div class="admin-section-head__num">§ II — EDITABLE ENTRIES</div>
+          <h2 class="admin-card__title">
+            Names, <em>identity</em>, and personal notes
+          </h2>
+        </div>
+        <span class="admin-card__stamp">Form U-E · Safe fields</span>
+      </header>
+
+      <div class="admin-card__body">
+        <.form for={@form} phx-change="validate" phx-submit="save" class="admin-form-grid">
+          <.admin_text_field form={@form} field={:first_name} label="First name" class_extra="" />
+          <.admin_text_field form={@form} field={:last_name} label="Last name" class_extra="" />
+          <.admin_text_field form={@form} field={:middle_name} label="Middle name" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:name_prefix} label="Prefix" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:name_suffix} label="Suffix" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:nick_name} label="Nickname" class_extra="" />
+          <.admin_text_field form={@form} field={:display_name} label="Display name" class_extra="" />
+          <.admin_text_field form={@form} field={:sex} label="Sex" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:gender} label="Gender" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:ethnicity} label="Ethnicity" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:birthday} label="Birthday" type="date" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:weight} label="Weight" class_extra="admin-field--third" />
+          <.admin_text_field form={@form} field={:height} label="Height" class_extra="admin-field--third" />
+
+          <div class="admin-field admin-field--full admin-form-actions">
+            <button type="submit" class="admin-btn">Save changes</button>
+            <.link navigate={~p"/admin/users"} class="admin-btn admin-btn--ghost">Cancel</.link>
+            <span class="admin-hint">
+              Username, email, roles, password, and lock state are managed elsewhere.
+            </span>
+          </div>
+        </.form>
+      </div>
+    </section>
+
+    <!-- ========== Sessions card ========== -->
+    <section class="admin-card">
+      <header class="admin-card__head">
+        <div>
+          <div class="admin-section-head__num">§ III — SESSIONS</div>
+          <h2 class="admin-card__title">
+            Recent <em>sessions</em> on record
+          </h2>
+        </div>
+        <span class="admin-card__stamp">{length(@sessions)} entries</span>
+      </header>
+
+      <div class="admin-table-wrap" style="border:none; border-radius:0;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Started</th>
+              <th scope="col">IP</th>
+              <th scope="col">Expires</th>
+              <th scope="col">State</th>
+              <th scope="col">Session</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= if @sessions == [] do %>
+              <tr>
+                <td colspan="5">
+                  <div class="admin-empty">No sessions recorded for this user.</div>
+                </td>
+              </tr>
+            <% end %>
+
+            <%= for session <- @sessions do %>
+              <tr>
+                <td class="col-id">
+                  {MalanWeb.AdminLive.Shell.format_dt(session.authenticated_at)}
+                </td>
+                <td class="col-id">{session.ip_address || "—"}</td>
+                <td class="col-id">
+                  {MalanWeb.AdminLive.Shell.format_dt(session.expires_at)}
+                </td>
+                <td>
+                  <div class="admin-session-row__state">
+                    <%= case session_status(session) do %>
+                      <% :active -> %>
+                        <span class="admin-pill admin-pill--ok">Active</span>
+                      <% :revoked -> %>
+                        <span class="admin-pill admin-pill--locked">Revoked</span>
+                      <% :expired -> %>
+                        <span class="admin-pill admin-pill--muted">Expired</span>
+                    <% end %>
+                    <%= if session.valid_only_for_ip do %>
+                      <span class="admin-pill admin-pill--user">IP-locked</span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="col-id admin-session-row__token" title={session.id}>
+                  {MalanWeb.AdminLive.Shell.short_id(session.id)}
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</MalanWeb.AdminLive.Shell.admin_shell>

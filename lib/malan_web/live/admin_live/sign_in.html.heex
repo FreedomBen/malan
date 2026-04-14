@@ -1,0 +1,68 @@
+<div class="admin-signin">
+  <aside class="admin-signin__stage">
+    <div class="admin-signin__mark">
+      Malan
+      <small>Administrative Console · Est. —</small>
+    </div>
+
+    <blockquote class="admin-signin__quote">
+      “A record well-kept is the first act of trust.”
+      <span>— Archivist's Creed</span>
+    </blockquote>
+
+    <div class="admin-signin__meta">
+      <span>File · AC-001</span>
+      <span>Classification · Restricted</span>
+    </div>
+  </aside>
+
+  <section class="admin-signin__form">
+    <div class="admin-signin__inner">
+      <div class="admin-signin__eyebrow">Form 0-A · Authorization</div>
+      <h1 class="admin-signin__title">Sign <em>in</em>.</h1>
+      <p class="admin-signin__sub">
+        Admin credentials only. Your session is scoped to this console and may be revoked at any time.
+      </p>
+
+      <%= if error = Phoenix.Flash.get(@flash, :error) do %>
+        <div class="admin-signin__error">{error}</div>
+      <% end %>
+
+      <form action={~p"/admin/sign_in"} method="post" class="admin-form-grid">
+        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+
+        <div class="admin-field admin-field--full">
+          <label for="admin-username">Username or email</label>
+          <input
+            id="admin-username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            required
+            class="admin-input"
+          />
+        </div>
+
+        <div class="admin-field admin-field--full">
+          <label for="admin-password">Password</label>
+          <input
+            id="admin-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="admin-input"
+          />
+        </div>
+
+        <div class="admin-field admin-field--full admin-form-actions" style="border-top:none; padding-top:0; margin-top:0;">
+          <button type="submit" class="admin-btn">
+            Enter the archive
+            <span aria-hidden="true">→</span>
+          </button>
+          <span class="admin-hint">Restricted personnel only.</span>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>

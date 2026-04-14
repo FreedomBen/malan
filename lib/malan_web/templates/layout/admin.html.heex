@@ -1,0 +1,11 @@
+<%= if info = Phoenix.Flash.get(@flash, :info) do %>
+  <div class="admin-flash admin-flash--info" role="alert" phx-click="lv:clear-flash" phx-value-key="info">
+    {info}
+  </div>
+<% end %>
+<%= if error = Phoenix.Flash.get(@flash, :error) do %>
+  <div class="admin-flash admin-flash--err" role="alert" phx-click="lv:clear-flash" phx-value-key="error">
+    {error}
+  </div>
+<% end %>
+{@inner_content}
