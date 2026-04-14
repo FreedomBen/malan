@@ -1,185 +1,200 @@
-<MalanWeb.AdminLive.Shell.admin_shell
-  current_admin={@current_admin}
-  active={:users}
-  breadcrumbs={[
-    %{label: "Users", to: ~p"/admin/users"},
-    %{label: MalanWeb.AdminLive.Shell.display_name(@user)}
-  ]}
->
-  <section class="admin-pageheader">
-    <div>
-      <div class="admin-pageheader__eyebrow">Dossier · User File</div>
-      <h1 class="admin-pageheader__title">
-        {MalanWeb.AdminLive.Shell.display_name(@user)}
-      </h1>
-      <p class="admin-pageheader__sub">
-        Editable fields are kept intentionally narrow — identity, roles, and
-        credentials are managed through dedicated workflows.
+<MalanWeb.AdminLive.Shell.admin_shell current_admin={@current_admin} active={:users}>
+  <nav aria-label="Breadcrumb" class="flex">
+    <ol role="list" class="flex items-center space-x-2 text-sm">
+      <li>
+        <.link
+          navigate={~p"/admin/users"}
+          class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+        >
+          Users
+        </.link>
+      </li>
+      <li class="flex items-center">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4 text-gray-300 dark:text-gray-600">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M7.22 14.78a.75.75 0 0 0 1.06 0l5.25-5.25a.75.75 0 0 0 0-1.06l-5.25-5.25a.75.75 0 1 0-1.06 1.06L11.94 9l-4.72 4.72a.75.75 0 0 0 0 1.06Z" />
+        </svg>
+        <span aria-current="page" class="ml-2 font-medium text-gray-900 dark:text-white">
+          {MalanWeb.AdminLive.Shell.display_name(@user)}
+        </span>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <span class="flex size-14 items-center justify-center rounded-full bg-indigo-600 text-base font-semibold text-white uppercase">
+        {MalanWeb.AdminLive.Shell.initials(@user)}
+      </span>
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+          {MalanWeb.AdminLive.Shell.display_name(@user)}
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="font-mono">{@user.username}</span> · joined {MalanWeb.AdminLive.Shell.format_dt(@user.inserted_at)}
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <MalanWeb.AdminLive.Shell.role_badge roles={@user.roles} locked_at={@user.locked_at} />
+    </div>
+  </div>
+
+  <!-- Summary card -->
+  <div class="mt-6 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
+    <div class="border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white">Account summary</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Read-only fields. Identity and security settings are managed elsewhere.
       </p>
     </div>
-    <div class="admin-pageheader__stamp">
-      Record ID
-      <strong title={@user.id}>{MalanWeb.AdminLive.Shell.short_id(@user.id)}</strong>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Username</dt>
+        <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">{@user.username}</dd>
+      </div>
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Email</dt>
+        <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">{@user.email}</dd>
+      </div>
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Roles</dt>
+        <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">
+          {Enum.join(@user.roles || [], ", ")}
+        </dd>
+      </div>
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Locked</dt>
+        <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+          {MalanWeb.AdminLive.Shell.format_dt(@user.locked_at)}
+        </dd>
+      </div>
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Updated</dt>
+        <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+          {MalanWeb.AdminLive.Shell.format_dt(@user.updated_at)}
+        </dd>
+      </div>
+      <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">ToS / PP</dt>
+        <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+          v{@user.latest_tos_accept_ver || "—"} / v{@user.latest_pp_accept_ver || "—"}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Edit form -->
+  <div class="mt-8 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
+    <div class="border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white">Profile fields</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Username, email, roles, password, and lock state are intentionally not editable here.
+      </p>
     </div>
-  </section>
-
-  <div class="admin-detail-grid">
-    <!-- ========== Summary card ========== -->
-    <section class="admin-card">
-      <header class="admin-card__head">
-        <div>
-          <div class="admin-section-head__num">§ I — AT A GLANCE</div>
-          <h2 class="admin-card__title">
-            <em>{@user.username}</em> · filed on {MalanWeb.AdminLive.Shell.format_dt(@user.inserted_at)}
-          </h2>
-        </div>
-        <MalanWeb.AdminLive.Shell.role_pills
-          roles={@user.roles}
-          locked_at={@user.locked_at}
-        />
-      </header>
-
-      <div class="admin-card__body">
-        <div class="admin-meta-row">
-          <div class="admin-meta">
-            <div class="admin-meta__label">Username</div>
-            <div class="admin-meta__value admin-meta__value--mono">{@user.username}</div>
-          </div>
-          <div class="admin-meta">
-            <div class="admin-meta__label">Email</div>
-            <div class="admin-meta__value admin-meta__value--mono">{@user.email}</div>
-          </div>
-          <div class="admin-meta">
-            <div class="admin-meta__label">Roles</div>
-            <div class="admin-meta__value admin-meta__value--mono">
-              {Enum.join(@user.roles || [], ", ")}
-            </div>
-          </div>
-          <div class="admin-meta">
-            <div class="admin-meta__label">Locked</div>
-            <div class="admin-meta__value admin-meta__value--mono">
-              {MalanWeb.AdminLive.Shell.format_dt(@user.locked_at)}
-            </div>
-          </div>
-          <div class="admin-meta">
-            <div class="admin-meta__label">Updated</div>
-            <div class="admin-meta__value admin-meta__value--mono">
-              {MalanWeb.AdminLive.Shell.format_dt(@user.updated_at)}
-            </div>
-          </div>
-          <div class="admin-meta">
-            <div class="admin-meta__label">ToS / PP version</div>
-            <div class="admin-meta__value admin-meta__value--mono">
-              {@user.latest_tos_accept_ver || "—"} / {@user.latest_pp_accept_ver || "—"}
-            </div>
-          </div>
-        </div>
+    <.form for={@form} phx-change="validate" phx-submit="save" class="px-4 py-6 sm:px-6">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+        <.admin_text_field form={@form} field={:first_name} label="First name" span={3} />
+        <.admin_text_field form={@form} field={:last_name} label="Last name" span={3} />
+        <.admin_text_field form={@form} field={:middle_name} label="Middle name" span={2} />
+        <.admin_text_field form={@form} field={:name_prefix} label="Prefix" span={2} />
+        <.admin_text_field form={@form} field={:name_suffix} label="Suffix" span={2} />
+        <.admin_text_field form={@form} field={:nick_name} label="Nickname" span={3} />
+        <.admin_text_field form={@form} field={:display_name} label="Display name" span={3} />
+        <.admin_text_field form={@form} field={:sex} label="Sex" span={2} />
+        <.admin_text_field form={@form} field={:gender} label="Gender" span={2} />
+        <.admin_text_field form={@form} field={:ethnicity} label="Ethnicity" span={2} />
+        <.admin_text_field form={@form} field={:birthday} label="Birthday" type="date" span={2} />
+        <.admin_text_field form={@form} field={:weight} label="Weight" span={2} />
+        <.admin_text_field form={@form} field={:height} label="Height" span={2} />
       </div>
-    </section>
 
-    <!-- ========== Edit card ========== -->
-    <section class="admin-card">
-      <header class="admin-card__head">
-        <div>
-          <div class="admin-section-head__num">§ II — EDITABLE ENTRIES</div>
-          <h2 class="admin-card__title">
-            Names, <em>identity</em>, and personal notes
-          </h2>
-        </div>
-        <span class="admin-card__stamp">Form U-E · Safe fields</span>
-      </header>
-
-      <div class="admin-card__body">
-        <.form for={@form} phx-change="validate" phx-submit="save" class="admin-form-grid">
-          <.admin_text_field form={@form} field={:first_name} label="First name" class_extra="" />
-          <.admin_text_field form={@form} field={:last_name} label="Last name" class_extra="" />
-          <.admin_text_field form={@form} field={:middle_name} label="Middle name" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:name_prefix} label="Prefix" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:name_suffix} label="Suffix" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:nick_name} label="Nickname" class_extra="" />
-          <.admin_text_field form={@form} field={:display_name} label="Display name" class_extra="" />
-          <.admin_text_field form={@form} field={:sex} label="Sex" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:gender} label="Gender" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:ethnicity} label="Ethnicity" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:birthday} label="Birthday" type="date" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:weight} label="Weight" class_extra="admin-field--third" />
-          <.admin_text_field form={@form} field={:height} label="Height" class_extra="admin-field--third" />
-
-          <div class="admin-field admin-field--full admin-form-actions">
-            <button type="submit" class="admin-btn">Save changes</button>
-            <.link navigate={~p"/admin/users"} class="admin-btn admin-btn--ghost">Cancel</.link>
-            <span class="admin-hint">
-              Username, email, roles, password, and lock state are managed elsewhere.
-            </span>
-          </div>
-        </.form>
+      <div class="mt-6 flex items-center justify-end gap-x-3 border-t border-gray-200 pt-6 dark:border-white/10">
+        <.link
+          navigate={~p"/admin/users"}
+          class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
+        >
+          Cancel
+        </.link>
+        <button
+          type="submit"
+          class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+        >
+          Save changes
+        </button>
       </div>
-    </section>
+    </.form>
+  </div>
 
-    <!-- ========== Sessions card ========== -->
-    <section class="admin-card">
-      <header class="admin-card__head">
-        <div>
-          <div class="admin-section-head__num">§ III — SESSIONS</div>
-          <h2 class="admin-card__title">
-            Recent <em>sessions</em> on record
-          </h2>
-        </div>
-        <span class="admin-card__stamp">{length(@sessions)} entries</span>
-      </header>
-
-      <div class="admin-table-wrap" style="border:none; border-radius:0;">
-        <table class="admin-table">
-          <thead>
+  <!-- Sessions -->
+  <div class="mt-8 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
+    <div class="flex items-center justify-between border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Sessions</h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          The {length(@sessions)} most recent sessions for this user.
+        </p>
+      </div>
+    </div>
+    <div class="-mx-0 overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+        <thead>
+          <tr>
+            <th scope="col" class="py-3 pr-3 pl-4 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pl-6 dark:text-gray-400">Started</th>
+            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">IP address</th>
+            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Expires</th>
+            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">State</th>
+            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">ID</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+          <%= if @sessions == [] do %>
             <tr>
-              <th scope="col">Started</th>
-              <th scope="col">IP</th>
-              <th scope="col">Expires</th>
-              <th scope="col">State</th>
-              <th scope="col">Session</th>
+              <td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                No sessions recorded for this user.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <%= if @sessions == [] do %>
-              <tr>
-                <td colspan="5">
-                  <div class="admin-empty">No sessions recorded for this user.</div>
-                </td>
-              </tr>
-            <% end %>
+          <% end %>
 
-            <%= for session <- @sessions do %>
-              <tr>
-                <td class="col-id">
-                  {MalanWeb.AdminLive.Shell.format_dt(session.authenticated_at)}
-                </td>
-                <td class="col-id">{session.ip_address || "—"}</td>
-                <td class="col-id">
-                  {MalanWeb.AdminLive.Shell.format_dt(session.expires_at)}
-                </td>
-                <td>
-                  <div class="admin-session-row__state">
-                    <%= case session_status(session) do %>
-                      <% :active -> %>
-                        <span class="admin-pill admin-pill--ok">Active</span>
-                      <% :revoked -> %>
-                        <span class="admin-pill admin-pill--locked">Revoked</span>
-                      <% :expired -> %>
-                        <span class="admin-pill admin-pill--muted">Expired</span>
-                    <% end %>
-                    <%= if session.valid_only_for_ip do %>
-                      <span class="admin-pill admin-pill--user">IP-locked</span>
-                    <% end %>
-                  </div>
-                </td>
-                <td class="col-id admin-session-row__token" title={session.id}>
-                  {MalanWeb.AdminLive.Shell.short_id(session.id)}
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </section>
+          <%= for session <- @sessions do %>
+            <tr>
+              <td class="py-3 pr-3 pl-4 text-sm text-gray-700 whitespace-nowrap sm:pl-6 dark:text-gray-300">
+                {MalanWeb.AdminLive.Shell.format_dt(session.authenticated_at)}
+              </td>
+              <td class="px-3 py-3 font-mono text-sm text-gray-700 whitespace-nowrap dark:text-gray-300">
+                {session.ip_address || "—"}
+              </td>
+              <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap dark:text-gray-300">
+                {MalanWeb.AdminLive.Shell.format_dt(session.expires_at)}
+              </td>
+              <td class="px-3 py-3 text-sm whitespace-nowrap">
+                <%= case session_status(session) do %>
+                  <% :active -> %>
+                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/20">
+                      Active
+                    </span>
+                  <% :revoked -> %>
+                    <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-red-600/20 ring-inset dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
+                      Revoked
+                    </span>
+                  <% :expired -> %>
+                    <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/10 ring-inset dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
+                      Expired
+                    </span>
+                <% end %>
+                <%= if session.valid_only_for_ip do %>
+                  <span class="ml-1 inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-700/10 ring-inset dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20">
+                    IP-locked
+                  </span>
+                <% end %>
+              </td>
+              <td class="px-3 py-3 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400" title={session.id}>
+                {MalanWeb.AdminLive.Shell.short_id(session.id)}
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </MalanWeb.AdminLive.Shell.admin_shell>

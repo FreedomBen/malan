@@ -8,8 +8,8 @@ defmodule MalanWeb.AdminLive.SignInTest do
   describe "GET /admin/sign-in" do
     test "renders the sign-in page", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/admin/sign-in")
-      assert html =~ "Sign"
-      assert html =~ "Authorization"
+      assert html =~ "Sign in to the admin console"
+      assert html =~ "admin role"
     end
   end
 

@@ -29,7 +29,7 @@ defmodule MalanWeb.AdminLive.UserDetailTest do
 
       assert html =~ target.username
       assert html =~ target.email
-      assert html =~ "SESSIONS"
+      assert html =~ "Sessions"
       assert html =~ target_session.ip_address
     end
 
@@ -40,7 +40,7 @@ defmodule MalanWeb.AdminLive.UserDetailTest do
 
       html =
         view
-        |> form("form",
+        |> form("form[phx-submit=save]",
           user: %{
             "first_name" => "Renamed",
             "display_name" => "Dossier Display"

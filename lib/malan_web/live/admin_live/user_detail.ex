@@ -87,21 +87,28 @@ defmodule MalanWeb.AdminLive.UserDetail do
   attr :field, :atom, required: true
   attr :label, :string, required: true
   attr :type, :string, default: "text"
-  attr :class_extra, :string, default: ""
+  attr :span, :integer, default: 3
 
   def admin_text_field(assigns) do
     ~H"""
-    <div class={"admin-field " <> @class_extra}>
-      <label for={"user_" <> Atom.to_string(@field)}>{@label}</label>
-      <input
-        id={"user_" <> Atom.to_string(@field)}
-        name={@form.name <> "[" <> Atom.to_string(@field) <> "]"}
-        type={@type}
-        value={format_value(@form[@field].value)}
-        class="admin-input"
-      />
+    <div class={span_class(@span)}>
+      <label
+        for={"user_" <> Atom.to_string(@field)}
+        class="block text-sm/6 font-medium text-gray-900 dark:text-white"
+      >
+        {@label}
+      </label>
+      <div class="mt-2">
+        <input
+          id={"user_" <> Atom.to_string(@field)}
+          name={@form.name <> "[" <> Atom.to_string(@field) <> "]"}
+          type={@type}
+          value={format_value(@form[@field].value)}
+          class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500"
+        />
+      </div>
       <%= for msg <- field_errors(@form, @field) do %>
-        <span class="admin-error">{msg}</span>
+        <p class="mt-1 text-xs text-red-600 dark:text-red-400">{msg}</p>
       <% end %>
     </div>
     """
@@ -123,6 +130,14 @@ defmodule MalanWeb.AdminLive.UserDetail do
     end)
     |> Enum.reject(&is_nil/1)
   end
+
+  defp span_class(1), do: "sm:col-span-1"
+  defp span_class(2), do: "sm:col-span-2"
+  defp span_class(3), do: "sm:col-span-3"
+  defp span_class(4), do: "sm:col-span-4"
+  defp span_class(5), do: "sm:col-span-5"
+  defp span_class(6), do: "sm:col-span-6"
+  defp span_class(_), do: "sm:col-span-3"
 
   defp format_value(nil), do: ""
   defp format_value(%Date{} = d), do: Date.to_iso8601(d)

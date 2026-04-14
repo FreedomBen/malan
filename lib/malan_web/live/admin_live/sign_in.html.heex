@@ -1,68 +1,70 @@
-<div class="admin-signin">
-  <aside class="admin-signin__stage">
-    <div class="admin-signin__mark">
-      Malan
-      <small>Administrative Console · Est. —</small>
-    </div>
+<div class="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-sm">
+    <img
+      src={~p"/images/ameelio_logo_square.png"}
+      alt="Ameelio"
+      class="mx-auto h-10 w-auto"
+    />
+    <h2 class="mt-8 text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">
+      Sign in to the admin console
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+      Restricted to users with the admin role.
+    </p>
+  </div>
 
-    <blockquote class="admin-signin__quote">
-      “A record well-kept is the first act of trust.”
-      <span>— Archivist's Creed</span>
-    </blockquote>
+  <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+    <%= if error = Phoenix.Flash.get(@flash, :error) do %>
+      <div class="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-600/20 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-500/30">
+        {error}
+      </div>
+    <% end %>
 
-    <div class="admin-signin__meta">
-      <span>File · AC-001</span>
-      <span>Classification · Restricted</span>
-    </div>
-  </aside>
+    <form action={~p"/admin/sign_in"} method="post" class="space-y-6">
+      <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
 
-  <section class="admin-signin__form">
-    <div class="admin-signin__inner">
-      <div class="admin-signin__eyebrow">Form 0-A · Authorization</div>
-      <h1 class="admin-signin__title">Sign <em>in</em>.</h1>
-      <p class="admin-signin__sub">
-        Admin credentials only. Your session is scoped to this console and may be revoked at any time.
-      </p>
-
-      <%= if error = Phoenix.Flash.get(@flash, :error) do %>
-        <div class="admin-signin__error">{error}</div>
-      <% end %>
-
-      <form action={~p"/admin/sign_in"} method="post" class="admin-form-grid">
-        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-
-        <div class="admin-field admin-field--full">
-          <label for="admin-username">Username or email</label>
+      <div>
+        <label for="admin-username" class="block text-sm/6 font-medium text-gray-900 dark:text-white">
+          Username or email
+        </label>
+        <div class="mt-2">
           <input
             id="admin-username"
             name="username"
             type="text"
             autocomplete="username"
             required
-            class="admin-input"
+            class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500"
           />
         </div>
+      </div>
 
-        <div class="admin-field admin-field--full">
-          <label for="admin-password">Password</label>
+      <div>
+        <div class="flex items-center justify-between">
+          <label for="admin-password" class="block text-sm/6 font-medium text-gray-900 dark:text-white">
+            Password
+          </label>
+        </div>
+        <div class="mt-2">
           <input
             id="admin-password"
             name="password"
             type="password"
             autocomplete="current-password"
             required
-            class="admin-input"
+            class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500"
           />
         </div>
+      </div>
 
-        <div class="admin-field admin-field--full admin-form-actions" style="border-top:none; padding-top:0; margin-top:0;">
-          <button type="submit" class="admin-btn">
-            Enter the archive
-            <span aria-hidden="true">→</span>
-          </button>
-          <span class="admin-hint">Restricted personnel only.</span>
-        </div>
-      </form>
-    </div>
-  </section>
+      <div>
+        <button
+          type="submit"
+          class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+        >
+          Sign in
+        </button>
+      </div>
+    </form>
+  </div>
 </div>

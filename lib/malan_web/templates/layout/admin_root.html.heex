@@ -1,19 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full bg-white dark:bg-gray-900">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
     {csrf_meta_tag()}
-    <.live_title suffix=" · Malan Admin">
+    <.live_title suffix=" · Ameelio Admin">
       {assigns[:page_title] || "Admin"}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module">
+    </script>
   </head>
-  <body class="h-full admin-body">
+  <body class="h-full">
     {@inner_content}
   </body>
 </html>

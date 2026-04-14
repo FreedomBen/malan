@@ -1,28 +1,27 @@
 <MalanWeb.AdminLive.Shell.admin_shell
   current_admin={@current_admin}
   active={:users}
-  breadcrumbs={[%{label: "Users"}]}
+  search_value={@search}
 >
-  <section class="admin-pageheader">
-    <div>
-      <div class="admin-pageheader__eyebrow">Directory · Section III</div>
-      <h1 class="admin-pageheader__title">
-        Users <em>&amp;</em> records
-      </h1>
-      <p class="admin-pageheader__sub">
-        Every person on file. Click any name or email to open their dossier.
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-base font-semibold text-gray-900 dark:text-white">Users</h1>
+      <p class="mt-2 text-sm text-gray-700 dark:text-gray-400">
+        A list of every user account on record. Click a name or email to open the user's profile.
       </p>
     </div>
-    <div class="admin-pageheader__stamp">
-      Catalog entries
-      <strong>
-        {@total}
-      </strong>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/10 ring-inset dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
+        {@total} total
+      </span>
     </div>
-  </section>
+  </div>
 
-  <form phx-change="search" phx-submit="search" class="admin-toolbar" role="search">
-    <div class="admin-search">
+  <form phx-change="search" phx-submit="search" class="mt-6 flex items-center gap-x-3" role="search">
+    <div class="relative flex-1">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="pointer-events-none absolute inset-y-0 left-3 size-5 self-center text-gray-400 my-auto">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" />
+      </svg>
       <input
         type="text"
         name="q"
@@ -30,86 +29,135 @@
         placeholder="Search by username, email, or name"
         autocomplete="off"
         phx-debounce="250"
+        class="block w-full rounded-md bg-white py-1.5 pr-3 pl-10 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
       />
     </div>
     <%= if @search != "" do %>
-      <button type="button" class="admin-chip" phx-click="clear_search">
+      <button
+        type="button"
+        phx-click="clear_search"
+        class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
+      >
         Clear
       </button>
     <% end %>
   </form>
 
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Email</th>
-          <th scope="col">Status</th>
-          <th scope="col">Joined</th>
-          <th scope="col">ID</th>
-        </tr>
-      </thead>
-      <tbody>
-        <%= if @users == [] do %>
-          <tr>
-            <td colspan="5">
-              <div class="admin-empty">
-                No records match this search. Try a different term.
-              </div>
-            </td>
-          </tr>
-        <% end %>
+  <div class="mt-6 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <table class="min-w-full divide-y divide-gray-300 dark:divide-white/10">
+          <thead>
+            <tr>
+              <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0 dark:text-white">
+                Name
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                Email
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                Status
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                Joined
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                ID
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+            <%= if @users == [] do %>
+              <tr>
+                <td colspan="5" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  No users match this search.
+                </td>
+              </tr>
+            <% end %>
 
-        <%= for user <- @users do %>
-          <tr>
-            <td class="col-name">
-              <div class="col-name-wrap">
-                <MalanWeb.AdminLive.Shell.user_avatar user={user} />
-                <.link navigate={~p"/admin/users/#{user.id}"}>
-                  {MalanWeb.AdminLive.Shell.display_name(user)}
-                </.link>
-              </div>
-            </td>
-            <td class="col-email">
-              <.link navigate={~p"/admin/users/#{user.id}"}>{user.email}</.link>
-            </td>
-            <td>
-              <MalanWeb.AdminLive.Shell.role_pills
-                roles={user.roles}
-                locked_at={user.locked_at}
-              />
-            </td>
-            <td class="col-id">
-              {MalanWeb.AdminLive.Shell.format_dt(user.inserted_at)}
-            </td>
-            <td class="col-id" title={user.id}>
-              {MalanWeb.AdminLive.Shell.short_id(user.id)}
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+            <%= for user <- @users do %>
+              <tr>
+                <td class="py-4 pr-3 pl-4 text-sm whitespace-nowrap sm:pl-0">
+                  <.link
+                    navigate={~p"/admin/users/#{user.id}"}
+                    class="flex items-center gap-3 text-gray-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400"
+                  >
+                    <span class="flex size-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white uppercase">
+                      {MalanWeb.AdminLive.Shell.initials(user)}
+                    </span>
+                    <span class="font-medium">
+                      {MalanWeb.AdminLive.Shell.display_name(user)}
+                    </span>
+                  </.link>
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap dark:text-gray-400">
+                  <.link
+                    navigate={~p"/admin/users/#{user.id}"}
+                    class="hover:text-indigo-600 dark:hover:text-indigo-400"
+                  >
+                    {user.email}
+                  </.link>
+                </td>
+                <td class="px-3 py-4 text-sm whitespace-nowrap">
+                  <MalanWeb.AdminLive.Shell.role_badge
+                    roles={user.roles}
+                    locked_at={user.locked_at}
+                  />
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+                  {MalanWeb.AdminLive.Shell.format_dt(user.inserted_at)}
+                </td>
+                <td class="px-3 py-4 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400" title={user.id}>
+                  {MalanWeb.AdminLive.Shell.short_id(user.id)}
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <%= if @total > 0 do %>
     <% {first, last} = page_range(@total, @page_size, @page) %>
     <% max_page = last_page(@total, @page_size) %>
-    <nav class="admin-pagination" aria-label="Pagination">
-      <span>
-        Showing <strong>{first}</strong>–<strong>{last}</strong> of <strong>{@total}</strong>
-      </span>
-      <div style="display:flex; gap:8px;">
+    <nav
+      aria-label="Pagination"
+      class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4 dark:border-white/10"
+    >
+      <div class="text-sm text-gray-700 dark:text-gray-400">
+        Showing <span class="font-medium">{first}</span>
+        to <span class="font-medium">{last}</span>
+        of <span class="font-medium">{@total}</span>
+        results
+      </div>
+      <div class="flex items-center gap-x-2">
         <%= if @page > 0 do %>
-          <.link patch={~p"/admin/users?#{[q: @search, page: @page - 1]}"}>‹ Prev</.link>
+          <.link
+            patch={~p"/admin/users?#{[q: @search, page: @page - 1]}"}
+            class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
+          >
+            Previous
+          </.link>
         <% else %>
-          <a aria-disabled="true">‹ Prev</a>
+          <span class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-300 ring-1 ring-gray-200 ring-inset dark:bg-white/5 dark:text-gray-600 dark:ring-white/10">
+            Previous
+          </span>
         <% end %>
-        <span>Page {@page + 1} / {max_page + 1}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">
+          Page {@page + 1} of {max_page + 1}
+        </span>
         <%= if @page < max_page do %>
-          <.link patch={~p"/admin/users?#{[q: @search, page: @page + 1]}"}>Next ›</.link>
+          <.link
+            patch={~p"/admin/users?#{[q: @search, page: @page + 1]}"}
+            class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
+          >
+            Next
+          </.link>
         <% else %>
-          <a aria-disabled="true">Next ›</a>
+          <span class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-300 ring-1 ring-gray-200 ring-inset dark:bg-white/5 dark:text-gray-600 dark:ring-white/10">
+            Next
+          </span>
         <% end %>
       </div>
     </nav>
