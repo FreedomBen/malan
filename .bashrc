@@ -11,3 +11,10 @@ function psql-malan ()
 }
 
 alias psql='psql-malan'
+
+function iex-malan ()
+{
+  iex -S mix run --no-start
+}
+
+alias iex=''
