@@ -2458,18 +2458,15 @@ defmodule Malan.AccountsTest do
       %{alice: alice, bob: bob, carol: carol}
     end
 
-    defp ids({rows, _count}), do: Enum.map(rows, & &1.id) |> MapSet.new()
-
     test "matches by username substring", %{alice: alice} do
-      result = Accounts.admin_list_users(0, 50, search: "alice_sm")
-      assert alice.id in ids(result)
-      assert elem(result, 1) >= 1
+      {rows, has_next} = Accounts.admin_list_users(0, 50, search: "alice_sm")
+      assert alice.id in MapSet.new(rows, & &1.id)
+      refute has_next
     end
 
     test "matches by email substring", %{carol: carol} do
-      {rows, count} = Accounts.admin_list_users(0, 50, search: "example.org")
+      {rows, _has_next} = Accounts.admin_list_users(0, 50, search: "example.org")
       assert carol.id in MapSet.new(rows, & &1.id)
-      assert count >= 1
     end
 
     test "matches by first_name", %{bob: bob} do
@@ -2498,17 +2495,21 @@ defmodule Malan.AccountsTest do
     end
 
     test "empty search returns all non-deleted users", %{alice: a, bob: b, carol: c} do
-      {rows, count} = Accounts.admin_list_users(0, 100, search: "")
+      {rows, _has_next} = Accounts.admin_list_users(0, 100, search: "")
       found = MapSet.new(rows, & &1.id)
       assert a.id in found
       assert b.id in found
       assert c.id in found
-      assert count >= 3
     end
 
-    test "no-match returns empty rows and zero count" do
-      assert {[], 0} =
+    test "no-match returns empty rows with no next page" do
+      assert {[], false} =
                Accounts.admin_list_users(0, 50, search: "zzznope_nothing_matches_xyz")
+    end
+
+    test "short (1-2 char) searches return empty without hitting the DB" do
+      assert {[], false} = Accounts.admin_list_users(0, 50, search: "a")
+      assert {[], false} = Accounts.admin_list_users(0, 50, search: "jo")
     end
 
     test "excludes soft-deleted users", %{alice: alice} do
@@ -2517,13 +2518,12 @@ defmodule Malan.AccountsTest do
       refute alice.id in MapSet.new(rows, & &1.id)
     end
 
-    test "respects page_size and pagination offsets" do
-      {page0, total} = Accounts.admin_list_users(0, 2, search: "")
-      {page1, ^total} = Accounts.admin_list_users(1, 2, search: "")
+    test "has_next flag reflects whether more rows exist" do
+      {page0, has_next0} = Accounts.admin_list_users(0, 2, search: "")
+      assert length(page0) == 2
+      assert has_next0 == true
 
-      assert length(page0) <= 2
-      assert length(page1) <= 2
-
+      {page1, _} = Accounts.admin_list_users(1, 2, search: "")
       p0_ids = MapSet.new(page0, & &1.id)
       p1_ids = MapSet.new(page1, & &1.id)
       assert MapSet.disjoint?(p0_ids, p1_ids)

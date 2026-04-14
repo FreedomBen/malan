@@ -16,7 +16,7 @@ defmodule MalanWeb.AdminLive.Users do
        page: 0,
        page_size: @page_size,
        search: "",
-       total: 0,
+       has_next: false,
        users: []
      )
      |> load_users()}
@@ -47,12 +47,12 @@ defmodule MalanWeb.AdminLive.Users do
   end
 
   defp load_users(socket) do
-    {users, total} =
+    {users, has_next} =
       Accounts.admin_list_users(socket.assigns.page, socket.assigns.page_size,
         search: socket.assigns.search
       )
 
-    assign(socket, users: users, total: total)
+    assign(socket, users: users, has_next: has_next)
   end
 
   defp parse_int(val, default) do
@@ -62,14 +62,10 @@ defmodule MalanWeb.AdminLive.Users do
     end
   end
 
-  defp page_range(total, page_size, page) do
-    first = if total == 0, do: 0, else: page * page_size + 1
-    last = min((page + 1) * page_size, total)
-    {first, last}
-  end
-
-  defp last_page(total, _page_size) when total <= 0, do: 0
-  defp last_page(total, page_size) do
-    div(total - 1, page_size)
+  defp page_range(users, page_size, page) do
+    case length(users) do
+      0 -> {0, 0}
+      n -> {page * page_size + 1, page * page_size + n}
+    end
   end
 end

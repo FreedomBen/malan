@@ -9,11 +9,6 @@
         A list of every user account on record. Click a name or email to open the user's profile.
       </p>
     </div>
-    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-      <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/10 ring-inset dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
-        {@total} total
-      </span>
-    </div>
   </div>
 
   <form phx-submit="search" class="mt-6 flex items-center gap-x-3" role="search">
@@ -74,7 +69,11 @@
             <%= if @users == [] do %>
               <tr>
                 <td colspan="5" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                  No users match this search.
+                  <%= if @search != "" and String.length(@search) < 3 do %>
+                    Type at least 3 characters to search.
+                  <% else %>
+                    No users match this search.
+                  <% end %>
                 </td>
               </tr>
             <% end %>
@@ -122,18 +121,19 @@
     </div>
   </div>
 
-  <%= if @total > 0 do %>
-    <% {first, last} = page_range(@total, @page_size, @page) %>
-    <% max_page = last_page(@total, @page_size) %>
+  <%= if @users != [] or @page > 0 do %>
+    <% {first, last} = page_range(@users, @page_size, @page) %>
     <nav
       aria-label="Pagination"
       class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4 dark:border-white/10"
     >
       <div class="text-sm text-gray-700 dark:text-gray-400">
-        Showing <span class="font-medium">{first}</span>
-        to <span class="font-medium">{last}</span>
-        of <span class="font-medium">{@total}</span>
-        results
+        <%= if @users == [] do %>
+          No results on this page
+        <% else %>
+          Showing <span class="font-medium">{first}</span>
+          to <span class="font-medium">{last}</span>
+        <% end %>
       </div>
       <div class="flex items-center gap-x-2">
         <%= if @page > 0 do %>
@@ -149,9 +149,9 @@
           </span>
         <% end %>
         <span class="text-sm text-gray-500 dark:text-gray-400">
-          Page {@page + 1} of {max_page + 1}
+          Page {@page + 1}
         </span>
-        <%= if @page < max_page do %>
+        <%= if @has_next do %>
           <.link
             patch={~p"/admin/users?#{[q: @search, page: @page + 1]}"}
             class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
