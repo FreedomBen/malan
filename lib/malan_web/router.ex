@@ -87,6 +87,14 @@ defmodule MalanWeb.Router do
     live "/users/reset_password", UserLive.ResetPassword
     live "/users/reset_password/:token", UserLive.ResetPasswordToken
 
+    live "/users/login", UserLive.Login
+    post "/users/log_in", UserSessionController, :create
+    delete "/users/log_out", UserSessionController, :delete
+
+    live_session :authed_browser, on_mount: {MalanWeb.UserAuth, :require_authed_user} do
+      live "/users/account", UserLive.Account
+    end
+
     get "/password/reset", RedirectController, :reset_password
     get "/password/forgot", RedirectController, :reset_password
   end

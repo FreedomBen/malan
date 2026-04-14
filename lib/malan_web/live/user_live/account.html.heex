@@ -1,0 +1,44 @@
+<div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <MalanWeb.PageHTML.ameelio_logo_svg />
+
+    <h2 class="mt-9 mb-9 text-center text-3xl font-bold text-gray-900">Your account</h2>
+  </div>
+
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <dl class="divide-y divide-gray-200">
+        <div class="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Username</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            {@current_user.username}
+          </dd>
+        </div>
+
+        <div class="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Email address</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            {@current_user.email}
+          </dd>
+        </div>
+
+        <div class="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Account created</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d %H:%M UTC")}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="mt-8">
+        <.link
+          href={~p"/users/log_out"}
+          method="delete"
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Log out
+        </.link>
+      </div>
+    </div>
+  </div>
+</div>
