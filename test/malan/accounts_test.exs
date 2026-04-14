@@ -2425,4 +2425,144 @@ defmodule Malan.AccountsTest do
       assert %{user_id: ^user_id} = Accounts.get_log_user(log.id)
     end
   end
+
+  describe "admin_list_users/3 search" do
+    setup do
+      {:ok, alice} =
+        Helpers.Accounts.regular_user(%{
+          email: "alice.smith@example.com",
+          username: "alice_sm",
+          first_name: "Alice",
+          last_name: "Smith",
+          display_name: "Alice S."
+        })
+
+      {:ok, bob} =
+        Helpers.Accounts.regular_user(%{
+          email: "bob.jones@example.com",
+          username: "bobby_j",
+          first_name: "Robert",
+          last_name: "Jones",
+          display_name: "Bobby"
+        })
+
+      {:ok, carol} =
+        Helpers.Accounts.regular_user(%{
+          email: "carol.taylor@example.org",
+          username: "ctaylor",
+          first_name: "Carol",
+          last_name: "Taylor",
+          display_name: "CT"
+        })
+
+      %{alice: alice, bob: bob, carol: carol}
+    end
+
+    defp ids({rows, _count}), do: Enum.map(rows, & &1.id) |> MapSet.new()
+
+    test "matches by username substring", %{alice: alice} do
+      result = Accounts.admin_list_users(0, 50, search: "alice_sm")
+      assert alice.id in ids(result)
+      assert elem(result, 1) >= 1
+    end
+
+    test "matches by email substring", %{carol: carol} do
+      {rows, count} = Accounts.admin_list_users(0, 50, search: "example.org")
+      assert carol.id in MapSet.new(rows, & &1.id)
+      assert count >= 1
+    end
+
+    test "matches by first_name", %{bob: bob} do
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "Robert")
+      assert bob.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "matches by last_name", %{alice: alice} do
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "Smith")
+      assert alice.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "matches by display_name", %{bob: bob} do
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "Bobby")
+      assert bob.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "is case-insensitive", %{alice: alice} do
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "ALICE")
+      assert alice.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "matches inner substring, not just prefix", %{bob: bob} do
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "ober")
+      assert bob.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "empty search returns all non-deleted users", %{alice: a, bob: b, carol: c} do
+      {rows, count} = Accounts.admin_list_users(0, 100, search: "")
+      found = MapSet.new(rows, & &1.id)
+      assert a.id in found
+      assert b.id in found
+      assert c.id in found
+      assert count >= 3
+    end
+
+    test "no-match returns empty rows and zero count" do
+      assert {[], 0} =
+               Accounts.admin_list_users(0, 50, search: "zzznope_nothing_matches_xyz")
+    end
+
+    test "excludes soft-deleted users", %{alice: alice} do
+      {:ok, _} = Accounts.delete_user(alice)
+      {rows, _} = Accounts.admin_list_users(0, 50, search: "alice_sm")
+      refute alice.id in MapSet.new(rows, & &1.id)
+    end
+
+    test "respects page_size and pagination offsets" do
+      {page0, total} = Accounts.admin_list_users(0, 2, search: "")
+      {page1, ^total} = Accounts.admin_list_users(1, 2, search: "")
+
+      assert length(page0) <= 2
+      assert length(page1) <= 2
+
+      p0_ids = MapSet.new(page0, & &1.id)
+      p1_ids = MapSet.new(page1, & &1.id)
+      assert MapSet.disjoint?(p0_ids, p1_ids)
+    end
+  end
+
+  describe "users table trigram search indexes" do
+    alias Malan.Repo
+
+    @trgm_indexes ~w(
+      users_username_trgm_index
+      users_email_trgm_index
+      users_display_name_trgm_index
+      users_first_name_trgm_index
+      users_last_name_trgm_index
+    )
+
+    test "pg_trgm extension is installed" do
+      {:ok, %{rows: rows}} =
+        Repo.query("SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'")
+
+      assert rows != [], "pg_trgm extension is not installed — admin search will seq-scan"
+    end
+
+    test "GIN trigram indexes exist on all searched user columns" do
+      {:ok, %{rows: rows}} =
+        Repo.query("""
+        SELECT indexname
+        FROM pg_indexes
+        WHERE tablename = 'users'
+          AND indexdef LIKE '%gin_trgm_ops%'
+        """)
+
+      present = rows |> List.flatten() |> MapSet.new()
+
+      for idx <- @trgm_indexes do
+        assert idx in present,
+               "missing trigram index #{idx} — admin search will seq-scan at scale"
+      end
+    end
+  end
 end
