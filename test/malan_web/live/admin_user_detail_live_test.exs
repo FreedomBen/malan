@@ -60,5 +60,57 @@ defmodule MalanWeb.AdminLive.UserDetailTest do
       assert {:error, {:live_redirect, %{to: "/admin/users"}}} =
                live(conn, ~p"/admin/users/00000000-0000-0000-0000-000000000000")
     end
+
+    test "edit form does not expose unsafe fields (mass-assignment guard)",
+         %{conn: conn} do
+      {:ok, target, _session} = AccountsHelpers.regular_user_with_session()
+
+      {:ok, _view, html} = live(conn, ~p"/admin/users/#{target.id}")
+
+      assert html =~ ~s(name="user[first_name]")
+
+      for unsafe <- ~w(email username password password_hash roles locked_at deleted_at) do
+        refute html =~ ~s(name="user[#{unsafe}]"),
+               "edit form must not surface unsafe field user[#{unsafe}]"
+      end
+    end
+
+    test "server-side filter drops unsafe fields from save params",
+         %{conn: conn} do
+      {:ok, target, _session} = AccountsHelpers.regular_user_with_session()
+      original_email = target.email
+      original_username = target.username
+      original_hash = target.password_hash
+
+      {:ok, view, _html} = live(conn, ~p"/admin/users/#{target.id}")
+
+      send(
+        view.pid,
+        %Phoenix.Socket.Message{
+          event: "event",
+          topic: "lv:#{view.id}",
+          payload: %{
+            "type" => "form",
+            "event" => "save",
+            "value" =>
+              URI.encode_query(%{
+                "user[first_name]" => "Legit",
+                "user[email]" => "hacked@evil.example",
+                "user[username]" => "hijacked",
+                "user[password]" => "NewPlaintext!123",
+                "user[password_hash]" => "$2b$12$forged.hash.value.1234567890abcdefgh"
+              })
+          }
+        }
+      )
+
+      _ = render(view)
+
+      updated = Accounts.get_user(target.id)
+      assert updated.first_name == "Legit"
+      assert updated.email == original_email
+      assert updated.username == original_username
+      assert updated.password_hash == original_hash
+    end
   end
 end
