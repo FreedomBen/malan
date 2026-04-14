@@ -21,5 +21,10 @@
     "prettier": "^3.7.4",
     "swagger-ui-dist": "^5.31.0",
     "tailwindcss": "^4.1.18"
+  },
+  "overrides": {
+    "lodash": "^4.18.1",
+    "minimatch": "^3.1.3",
+    "rollup": "^2.80.0"
   }
 }
