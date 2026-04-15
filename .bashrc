@@ -17,4 +17,4 @@ function iex-malan ()
   iex -S mix run --no-start
 }
 
-alias iex=''
+alias iex='iex-malan'
