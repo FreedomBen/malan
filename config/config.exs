@@ -180,7 +180,6 @@ config :sentry,
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),
   tags: %{
-    env: config_env(),
     # set at buildtime by CI script
     version: System.get_env("RELEASE_VERSION"),
     compiled_at: DateTime.utc_now() |> DateTime.to_string()
