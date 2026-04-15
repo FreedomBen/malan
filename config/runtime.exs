@@ -210,5 +210,5 @@ if config_env() == :prod do
 
   config :sentry,
     dsn: System.get_env("SENTRY_DSN"),
-    environment_name: System.get_env("SENTRY_ENVIRONMENT", "prod")
+    environment_name: System.get_env("SENTRY_ENVIRONMENT", "unknown")
 end
