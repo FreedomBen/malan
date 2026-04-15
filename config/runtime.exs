@@ -208,5 +208,7 @@ if config_env() == :prod do
 
   config :swoosh, :api_client, Swoosh.ApiClient.Hackney
 
-  config :sentry, dsn: System.get_env("SENTRY_DSN")
+  config :sentry,
+    dsn: System.get_env("SENTRY_DSN"),
+    environment_name: System.get_env("SENTRY_ENVIRONMENT", "prod")
 end
