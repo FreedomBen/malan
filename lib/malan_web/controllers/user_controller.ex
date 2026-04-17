@@ -27,7 +27,9 @@ defmodule MalanWeb.UserController do
               :admin_reset_password_token,
               :reset_password,
               :reset_password_token_user,
-              :reset_password_token
+              :reset_password_token,
+              :verify_email_token_user,
+              :verify_email_token
             ]
 
   def index(conn, _params) do
@@ -40,8 +42,8 @@ defmodule MalanWeb.UserController do
     changeset = User.registration_changeset(%User{}, user_params)
 
     with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
-      # UserNotifier.email_welcome_confirm(user)
-      # |> Mailer.deliver()
+      maybe_auto_send_verification(user, remote_ip_s(conn))
+
       conn
       |> record_log(true, id, username, "POST", "#UserController.create/2", changeset)
       |> put_status(:created)
@@ -676,6 +678,169 @@ defmodule MalanWeb.UserController do
          {:ok, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp} <-
            Accounts.validate_session(api_token, Utils.IPv4.to_s(conn)) do
       {:ok, user_id, session_id, ip_addr, valid_only_ip, user_roles, expires_at, tos, pp}
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Email verification
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Authenticated request/resend of email verification email.
+  """
+  def verify_email(conn, %{"id" => id}) do
+    user = Accounts.get_user_by_id_or_username(id)
+
+    if is_nil(user) do
+      render_user(conn, nil)
+    else
+      meta = %{ip: remote_ip_s(conn), user_agent: get_user_agent(conn)}
+
+      case Accounts.generate_email_verification(user,
+             rate_limit?: true,
+             context: :resend,
+             meta: meta
+           ) do
+        {:ok, %User{} = user_with_token} ->
+          Mailer.send_email_verification_email(user_with_token, :resend)
+
+          record_log(
+            conn,
+            true,
+            user.id,
+            user.username,
+            "POST",
+            "#UserController.verify_email/2 - sent",
+            nil
+          )
+
+          conn |> put_status(200) |> json(%{ok: true, code: 200, status: "sent"})
+
+        {:ok, :already_verified} ->
+          record_log(
+            conn,
+            true,
+            user.id,
+            user.username,
+            "POST",
+            "#UserController.verify_email/2 - already_verified",
+            nil
+          )
+
+          conn |> put_status(200) |> json(%{ok: true, code: 200, status: "already_verified"})
+
+        {:ok, :skipped_domain} ->
+          conn |> put_status(200) |> json(%{ok: true, code: 200, status: "skipped_domain"})
+
+        {:ok, :skipped_auto_send_disabled} ->
+          conn
+          |> put_status(200)
+          |> json(%{ok: true, code: 200, status: "skipped_auto_send_disabled"})
+
+        {:error, :too_many_requests} ->
+          record_log(
+            conn,
+            false,
+            user.id,
+            user.username,
+            "POST",
+            "#UserController.verify_email/2 - rate_limited",
+            nil
+          )
+
+          conn
+          |> put_status(429)
+          |> json(%{ok: false, code: 429, status: "rate_limited"})
+
+        {:error, _cs} ->
+          conn |> put_status(500) |> json(%{ok: false, code: 500})
+      end
+    end
+  end
+
+  @doc """
+  Verify email with token, looking up the user by id (path param).
+  """
+  def verify_email_token_user(conn, %{"id" => id, "token" => token}) do
+    user = Accounts.get_user_by_id_or_username(id)
+    verify_email_token_p(conn, user, token)
+  end
+
+  @doc """
+  Verify email with token, looking up the user by the token hash.
+  """
+  def verify_email_token(conn, %{"token" => token}) do
+    user = Accounts.get_user_by_email_verification_token(token)
+    verify_email_token_p(conn, user, token)
+  end
+
+  defp verify_email_token_p(conn, nil, _token), do: render_user(conn, nil)
+
+  defp verify_email_token_p(conn, %User{} = user, token) do
+    meta = %{ip: remote_ip_s(conn), user_agent: get_user_agent(conn)}
+
+    case Accounts.verify_email_with_token(user, token, meta: meta) do
+      {:ok, %User{}} ->
+        record_log(
+          conn,
+          true,
+          user.id,
+          user.username,
+          "PUT",
+          "#UserController.verify_email_token/2",
+          nil
+        )
+
+        conn |> put_status(200) |> json(%{ok: true, code: 200, status: "verified"})
+
+      {:error, reason} ->
+        status = Atom.to_string(reason)
+        code = if reason == :failed_expired_token, do: 401, else: 401
+
+        record_log(
+          conn,
+          false,
+          user.id,
+          user.username,
+          "PUT",
+          "#UserController.verify_email_token/2 - #{status}",
+          nil
+        )
+
+        conn |> put_status(code) |> json(%{ok: false, code: code, status: status})
+    end
+  end
+
+  defp maybe_auto_send_verification(%User{} = user, remote_ip) do
+    cond do
+      not Malan.Config.User.email_verification_auto_send?() ->
+        Accounts.record_email_verification_event(user, %{
+          event_type: "skipped_auto_send_disabled",
+          ip: remote_ip
+        })
+
+      true ->
+        meta = %{ip: remote_ip}
+
+        case Accounts.generate_email_verification(user,
+               rate_limit?: false,
+               context: :welcome,
+               meta: meta
+             ) do
+          {:ok, %User{} = user_with_token} ->
+            Mailer.send_email_verification_email(user_with_token, :welcome)
+            :ok
+
+          _ ->
+            :ok
+        end
+    end
+  end
+
+  defp get_user_agent(conn) do
+    case Plug.Conn.get_req_header(conn, "user-agent") do
+      [ua | _] -> ua
+      _ -> nil
     end
   end
 end

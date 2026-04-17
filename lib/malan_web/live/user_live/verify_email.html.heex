@@ -1,0 +1,40 @@
+<div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <MalanWeb.PageHTML.ameelio_logo_svg />
+
+    <h2 class="mt-9 mb-9 text-center text-3xl font-bold text-gray-900">Verify Email</h2>
+  </div>
+
+  <%= cond do %>
+    <% assigns[:status] == :already_verified -> %>
+      <div class="rounded-md bg-green-50 p-4">
+        <p class="text-sm text-green-800">Your email is already verified.</p>
+      </div>
+    <% assigns[:status] == :sent -> %>
+      <div class="rounded-md bg-green-50 p-4">
+        <p class="text-sm text-green-800">
+          Verification email sent.  Check your inbox and click the link to verify.
+        </p>
+      </div>
+    <% assigns[:too_many_requests] -> %>
+      <div class="rounded-md bg-red-50 p-4">
+        <p class="text-sm text-red-700">
+          Too many requests.  Please wait and try again later.
+        </p>
+      </div>
+    <% true -> %>
+      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
+          <p class="text-sm text-gray-700 mb-4">
+            Click below to send a new verification email to
+            <span class="font-bold">{assigns[:user] && assigns.user.email}</span>.
+          </p>
+          <form phx-submit="send_verification_email">
+            <button class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              Send verification email
+            </button>
+          </form>
+        </div>
+      </div>
+  <% end %>
+</div>

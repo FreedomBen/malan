@@ -23,9 +23,25 @@ config :malan, Malan.Accounts.User,
   default_password_reset_token_expiration_secs:
     System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
       "86400" |> String.to_integer(),
+  # 30 minutes
+  default_email_verification_token_expiration_secs:
+    (System.get_env("DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS") || "1800")
+    |> String.to_integer(),
   min_password_length: String.to_integer(min_password_length_env),
   admin_set_user_min_password_length: String.to_integer(admin_set_user_min_password_length_env),
   admin_account_min_password_length: String.to_integer(admin_account_min_password_length_env)
+
+config :malan,
+  email_verification_auto_send: true,
+  email_verification_skip_domains: [
+    "example.com",
+    "example.org",
+    "example.net",
+    ".test",
+    ".example",
+    ".invalid",
+    ".localhost"
+  ]
 
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds)
@@ -57,7 +73,17 @@ config :malan, Malan.Config.RateLimits,
       "60000" |> String.to_integer(),
   login_limit_count:
     System.get_env("LOGIN_LIMIT_COUNT") ||
-      "5" |> String.to_integer()
+      "5" |> String.to_integer(),
+  # Email verification: lower bucket - 30 minutes, 1 per period
+  email_verify_lower_limit_msecs:
+    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_MSECS") || "1800000") |> String.to_integer(),
+  email_verify_lower_limit_count:
+    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_COUNT") || "1") |> String.to_integer(),
+  # Email verification: upper bucket - 24 hours, 3 per period
+  email_verify_upper_limit_msecs:
+    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
+  email_verify_upper_limit_count:
+    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_COUNT") || "3") |> String.to_integer()
 
 config :malan, Malan.Accounts.Session,
   # If client doesn't specify token expiration time, use this value.

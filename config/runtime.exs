@@ -90,6 +90,17 @@ config :malan, Malan.PromEx,
     auth_strategy: :none
   ]
 
+# Email verification auto-send: enabled by default. Accepts "true"/"1" or "false"/"0".
+email_verification_auto_send? =
+  case System.get_env("MALAN_EMAIL_VERIFICATION_AUTO_SEND") do
+    nil -> true
+    v when v in ["false", "0"] -> false
+    v when v in ["true", "1"] -> true
+    _ -> true
+  end
+
+config :malan, email_verification_auto_send: email_verification_auto_send?
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -96,12 +96,15 @@ defmodule MalanWeb.Router do
     live "/users/reset_password", UserLive.ResetPassword
     live "/users/reset_password/:token", UserLive.ResetPasswordToken
 
+    live "/users/verify_email/:token", UserLive.VerifyEmailToken
+
     live "/users/login", UserLive.Login
     post "/users/log_in", UserSessionController, :create
     delete "/users/log_out", UserSessionController, :delete
 
     live_session :authed_browser, on_mount: {MalanWeb.UserAuth, :require_authed_user} do
       live "/users/account", UserLive.Account
+      live "/users/verify_email", UserLive.VerifyEmail
     end
 
     get "/password/reset", RedirectController, :reset_password
@@ -147,6 +150,9 @@ defmodule MalanWeb.Router do
     post "/users/:id/reset_password", UserController, :reset_password
     put "/users/:id/reset_password/:token", UserController, :reset_password_token_user
     put "/users/reset_password/:token", UserController, :reset_password_token
+
+    put "/users/:id/verify_email/:token", UserController, :verify_email_token_user
+    put "/users/verify_email/:token", UserController, :verify_email_token
   end
 
   scope "/api", MalanWeb do
@@ -157,6 +163,8 @@ defmodule MalanWeb.Router do
 
     # is_self_or_admin in UserController will prevent non-owners from accessing
     resources "/users", UserController, only: [:show, :update, :delete]
+
+    post "/users/:id/verify_email", UserController, :verify_email
 
     # Get or Delete the current session (the one belonging to the api_token in use)
     # Not piped through "owner" because no User ID is passed and it will only delete the current session

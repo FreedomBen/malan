@@ -20,6 +20,7 @@ defmodule Malan.Accounts.Log.Changes do
   @blacklisted_attrs [
     :password,
     :password_reset_token,
+    :email_verification_token,
     :api_token
   ]
 

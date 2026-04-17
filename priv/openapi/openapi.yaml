@@ -321,6 +321,103 @@ paths:
         required: true
         schema:
           type: string
+  /api/users/{id}/verify_email:
+    parameters:
+    - $ref: '#/components/parameters/UserId'
+    post:
+      tags:
+      - Users
+      summary: Request or resend an email verification email (authenticated)
+      responses:
+        '200':
+          description: Verification email enqueued or no-op success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationRequestResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: Forbidden
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: Not Found
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests
+      operationId: post_api_users_by_id_verify_email
+      description: Request or resend an email verification email.  Authenticated only.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/users/{id}/verify_email/{token}:
+    parameters:
+    - $ref: '#/components/parameters/UserId'
+    - name: token
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      tags:
+      - Users
+      summary: Verify email with token (id + token variant)
+      security: []
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized
+      operationId: put_api_users_by_id_verify_email_by_token
+      description: Verify email with token (id + token variant)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/users/verify_email/{token}:
+    parameters:
+    - name: token
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      tags:
+      - Users
+      summary: Verify email with token (no id)
+      security: []
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized
+      operationId: put_api_users_verify_email_by_token
+      description: Verify email with token (no id)
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
   /api/sessions:
     post:
       tags:
@@ -1896,6 +1993,12 @@ components:
                 type: string
             reset_password:
               type: boolean
+            email_verified:
+              type: boolean
+              description: |
+                Admin-only toggle. `true` sets `email_verified` to the current time.
+                `false` or `null` clears the timestamp. Any in-flight verification
+                token is invalidated in the same write.
             sex:
               type: string
             gender:
@@ -2343,6 +2446,34 @@ components:
           type: string
       required:
       - new_password
+    EmailVerificationRequestResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        code:
+          type: integer
+        status:
+          type: string
+          enum:
+          - sent
+          - already_verified
+          - skipped_domain
+          - skipped_auto_send_disabled
+          - rate_limited
+    EmailVerificationResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        code:
+          type: integer
+        status:
+          type: string
+          enum:
+          - verified
+          - failed_invalid_token
+          - failed_expired_token
     PasswordResetAdminResponse:
       type: object
       properties:

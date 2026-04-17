@@ -53,7 +53,15 @@ config :malan, Malan.Config.RateLimits,
   session_extension_limit_msecs:
     (System.get_env("SESSION_EXTENSION_LIMIT_MSECS") || "60000") |> String.to_integer(),
   session_extension_limit_count:
-    (System.get_env("SESSION_EXTENSION_LIMIT_COUNT") || "10") |> String.to_integer()
+    (System.get_env("SESSION_EXTENSION_LIMIT_COUNT") || "10") |> String.to_integer(),
+  email_verify_lower_limit_msecs:
+    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_MSECS") || "1800000") |> String.to_integer(),
+  email_verify_lower_limit_count:
+    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_COUNT") || "1") |> String.to_integer(),
+  email_verify_upper_limit_msecs:
+    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
+  email_verify_upper_limit_count:
+    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_COUNT") || "3") |> String.to_integer()
 
 # config :malan, Malan.Accounts.User,
 #   # Basically no rate limiting in test

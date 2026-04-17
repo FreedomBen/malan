@@ -510,9 +510,16 @@ defmodule Malan.AccountsTest do
       assert u3.latest_pp_accept_ver == nil
     end
 
-    @tag :skip
-    test "user_verify_email/2 works only for system user" do
-      assert false
+    test "verify_email_with_token/2 sets email_verified and clears token fields" do
+      user = user_fixture()
+      {:ok, user} = Accounts.generate_email_verification(user, :no_rate_limit)
+
+      assert {:ok, %Accounts.User{} = updated} =
+               Accounts.verify_email_with_token(user, user.email_verification_token)
+
+      refute is_nil(updated.email_verified)
+      assert is_nil(updated.email_verification_token_hash)
+      assert is_nil(updated.email_verification_token_expires_at)
     end
 
     test "update_user/2 doesn't allow a user to change their roles" do

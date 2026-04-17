@@ -39,6 +39,35 @@ defmodule Malan.Mailer do
     |> send_mail()
   end
 
+  @valid_email_verification_contexts [:welcome, :resend, :email_change]
+
+  @doc """
+  Enqueue an Oban job to deliver an email verification email asynchronously.
+
+  `context` is `:welcome` (registration), `:resend` (explicit resend), or
+  `:email_change` (user updated their email).
+  """
+  @spec send_email_verification_email(User.t(), atom()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_email_verification_email(%User{id: user_id, email_verification_token: token}, context)
+      when is_binary(token) and context in @valid_email_verification_contexts do
+    %{user_id: user_id, token: token, context: Atom.to_string(context)}
+    |> Malan.Workers.EmailVerificationEmail.new()
+    |> Oban.insert()
+  end
+
+  @doc """
+  Deliver an email verification email synchronously (used by the Oban worker
+  and by tests / scripts that need inline behavior).
+  """
+  @spec send_email_verification_email_sync(User.t(), atom()) :: {:ok, term} | {:error, term}
+  def send_email_verification_email_sync(%User{} = user, context)
+      when context in @valid_email_verification_contexts do
+    user
+    |> UserNotifier.email_verification_email(context)
+    |> send_mail()
+  end
+
   defp log_delivery({:ok, term}, email, env) do
     Logger.debug(env, "Message accepted for #{to(email)}.  #{Utils.to_string(term)}")
     {:ok, term}

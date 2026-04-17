@@ -58,10 +58,15 @@ defmodule Malan.Accounts.User do
     field :password_reset_token, :string, virtual: true
     field :password_reset_token_hash, :string
     field :password_reset_token_expires_at, :utc_datetime
+    field :email_verification_token, :string, virtual: true, redact: true
+    field :email_verification_token_hash, :string, redact: true
+    field :email_verification_token_expires_at, :utc_datetime
+    field :email_verification_sent_at, :utc_datetime
     field :approved_ips, {:array, :string}, default: []
 
     has_many :addresses, Accounts.Address, foreign_key: :user_id
     has_many :phone_numbers, Accounts.PhoneNumber, foreign_key: :user_id
+    has_many :email_verification_events, Accounts.EmailVerificationEvent, foreign_key: :user_id
     embeds_one :preferences, Accounts.Preference, on_replace: :update
 
     timestamps(type: :utc_datetime)
@@ -187,6 +192,7 @@ defmodule Malan.Accounts.User do
     |> downcase_username()
     |> downcase_email()
     |> put_reset_pass()
+    |> maybe_reset_email_verified_on_email_change()
     |> validate_common(password_set_by_admin?: true)
   end
 
@@ -235,6 +241,86 @@ defmodule Malan.Accounts.User do
     user
     |> change()
     |> put_change(:password_reset_token, nil)
+  end
+
+  @doc """
+  Generates a new email verification token and sets expiration and
+  `email_verification_sent_at` to now. Overwrites any existing token.
+  """
+  def email_verification_create_changeset(user) do
+    user
+    |> change()
+    |> put_email_verification_token()
+    |> put_email_verification_token_expires_at()
+    |> put_change(:email_verification_sent_at, Utils.DateTime.utc_now_trunc())
+  end
+
+  @doc """
+  Clears the email verification token and expiration. Does not touch
+  `email_verification_sent_at` (kept for "last sent X minutes ago" UI).
+  """
+  def email_verification_clear_changeset(user) do
+    user
+    |> change()
+    |> clear_email_verification_token()
+    |> clear_email_verification_token_expires_at()
+  end
+
+  @doc """
+  Admin-only changeset that sets `email_verified` to now or clears it, and
+  invalidates any in-flight verification token in the same write.
+
+  `value` is a boolean-ish toggle:
+    - `true` / "true" -> sets to `utc_now_trunc()`
+    - `false` / "false" / `nil` -> clears the timestamp
+  """
+  def admin_email_verified_changeset(user, value) do
+    cs =
+      user
+      |> change()
+      |> clear_email_verification_token()
+      |> clear_email_verification_token_expires_at()
+
+    case normalize_email_verified_value(value) do
+      :set -> put_change(cs, :email_verified, Utils.DateTime.utc_now_trunc())
+      :clear -> put_change(cs, :email_verified, nil)
+    end
+  end
+
+  defp normalize_email_verified_value(true), do: :set
+  defp normalize_email_verified_value("true"), do: :set
+  defp normalize_email_verified_value(false), do: :clear
+  defp normalize_email_verified_value("false"), do: :clear
+  defp normalize_email_verified_value(nil), do: :clear
+  defp normalize_email_verified_value(_), do: :clear
+
+  @doc """
+  Returns `true` when the email's domain is on the skip list (reserved /
+  non-routable domains). Matches are case-insensitive; the list may contain
+  either exact domains (`"example.com"`) or TLD suffixes that start with a
+  dot (`".test"`).
+  """
+  def skip_email_verification_send?(nil), do: false
+
+  def skip_email_verification_send?(email) when is_binary(email) do
+    case String.split(String.downcase(email), "@", parts: 2) do
+      [_local, domain] ->
+        domain_matches_skip_list?(domain)
+
+      _ ->
+        false
+    end
+  end
+
+  defp domain_matches_skip_list?(domain) do
+    Enum.any?(Malan.Config.User.email_verification_skip_domains(), fn entry ->
+      entry = String.downcase(entry)
+
+      cond do
+        String.starts_with?(entry, ".") -> String.ends_with?(domain, entry)
+        true -> domain == entry
+      end
+    end)
   end
 
   @doc false
@@ -631,6 +717,62 @@ defmodule Malan.Accounts.User do
   defp_testable get_password_reset_token_expiration_time do
     Malan.Config.User.default_password_reset_token_expiration_secs()
     |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
+  end
+
+  defp_testable gen_email_verification_token() do
+    Utils.Crypto.strong_random_string(65)
+  end
+
+  defp_testable put_email_verification_token(changeset) do
+    token = gen_email_verification_token()
+
+    changeset
+    |> put_change(:email_verification_token, token)
+    |> put_change(:email_verification_token_hash, Utils.Crypto.hash_token(token))
+  end
+
+  defp_testable clear_email_verification_token(changeset) do
+    changeset
+    |> put_change(:email_verification_token, nil)
+    |> put_change(:email_verification_token_hash, nil)
+  end
+
+  defp_testable put_email_verification_token_expires_at(changeset) do
+    changeset
+    |> put_change(
+      :email_verification_token_expires_at,
+      get_email_verification_token_expiration_time()
+    )
+  end
+
+  defp_testable clear_email_verification_token_expires_at(changeset) do
+    changeset
+    |> put_change(:email_verification_token_expires_at, nil)
+  end
+
+  @doc false
+  def get_email_verification_token_expiration_time do
+    Malan.Config.User.default_email_verification_token_expiration_secs()
+    |> Utils.DateTime.adjust_cur_time_trunc(:seconds)
+  end
+
+  defp maybe_reset_email_verified_on_email_change(%Ecto.Changeset{} = changeset) do
+    case get_change(changeset, :email) do
+      nil ->
+        changeset
+
+      new_email ->
+        case changeset.data.email do
+          ^new_email ->
+            changeset
+
+          _ ->
+            changeset
+            |> put_change(:email_verified, nil)
+            |> clear_email_verification_token()
+            |> clear_email_verification_token_expires_at()
+        end
+    end
   end
 
   defp_testable downcase_username(%Ecto.Changeset{changes: %{username: username}} = cs) do

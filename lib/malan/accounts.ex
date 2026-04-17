@@ -14,6 +14,7 @@ defmodule Malan.Accounts do
   alias Malan.Accounts.User
   alias Malan.Accounts.Session
   alias Malan.Accounts.SessionExtension
+  alias Malan.Accounts.EmailVerificationEvent
   alias Malan.Utils
 
   @doc """
@@ -365,13 +366,44 @@ defmodule Malan.Accounts do
   def update_user(user, attrs, remote_ip \\ dummy_ip(), opts \\ [])
 
   def update_user(%User{} = user, %{"password" => _password} = attrs, rip, opts) do
-    with {:ok, user} <- update_usr(user, attrs, rip, opts),
-         {:ok, _num_revoked} <- revoke_active_sessions(user, rip),
-         do: {:ok, user}
+    original_email = user.email
+
+    with {:ok, updated} <- update_usr(user, attrs, rip, opts),
+         {:ok, _num_revoked} <- revoke_active_sessions(updated, rip) do
+      maybe_send_email_change_verification(updated, original_email, rip)
+      {:ok, updated}
+    end
   end
 
-  def update_user(%User{} = user, attrs, rip, opts),
-    do: update_usr(user, attrs, rip, opts)
+  def update_user(%User{} = user, attrs, rip, opts) do
+    original_email = user.email
+
+    case update_usr(user, attrs, rip, opts) do
+      {:ok, updated} ->
+        maybe_send_email_change_verification(updated, original_email, rip)
+        {:ok, updated}
+
+      other ->
+        other
+    end
+  end
+
+  defp maybe_send_email_change_verification(%User{} = updated, original_email, rip) do
+    if is_binary(original_email) and original_email != updated.email do
+      meta = %{ip: rip}
+
+      case generate_email_verification(updated, rate_limit?: true, context: :email_change, meta: meta) do
+        {:ok, %User{} = user_with_token} ->
+          Malan.Mailer.send_email_verification_email(user_with_token, :email_change)
+          :ok
+
+        _ ->
+          :ok
+      end
+    else
+      :ok
+    end
+  end
 
   def update_user_password(user, password, remote_ip \\ dummy_ip())
 
@@ -510,10 +542,40 @@ defmodule Malan.Accounts do
 
   @doc ""
   def admin_update_user(user, attrs) do
-    user
-    |> User.admin_changeset(attrs)
-    |> Repo.update()
+    original_email = user.email
+    admin_email_verified_toggle = extract_admin_email_verified_toggle(attrs)
+
+    result =
+      user
+      |> User.admin_changeset(attrs)
+      |> Repo.update()
+
+    case result do
+      {:ok, updated} ->
+        case admin_email_verified_toggle do
+          :unset ->
+            maybe_send_email_change_verification(updated, original_email, dummy_ip())
+
+          value ->
+            set_email_verified(updated, value, meta: %{})
+        end
+
+        {:ok, updated}
+
+      other ->
+        other
+    end
   end
+
+  defp extract_admin_email_verified_toggle(attrs) when is_map(attrs) do
+    cond do
+      Map.has_key?(attrs, "email_verified") -> Map.get(attrs, "email_verified")
+      Map.has_key?(attrs, :email_verified) -> Map.get(attrs, :email_verified)
+      true -> :unset
+    end
+  end
+
+  defp extract_admin_email_verified_toggle(_), do: :unset
 
   @doc """
   Deletes a user.
@@ -2001,4 +2063,273 @@ defmodule Malan.Accounts do
 
   """
   def get_session_extension!(id), do: Repo.get!(SessionExtension, id)
+
+  # ---------------------------------------------------------------------------
+  # Email verification
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Fetch a user by the raw email verification token (looks up by hash).
+  Returns nil when not found.
+  """
+  def get_user_by_email_verification_token(nil), do: nil
+  def get_user_by_email_verification_token(""), do: nil
+
+  def get_user_by_email_verification_token(token) when is_binary(token) do
+    get_user_by(email_verification_token_hash: Utils.Crypto.hash_token(token))
+  end
+
+  @doc """
+  Validate an email verification token against a loaded user.
+
+  Returns:
+    {:ok}                                   - token is valid and not expired
+    {:error, :missing_email_verification_token}
+    {:error, :expired_email_verification_token}
+    {:error, :invalid_email_verification_token}
+  """
+  def validate_email_verification_token(%User{} = user, token) do
+    cond do
+      Utils.nil_or_empty?(user.email_verification_token_hash) ->
+        {:error, :missing_email_verification_token}
+
+      Utils.DateTime.expired?(user.email_verification_token_expires_at) ->
+        {:error, :expired_email_verification_token}
+
+      user.email_verification_token_hash == Utils.Crypto.hash_token(token) ->
+        {:ok}
+
+      true ->
+        {:error, :invalid_email_verification_token}
+    end
+  end
+
+  @doc """
+  Clear the email verification token (does not touch email_verified).
+  """
+  def clear_email_verification_token(%User{} = user) do
+    user
+    |> User.email_verification_clear_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Generate an email verification token for a user.
+
+  Always rate-limited based on `user.id` unless `:no_rate_limit` is passed.
+
+  Success results:
+    {:ok, %User{}}              - token generated (raw token on struct)
+    {:ok, :already_verified}    - user already verified, no-op success
+    {:ok, :skipped_domain}      - domain on skip list, no mail
+    {:ok, :skipped_auto_send_disabled} - auto-send globally disabled
+
+  Error results:
+    {:error, :too_many_requests}
+    {:error, %Ecto.Changeset{}}
+
+  Audit rows are written for every outcome.
+  """
+  def generate_email_verification(user, mode_or_opts \\ [])
+
+  def generate_email_verification(%User{} = user, :no_rate_limit) do
+    generate_email_verification(user, rate_limit?: false, context: :resend)
+  end
+
+  def generate_email_verification(%User{} = user, opts) when is_list(opts) do
+    rate_limit? = Keyword.get(opts, :rate_limit?, true)
+    context = Keyword.get(opts, :context, :resend)
+    meta = Keyword.get(opts, :meta, %{})
+
+    cond do
+      not is_nil(user.email_verified) ->
+        record_email_verification_event(user, Map.merge(meta, %{event_type: "skipped_already_verified"}))
+        {:ok, :already_verified}
+
+      not Malan.Config.User.email_verification_auto_send?() and context in [:welcome, :email_change] ->
+        record_email_verification_event(user, Map.merge(meta, %{event_type: "skipped_auto_send_disabled"}))
+        {:ok, :skipped_auto_send_disabled}
+
+      User.skip_email_verification_send?(user.email) ->
+        record_email_verification_event(user, Map.merge(meta, %{event_type: "skipped_domain"}))
+        {:ok, :skipped_domain}
+
+      rate_limit? ->
+        case Malan.RateLimits.EmailVerification.check_rate(user.id) do
+          {:allow, _count} ->
+            do_generate_email_verification(user, context, meta)
+
+          {:deny, _limit} ->
+            record_email_verification_event(user, Map.merge(meta, %{event_type: "failed_rate_limited"}))
+            {:error, :too_many_requests}
+        end
+
+      true ->
+        do_generate_email_verification(user, context, meta)
+    end
+  end
+
+  defp do_generate_email_verification(%User{} = user, _context, meta) do
+    user
+    |> User.email_verification_create_changeset()
+    |> Repo.update()
+    |> case do
+      {:ok, %User{} = updated} ->
+        record_email_verification_event(
+          updated,
+          Map.merge(meta, %{
+            event_type: "requested",
+            token_hash: updated.email_verification_token_hash
+          })
+        )
+
+        {:ok, updated}
+
+      {:error, cs} ->
+        {:error, cs}
+    end
+  end
+
+  @doc """
+  Atomically verify an email using a raw token. Clears the token fields and
+  sets `email_verified` in the same write, so only one of N concurrent verifies
+  can win.
+
+  Returns:
+    {:ok, %User{}}                           - success
+    {:error, :failed_invalid_token}
+    {:error, :failed_expired_token}
+  """
+  def verify_email_with_token(user_or_id, token, opts \\ [])
+
+  def verify_email_with_token(nil, _token, _opts), do: {:error, :failed_invalid_token}
+
+  def verify_email_with_token(user_id, token, opts) when is_binary(user_id) do
+    case get_user(user_id) do
+      nil -> {:error, :failed_invalid_token}
+      user -> verify_email_with_token(user, token, opts)
+    end
+  end
+
+  def verify_email_with_token(%User{} = user, token, opts) do
+    now = Utils.DateTime.utc_now_trunc()
+    token_hash = Utils.Crypto.hash_token(token)
+    meta = Keyword.get(opts, :meta, %{})
+
+    query =
+      from u in User,
+        where:
+          u.id == ^user.id and
+            u.email_verification_token_hash == ^token_hash and
+            u.email_verification_token_expires_at > ^now,
+        update: [
+          set: [
+            email_verified: ^now,
+            email_verification_token_hash: nil,
+            email_verification_token_expires_at: nil,
+            updated_at: ^now
+          ]
+        ]
+
+    case Repo.update_all(query, []) do
+      {1, _} ->
+        updated = get_user(user.id)
+
+        record_email_verification_event(
+          updated,
+          Map.merge(meta, %{event_type: "verified", token_hash: token_hash})
+        )
+
+        {:ok, updated}
+
+      {0, _} ->
+        # Did not match. Classify via follow-up read (best-effort).
+        current = get_user(user.id) || user
+
+        reason =
+          cond do
+            current.email_verification_token_hash == token_hash and
+                not is_nil(current.email_verification_token_expires_at) and
+                Utils.DateTime.expired?(current.email_verification_token_expires_at) ->
+              :failed_expired_token
+
+            true ->
+              :failed_invalid_token
+          end
+
+        record_email_verification_event(
+          current,
+          Map.merge(meta, %{
+            event_type: Atom.to_string(reason),
+            token_hash: token_hash
+          })
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Admin helper: set `email_verified` directly.
+
+  `value` is a boolean-ish toggle:
+    - truthy -> sets to now
+    - falsy -> clears
+
+  Clears any in-flight verification token in the same write. Writes an
+  `:admin_set` audit row (caller may pass :ip / :user_agent via `opts[:meta]`).
+  """
+  def set_email_verified(user_or_id, value, opts \\ [])
+
+  def set_email_verified(user_id, value, opts) when is_binary(user_id) do
+    case get_user(user_id) do
+      nil -> {:error, :not_found}
+      user -> set_email_verified(user, value, opts)
+    end
+  end
+
+  def set_email_verified(%User{} = user, value, opts) do
+    meta = Keyword.get(opts, :meta, %{})
+
+    user
+    |> User.admin_email_verified_changeset(value)
+    |> Repo.update()
+    |> case do
+      {:ok, %User{} = updated} ->
+        record_email_verification_event(
+          updated,
+          Map.merge(meta, %{event_type: "admin_set"})
+        )
+
+        {:ok, updated}
+
+      {:error, cs} ->
+        {:error, cs}
+    end
+  end
+
+  @doc """
+  Write an audit row to `email_verification_events`. `attrs` may include:
+    - :event_type (required)
+    - :token_hash
+    - :ip
+    - :user_agent
+
+  The `user.id` and `user.email` are snapshotted automatically.
+  """
+  def record_email_verification_event(%User{} = user, attrs) do
+    attrs =
+      attrs
+      |> normalize_event_attrs()
+      |> Map.put("user_id", user.id)
+      |> Map.put("email", user.email)
+
+    %EmailVerificationEvent{}
+    |> EmailVerificationEvent.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  defp normalize_event_attrs(attrs) when is_map(attrs) do
+    Map.new(attrs, fn {k, v} -> {to_string(k), v} end)
+  end
 end

@@ -69,6 +69,28 @@ defmodule Malan.Config do
       ]
     end
 
+    def default_email_verification_token_expiration_secs do
+      Application.get_env(:malan, Malan.Accounts.User)[
+        :default_email_verification_token_expiration_secs
+      ] || 1800
+    end
+
+    def email_verification_auto_send? do
+      Application.get_env(:malan, :email_verification_auto_send, true)
+    end
+
+    def email_verification_skip_domains do
+      Application.get_env(:malan, :email_verification_skip_domains, [
+        "example.com",
+        "example.org",
+        "example.net",
+        ".test",
+        ".example",
+        ".invalid",
+        ".localhost"
+      ])
+    end
+
     def min_password_length do
       Application.get_env(:malan, Malan.Accounts.User)[:min_password_length]
     end
@@ -137,6 +159,32 @@ defmodule Malan.Config do
 
     def login_limit do
       {login_limit_msecs(), login_limit_count()}
+    end
+
+    def email_verify_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:email_verify_lower_limit_msecs] ||
+        1_800_000
+    end
+
+    def email_verify_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:email_verify_lower_limit_count] || 1
+    end
+
+    def email_verify_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:email_verify_upper_limit_msecs] ||
+        86_400_000
+    end
+
+    def email_verify_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:email_verify_upper_limit_count] || 3
+    end
+
+    def email_verify_lower_limit do
+      {email_verify_lower_limit_msecs(), email_verify_lower_limit_count()}
+    end
+
+    def email_verify_upper_limit do
+      {email_verify_upper_limit_msecs(), email_verify_upper_limit_count()}
     end
   end
 
