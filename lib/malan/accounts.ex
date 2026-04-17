@@ -555,12 +555,14 @@ defmodule Malan.Accounts do
         case admin_email_verified_toggle do
           :unset ->
             maybe_send_email_change_verification(updated, original_email, dummy_ip())
+            {:ok, updated}
 
           value ->
-            set_email_verified(updated, value, meta: %{})
+            case set_email_verified(updated, value, meta: %{}) do
+              {:ok, user_with_toggle} -> {:ok, user_with_toggle}
+              other -> other
+            end
         end
-
-        {:ok, updated}
 
       other ->
         other
