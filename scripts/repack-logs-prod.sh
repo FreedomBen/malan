@@ -14,10 +14,11 @@
 #   - the pg_repack client binary available locally (dnf/apt: pg_repack or
 #     postgresql-<ver>-repack)
 #
-# If pg_repack is not available, fall back to a maintenance-window
-# VACUUM FULL — but that takes an ACCESS EXCLUSIVE lock for the whole
-# rebuild (tens of minutes at this size) and should not be run while the
-# app is writing to logs.
+# Do NOT fall back to VACUUM FULL. It takes an ACCESS EXCLUSIVE lock
+# on `logs` for the full rebuild — tens of minutes at this size —
+# which blocks every log-writing endpoint. If pg_repack is not
+# available, this script exits; fix the underlying availability
+# (install extension / install client) and re-run.
 #
 # Usage:
 #   ./scripts/repack-logs-prod.sh           # dry run, prints the plan
