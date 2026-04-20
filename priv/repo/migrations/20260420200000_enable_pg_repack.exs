@@ -14,9 +14,25 @@ defmodule Malan.Repo.Migrations.EnablePgRepack do
   #
   # CREATE EXTENSION is idempotent with IF NOT EXISTS, so this is safe
   # to re-run.
+  #
+  # If the pg_repack shared library is not installed on the server
+  # (e.g. local dev, CI, or a managed PG plan that does not bundle it),
+  # CREATE EXTENSION fails with 58P01 (undefined_file). We probe
+  # pg_available_extensions first and skip with a NOTICE so the
+  # migration does not block environments that lack the library.
   def up do
     execute(
-      "CREATE EXTENSION IF NOT EXISTS pg_repack",
+      """
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pg_repack') THEN
+          CREATE EXTENSION IF NOT EXISTS pg_repack;
+        ELSE
+          RAISE NOTICE 'pg_repack not available on this server; skipping CREATE EXTENSION';
+        END IF;
+      END
+      $$;
+      """,
       "DROP EXTENSION IF EXISTS pg_repack"
     )
   end
