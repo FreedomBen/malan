@@ -244,6 +244,11 @@ config :malan, Oban,
   repo: Malan.Repo,
   queues: [logs: 10, mailers: 5],
   plugins: [
+    # Drop completed/discarded/cancelled jobs older than 24h so the
+    # oban_jobs table does not grow unboundedly. The logs queue alone
+    # produces ~17K jobs/day, and every request-path Oban.insert/1
+    # pays a cost proportional to the unique-index size.
+    {Oban.Plugins.Pruner, max_age: 86_400},
     {Oban.Plugins.Cron,
      crontab: [
        # Archive audit logs older than 60 days, hourly at :00
