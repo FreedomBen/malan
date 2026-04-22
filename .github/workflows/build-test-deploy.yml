@@ -55,6 +55,49 @@ jobs:
       - name: Push Image
         run: ./scripts/push-release.sh
 
+  build-arm-dev:
+    name: Build and Push ARM (Dev)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build Image
+        run: ./scripts/build-arm-dev.sh
+
+      - name: Authenticate to Container Registry
+        env:
+          DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
+        run: |
+          mkdir -p $HOME/.docker
+          echo "${DOCKER_CONFIG}" > $HOME/.docker/config.json
+
+      - name: Push Image
+        run: ./scripts/push-arm-dev.sh
+
+  build-arm:
+    if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
+    name: Build and Push ARM (Prod)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build Image
+        run: ./scripts/build-arm-release.sh
+
+      - name: Authenticate to Container Registry
+        env:
+          DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
+        run: |
+          mkdir -p $HOME/.docker
+          echo "${DOCKER_CONFIG}" > $HOME/.docker/config.json
+
+      - name: Push Image
+        run: ./scripts/push-arm-release.sh
+
   test:
     name: Run Tests
     needs: [build, build-dev]
