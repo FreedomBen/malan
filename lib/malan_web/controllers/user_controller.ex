@@ -314,7 +314,23 @@ defmodule MalanWeb.UserController do
     user = Accounts.get_user_by_id_or_username(id)
 
     if is_nil(user) do
-      render_user(conn, user)
+      # Always return the same generic 200 response whether or not the
+      # account exists, so an attacker cannot enumerate valid usernames /
+      # IDs by probing this endpoint. The internal audit log still records
+      # the submitted identifier so abuse is investigable after the fact.
+      record_log(
+        conn,
+        false,
+        nil,
+        id,
+        "POST",
+        "#UserController.reset_password/2 - no user matching submitted identifier",
+        nil
+      )
+
+      conn
+      |> put_status(200)
+      |> json(%{ok: true, code: 200})
     else
       # Note:  This is very similar to the actual changeset, but not the
       # exact same.  Slightly different utc times, and different api_token and

@@ -1750,10 +1750,29 @@ defmodule MalanWeb.UserControllerTest do
       assert password_reset_token =~ ~r/[A-Za-z0-9]{65}/
     end
 
-    test "Returns 404 when user is not found", %{conn: conn} do
+    test "Returns the same generic 200 response when the user is not found", %{conn: conn} do
+      # Account-existence enumeration mitigation: known and unknown
+      # identifiers must produce the same response so an attacker can't
+      # tell which usernames / IDs are valid.
       conn = post(conn, Routes.user_path(conn, :reset_password, "invaliduser"))
 
-      assert %{"ok" => false, "code" => 404, "detail" => "Not Found"} = json_response(conn, 404)
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
+    end
+
+    test "Records an audit log row when the submitted identifier is unknown", %{conn: conn} do
+      conn = post(conn, Routes.user_path(conn, :reset_password, "ghost-user"))
+      assert %{"ok" => true, "code" => 200} = json_response(conn, 200)
+
+      log =
+        Accounts.list_logs(0, 100)
+        |> Enum.find(fn l ->
+          l.what =~ "no user matching submitted identifier" and
+            l.who_username == "ghost-user"
+        end)
+
+      refute is_nil(log), "expected an audit log row for the unknown-identifier attempt"
+      assert log.success == false
+      assert is_nil(log.who)
     end
 
     test "Creates a corresponding log", %{conn: conn, user: %User{id: id}} do

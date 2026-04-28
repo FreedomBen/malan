@@ -22,7 +22,28 @@ defmodule MalanWeb.UserLive.ResetPassword do
 
     case Accounts.get_user_by_email(email) do
       nil ->
-        {:noreply, assign(socket, :success, false)}
+        # Always render the same generic "Reset request received" message
+        # whether or not the account exists, so an attacker cannot
+        # enumerate valid email addresses by probing this form. The
+        # internal audit log still records the submitted address so
+        # abuse is investigable after the fact.
+        record_log(
+          false,
+          nil,
+          remote_ip,
+          nil,
+          email,
+          "POST",
+          "#MalanWeb.UserLive.ResetPassword.handle_event/3 - send_reset_email - no user matching submitted email",
+          nil
+        )
+
+        socket =
+          socket
+          |> assign(:success, true)
+          |> assign(:submitted_email, email)
+
+        {:noreply, socket}
 
       _user ->
         # TODO:  Use pattern matching so that we can remove the Accounts.get_user_by_email call above.
@@ -46,6 +67,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
             socket
             |> assign(:success, true)
             |> assign(:user, user)
+            |> assign(:submitted_email, email)
 
           {:noreply, socket}
         else

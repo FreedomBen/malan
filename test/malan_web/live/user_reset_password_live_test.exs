@@ -31,13 +31,35 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     assert html =~ "Send Reset Email"
   end
 
-  test "shows error when email is not found", %{conn: conn} do
+  test "renders the same generic success message when the email is not found", %{conn: conn} do
+    # Account-existence enumeration mitigation: a submitted address that
+    # doesn't match any user must produce the same UI as a successful
+    # reset request, so an attacker can't tell which email addresses
+    # belong to real accounts.
     {:ok, view, _html} = live(conn, reset_path())
 
     html = render_submit(view, "send_reset_email", %{"email" => "missing@example.com"})
 
-    assert html =~ "No user matching that email address was found"
+    assert html =~ "Reset request received"
+    assert html =~ "missing@example.com"
+    refute html =~ "No user matching that email address was found"
     assert_no_email_sent()
+  end
+
+  test "records an audit log row when the submitted email is unknown", %{conn: conn} do
+    {:ok, view, _html} = live(conn, reset_path())
+    _ = render_submit(view, "send_reset_email", %{"email" => "ghost@example.com"})
+
+    log =
+      Accounts.list_logs(0, 100)
+      |> Enum.find(fn l ->
+        l.what =~ "no user matching submitted email" and
+          l.who_username == "ghost@example.com"
+      end)
+
+    refute is_nil(log), "expected an audit log row for the unknown-email attempt"
+    assert log.success == false
+    assert is_nil(log.user_id)
   end
 
   test "sends reset email and surfaces success message", %{conn: conn} do
