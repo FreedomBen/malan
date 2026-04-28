@@ -12,6 +12,16 @@ on:
 env:
   RELEASE_VERSION: ${{ github.sha }}
 
+# Default GITHUB_TOKEN permissions for every job. No job in this workflow
+# writes to the repo, opens PRs, cuts releases, or modifies settings — the
+# Docker registry, Kubernetes API, and Slack are all reached through their
+# own dedicated secrets (DOCKER_CONFIG / K8S_TOKEN_* / SLACK_TOKEN), and
+# `actions/upload-artifact` uses the Actions runtime token rather than
+# GITHUB_TOKEN. Restricting to `contents: read` blunts the blast radius if
+# any step or transitive action is ever compromised.
+permissions:
+  contents: read
+
 jobs:
   build-dev:
     name: Build and Push (Dev)
