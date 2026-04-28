@@ -49,16 +49,17 @@ defmodule MalanWeb.UserAuth do
   end
 
   @doc """
-  Returns the peer IP for a LiveView socket as a printable string, or
-  `"0.0.0.0"` when no peer data is available (e.g. server-internal mounts).
+  Returns the client IP for a LiveView socket as a printable string.
+
+  Prefers the Cloudflare-reported IP from `cf-connecting-ip` and falls
+  back to the TCP peer. Returns `"0.0.0.0"` when neither is available
+  (e.g. server-internal mounts). Delegates to `MalanWeb.RealIp` so the
+  HTTP and LiveView paths share one trust model.
   """
   def remote_ip(socket) do
-    case get_connect_info(socket, :peer_data) do
-      %{address: address} when not is_nil(address) ->
-        address |> :inet.ntoa() |> to_string()
-
-      _ ->
-        "0.0.0.0"
-    end
+    MalanWeb.RealIp.from_connect_info(%{
+      x_headers: get_connect_info(socket, :x_headers),
+      peer_data: get_connect_info(socket, :peer_data)
+    })
   end
 end

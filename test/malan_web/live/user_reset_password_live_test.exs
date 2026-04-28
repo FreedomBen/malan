@@ -101,6 +101,30 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     assert log.remote_ip == "203.0.113.7"
   end
 
+  test "prefers the Cloudflare CF-Connecting-IP header over the peer_data",
+       %{conn: conn} do
+    {:ok, user} = AccountsHelpers.regular_user(%{})
+    on_exit(fn -> PasswordReset.clear(user.id) end)
+
+    # peer_data is the Cloudflare edge; cf-connecting-ip is the visitor.
+    conn =
+      Plug.Conn.put_private(conn, :live_view_connect_info, %{
+        peer_data: %{address: {172, 70, 1, 1}, port: 12_345, ssl_cert: nil},
+        x_headers: [{"cf-connecting-ip", "198.51.100.42"}]
+      })
+
+    {:ok, view, _html} = live(conn, reset_path())
+    _ = render_submit(view, "send_reset_email", %{"email" => user.email})
+
+    log =
+      user.id
+      |> Accounts.list_logs_by_user_id(0, 100)
+      |> Enum.find(fn l -> l.what =~ "send_reset_email" end)
+
+    refute is_nil(log)
+    assert log.remote_ip == "198.51.100.42"
+  end
+
   test "still surfaces success when mail provider rejects credentials (delivery is async)",
        %{conn: conn} do
     # Email delivery happens in an Oban worker, so SMTP credential failures

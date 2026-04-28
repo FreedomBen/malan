@@ -9,14 +9,11 @@ defmodule MalanWeb.Endpoint do
   # vars. Plug.Session compiles these in, so rotation requires a rebuild.
   @session_options Application.compile_env!(:malan, [MalanWeb.Endpoint, :session_options])
 
-  # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # `:x_headers` exposes request headers (including `cf-connecting-ip`)
+  # to LiveView mounts so `MalanWeb.RealIp.from_connect_info/1` can
+  # prefer the Cloudflare-reported IP, mirroring the HTTP-side plug.
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [:peer_data, session: @session_options]]
-
-  # If running behind CLoudflare, read the CF-Connection-IP header
-  # and use that for `conn.remote_ip`
-  # https://github.com/c-rack/plug_cloudflare
-  # plug Plug.CloudFlare
+    websocket: [connect_info: [:peer_data, :x_headers, session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -69,6 +66,11 @@ defmodule MalanWeb.Endpoint do
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
+
+  # In production we terminate at Cloudflare; rewrite `conn.remote_ip`
+  # from `CF-Connecting-IP` so all downstream plugs (Sentry context,
+  # controllers, rate limits, audit logs) see the real client IP.
+  plug MalanWeb.Plugs.CloudflareRealIp
 
   plug Sentry.PlugContext
   plug Plug.MethodOverride
