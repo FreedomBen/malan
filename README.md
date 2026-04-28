@@ -148,6 +148,7 @@ CI/CD is handled by GitHub Actions in `.github/workflows/build-test-deploy.yaml`
 - Staging: every push/merge to `main` builds, tests, publishes, and deploys to staging automatically.
 - Production: push a tag (e.g., `prod-$(date '+%Y-%m-%d-%H-%M-%S')`) to trigger a production deploy.
 - Build/publish/deploy logic lives in `scripts/build-release.sh`, `scripts/push-release.sh`, and `scripts/deploy-release.sh`.
+- The production image (built from `Dockerfile.prod`) is a multi-stage `mix release` — the runtime stage carries no `mix`, no compilers, and no source. Run release tasks with `/app/bin/malan eval "Malan.Release.migrate()"` (or `Malan.Release.create_and_migrate()`, `Malan.Release.setup()`), and connect a remote IEx with `/app/bin/malan remote`. The dev image (`Dockerfile`) still runs `mix phx.server` directly.
 
 ### Configuring PostgreSQL users
 

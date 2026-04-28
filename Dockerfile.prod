@@ -1,12 +1,24 @@
-FROM almalinux:10.1
+# syntax=docker/dockerfile:1.6
 
-# These are required to be in place for mix compile to run,
-# but the real values will be injected via Secret at runtime
+# ============================================================================
+# Stage 1: builder
+# ----------------------------------------------------------------------------
+# Builds Erlang/OTP from source, installs Elixir, fetches deps, compiles
+# the application and assets, and assembles a self-contained mix release
+# at /app/_build/prod/rel/malan. The runtime stage copies that directory
+# only — none of the compilers, dev headers, mix, or source live in the
+# final image.
+# ============================================================================
+FROM almalinux:10.1 AS builder
+
+# These are required to be in place for `mix compile`/`mix release` to
+# run, but the real values are injected via Secret at runtime (see
+# config/runtime.exs).
 ARG DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
 ARG SECRET_KEY_BASE=124
 
-ENV USER_HOME /home/docker
-ENV LANG en_US.UTF-8
+ENV USER_HOME=/home/docker
+ENV LANG=en_US.UTF-8
 ARG OTP_VERSION=28.3
 # SHA256 of otp_src_${OTP_VERSION}.tar.gz from
 # https://github.com/erlang/otp/releases/download/OTP-${OTP_VERSION}/.
@@ -17,7 +29,7 @@ ARG OTP_VERSION=28.3
 ARG OTP_SOURCE_SHA256=1956ad6584678b631ab4f9b8aebe2dac037cd7401abb44564a01134ff0ac5bed
 ARG ELIXIR_VERSION=1.19.4
 ARG ELIXIR_ZIP=elixir-otp-28.zip
-ENV PATH /usr/local/elixir-otp-28/bin:${PATH}
+ENV PATH=/usr/local/elixir-otp-28/bin:${PATH}
 
 # Ensure locale is UTF-8
 RUN dnf install --assumeyes \
@@ -33,7 +45,7 @@ RUN groupadd --gid 1000 docker \
  && adduser --uid 1000 --gid 1000 --home ${USER_HOME} docker \
  && usermod -L docker
 
-# Install EPEL and base packages
+# Install EPEL and base packages (build toolchain)
 RUN dnf install --assumeyes glibc-langpack-en \
  && dnf install --assumeyes https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm \
  && dnf install --assumeyes dnf-plugins-core \
@@ -94,46 +106,74 @@ RUN set -eux \
  && ln -sf /usr/local/elixir-otp-28/bin/* /usr/local/bin/ \
  && rm -f "/tmp/${ELIXIR_ZIP}" "/tmp/${ELIXIR_ZIP}.sha256sum"
 
-# Install PostgreSQL client (psql) for ad-hoc database operations
-RUN dnf install --assumeyes postgresql \
- && dnf clean all \
- && rm -rf /var/cache/dnf /var/cache/yum
+ENV MIX_ENV=prod
 
-# Set environment to production
-ENV MIX_ENV prod
-
-# Copy over source code
 RUN mkdir -p /app/assets \
  && chown -R docker:docker /app
 
 COPY --chown=docker:docker mix.exs mix.lock /app/
 
 USER docker
-
 WORKDIR /app
 
-RUN mix local.hex --force
-RUN mix local.rebar --force
-RUN mix deps.get --only prod
-RUN mix deps.compile
+RUN mix local.hex --force \
+ && mix local.rebar --force \
+ && mix deps.get --only prod \
+ && mix deps.compile
 
 COPY --chown=docker:docker assets/package*.json /app/assets/
-COPY --chown=docker:docker scripts /app/scripts
 RUN cd assets && npm install
 
 COPY --chown=docker:docker config /app/config
 COPY --chown=docker:docker priv /app/priv
 COPY --chown=docker:docker lib /app/lib
 COPY --chown=docker:docker assets /app/assets
-COPY --chown=docker:docker test /app/test
-COPY --chown=docker:docker .iex.exs /app
-COPY --chown=docker:docker .bashrc $USER_HOME
 
-RUN mix compile
-RUN mix assets.deploy
+RUN mix compile \
+ && mix assets.deploy \
+ && mix release
 
-ENV HOST ${HOST:-localhost}
-ENV PORT ${PORT:-4000}
-ENV BIND_ADDR ${BIND_ADDR:-0.0.0.0}
+# ============================================================================
+# Stage 2: runtime
+# ----------------------------------------------------------------------------
+# Self-contained release image. Carries only the OS-level libraries that
+# the bundled ERTS dynamically links to (openssl, ncurses, glibc), the
+# psql client for ad-hoc DB operations, and ncat for the start script's
+# Postgres readiness probe.
+# ============================================================================
+FROM almalinux:10.1 AS runtime
 
-CMD [ "mix", "phx.server" ]
+ENV USER_HOME=/home/docker
+ENV LANG=en_US.UTF-8
+
+RUN dnf install --assumeyes \
+    glibc-langpack-en \
+    glibc-locale-source \
+ && localedef --force --inputfile=en_US --charmap=UTF-8 en_US.UTF-8 \
+ && echo "LANG=en_US.UTF-8" > /etc/locale.conf \
+ && dnf install --assumeyes \
+    ca-certificates \
+    ncurses \
+    nmap-ncat \
+    openssl \
+    postgresql \
+ && update-ca-trust extract \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf /var/cache/yum
+
+RUN groupadd --gid 1000 docker \
+ && adduser --uid 1000 --gid 1000 --home ${USER_HOME} docker \
+ && usermod -L docker
+
+RUN mkdir -p /app && chown docker:docker /app
+WORKDIR /app
+
+COPY --from=builder --chown=docker:docker /app/_build/prod/rel/malan/ /app/
+COPY --chown=docker:docker scripts/start-in-docker-prod.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+USER docker
+
+ENV HOME=${USER_HOME}
+
+CMD ["/app/start.sh"]

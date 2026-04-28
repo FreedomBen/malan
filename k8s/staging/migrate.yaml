@@ -35,7 +35,7 @@ spec:
       containers:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}
-        command: ["mix", "ecto.create.migrate"]
+        command: ["/app/bin/malan", "eval", "Malan.Release.create_and_migrate()"]
         envFrom:
           - configMapRef:
               name: malan-migration-config

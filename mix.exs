@@ -10,6 +10,7 @@ defmodule Malan.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      releases: releases(),
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -93,6 +94,14 @@ defmodule Malan.MixProject do
         "phx.digest"
       ],
       sentry_recompile: ["compile", "deps.compile sentry --force"]
+    ]
+  end
+
+  defp releases do
+    [
+      malan: [
+        include_executables_for: [:unix]
+      ]
     ]
   end
 end

@@ -24,8 +24,18 @@ read_root_password = fn ->
   end
 end
 
+# `Mix` isn't loaded inside a release — `Malan.Release.seed/0` invokes
+# this script via `Code.eval_file/1` with no `mix` runtime. Fall back to
+# `:prod` so the explicit-password requirement below still applies.
+mix_env =
+  if Code.ensure_loaded?(Mix) and function_exported?(Mix, :env, 0) do
+    Mix.env()
+  else
+    :prod
+  end
+
 root_password =
-  case {Mix.env(), read_root_password.()} do
+  case {mix_env, read_root_password.()} do
     {_env, pw} when is_binary(pw) and byte_size(pw) > 0 ->
       pw
 
