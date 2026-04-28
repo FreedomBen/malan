@@ -18,7 +18,15 @@ services:
       PORT: '4000'
       BIND_ADDR: '0.0.0.0'
       MAILGUN_DISABLE: 'Yes'
-      DB_INIT: 'Yes'
+      # Default to 'No' so this file is safe to copy as a starting point
+      # for non-dev environments. With DB_INIT unset (or 'No'),
+      # scripts/start-in-docker.sh skips `mix ecto.setup` and the seed
+      # script (priv/repo/seeds.exs) does NOT create the `root` admin
+      # with its committed default password.
+      # For first-time local dev, override on the command line:
+      #   DB_INIT=Yes docker compose up
+      # or use a docker-compose.override.yml that sets DB_INIT: 'Yes'.
+      DB_INIT: 'No'
       DB_USERNAME: 'postgres'
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
