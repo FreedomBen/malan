@@ -929,7 +929,10 @@ defmodule MalanWeb.UserControllerTest do
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      jr = json_response(conn, 200)["data"]
+      assert %{"id" => ^id} = jr
+      # password must never appear on an update response
+      assert Map.has_key?(jr, "password") == false
 
       # Old session should have been invalidated
       conn = put(conn, Routes.user_path(conn, :update, user), user: update_params)
@@ -943,7 +946,9 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = Helpers.Accounts.put_token(Phoenix.ConnTest.build_conn(), session.api_token)
       conn = put(conn, Routes.user_path(conn, :update, user), user: %{nick_name: "ronaldo"})
-      assert %{"nick_name" => "ronaldo"} = json_response(conn, 200)["data"]
+      jr = json_response(conn, 200)["data"]
+      assert %{"nick_name" => "ronaldo"} = jr
+      assert Map.has_key?(jr, "password") == false
     end
 
     test "requires being authenticated to access", %{conn: conn, user: %User{} = user} do
@@ -1306,6 +1311,29 @@ defmodule MalanWeb.UserControllerTest do
 
       conn = get(conn, Routes.user_path(conn, :show, id))
       check_response.(conn)
+    end
+
+    test "admin update with new password does not return password",
+         %{conn: _conn, user: %User{id: id} = user} do
+      {:ok, conn, _au, _as} = Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      conn =
+        put(conn, Routes.user_path(conn, :admin_update, user),
+          user: %{password: "brandnewpw_for_admin_set_path"}
+        )
+
+      jr = json_response(conn, 200)["data"]
+      assert %{"id" => ^id} = jr
+      # password must never appear on an admin update response
+      assert Map.has_key?(jr, "password") == false
+
+      # Verify the new password actually took effect, then re-fetch and confirm
+      # the show endpoint also omits the field.
+      assert {:ok, _session} =
+               Helpers.Accounts.create_session(%{user | password: "brandnewpw_for_admin_set_path"})
+
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert Map.has_key?(json_response(conn, 200)["data"], "password") == false
     end
 
     test "allows removing roles", %{conn: conn, user: %User{}, session: _session} do

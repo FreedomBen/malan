@@ -29,6 +29,15 @@ defmodule MalanWeb.UserJSON do
     %{ok: true, code: code, data: user_full_data(user)}
   end
 
+  # Initial-create response: include the (possibly server-generated) password
+  # exactly once so the caller knows the credential. Every subsequent flow
+  # (show, index, update, admin update, etc.) goes through `show/1` /
+  # `index/1` and `user_data/1`, which exclude the virtual `:password` field.
+  def create(%{code: code, user: %User{} = user} = assigns) do
+    %{data: data} = show(assigns)
+    %{ok: true, code: code, data: Map.put(data, :password, user.password)}
+  end
+
   def whoami(%{
         code: code,
         user_id: user_id,
@@ -71,6 +80,11 @@ defmodule MalanWeb.UserJSON do
     }
   end
 
+  # `password` is a virtual, redacted field on `Malan.Accounts.User`. Even
+  # though it never persists, the changesets returned from registration and
+  # password-update flows can still carry the plaintext value on the in-memory
+  # struct. Never include it in API responses — clients, proxies, browser
+  # tooling, and error capture pipelines must not see it.
   defp user_data(%User{} = user) do
     %{
       id: user.id,
@@ -78,7 +92,6 @@ defmodule MalanWeb.UserJSON do
       first_name: user.first_name,
       last_name: user.last_name,
       nick_name: user.nick_name,
-      password: user.password,
       email: user.email,
       email_verified: user.email_verified,
       birthday: user.birthday,
@@ -110,8 +123,6 @@ defmodule MalanWeb.UserJSON do
       locked_by: user.locked_by,
       approved_ips: user.approved_ips
     }
-    |> Enum.reject(fn {key, value} -> key == :password && is_nil(value) end)
-    |> Map.new()
   end
 
   defp user_full_data(%User{} = user) do

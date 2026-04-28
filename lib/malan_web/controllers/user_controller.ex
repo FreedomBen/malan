@@ -48,7 +48,7 @@ defmodule MalanWeb.UserController do
       |> record_log(true, id, username, "POST", "#UserController.create/2", changeset)
       |> put_status(:created)
       |> put_resp_header("location", ~p"/api/users/#{user}")
-      |> render(:show, code: 201, user: user)
+      |> render(:create, code: 201, user: user)
     else
       {:error, err} ->
         err_str = Utils.Ecto.Changeset.errors_to_str(err)
