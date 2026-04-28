@@ -4,6 +4,7 @@ defmodule Malan.Mailer do
   alias Malan.Accounts.User
   alias Malan.Utils
   alias Malan.Utils.Logger
+  alias Malan.Workers.TokenCipher
   alias MalanWeb.UserNotifier
 
   @spec send_mail(Swoosh.Email.t()) :: {:ok, term} | {:error, term}
@@ -23,7 +24,7 @@ defmodule Malan.Mailer do
   @spec send_password_reset_email(User.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_password_reset_email(%User{id: user_id, password_reset_token: token})
       when is_binary(token) do
-    %{user_id: user_id, token: token}
+    %{user_id: user_id, encrypted_token: TokenCipher.encrypt(token)}
     |> Malan.Workers.PasswordResetEmail.new()
     |> Oban.insert()
   end
@@ -51,7 +52,11 @@ defmodule Malan.Mailer do
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_email_verification_email(%User{id: user_id, email_verification_token: token}, context)
       when is_binary(token) and context in @valid_email_verification_contexts do
-    %{user_id: user_id, token: token, context: Atom.to_string(context)}
+    %{
+      user_id: user_id,
+      encrypted_token: TokenCipher.encrypt(token),
+      context: Atom.to_string(context)
+    }
     |> Malan.Workers.EmailVerificationEmail.new()
     |> Oban.insert()
   end
@@ -77,25 +82,25 @@ defmodule Malan.Mailer do
     err = Utils.to_string(error)
 
     msg =
-      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
-
-    opts = [extra: %{error: err, email: Utils.to_string(email)}]
+      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{err}"
 
     if log_delivery_errors?() do
       Logger.error(env, msg)
-      Sentry.capture_message(msg, opts)
+      Sentry.capture_message(msg, extra: safe_extras(email, err))
     end
 
     {:error, error}
   end
 
   defp log_delivery({:error, {403, _} = error}, email, env) do
+    err = Utils.to_string(error)
+
     msg =
-      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{Utils.to_string(error)}"
+      "Mail provider rejected credentials for sending mail to #{to(email)}!  #{err}"
 
     if log_delivery_errors?() do
       Logger.error(env, msg)
-      Sentry.capture_message(msg, extra: %{error: error, email: email})
+      Sentry.capture_message(msg, extra: safe_extras(email, err))
     end
 
     {:error, error}
@@ -113,6 +118,12 @@ defmodule Malan.Mailer do
   end
 
   defp to(email), do: Utils.to_string(email.to)
+
+  # Sentry extras intentionally omit the rendered email body and any URLs
+  # so reset/verification tokens can't leak through error capture.
+  defp safe_extras(email, err) do
+    %{error: err, email_to: to(email), email_subject: email.subject}
+  end
 
   defp log_delivery_errors? do
     Mix.env() != :test

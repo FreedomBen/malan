@@ -4,11 +4,10 @@ defmodule Malan.Workers.PasswordResetEmail do
   request isn't blocked on SMTP.
 
   `password_reset_token` is a virtual field on `%User{}` — only the hash is
-  persisted — so the worker receives the plaintext token via job args and
-  re-hydrates it onto the loaded user struct before rendering the email.
-  The token is already stored as a hash in the same DB that holds
-  `oban_jobs.args`, and Oban prunes completed jobs, so the extra exposure
-  window is comparable to what already exists on the user row.
+  persisted on the user row, and the plaintext is stored only as ciphertext
+  in `oban_jobs.args` (encrypted by `Malan.Workers.TokenCipher`). The worker
+  decrypts on each run and re-hydrates the value onto the loaded user
+  struct before rendering the email.
   """
 
   use Oban.Worker,
@@ -17,19 +16,28 @@ defmodule Malan.Workers.PasswordResetEmail do
 
   alias Malan.Accounts
   alias Malan.Mailer
+  alias Malan.Workers.TokenCipher
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"user_id" => user_id, "token" => token}}) do
-    case Accounts.get_user(user_id) do
-      nil ->
-        {:cancel, :user_not_found}
+  def perform(%Oban.Job{
+        args: %{"user_id" => user_id, "encrypted_token" => encrypted_token}
+      }) do
+    case TokenCipher.decrypt(encrypted_token) do
+      :error ->
+        {:cancel, :token_decrypt_failed}
 
-      user ->
-        case Mailer.send_password_reset_email_sync(%{user | password_reset_token: token}) do
-          {:ok, _term} -> :ok
-          {:error, {401, _}} = err -> err
-          {:error, {403, _}} = err -> err
-          {:error, reason} -> {:error, reason}
+      {:ok, token} ->
+        case Accounts.get_user(user_id) do
+          nil ->
+            {:cancel, :user_not_found}
+
+          user ->
+            case Mailer.send_password_reset_email_sync(%{user | password_reset_token: token}) do
+              {:ok, _term} -> :ok
+              {:error, {401, _}} = err -> err
+              {:error, {403, _}} = err -> err
+              {:error, reason} -> {:error, reason}
+            end
         end
     end
   end

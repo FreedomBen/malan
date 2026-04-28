@@ -8,16 +8,17 @@ defmodule Malan.Workers.PasswordResetEmailTest do
   alias Malan.Mailer
   alias Malan.Test.Helpers
   alias Malan.Workers.PasswordResetEmail
+  alias Malan.Workers.TokenCipher
 
   describe "perform/1" do
-    test "delivers the password reset email using the token from args" do
+    test "delivers the password reset email using the encrypted token from args" do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Accounts.generate_password_reset(user, :no_rate_limit)
 
       assert :ok =
                perform_job(PasswordResetEmail, %{
                  "user_id" => user.id,
-                 "token" => user.password_reset_token
+                 "encrypted_token" => TokenCipher.encrypt(user.password_reset_token)
                })
 
       assert_email_sent(fn email ->
@@ -31,13 +32,23 @@ defmodule Malan.Workers.PasswordResetEmailTest do
       assert {:cancel, :user_not_found} =
                perform_job(PasswordResetEmail, %{
                  "user_id" => Ecto.UUID.generate(),
-                 "token" => "irrelevant"
+                 "encrypted_token" => TokenCipher.encrypt("irrelevant")
+               })
+    end
+
+    test "cancels when the encrypted token cannot be decrypted" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      assert {:cancel, :token_decrypt_failed} =
+               perform_job(PasswordResetEmail, %{
+                 "user_id" => user.id,
+                 "encrypted_token" => "not a real ciphertext"
                })
     end
   end
 
   describe "Mailer.send_password_reset_email/1 enqueue" do
-    test "enqueues a job carrying user_id and token" do
+    test "enqueues a job carrying user_id and an encrypted token" do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Accounts.generate_password_reset(user, :no_rate_limit)
 
@@ -49,7 +60,11 @@ defmodule Malan.Workers.PasswordResetEmailTest do
         assert job.queue == "mailers"
         args = for {k, v} <- job.args, into: %{}, do: {to_string(k), v}
         assert args["user_id"] == user.id
-        assert args["token"] == user.password_reset_token
+        refute Map.has_key?(args, "token")
+        assert is_binary(args["encrypted_token"])
+        refute args["encrypted_token"] =~ user.password_reset_token
+        assert {:ok, plaintext} = TokenCipher.decrypt(args["encrypted_token"])
+        assert plaintext == user.password_reset_token
       end)
     end
   end

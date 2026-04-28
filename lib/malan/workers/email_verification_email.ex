@@ -4,8 +4,10 @@ defmodule Malan.Workers.EmailVerificationEmail do
   request isn't blocked on SMTP.
 
   `email_verification_token` is a virtual field on `%User{}` — only the hash is
-  persisted — so the worker receives the plaintext token via job args and
-  re-hydrates it onto the loaded user struct before rendering the email.
+  persisted on the user row, and the plaintext is stored only as ciphertext
+  in `oban_jobs.args` (encrypted by `Malan.Workers.TokenCipher`). The worker
+  decrypts on each run and re-hydrates the value onto the loaded user
+  struct before rendering the email.
   """
 
   use Oban.Worker,
@@ -14,25 +16,38 @@ defmodule Malan.Workers.EmailVerificationEmail do
 
   alias Malan.Accounts
   alias Malan.Mailer
+  alias Malan.Workers.TokenCipher
 
   @valid_contexts ~w(welcome resend email_change)
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"user_id" => user_id, "token" => token, "context" => context}})
+  def perform(%Oban.Job{
+        args: %{
+          "user_id" => user_id,
+          "encrypted_token" => encrypted_token,
+          "context" => context
+        }
+      })
       when context in @valid_contexts do
-    case Accounts.get_user(user_id) do
-      nil ->
-        {:cancel, :user_not_found}
+    case TokenCipher.decrypt(encrypted_token) do
+      :error ->
+        {:cancel, :token_decrypt_failed}
 
-      user ->
-        case Mailer.send_email_verification_email_sync(
-               %{user | email_verification_token: token},
-               String.to_existing_atom(context)
-             ) do
-          {:ok, _term} -> :ok
-          {:error, {401, _}} = err -> err
-          {:error, {403, _}} = err -> err
-          {:error, reason} -> {:error, reason}
+      {:ok, token} ->
+        case Accounts.get_user(user_id) do
+          nil ->
+            {:cancel, :user_not_found}
+
+          user ->
+            case Mailer.send_email_verification_email_sync(
+                   %{user | email_verification_token: token},
+                   String.to_existing_atom(context)
+                 ) do
+              {:ok, _term} -> :ok
+              {:error, {401, _}} = err -> err
+              {:error, {403, _}} = err -> err
+              {:error, reason} -> {:error, reason}
+            end
         end
     end
   end

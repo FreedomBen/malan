@@ -8,16 +8,17 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
   alias Malan.Mailer
   alias Malan.Test.Helpers
   alias Malan.Workers.EmailVerificationEmail
+  alias Malan.Workers.TokenCipher
 
   describe "perform/1" do
-    test "delivers the verification email using the token from args (welcome context)" do
+    test "delivers the verification email using the encrypted token from args (welcome context)" do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Accounts.generate_email_verification(user, :no_rate_limit)
 
       assert :ok =
                perform_job(EmailVerificationEmail, %{
                  "user_id" => user.id,
-                 "token" => user.email_verification_token,
+                 "encrypted_token" => TokenCipher.encrypt(user.email_verification_token),
                  "context" => "welcome"
                })
 
@@ -36,7 +37,7 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
       assert :ok =
                perform_job(EmailVerificationEmail, %{
                  "user_id" => user.id,
-                 "token" => user.email_verification_token,
+                 "encrypted_token" => TokenCipher.encrypt(user.email_verification_token),
                  "context" => "resend"
                })
 
@@ -52,7 +53,7 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
       assert :ok =
                perform_job(EmailVerificationEmail, %{
                  "user_id" => user.id,
-                 "token" => user.email_verification_token,
+                 "encrypted_token" => TokenCipher.encrypt(user.email_verification_token),
                  "context" => "email_change"
                })
 
@@ -65,7 +66,18 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
       assert {:cancel, :user_not_found} =
                perform_job(EmailVerificationEmail, %{
                  "user_id" => Ecto.UUID.generate(),
-                 "token" => "irrelevant",
+                 "encrypted_token" => TokenCipher.encrypt("irrelevant"),
+                 "context" => "welcome"
+               })
+    end
+
+    test "cancels when the encrypted token cannot be decrypted" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      assert {:cancel, :token_decrypt_failed} =
+               perform_job(EmailVerificationEmail, %{
+                 "user_id" => user.id,
+                 "encrypted_token" => "not a real ciphertext",
                  "context" => "welcome"
                })
     end
@@ -74,14 +86,14 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
       assert {:cancel, {:invalid_context, "bogus"}} =
                perform_job(EmailVerificationEmail, %{
                  "user_id" => Ecto.UUID.generate(),
-                 "token" => "irrelevant",
+                 "encrypted_token" => TokenCipher.encrypt("irrelevant"),
                  "context" => "bogus"
                })
     end
   end
 
   describe "Mailer.send_email_verification_email/2 enqueue" do
-    test "enqueues a job carrying user_id, token, and context" do
+    test "enqueues a job carrying user_id, encrypted token, and context" do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Accounts.generate_email_verification(user, :no_rate_limit)
 
@@ -93,8 +105,12 @@ defmodule Malan.Workers.EmailVerificationEmailTest do
         assert job.queue == "mailers"
         args = for {k, v} <- job.args, into: %{}, do: {to_string(k), v}
         assert args["user_id"] == user.id
-        assert args["token"] == user.email_verification_token
         assert args["context"] == "welcome"
+        refute Map.has_key?(args, "token")
+        assert is_binary(args["encrypted_token"])
+        refute args["encrypted_token"] =~ user.email_verification_token
+        assert {:ok, plaintext} = TokenCipher.decrypt(args["encrypted_token"])
+        assert plaintext == user.email_verification_token
       end)
     end
   end
