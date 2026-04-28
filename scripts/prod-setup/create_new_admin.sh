@@ -7,41 +7,39 @@
 
 
 
-# Put the existing admin user credentials in an environment variable called MALAN_NEW_ROOT_PW
+# Required env vars:
+#   MALAN_HOSTNAME           - hostname for your Malan deployment (e.g. malan.example.com)
+#   MALAN_ROOT_PW            - password for the existing root admin
+#   MALAN_NEW_ADMIN_USERNAME - username for the new admin
+#   MALAN_NEW_ADMIN_EMAIL    - email for the new admin
+#   MALAN_NEW_ADMIN_PASSWORD - password for the new admin
 #
-# If MALAN_OLD_ROOT_PW is set, that value will be used to create a session
-# for the root user.  If not set, the default will be used.
-#
-# MALAN_HOSTNAME should be set to the hostname for your Malan deployment
+# Optional env vars:
+#   MALAN_PROTOCOL           - 'http' or 'https' (default: 'https')
+#   MALAN_ROOT_USERNAME      - existing root admin username (default: 'root')
+#   MALAN_NEW_ADMIN_FIRST_NAME, MALAN_NEW_ADMIN_LAST_NAME
 
 
-MALAN_PROTOCOL='http'
-#MALAN_PROTOCOL='https'
-
-#MALAN_HOSTNAME='malan.example.com'
-MALAN_HOSTNAME='localhost:4000'
-
-MALAN_OLD_ADMIN_USERNAME='root'
-
-MALAN_NEW_ADMIN_EMAIL='admin3@example.com'
-MALAN_NEW_ADMIN_USERNAME='admin3'
-MALAN_NEW_ADMIN_PASSWORD='adminadminadmin'
-MALAN_NEW_ADMIN_FIRST_NAME='Admin'
-MALAN_NEW_ADMIN_LAST_NAME='User'
+MALAN_PROTOCOL="${MALAN_PROTOCOL:-https}"
+MALAN_ROOT_USERNAME="${MALAN_ROOT_USERNAME:-root}"
+MALAN_NEW_ADMIN_FIRST_NAME="${MALAN_NEW_ADMIN_FIRST_NAME:-Admin}"
+MALAN_NEW_ADMIN_LAST_NAME="${MALAN_NEW_ADMIN_LAST_NAME:-User}"
 
 NEW_ROLES='["admin","user"]'
 
-#MALAN_ROOT_PW="password10"
-#MALAN_NEW_ROOT_PW="password10"
-
-if [ -z "$MALAN_HOSTNAME" ]; then
+if [ -z "${MALAN_HOSTNAME}" ]; then
   echo -e "Please set env var MALAN_HOSTNAME and try again"
   exit 1
 fi
 
-if [ -z "$MALAN_ROOT_PW" ]; then
-  echo -e "Env var MALAN_ROOT_PW is not set.  Assuming default"
-  MALAN_OLD_ROOT_PW="password10"
+if [ -z "${MALAN_ROOT_PW}" ]; then
+  echo -e "Please set env var MALAN_ROOT_PW to the existing root admin password and try again"
+  exit 1
+fi
+
+if [ -z "${MALAN_NEW_ADMIN_USERNAME}" ] || [ -z "${MALAN_NEW_ADMIN_EMAIL}" ] || [ -z "${MALAN_NEW_ADMIN_PASSWORD}" ]; then
+  echo -e "Please set MALAN_NEW_ADMIN_USERNAME, MALAN_NEW_ADMIN_EMAIL, and MALAN_NEW_ADMIN_PASSWORD and try again"
+  exit 1
 fi
 
 echo -e "Creating a session as super user..."
@@ -50,12 +48,12 @@ api_token="$(curl -s \
                --request POST \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
-               --data '{"session":{"username":"root","password":"password10"}}' \
+               --data "{\"session\":{\"username\":\"${MALAN_ROOT_USERNAME}\",\"password\":\"${MALAN_ROOT_PW}\"}}" \
                "${MALAN_PROTOCOL}://${MALAN_HOSTNAME}/api/sessions/" \
               | jq -r '.data.api_token')"
 
 
-if [ "$api_token" = "null" ]; then
+if [ "${api_token}" = "null" ]; then
   echo -e "Error creating a session as super user.  Make sure MALAN_ROOT_PW is set to the correct root password."
   exit 2
 fi

@@ -30,9 +30,9 @@ if [ -z "$MALAN_NEW_ROOT_PW" ]; then
   exit 1
 fi
 
-if [ -z "$MALAN_OLD_ROOT_PW" ]; then
-  echo -e "Env var MALAN_OLD_ROOT_PW is not set.  Assuming default"
-  MALAN_OLD_ROOT_PW="password10"
+if [ -z "${MALAN_OLD_ROOT_PW}" ]; then
+  echo -e "Please set env var MALAN_OLD_ROOT_PW to the current root password and try again"
+  exit 1
 fi
 
 echo -e "Creating a session as super user..."
@@ -41,7 +41,7 @@ api_token="$(curl -s \
                --request POST \
                --header "Accept: application/json" \
                --header "Content-Type: application/json" \
-               --data '{"session":{"username":"root","password":"password10"}}' \
+               --data "{\"session\":{\"username\":\"${MALAN_ROOT_USERNAME}\",\"password\":\"${MALAN_OLD_ROOT_PW}\"}}" \
                "${MALAN_PROTOCOL}://${MALAN_HOSTNAME}/api/sessions/" \
               | jq -r '.data.api_token')"
 

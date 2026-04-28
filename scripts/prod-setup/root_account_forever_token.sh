@@ -4,16 +4,15 @@
 MALAN_PROTOCOL='http'
 MALAN_HOSTNAME='localhost:4000'
 
-MALAN_ROOT_USERNAME='root'
-MALAN_ROOT_PASSWORD='password10'
+MALAN_ROOT_USERNAME="${MALAN_ROOT_USERNAME:-root}"
 
 
-if [ -z "$MALAN_ROOT_USERNAME" ]; then
+if [ -z "${MALAN_ROOT_USERNAME}" ]; then
   echo -e "Please set env var MALAN_ROOT_USERNAME and try again"
   exit 1
 fi
 
-if [ -z "$MALAN_ROOT_PASSWORD" ]; then
+if [ -z "${MALAN_ROOT_PASSWORD}" ]; then
   echo -e "Please set env var MALAN_ROOT_PASSWORD to the root password and try again"
   exit 1
 fi

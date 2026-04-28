@@ -13,12 +13,38 @@
 alias Malan.Accounts
 alias Malan.Accounts.User
 
+read_root_password = fn ->
+  with nil <- System.get_env("MALAN_ROOT_PASSWORD"),
+       path when is_binary(path) and byte_size(path) > 0 <-
+         System.get_env("MALAN_ROOT_PASSWORD_FILE") do
+    path |> File.read!() |> String.trim()
+  else
+    pw when is_binary(pw) and byte_size(pw) > 0 -> pw
+    _ -> nil
+  end
+end
+
+root_password =
+  case {Mix.env(), read_root_password.()} do
+    {_env, pw} when is_binary(pw) and byte_size(pw) > 0 ->
+      pw
+
+    {env, _} when env in [:dev, :test] ->
+      "password10"
+
+    {env, _} ->
+      raise """
+      Refusing to seed root user in MIX_ENV=#{env} without an explicit password.
+      Set MALAN_ROOT_PASSWORD or MALAN_ROOT_PASSWORD_FILE before running seeds.
+      """
+  end
+
 root =
   User.registration_changeset(%User{}, %{
     username: "root",
     first_name: "Root",
     last_name: "User",
-    password: "password10",
+    password: root_password,
     email: "root@example.com",
     roles: ["admin", "user"],
     sex: "male",
