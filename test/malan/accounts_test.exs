@@ -1095,6 +1095,8 @@ defmodule Malan.AccountsTest do
         revoked_at: nil,
         ip_address: "127.0.0.1",
         valid_only_for_ip: false,
+        valid_only_for_approved_ips: false,
+        approved_ips: [],
         roles: ["user"],
         latest_tos_accept_ver: "1",
         latest_pp_accept_ver: "2"
@@ -1366,6 +1368,38 @@ defmodule Malan.AccountsTest do
       assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "127.0.0.1")
     end
 
+    test "validate_session/2 honors valid_only_for_approved_ips against the user's current approved_ips" do
+      user = user_fixture(%{"approved_ips" => ["1.1.1.1", "2.2.2.2"]})
+
+      {:ok, session} =
+        Accounts.create_session(user.username, user.password, "1.1.1.1", %{
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_approved_ips" => true
+        })
+
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.validate_session(session.api_token, "2.2.2.2")
+
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "9.9.9.9")
+    end
+
+    test "validate_session/2 rejects an approved-IP session after the user removes the IP from approved_ips" do
+      user = user_fixture(%{"approved_ips" => ["1.1.1.1"]})
+
+      {:ok, session} =
+        Accounts.create_session(user.username, user.password, "1.1.1.1", %{
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_approved_ips" => true
+        })
+
+      # Mutating the user's approved_ips invalidates any IP-restricted
+      # session bound to a removed IP — the per-request check loads the
+      # current list rather than a snapshot from session creation.
+      {:ok, _user} = Accounts.update_user(user, %{"approved_ips" => []})
+
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "1.1.1.1")
+    end
+
     test "update_user/2 can be used to update user preferences" do
       user = user_fixture()
 
@@ -1522,6 +1556,8 @@ defmodule Malan.AccountsTest do
           revoked_at: _revoked_at,
           ip_address: ip_address,
           valid_only_for_ip: valid_only_for_ip,
+          valid_only_for_approved_ips: _valid_only_for_approved_ips,
+          approved_ips: _approved_ips,
           roles: roles,
           latest_tos_accept_ver: latest_tos_accept_ver,
           latest_pp_accept_ver: latest_pp_accept_ver
@@ -1533,6 +1569,8 @@ defmodule Malan.AccountsTest do
           revoked_at: nil,
           ip_address: "127.0.0.1",
           valid_only_for_ip: false,
+          valid_only_for_approved_ips: false,
+          approved_ips: [],
           roles: ["user"],
           latest_tos_accept_ver: "12",
           latest_pp_accept_ver: "13"
@@ -1589,6 +1627,83 @@ defmodule Malan.AccountsTest do
                  }),
                  "127.0.0.1"
                )
+    end
+
+    test "session_valid?/2 accepts when valid_only_for_approved_ips and remote_ip is in approved_ips" do
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   valid_only_for_approved_ips: true,
+                   approved_ips: ["1.1.1.1", "2.2.2.2"],
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "2.2.2.2"
+               )
+    end
+
+    test "session_valid?/2 rejects when valid_only_for_approved_ips and remote_ip is not in approved_ips" do
+      assert {:error, :ip_addr} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   valid_only_for_approved_ips: true,
+                   approved_ips: ["1.1.1.1", "2.2.2.2"],
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "9.9.9.9"
+               )
+    end
+
+    test "session_valid?/2 rejects when valid_only_for_approved_ips and approved_ips is empty (fail-closed)" do
+      assert {:error, :ip_addr} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   valid_only_for_approved_ips: true,
+                   approved_ips: [],
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "1.1.1.1"
+               )
+    end
+
+    test "session_valid?/2 ignores approved_ips when valid_only_for_approved_ips is false" do
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.session_valid?(
+                 session_valid_fixture(%{
+                   valid_only_for_approved_ips: false,
+                   approved_ips: ["1.1.1.1"],
+                   revoked_at: nil,
+                   expires_at: Utils.DateTime.distant_future()
+                 }),
+                 "9.9.9.9"
+               )
+    end
+
+    test "session_valid?/2 enforces both valid_only_for_ip and valid_only_for_approved_ips when both set" do
+      args = fn approved_ips ->
+        session_valid_fixture(%{
+          ip_address: "1.1.1.1",
+          valid_only_for_ip: true,
+          valid_only_for_approved_ips: true,
+          approved_ips: approved_ips,
+          revoked_at: nil,
+          expires_at: Utils.DateTime.distant_future()
+        })
+      end
+
+      # remote_ip matches both session.ip_address and approved_ips → ok
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.session_valid?(args.(["1.1.1.1"]), "1.1.1.1")
+
+      # remote_ip matches approved_ips but not session.ip_address → :ip_addr
+      assert {:error, :ip_addr} =
+               Accounts.session_valid?(args.(["1.1.1.1", "2.2.2.2"]), "2.2.2.2")
+
+      # remote_ip matches session.ip_address but not approved_ips → :ip_addr
+      assert {:error, :ip_addr} =
+               Accounts.session_valid?(args.(["3.3.3.3"]), "1.1.1.1")
     end
 
     test "session_expired?/1" do

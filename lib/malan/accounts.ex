@@ -1128,6 +1128,13 @@ defmodule Malan.Accounts do
           revoked_at: s.revoked_at,
           ip_address: s.ip_address,
           valid_only_for_ip: s.valid_only_for_ip,
+          # `valid_only_for_approved_ips` is enforced per-request against
+          # the user's *current* `approved_ips` list (not a snapshot from
+          # session creation) so revoking an IP from `approved_ips`
+          # immediately invalidates any IP-restricted session that was
+          # bound to it. See `session_valid?/2`.
+          valid_only_for_approved_ips: s.valid_only_for_approved_ips,
+          approved_ips: u.approved_ips,
           roles: u.roles,
           latest_tos_accept_ver: u.latest_tos_accept_ver,
           latest_pp_accept_ver: u.latest_pp_accept_ver
@@ -1160,6 +1167,8 @@ defmodule Malan.Accounts do
           revoked_at: revoked_at,
           ip_address: ip_address,
           valid_only_for_ip: valid_only_for_ip,
+          valid_only_for_approved_ips: valid_only_for_approved_ips,
+          approved_ips: approved_ips,
           roles: roles,
           latest_tos_accept_ver: latest_tos_accept_ver,
           latest_pp_accept_ver: latest_pp_accept_ver
@@ -1181,6 +1190,17 @@ defmodule Malan.Accounts do
       valid_only_for_ip && ip_address != remote_ip ->
         Logger.info(
           "[session_valid?]: A token was used from the wrong ip address. valid ip: '#{ip_address}', remote_ip: '#{remote_ip}"
+        )
+
+        {:error, :ip_addr}
+
+      # Fail-closed when the session opted into approved-IP restriction:
+      # an empty `approved_ips` list rejects every request (`x not in []`
+      # is always true), which mirrors the contradictory request the
+      # client made (opt-in to a list while the list is empty).
+      valid_only_for_approved_ips && remote_ip not in (approved_ips || []) ->
+        Logger.info(
+          "[session_valid?]: A token marked valid_only_for_approved_ips was used from a non-approved IP. remote_ip: '#{remote_ip}', approved_ips: #{inspect(approved_ips)}"
         )
 
         {:error, :ip_addr}
