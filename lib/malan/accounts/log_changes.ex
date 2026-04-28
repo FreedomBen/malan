@@ -16,11 +16,18 @@ defmodule Malan.Accounts.Log.Changes do
     "sessions"
   ]
 
-  # Attrs that are always filtered
+  # Attrs that are always filtered. Plaintext credentials AND their stored
+  # hashes go in here — a leaked log row with `password_hash` would let an
+  # attacker run an offline crack, and the reset/verification token hashes
+  # are correlateable across rows even though they aren't directly usable
+  # as a credential.
   @blacklisted_attrs [
     :password,
+    :password_hash,
     :password_reset_token,
+    :password_reset_token_hash,
     :email_verification_token,
+    :email_verification_token_hash,
     :api_token
   ]
 

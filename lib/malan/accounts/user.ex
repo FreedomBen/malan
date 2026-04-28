@@ -55,8 +55,8 @@ defmodule Malan.Accounts.User do
     field :custom_attrs, :map              # Free form JSON for dependent services to use
     field :locked_at, :utc_datetime, default: nil  # nil means not locked
     field :locked_by, :binary_id, default: nil
-    field :password_reset_token, :string, virtual: true
-    field :password_reset_token_hash, :string
+    field :password_reset_token, :string, virtual: true, redact: true
+    field :password_reset_token_hash, :string, redact: true
     field :password_reset_token_expires_at, :utc_datetime
     field :email_verification_token, :string, virtual: true, redact: true
     field :email_verification_token_hash, :string, redact: true
