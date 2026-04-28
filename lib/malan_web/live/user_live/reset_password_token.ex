@@ -12,8 +12,13 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
   def mount(%{"token" => token} = _params, _session, socket) do
     user = Accounts.get_user_by_password_reset_token(token)
 
-    socket = assign(socket, :user, user)
-    {:ok, assign(socket, :reset_token, token)}
+    socket =
+      socket
+      |> assign(:user, user)
+      |> assign(:reset_token, token)
+      |> assign(:remote_ip, MalanWeb.UserAuth.remote_ip(socket))
+
+    {:ok, socket}
   end
 
   @impl true
@@ -23,7 +28,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
 
   @impl true
   def handle_event("reset_password", %{"password" => password} = params, socket) do
-    remote_ip = "0.0.0.0"
+    remote_ip = socket.assigns.remote_ip
 
     # If the form value for token is set, use that for the reset token.  That way
     # if users can't click the link, they can open the page and paste in the token.

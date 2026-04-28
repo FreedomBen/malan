@@ -48,7 +48,11 @@ defmodule MalanWeb.UserAuth do
     end
   end
 
-  defp remote_ip(socket) do
+  @doc """
+  Returns the peer IP for a LiveView socket as a printable string, or
+  `"0.0.0.0"` when no peer data is available (e.g. server-internal mounts).
+  """
+  def remote_ip(socket) do
     case get_connect_info(socket, :peer_data) do
       %{address: address} when not is_nil(address) ->
         address |> :inet.ntoa() |> to_string()

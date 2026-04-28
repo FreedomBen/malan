@@ -21,6 +21,7 @@ defmodule MalanWeb.UserLive.VerifyEmail do
       |> assign(:status, nil)
       |> assign(:error, nil)
       |> assign(:too_many_requests, false)
+      |> assign(:remote_ip, MalanWeb.UserAuth.remote_ip(socket))
 
     {:ok, socket}
   end
@@ -31,7 +32,7 @@ defmodule MalanWeb.UserLive.VerifyEmail do
   @impl true
   def handle_event("send_verification_email", _params, socket) do
     user = socket.assigns.user
-    remote_ip = "0.0.0.0"
+    remote_ip = socket.assigns.remote_ip
 
     meta = %{ip: remote_ip}
 

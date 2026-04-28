@@ -5,7 +5,9 @@ defmodule MalanWeb.UserVerifyEmailLiveTest do
   import Swoosh.TestAssertions
 
   alias Malan.Accounts
+  alias Malan.Accounts.EmailVerificationEvent
   alias Malan.RateLimits.EmailVerification, as: EVRateLimit
+  alias Malan.Repo
   alias Malan.Test.Helpers.Accounts, as: AccountsHelpers
 
   setup %{conn: conn} = context do
@@ -62,6 +64,34 @@ defmodule MalanWeb.UserVerifyEmailLiveTest do
 
       assert html =~ "already verified"
       assert_no_email_sent()
+    end
+
+    test "captures the LiveView peer IP in email_verification_events", %{conn: conn} do
+      import Ecto.Query, only: [from: 2]
+
+      {:ok, user, session} = AccountsHelpers.regular_user_with_session()
+      on_exit(fn -> EVRateLimit.clear(user.id) end)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{api_token: session.api_token})
+        |> Plug.Conn.put_private(:live_view_connect_info, %{
+          peer_data: %{address: {192, 0, 2, 99}, port: 12_345, ssl_cert: nil}
+        })
+
+      {:ok, view, _html} = live(conn, verify_path())
+      _ = render_submit(view, "send_verification_email", %{})
+
+      event =
+        Repo.one(
+          from e in EmailVerificationEvent,
+            where: e.user_id == ^user.id,
+            order_by: [desc: e.inserted_at, desc: e.id],
+            limit: 1
+        )
+
+      refute is_nil(event), "expected an email_verification_events row"
+      assert event.ip == "192.0.2.99"
     end
 
     test "shows too-many-requests message when rate limit trips", %{conn: conn} do

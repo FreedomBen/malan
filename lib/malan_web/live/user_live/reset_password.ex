@@ -7,7 +7,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
   # Wires up socket assigns and after invokes handle_params/3
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, :remote_ip, MalanWeb.UserAuth.remote_ip(socket))}
   end
 
   # Handle URI and query params
@@ -18,7 +18,7 @@ defmodule MalanWeb.UserLive.ResetPassword do
 
   @impl true
   def handle_event("send_reset_email", %{"email" => email}, socket) do
-    remote_ip = "0.0.0.0"
+    remote_ip = socket.assigns.remote_ip
 
     case Accounts.get_user_by_email(email) do
       nil ->

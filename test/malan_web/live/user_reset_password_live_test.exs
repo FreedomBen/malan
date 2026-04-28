@@ -79,6 +79,28 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     assert_no_email_sent()
   end
 
+  test "captures the LiveView peer IP in the audit log (not the legacy 0.0.0.0 stub)",
+       %{conn: conn} do
+    {:ok, user} = AccountsHelpers.regular_user(%{})
+    on_exit(fn -> PasswordReset.clear(user.id) end)
+
+    conn =
+      Plug.Conn.put_private(conn, :live_view_connect_info, %{
+        peer_data: %{address: {203, 0, 113, 7}, port: 12_345, ssl_cert: nil}
+      })
+
+    {:ok, view, _html} = live(conn, reset_path())
+    _ = render_submit(view, "send_reset_email", %{"email" => user.email})
+
+    log =
+      user.id
+      |> Accounts.list_logs_by_user_id(0, 100)
+      |> Enum.find(fn l -> l.what =~ "send_reset_email" end)
+
+    refute is_nil(log), "expected an audit log row for send_reset_email"
+    assert log.remote_ip == "203.0.113.7"
+  end
+
   test "still surfaces success when mail provider rejects credentials (delivery is async)",
        %{conn: conn} do
     # Email delivery happens in an Oban worker, so SMTP credential failures
