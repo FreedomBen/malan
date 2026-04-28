@@ -22,7 +22,9 @@ config :malan, Malan.Repo,
 # you can enable the server option below.
 config :malan, MalanWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "jhOV8WgGOt2XZ5iHeEKZ3/m2trLP5CJJSmZbaClcTXjquvkToAwRjaOET3zZhmho",
+  # Obvious sentinel so secret-scanners don't fire. Phoenix requires
+  # >= 64 chars; the duplicated string is 104.
+  secret_key_base: String.duplicate("test-only-secret-key-base-", 4),
   server: false
 
 # In test we don't send emails.
