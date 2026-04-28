@@ -163,39 +163,23 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret 16
       """
 
-  # ## SSL Support
+  # ## TLS / ingress contract
   #
-  # To get SSL working, you will need to add the `https` key
-  # to the previous section and set your `:url` port to 443:
+  # TLS is terminated upstream of the app. Cloudflare speaks HTTPS to the
+  # client; the DigitalOcean load balancer terminates TLS for the
+  # cluster; the ingress forwards plain HTTP to the pod on port 4000
+  # with `X-Forwarded-Proto: https`. We therefore bind only `http:` here
+  # and rely on `force_ssl: [rewrite_on: [:x_forwarded_proto]]` below to
+  # (a) detect the upstream TLS so legitimate HTTPS requests are not
+  # redirected, and (b) add the `Strict-Transport-Security` header on
+  # every response so future visits never hit cleartext.
   #
-  #     config :malan, MalanWeb.Endpoint,
-  #       ...,
-  #       url: [host: "example.com", port: 443],
-  #       https: [
-  #         ...,
-  #         port: 443,
-  #         cipher_suite: :strong,
-  #         keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
-  #         certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
-  #       ]
-  #
-  # The `cipher_suite` is set to `:strong` to support only the
-  # latest and more secure SSL ciphers. This means old browsers
-  # and clients may not be supported. You can set it to
-  # `:compatible` for wider support.
-  #
-  # `:keyfile` and `:certfile` expect an absolute path to the key
-  # and cert in disk or a relative path inside priv, for example
-  # "priv/ssl/server.key". For all supported SSL configuration
-  # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/1
-  #
-  # We also recommend setting `force_ssl` in your endpoint, ensuring
-  # no data is ever sent via http, always redirecting to https:
-  #
-  #     config :malan, MalanWeb.Endpoint,
-  #       force_ssl: [hsts: true]
-  #
-  # Check `Plug.SSL` for all available options in `force_ssl`.
+  # K8s liveness/readiness probes hit the pod directly over HTTP without
+  # `X-Forwarded-Proto`, so they receive a 301 to https. Kubelet treats
+  # 200-399 status codes as healthy, so the redirect does not fail the
+  # probe. If you ever need to terminate TLS at the app itself (e.g.
+  # running outside the cluster) add an `https:` block here; see
+  # https://hexdocs.pm/plug/Plug.SSL.html#configure/1.
   config :malan, MalanWeb.Endpoint,
     # url: is used for generating links in the application.
     url: [
@@ -218,16 +202,24 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: Utils.Number.to_int(port)
     ],
-    # https: [
-    #   ip: {0, 0, 0, 0, 0, 0, 0, 0},
-    #   port: Utils.Number.to_int(port)
-    # ],
+    force_ssl: [
+      hsts: true,
+      rewrite_on: [:x_forwarded_proto]
+    ],
     live_view: [signing_salt: live_view_signing_salt],
     session_options: [
       store: :cookie,
       key: "_malan_key",
       signing_salt: session_signing_salt,
-      encryption_salt: session_encryption_salt
+      encryption_salt: session_encryption_salt,
+      # `secure: true` keeps browsers from sending the cookie if a
+      # downgrade path appears (misconfigured ingress, exposed HTTP
+      # listener, etc.). `same_site: "Lax"` mitigates CSRF on
+      # state-changing top-level navigations while still allowing the
+      # cookie on link clicks; `Strict` would break OAuth-style
+      # callbacks where the redirect is initiated by a third-party.
+      secure: true,
+      same_site: "Lax"
     ],
     secret_key_base: secret_key_base
 

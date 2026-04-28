@@ -133,7 +133,12 @@ config :malan, MalanWeb.Endpoint,
     store: :cookie,
     key: "_malan_key",
     signing_salt: session_signing_salt,
-    encryption_salt: session_encryption_salt
+    encryption_salt: session_encryption_salt,
+    # `same_site: "Lax"` mitigates CSRF on state-changing top-level
+    # navigations while still allowing the cookie on ordinary link
+    # clicks. `secure: true` is layered on top in `config/runtime.exs`
+    # for prod only — dev/test run over plain HTTP.
+    same_site: "Lax"
   ]
 
 # Configures the mailer
