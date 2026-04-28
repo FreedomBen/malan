@@ -138,6 +138,31 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  # Cookie / LiveView signing & encryption salts. These are pulled into the
+  # endpoint config below so `MalanWeb.Plugs.RuntimeSession` and the LiveView
+  # socket's `connect_info: [session: {M, F, A}]` pick them up at runtime.
+  # Generate values with `mix phx.gen.secret 16`.
+  session_signing_salt =
+    System.get_env("SESSION_SIGNING_SALT") ||
+      raise """
+      environment variable SESSION_SIGNING_SALT is missing.
+      You can generate one by calling: mix phx.gen.secret 16
+      """
+
+  session_encryption_salt =
+    System.get_env("SESSION_ENCRYPTION_SALT") ||
+      raise """
+      environment variable SESSION_ENCRYPTION_SALT is missing.
+      You can generate one by calling: mix phx.gen.secret 16
+      """
+
+  live_view_signing_salt =
+    System.get_env("LIVE_VIEW_SIGNING_SALT") ||
+      raise """
+      environment variable LIVE_VIEW_SIGNING_SALT is missing.
+      You can generate one by calling: mix phx.gen.secret 16
+      """
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key
@@ -197,6 +222,13 @@ if config_env() == :prod do
     #   ip: {0, 0, 0, 0, 0, 0, 0, 0},
     #   port: Utils.Number.to_int(port)
     # ],
+    live_view: [signing_salt: live_view_signing_salt],
+    session_options: [
+      store: :cookie,
+      key: "_malan_key",
+      signing_salt: session_signing_salt,
+      encryption_salt: session_encryption_salt
+    ],
     secret_key_base: secret_key_base
 
   # ## Using releases

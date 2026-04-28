@@ -3,17 +3,38 @@ defmodule MalanWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :malan
 
   # The session is stored in a cookie that is both signed and encrypted.
-  # The salts are pulled from application config (see config/config.exs); they
-  # default to historical values for backward compatibility but can be rotated
-  # at build time via the SESSION_SIGNING_SALT / SESSION_ENCRYPTION_SALT env
-  # vars. Plug.Session compiles these in, so rotation requires a rebuild.
-  @session_options Application.compile_env!(:malan, [MalanWeb.Endpoint, :session_options])
+  # Salts live in runtime application config (`config/runtime.exs`, populated
+  # from SESSION_SIGNING_SALT / SESSION_ENCRYPTION_SALT / LIVE_VIEW_SIGNING_SALT
+  # env vars in prod) — they are *not* compiled into the release. The HTTP
+  # pipeline reads them via `MalanWeb.Plugs.RuntimeSession`, which wraps
+  # `Plug.Session`, and the LiveView socket reads them at WS connect time via
+  # the `{module, function, args}` form of `:session` in `connect_info`.
 
   # `:x_headers` exposes request headers (including `cf-connecting-ip`)
   # to LiveView mounts so `MalanWeb.RealIp.from_connect_info/1` can
   # prefer the Cloudflare-reported IP, mirroring the HTTP-side plug.
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [:peer_data, :x_headers, session: @session_options]]
+    websocket: [
+      connect_info: [
+        :peer_data,
+        :x_headers,
+        session: {__MODULE__, :session_options, []}
+      ]
+    ]
+
+  @doc """
+  Returns the cookie session options from runtime application config.
+
+  Invoked by `MalanWeb.Plugs.RuntimeSession` (HTTP pipeline) and by Phoenix
+  at WS connect time (via the MFA tuple in the LiveView socket's
+  `connect_info`). Reads `:malan, MalanWeb.Endpoint, :session_options`,
+  which `config/runtime.exs` overrides from env vars in prod.
+  """
+  def session_options do
+    :malan
+    |> Application.fetch_env!(__MODULE__)
+    |> Keyword.fetch!(:session_options)
+  end
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -75,6 +96,6 @@ defmodule MalanWeb.Endpoint do
   plug Sentry.PlugContext
   plug Plug.MethodOverride
   plug Plug.Head
-  plug Plug.Session, @session_options
+  plug MalanWeb.Plugs.RuntimeSession
   plug MalanWeb.Router
 end

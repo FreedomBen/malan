@@ -106,17 +106,21 @@ config :malan, Malan.Accounts.Session,
 
 # Cookie signing/encryption salts. These are NOT the secret — `secret_key_base`
 # is — but they're domain separators for derived keys and should not live in
-# source. Read from env at build time; defaults preserve historical values so
-# existing deployments aren't invalidated by this refactor. To rotate, set the
-# env vars at build time and rebuild the release.
+# source. The literals below are obviously-fake sentinels for dev/test only.
+# In prod, `config/runtime.exs` requires real values from SESSION_SIGNING_SALT
+# / SESSION_ENCRYPTION_SALT / LIVE_VIEW_SIGNING_SALT env vars (raising if any
+# is missing) and overrides this config at boot. The HTTP pipeline reads them
+# via `MalanWeb.Plugs.RuntimeSession` and the LiveView socket reads them via
+# the MFA tuple in `connect_info`, so neither path bakes salts into the
+# compiled release.
 session_signing_salt =
-  System.get_env("SESSION_SIGNING_SALT") || "36hUTpHh"
+  System.get_env("SESSION_SIGNING_SALT") || "DEV_ONLY_SESSION_SIGNING_SALT"
 
 session_encryption_salt =
-  System.get_env("SESSION_ENCRYPTION_SALT") || "3043FHjkW"
+  System.get_env("SESSION_ENCRYPTION_SALT") || "DEV_ONLY_SESSION_ENCRYPTION_SALT"
 
 live_view_signing_salt =
-  System.get_env("LIVE_VIEW_SIGNING_SALT") || "S5EXJrIi"
+  System.get_env("LIVE_VIEW_SIGNING_SALT") || "DEV_ONLY_LIVE_VIEW_SIGNING_SALT"
 
 # Configures the endpoint
 config :malan, MalanWeb.Endpoint,
