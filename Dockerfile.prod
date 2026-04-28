@@ -8,6 +8,13 @@ ARG SECRET_KEY_BASE=124
 ENV USER_HOME /home/docker
 ENV LANG en_US.UTF-8
 ARG OTP_VERSION=28.3
+# SHA256 of otp_src_${OTP_VERSION}.tar.gz from
+# https://github.com/erlang/otp/releases/download/OTP-${OTP_VERSION}/.
+# Pin alongside OTP_VERSION so a tarball that drifts under us — registry
+# compromise, in-flight tampering — fails the build instead of being
+# silently compiled and installed. Recompute with
+# `curl -fsSL <url> | sha256sum` when bumping OTP_VERSION.
+ARG OTP_SOURCE_SHA256=1956ad6584678b631ab4f9b8aebe2dac037cd7401abb44564a01134ff0ac5bed
 ARG ELIXIR_VERSION=1.19.4
 ARG ELIXIR_ZIP=elixir-otp-28.zip
 ENV PATH /usr/local/elixir-otp-28/bin:${PATH}
@@ -57,17 +64,26 @@ RUN dnf install --assumeyes glibc-langpack-en \
  && dnf clean all \
  && rm -rf /var/cache/dnf /var/cache/yum
 
-# Build and install Erlang/OTP (GitHub release)
+# Build and install Erlang/OTP (GitHub release).
+#
+# The previous version of this stanza also downloaded the `.sigstore`
+# bundle Erlang publishes alongside each OTP release, but never
+# verified it (the file was simply deleted at the end of the RUN), so
+# the build accepted any tarball the registry returned. Verifying the
+# Sigstore bundle requires `cosign` plus network access to the
+# transparency log at build time; pinning `OTP_SOURCE_SHA256` is
+# simpler and matches the existing Elixir verification a few lines
+# down.
 RUN set -eux \
  && OTP_TARBALL="otp_src_${OTP_VERSION}.tar.gz" \
  && curl -fsSL "https://github.com/erlang/otp/releases/download/OTP-${OTP_VERSION}/${OTP_TARBALL}" -o "/tmp/${OTP_TARBALL}" \
- && curl -fsSL "https://github.com/erlang/otp/releases/download/OTP-${OTP_VERSION}/${OTP_TARBALL}.sigstore" -o "/tmp/${OTP_TARBALL}.sigstore" \
+ && echo "${OTP_SOURCE_SHA256}  /tmp/${OTP_TARBALL}" | sha256sum --check - \
  && tar -xzf "/tmp/${OTP_TARBALL}" -C /tmp \
  && cd "/tmp/otp_src_${OTP_VERSION}" \
  && ./configure --without-wx \
  && make -j"$(nproc)" \
  && make install \
- && rm -rf "/tmp/otp_src_${OTP_VERSION}" "/tmp/${OTP_TARBALL}" "/tmp/${OTP_TARBALL}.sigstore"
+ && rm -rf "/tmp/otp_src_${OTP_VERSION}" "/tmp/${OTP_TARBALL}"
 
 # Install Elixir (GitHub release)
 RUN set -eux \
