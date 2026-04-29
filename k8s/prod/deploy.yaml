@@ -47,6 +47,8 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - image: docker.io/freedomben/malan:${RELEASE_VERSION}
         name: malan
@@ -72,6 +74,13 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 20
           failureThreshold: 3
+        env:
+          # The release image's root FS is read-only. Redirect Mix release
+          # scratch space and the BEAM crash dump to the tmp emptyDir.
+          - name: RELEASE_TMP
+            value: /tmp
+          - name: ERL_CRASH_DUMP
+            value: /tmp/erl_crash.dump
         envFrom:
           - configMapRef:
               name: malan-web-config
@@ -84,8 +93,18 @@ spec:
           limits:
             cpu: "2"
             memory: 2Gi
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
         securityContext:
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
