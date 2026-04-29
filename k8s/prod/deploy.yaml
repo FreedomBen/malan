@@ -163,6 +163,39 @@ data:
   ADMIN_SET_USER_MIN_PASSWORD_LENGTH: '6'
   ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH: '12'
   MALAN_EMAIL_VERIFICATION_AUTO_SEND: 'false'
+
+  # Operational tunables — pinned at code defaults from config/config.exs.
+  # Honored at boot via config/runtime.exs (see commits 0cfde98 + 6e3ca5b);
+  # changing a value here applies on the next pod rollout, no rebuild.
+  # Token expirations (Malan.Accounts.User + Malan.Accounts.Session)
+  DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS: '86400'     # 24 hours
+  DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS: '1800'  # 30 minutes
+  DEFAULT_TOKEN_EXPIRATION_SECS: '604800'                   # 7 days
+  DEFAULT_MAX_EXTENSION_TIME_SECS: '2419200'                # 28 days
+  DEFAULT_MAX_EXTENSION_SECS: '604800'                      # 7 days
+  MAX_MAX_EXTENSION_SECS: '7862400'                         # ~90 days
+  # Rate limits — password reset (per-user)
+  PASSWORD_RESET_LOWER_LIMIT_MSECS: '180000'                # 3 minutes
+  PASSWORD_RESET_LOWER_LIMIT_COUNT: '1'
+  PASSWORD_RESET_UPPER_LIMIT_MSECS: '86400000'              # 24 hours
+  PASSWORD_RESET_UPPER_LIMIT_COUNT: '3'
+  # Rate limits — password reset (per-IP, applied before user lookup
+  # to throttle username/email enumeration)
+  PASSWORD_RESET_IP_LOWER_LIMIT_MSECS: '60000'              # 1 minute
+  PASSWORD_RESET_IP_LOWER_LIMIT_COUNT: '5'
+  PASSWORD_RESET_IP_UPPER_LIMIT_MSECS: '86400000'           # 24 hours
+  PASSWORD_RESET_IP_UPPER_LIMIT_COUNT: '30'
+  # Rate limits — session extension and login
+  SESSION_EXTENSION_LIMIT_MSECS: '60000'                    # 1 minute
+  SESSION_EXTENSION_LIMIT_COUNT: '2'
+  LOGIN_LIMIT_MSECS: '60000'                                # 1 minute
+  LOGIN_LIMIT_COUNT: '5'
+  # Rate limits — email verification
+  EMAIL_VERIFY_LOWER_LIMIT_MSECS: '1800000'                 # 30 minutes
+  EMAIL_VERIFY_LOWER_LIMIT_COUNT: '1'
+  EMAIL_VERIFY_UPPER_LIMIT_MSECS: '86400000'                # 24 hours
+  EMAIL_VERIFY_UPPER_LIMIT_COUNT: '3'
+
   SENTRY_ENVIRONMENT: 'prod'
   # Vars from secrets
   # DATABASE_URL
