@@ -111,23 +111,26 @@ hammer_redis_url =
       System.get_env("HAMMER_REDIS_URL") || "redis://localhost:6379/0"
   end
 
-# When the URL is `rediss://`, supply explicit Erlang SSL options to
-# Redix (Hammer.Redis pops `:url`, then `Keyword.merge`s the rest on top
-# of the URL-derived start options, so `:socket_opts` reaches
-# `Redix.start_link/1`). DigitalOcean managed Redis presents a leaf
-# cert with the wildcard SAN `*.b.db.ondigitalocean.com`. Erlang's
-# default hostname-check function rejects multi-character single-label
-# hostnames like `db-redis-nyc3-staging-do-user-7165198-0.b.db…` against
-# that wildcard, so we install the HTTPS-style match function which
-# implements RFC 6125 wildcard matching. The CA file is the same DO
-# Project CA we use for Postgres.
+# When the URL is `rediss://`, override Erlang's default hostname-check
+# function. Redix already supplies sensible TLS defaults — `verify:
+# :verify_peer`, `depth: 3`, and `:cacerts` from `:public_key.cacerts_get/0`
+# (OTP 25+) or castore — and DO Redis chains to a publicly-trusted CA, so
+# we deliberately do *not* set `:cacertfile`/`:cacerts` here (doing so
+# disables Redix's defaults, per its docs).
+#
+# What we *do* need to override is hostname matching. DO presents a leaf
+# cert with the wildcard SAN `*.b.db.ondigitalocean.com`; Erlang's
+# default match function rejects long single-label hostnames like
+# `db-redis-nyc3-staging-do-user-7165198-0.b.db.ondigitalocean.com`
+# against that wildcard. Installing the HTTPS-style match function
+# applies RFC 6125 wildcard semantics and accepts the match.
+#
+# Hammer.Redis pops `:url` and `Keyword.merge`s the rest on top of the
+# URL-derived start options, so `:socket_opts` reaches `Redix.start_link/1`.
 hammer_redis_extra_opts =
   if String.starts_with?(hammer_redis_url, "rediss://") do
     [
       socket_opts: [
-        verify: :verify_peer,
-        cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt"),
-        depth: 3,
         customize_hostname_check: [
           match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
         ]
