@@ -54,6 +54,13 @@ spec:
               name: malan-web-config
           - secretRef:
               name: malan-deploy-secrets
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
         securityContext:
           allowPrivilegeEscalation: false
       affinity:
