@@ -238,10 +238,13 @@ if config_env() == :prod do
   # `Strict-Transport-Security` header on every response so future
   # visits never hit cleartext.
   #
-  # K8s liveness/readiness probes hit the pod directly over HTTP without
-  # `X-Forwarded-Proto`, so they receive a 301 to https. Kubelet treats
-  # 200-399 status codes as healthy, so the redirect does not fail the
-  # probe. If you ever need to terminate TLS at the app itself (e.g.
+  # K8s liveness/readiness probes hit the pod over plain HTTP, so the
+  # probe definitions in `k8s/{staging,prod}/deploy.yaml` send an
+  # `X-Forwarded-Proto: https` header. With `rewrite_on:
+  # [:x_forwarded_proto]` that header makes Plug.SSL treat the request
+  # as already-HTTPS and skip the redirect — without it, kubelet logs a
+  # `Warning ProbeWarning: Probe terminated redirects` event for every
+  # poll. If you ever need to terminate TLS at the app itself (e.g.
   # running outside the cluster) add an `https:` block here; see
   # https://hexdocs.pm/plug/Plug.SSL.html#configure/1.
   config :malan, MalanWeb.Endpoint,
