@@ -22,7 +22,18 @@ config :malan, MalanWeb.Endpoint,
   # a misconfigured Prometheus scraper that hits :4000/metrics on a 60s loop
   # (the real metrics endpoint is PromEx on :9568). The redirect itself and
   # HSTS still apply; we just stop logging an identical-shape line per hit.
-  force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto], log: false],
+  #
+  # `exclude` lets in-cluster service-to-service callers through without
+  # being redirected to https://accounts.ameelio.org. They reach the pod
+  # over plain HTTP via the cluster Service and never traverse Cloudflare
+  # or the DO LB, so their requests carry none of the usual proxy
+  # headers. See `MalanWeb.Plugs.InClusterRequest` for the trust model.
+  force_ssl: [
+    hsts: true,
+    rewrite_on: [:x_forwarded_proto],
+    log: false,
+    exclude: &MalanWeb.Plugs.InClusterRequest.exclude_from_force_ssl?/1
+  ],
   check_origin: [
     "https://malan.ameelio.org",
     "https://malan-prod.ameelio.org",
