@@ -11,6 +11,11 @@ import Config
 # before starting your production server.
 config :malan, MalanWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json",
+  # `force_ssl` is read by Phoenix.Endpoint via Application.compile_env, so it
+  # must live in compile-time config (here) rather than config/runtime.exs —
+  # otherwise Config.Provider aborts boot with a compile/runtime mismatch.
+  # The values are static (no env-var inputs), so baking them in is safe.
+  force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto]],
   check_origin: [
     "https://malan.ameelio.org",
     "https://malan-prod.ameelio.org",

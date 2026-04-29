@@ -16,12 +16,16 @@ defmodule MalanWeb.EndpointTest do
     end
   end
 
-  describe "production-only cookie / transport hardening (config/runtime.exs)" do
-    # `secure: true` and `force_ssl` are only set in the `if config_env() ==
-    # :prod` block of `config/runtime.exs`, so they are not present in the
-    # test env's loaded application config. We assert against the source
-    # text instead so a careless edit of runtime.exs trips a test.
+  describe "production-only cookie / transport hardening" do
+    # `secure: true` and `same_site: "Lax"` live in the `if config_env() ==
+    # :prod` block of `config/runtime.exs`. `force_ssl` lives in
+    # `config/prod.exs` — Phoenix.Endpoint reads it via Application.compile_env,
+    # so it must be compile-time config or the release aborts boot with a
+    # compile/runtime mismatch. None of these are present in the test env's
+    # loaded application config, so we assert against the source text instead
+    # so a careless edit trips a test.
     @runtime_exs Path.join([__DIR__, "..", "..", "config", "runtime.exs"]) |> Path.expand()
+    @prod_exs Path.join([__DIR__, "..", "..", "config", "prod.exs"]) |> Path.expand()
 
     test "prod block sets secure: true on the session cookie" do
       assert File.read!(@runtime_exs) =~ ~r/session_options:\s*\[[^\]]*secure:\s*true/s
@@ -31,8 +35,8 @@ defmodule MalanWeb.EndpointTest do
       assert File.read!(@runtime_exs) =~ ~r/session_options:\s*\[[^\]]*same_site:\s*"Lax"/s
     end
 
-    test "prod block enables force_ssl with HSTS and X-Forwarded-Proto rewrite" do
-      contents = File.read!(@runtime_exs)
+    test "prod compile-time config enables force_ssl with HSTS and X-Forwarded-Proto rewrite" do
+      contents = File.read!(@prod_exs)
       assert contents =~ ~r/force_ssl:\s*\[[^\]]*hsts:\s*true/s
       assert contents =~ ~r/force_ssl:\s*\[[^\]]*rewrite_on:\s*\[:x_forwarded_proto\]/s
     end

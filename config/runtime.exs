@@ -192,10 +192,12 @@ if config_env() == :prod do
   # client; the DigitalOcean load balancer terminates TLS for the
   # cluster; the ingress forwards plain HTTP to the pod on port 4000
   # with `X-Forwarded-Proto: https`. We therefore bind only `http:` here
-  # and rely on `force_ssl: [rewrite_on: [:x_forwarded_proto]]` below to
-  # (a) detect the upstream TLS so legitimate HTTPS requests are not
-  # redirected, and (b) add the `Strict-Transport-Security` header on
-  # every response so future visits never hit cleartext.
+  # and rely on `force_ssl: [rewrite_on: [:x_forwarded_proto]]` (set in
+  # config/prod.exs — it must be compile-time so the endpoint compiles
+  # in `Plug.SSL`) to (a) detect the upstream TLS so legitimate HTTPS
+  # requests are not redirected, and (b) add the
+  # `Strict-Transport-Security` header on every response so future
+  # visits never hit cleartext.
   #
   # K8s liveness/readiness probes hit the pod directly over HTTP without
   # `X-Forwarded-Proto`, so they receive a 301 to https. Kubelet treats
@@ -224,10 +226,6 @@ if config_env() == :prod do
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: Utils.Number.to_int(port)
-    ],
-    force_ssl: [
-      hsts: true,
-      rewrite_on: [:x_forwarded_proto]
     ],
     live_view: [signing_salt: live_view_signing_salt],
     session_options: [
