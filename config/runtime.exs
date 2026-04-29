@@ -155,6 +155,28 @@ email_verification_auto_send? =
 
 config :malan, email_verification_auto_send: email_verification_auto_send?
 
+# Password-length minimums. Read at runtime so the k8s ConfigMap
+# (`MIN_PASSWORD_LENGTH`, `ADMIN_SET_USER_MIN_PASSWORD_LENGTH`,
+# `ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH`) is honored at boot. These previously
+# lived in `config/config.exs`, which captures env at compile time — under
+# the multi-stage `Dockerfile.prod` the builder stage doesn't see the prod
+# env vars, so the baked-in defaults silently won regardless of what the
+# ConfigMap said. The defaults here match the compile-time baseline in
+# `config/config.exs` so behavior is unchanged when the env vars are unset.
+min_password_length =
+  (System.get_env("MIN_PASSWORD_LENGTH") || "10") |> String.to_integer()
+
+admin_set_user_min_password_length =
+  (System.get_env("ADMIN_SET_USER_MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
+
+admin_account_min_password_length =
+  (System.get_env("ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH") || "12") |> String.to_integer()
+
+config :malan, Malan.Accounts.User,
+  min_password_length: min_password_length,
+  admin_set_user_min_password_length: admin_set_user_min_password_length,
+  admin_account_min_password_length: admin_account_min_password_length
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

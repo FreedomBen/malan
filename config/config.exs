@@ -11,13 +11,12 @@ config :malan,
   ecto_repos: [Malan.Repo],
   generators: [binary_id: true]
 
-min_password_length_env =
-  System.get_env("MIN_PASSWORD_LENGTH") || "10"
-admin_set_user_min_password_length_env =
-  System.get_env("ADMIN_SET_USER_MIN_PASSWORD_LENGTH") || "6"
-admin_account_min_password_length_env =
-  System.get_env("ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH") || "12"
-
+# Password-length minimums are overridden at runtime in `config/runtime.exs`
+# so the k8s ConfigMap (`MIN_PASSWORD_LENGTH`,
+# `ADMIN_SET_USER_MIN_PASSWORD_LENGTH`,
+# `ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH`) is honored at boot rather than
+# baked in at compile time. The literals below are baseline defaults
+# that runtime.exs overlays.
 config :malan, Malan.Accounts.User,
   # 24 hours
   default_password_reset_token_expiration_secs:
@@ -27,9 +26,9 @@ config :malan, Malan.Accounts.User,
   default_email_verification_token_expiration_secs:
     (System.get_env("DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS") || "1800")
     |> String.to_integer(),
-  min_password_length: String.to_integer(min_password_length_env),
-  admin_set_user_min_password_length: String.to_integer(admin_set_user_min_password_length_env),
-  admin_account_min_password_length: String.to_integer(admin_account_min_password_length_env)
+  min_password_length: 10,
+  admin_set_user_min_password_length: 6,
+  admin_account_min_password_length: 12
 
 config :malan,
   email_verification_auto_send: true,
