@@ -134,21 +134,28 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
+  # Postgrex deprecated the separate `ssl_opts` key — the keyword list is
+  # now passed directly as `ssl:`. `false` disables TLS; the keyword form
+  # enables it with the DO-managed Postgres CA cert as the trust anchor.
+  # Resolve the cert via app_dir so the path works under a mix release,
+  # where the app's priv/ lives at lib/malan-<vsn>/priv/, not at the cwd.
+  database_ssl =
+    if System.get_env("DATABASE_TLS_ENABLED") |> Utils.true_or_explicitly_false?() do
+      [cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt")]
+
+      # To provide mTLS client creds, append:
+      # keyfile: Application.app_dir(:malan, "priv/client-key.pem"),
+      # certfile: Application.app_dir(:malan, "priv/client-cert.pem")
+    else
+      false
+    end
+
   config :malan, Malan.Repo,
     # socket_options: [:inet6],
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6,
-    ssl: System.get_env("DATABASE_TLS_ENABLED") |> Utils.true_or_explicitly_false?(),
-    ssl_opts: [
-      # Resolve via app_dir so this works under a mix release, where the
-      # app's priv/ lives at lib/malan-<vsn>/priv/, not at the cwd.
-      cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt")
-
-      # To provide mTLS client creds
-      # keyfile: "priv/client-key.pem",
-      # certfile: "priv/client-cert.pem"
-    ]
+    ssl: database_ssl
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
