@@ -54,12 +54,22 @@ spec:
           httpGet:
             path: /health_check/readiness
             port: 4000
+            # Without this, force_ssl 301-redirects the kubelet probe and
+            # surfaces a Warning ProbeWarning event. force_ssl is configured
+            # with `rewrite_on: [:x_forwarded_proto]`, so this header makes
+            # Plug.SSL treat the request as already-HTTPS.
+            httpHeaders:
+            - name: X-Forwarded-Proto
+              value: https
           initialDelaySeconds: 5
           periodSeconds: 2
         livenessProbe:
           httpGet:
             path: /health_check/liveness
             port: 4000
+            httpHeaders:
+            - name: X-Forwarded-Proto
+              value: https
           initialDelaySeconds: 30
           periodSeconds: 30
           timeoutSeconds: 20
