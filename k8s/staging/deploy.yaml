@@ -64,6 +64,14 @@ spec:
             port: 4000
           initialDelaySeconds: 5
           periodSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /health_check/liveness
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
         envFrom:
           - configMapRef:
               name: malan-web-config
