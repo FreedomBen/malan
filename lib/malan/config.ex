@@ -137,6 +137,38 @@ defmodule Malan.Config do
       {password_reset_upper_limit_msecs(), password_reset_upper_limit_count()}
     end
 
+    def password_reset_ip_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_ip_lower_limit_msecs
+      ]
+    end
+
+    def password_reset_ip_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_ip_lower_limit_count
+      ]
+    end
+
+    def password_reset_ip_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_ip_upper_limit_msecs
+      ]
+    end
+
+    def password_reset_ip_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[
+        :password_reset_ip_upper_limit_count
+      ]
+    end
+
+    def password_reset_ip_lower_limit do
+      {password_reset_ip_lower_limit_msecs(), password_reset_ip_lower_limit_count()}
+    end
+
+    def password_reset_ip_upper_limit do
+      {password_reset_ip_upper_limit_msecs(), password_reset_ip_upper_limit_count()}
+    end
+
     def session_extension_limit_msecs do
       Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_msecs]
     end

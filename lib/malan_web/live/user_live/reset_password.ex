@@ -20,6 +20,35 @@ defmodule MalanWeb.UserLive.ResetPassword do
   def handle_event("send_reset_email", %{"email" => email}, socket) do
     remote_ip = socket.assigns.remote_ip
 
+    case Malan.RateLimits.PasswordReset.PerIp.check_rate(remote_ip) do
+      {:deny, _limit} ->
+        # Per-IP throttle, applied before user lookup so probing
+        # nonexistent addresses still trips this bucket. The IP is the
+        # visitor's CF-Connecting-IP in production (see
+        # MalanWeb.UserAuth.remote_ip/1 → MalanWeb.RealIp), not the
+        # Cloudflare edge.
+        record_log(
+          false,
+          nil,
+          remote_ip,
+          nil,
+          email,
+          "POST",
+          "#MalanWeb.UserLive.ResetPassword.handle_event/3 - send_reset_email - rate limited by IP #{remote_ip}",
+          nil
+        )
+
+        {:noreply,
+         socket
+         |> assign(:too_many_requests, true)
+         |> assign(:success, false)}
+
+      _allow_or_error ->
+        do_send_reset_email(socket, email, remote_ip)
+    end
+  end
+
+  defp do_send_reset_email(socket, email, remote_ip) do
     case Accounts.get_user_by_email(email) do
       nil ->
         # Always render the same generic "Reset request received" message

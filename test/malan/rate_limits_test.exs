@@ -3,6 +3,7 @@ defmodule Malan.RateLimitsTest do
 
   alias Malan.RateLimits.PasswordReset
   alias Malan.RateLimits.PasswordReset.{UpperLimit, LowerLimit}
+  alias Malan.RateLimits.PasswordReset.PerIp
 
   # This is covered indirectly by the other tests
   describe "Malan.RateLimits" do
@@ -100,6 +101,91 @@ defmodule Malan.RateLimitsTest do
 
       assert {:ok, 1} = UpperLimit.clear(user_id_ul())
       assert 0 == Malan.RateLimiter.get(test_bucket_ul(), 86_400_000)
+    end
+  end
+
+  describe "Malan.RateLimits.PasswordReset.PerIp" do
+    # Test config sets the per-IP counts to 1_000_000 so unrelated tests
+    # don't trip the limit. Inside this describe we lower it to 5 / min so
+    # we can exercise the deny path. async: false on this describe to
+    # avoid clobbering Application env from parallel tests.
+    @tag :perip_limit_override
+    setup tags do
+      if tags[:perip_limit_override] do
+        prev = Application.get_env(:malan, Malan.Config.RateLimits)
+
+        Application.put_env(
+          :malan,
+          Malan.Config.RateLimits,
+          prev
+          |> Keyword.put(:password_reset_ip_lower_limit_count, 5)
+          |> Keyword.put(:password_reset_ip_upper_limit_count, 30)
+        )
+
+        on_exit(fn -> Application.put_env(:malan, Malan.Config.RateLimits, prev) end)
+      end
+
+      :ok
+    end
+
+    def remote_ip_pi, do: "203.0.113.7"
+
+    @tag :perip_limit_override
+    test "#check_rate/1 allows up to the lower limit then denies" do
+      assert {:ok, _} = PerIp.clear(remote_ip_pi())
+
+      assert 5 == Malan.Config.RateLimit.password_reset_ip_lower_limit_count()
+      assert 30 == Malan.Config.RateLimit.password_reset_ip_upper_limit_count()
+
+      assert {:allow, 1} = PerIp.check_rate(remote_ip_pi())
+      assert {:allow, 2} = PerIp.check_rate(remote_ip_pi())
+      assert {:allow, 3} = PerIp.check_rate(remote_ip_pi())
+      assert {:allow, 4} = PerIp.check_rate(remote_ip_pi())
+      assert {:allow, 5} = PerIp.check_rate(remote_ip_pi())
+      # 6th hit trips the lower-bucket deny
+      assert {:deny, 5} = PerIp.check_rate(remote_ip_pi())
+      assert {:deny, 5} = PerIp.check_rate(remote_ip_pi())
+
+      assert {:ok, _} = PerIp.clear(remote_ip_pi())
+      assert {:allow, 1} = PerIp.check_rate(remote_ip_pi())
+      assert {:ok, _} = PerIp.clear(remote_ip_pi())
+    end
+
+    @tag :perip_limit_override
+    test "buckets are per-IP" do
+      ip_a = "198.51.100.10"
+      ip_b = "198.51.100.20"
+
+      assert {:ok, _} = PerIp.clear(ip_a)
+      assert {:ok, _} = PerIp.clear(ip_b)
+
+      # Saturate ip_a's lower bucket
+      Enum.each(1..5, fn _ -> assert {:allow, _} = PerIp.check_rate(ip_a) end)
+      assert {:deny, _} = PerIp.check_rate(ip_a)
+
+      # ip_b is unaffected
+      assert {:allow, 1} = PerIp.check_rate(ip_b)
+
+      assert {:ok, _} = PerIp.clear(ip_a)
+      assert {:ok, _} = PerIp.clear(ip_b)
+    end
+  end
+
+  describe "Malan.RateLimits.PasswordReset.PerIp.LowerLimit" do
+    alias Malan.RateLimits.PasswordReset.PerIp.LowerLimit, as: IpLowerLimit
+
+    test "#bucket/1" do
+      assert "generate_password_reset_ip_lower_limit:203.0.113.99" ==
+               IpLowerLimit.bucket("203.0.113.99")
+    end
+  end
+
+  describe "Malan.RateLimits.PasswordReset.PerIp.UpperLimit" do
+    alias Malan.RateLimits.PasswordReset.PerIp.UpperLimit, as: IpUpperLimit
+
+    test "#bucket/1" do
+      assert "generate_password_reset_ip_upper_limit:203.0.113.99" ==
+               IpUpperLimit.bucket("203.0.113.99")
     end
   end
 end

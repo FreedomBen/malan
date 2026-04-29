@@ -6,6 +6,7 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
   alias Malan.Accounts
   alias Malan.RateLimits.PasswordReset
+  alias Malan.RateLimits.PasswordReset.PerIp
   alias Malan.Test.Helpers.Accounts, as: AccountsHelpers
 
   defmodule FailingMailAdapter do
@@ -145,6 +146,100 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
     refute is_nil(log)
     assert log.remote_ip == "198.51.100.42"
+  end
+
+  test "throttles by Cloudflare IP after the per-IP limit, even with distinct emails",
+       %{conn: conn} do
+    # The per-user reset limit (1 / 3 minutes) won't trip when each
+    # request submits a different identifier — that's the enumeration
+    # side channel the per-IP limiter is meant to close. Use distinct
+    # nonexistent emails so only the IP bucket can stop us.
+    # Test config has per-IP counts set high to keep unrelated tests
+    # from tripping the limiter; lower it just for this test.
+    prev_cfg = Application.get_env(:malan, Malan.Config.RateLimits)
+
+    Application.put_env(
+      :malan,
+      Malan.Config.RateLimits,
+      Keyword.put(prev_cfg, :password_reset_ip_lower_limit_count, 5)
+    )
+
+    cf_ip = "198.51.100.77"
+
+    on_exit(fn ->
+      Application.put_env(:malan, Malan.Config.RateLimits, prev_cfg)
+      PerIp.clear(cf_ip)
+    end)
+
+    submit = fn email ->
+      conn =
+        Plug.Conn.put_private(conn, :live_view_connect_info, %{
+          peer_data: %{address: {172, 70, 1, 1}, port: 12_345, ssl_cert: nil},
+          x_headers: [{"cf-connecting-ip", cf_ip}]
+        })
+
+      {:ok, view, _html} = live(conn, reset_path())
+      render_submit(view, "send_reset_email", %{"email" => email})
+    end
+
+    # Lower IP bucket is 5 per minute (config/test.exs).
+    Enum.each(1..5, fn i ->
+      html = submit.("ip-throttle-#{i}@example.com")
+      assert html =~ "Reset request received",
+             "request #{i} should have been allowed but rendered: #{String.slice(html, 0, 200)}"
+    end)
+
+    html = submit.("ip-throttle-6@example.com")
+    assert html =~ "Too many requests"
+    refute html =~ "Reset request received"
+  end
+
+  test "per-IP throttle keys on the Cloudflare header, not the TCP peer",
+       %{conn: conn} do
+    # Same TCP peer (Cloudflare edge), but two different visitor IPs.
+    # The second visitor's first request must succeed even though the
+    # first visitor has already saturated their bucket — proving the
+    # bucket key is the CF header, not peer_data.
+    prev_cfg = Application.get_env(:malan, Malan.Config.RateLimits)
+
+    Application.put_env(
+      :malan,
+      Malan.Config.RateLimits,
+      Keyword.put(prev_cfg, :password_reset_ip_lower_limit_count, 5)
+    )
+
+    cf_ip_attacker = "198.51.100.88"
+    cf_ip_victim = "198.51.100.99"
+
+    on_exit(fn ->
+      Application.put_env(:malan, Malan.Config.RateLimits, prev_cfg)
+      PerIp.clear(cf_ip_attacker)
+      PerIp.clear(cf_ip_victim)
+    end)
+
+    submit = fn cf_ip, email ->
+      conn =
+        Plug.Conn.put_private(conn, :live_view_connect_info, %{
+          peer_data: %{address: {172, 70, 1, 1}, port: 12_345, ssl_cert: nil},
+          x_headers: [{"cf-connecting-ip", cf_ip}]
+        })
+
+      {:ok, view, _html} = live(conn, reset_path())
+      render_submit(view, "send_reset_email", %{"email" => email})
+    end
+
+    # Saturate the attacker's per-IP bucket (5 / min in test config).
+    Enum.each(1..5, fn i ->
+      _ = submit.(cf_ip_attacker, "atk-#{i}@example.com")
+    end)
+
+    deny_html = submit.(cf_ip_attacker, "atk-final@example.com")
+    assert deny_html =~ "Too many requests"
+
+    # A different CF IP through the same TCP peer is unaffected.
+    allow_html = submit.(cf_ip_victim, "victim-1@example.com")
+    assert allow_html =~ "Reset request received"
+    refute allow_html =~ "Too many requests"
   end
 
   test "still surfaces success when mail provider rejects credentials (delivery is async)",

@@ -177,6 +177,75 @@ defmodule Malan.RateLimits do
         |> Malan.RateLimits.clear()
       end
     end
+
+    defmodule PerIp do
+      # Rate limit password reset requests by client IP, applied *before*
+      # the user lookup. This closes the enumeration side channel where an
+      # attacker probes many identifiers (each per-user bucket starts
+      # empty, so a script can fire one request per nonexistent username
+      # without ever tripping the per-user limit).
+      #
+      # In production the IP arrives via the CF-Connecting-IP header
+      # (rewritten onto conn.remote_ip by MalanWeb.Plugs.CloudflareRealIp
+      # for HTTP, and read out of x_headers by MalanWeb.RealIp for
+      # LiveView), so this is keyed on the visitor IP, not the
+      # Cloudflare edge.
+
+      alias Malan.RateLimits.PasswordReset.PerIp.{LowerLimit, UpperLimit}
+
+      @spec check_rate(remote_ip :: String.t()) ::
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+      def check_rate(remote_ip) do
+        with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
+             {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
+          {:allow, c2}
+        end
+      end
+
+      @spec clear(remote_ip :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+      def clear(remote_ip) do
+        with {:ok, _c1} <- UpperLimit.clear(remote_ip),
+             {:ok, c2} <- LowerLimit.clear(remote_ip) do
+          {:ok, c2}
+        end
+      end
+
+      defmodule LowerLimit do
+        def bucket(remote_ip), do: "generate_password_reset_ip_lower_limit:#{remote_ip}"
+
+        def check_rate(remote_ip) do
+          {msecs, count} = Malan.Config.RateLimit.password_reset_ip_lower_limit()
+
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.check_rate(msecs, count)
+        end
+
+        def clear(remote_ip) do
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.clear()
+        end
+      end
+
+      defmodule UpperLimit do
+        def bucket(remote_ip), do: "generate_password_reset_ip_upper_limit:#{remote_ip}"
+
+        def check_rate(remote_ip) do
+          {msecs, count} = Malan.Config.RateLimit.password_reset_ip_upper_limit()
+
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.check_rate(msecs, count)
+        end
+
+        def clear(remote_ip) do
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.clear()
+        end
+      end
+    end
   end
 
   defmodule EmailVerification do

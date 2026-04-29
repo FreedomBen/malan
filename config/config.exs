@@ -60,6 +60,23 @@ config :malan, Malan.Config.RateLimits,
   password_reset_upper_limit_count:
     System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
       "3" |> String.to_integer(),
+  # Per-IP password-reset request limits, applied *before* user lookup
+  # to prevent username/email enumeration via probing. More permissive
+  # than the per-user limit because a single IP can legitimately serve
+  # many users (NAT, office, household), but tight enough to throttle
+  # scripted enumeration. The IP is the visitor IP from
+  # CF-Connecting-IP in production (see MalanWeb.Plugs.CloudflareRealIp
+  # and MalanWeb.RealIp), not the Cloudflare edge.
+  # Lower bucket: 5 per minute (60 seconds)
+  password_reset_ip_lower_limit_msecs:
+    (System.get_env("PASSWORD_RESET_IP_LOWER_LIMIT_MSECS") || "60000") |> String.to_integer(),
+  password_reset_ip_lower_limit_count:
+    (System.get_env("PASSWORD_RESET_IP_LOWER_LIMIT_COUNT") || "5") |> String.to_integer(),
+  # Upper bucket: 30 per day (86,400 seconds)
+  password_reset_ip_upper_limit_msecs:
+    (System.get_env("PASSWORD_RESET_IP_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
+  password_reset_ip_upper_limit_count:
+    (System.get_env("PASSWORD_RESET_IP_UPPER_LIMIT_COUNT") || "30") |> String.to_integer(),
   # Session extension rate limit (non-admin). 10 requests per minute by default.
   session_extension_limit_msecs:
     System.get_env("SESSION_EXTENSION_LIMIT_MSECS") ||

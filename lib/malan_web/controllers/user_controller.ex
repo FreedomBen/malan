@@ -311,6 +311,36 @@ defmodule MalanWeb.UserController do
   end
 
   def reset_password(conn, %{"id" => id}) do
+    remote_ip = remote_ip_s(conn)
+
+    case Malan.RateLimits.PasswordReset.PerIp.check_rate(remote_ip) do
+      {:deny, _limit} ->
+        # Per-IP throttle, applied before user lookup so probing
+        # nonexistent identifiers still trips this bucket. Returning 429
+        # here is safe (and conventional) because the deny is purely a
+        # function of the source IP — no information about whether the
+        # submitted identifier matched a real account is leaked.
+        record_log(
+          conn,
+          false,
+          nil,
+          id,
+          "POST",
+          "#UserController.reset_password/2 - rate limited by IP #{remote_ip}",
+          nil
+        )
+
+        conn
+        |> put_view(ErrorJSON)
+        |> put_status(:too_many_requests)
+        |> render(:"429")
+
+      _allow_or_error ->
+        do_reset_password(conn, id)
+    end
+  end
+
+  defp do_reset_password(conn, id) do
     user = Accounts.get_user_by_id_or_username(id)
 
     if is_nil(user) do

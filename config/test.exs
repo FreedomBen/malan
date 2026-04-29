@@ -52,6 +52,15 @@ config :malan, Malan.Config.RateLimits,
     (System.get_env("PASSWORD_RESET_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
   password_reset_upper_limit_count:
     (System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") || "3") |> String.to_integer(),
+  # Per-IP password-reset limits are effectively disabled in test (same
+  # idea as login_limit_count above): unrelated tests fire many reset
+  # POSTs from the same loopback address, and we don't want them to trip
+  # this limiter. The throttle-specific tests override these values
+  # locally via Application.put_env.
+  password_reset_ip_lower_limit_msecs: 60_000,
+  password_reset_ip_lower_limit_count: 1_000_000,
+  password_reset_ip_upper_limit_msecs: 86_400_000,
+  password_reset_ip_upper_limit_count: 1_000_000,
   session_extension_limit_msecs:
     (System.get_env("SESSION_EXTENSION_LIMIT_MSECS") || "60000") |> String.to_integer(),
   session_extension_limit_count:
