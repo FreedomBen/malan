@@ -9,6 +9,12 @@ services:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
 
+  redis:
+    image: 'redis:7.4-alpine'
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - 'redisdata:/data'
+
   malan:
     build: .
     ports:
@@ -30,10 +36,16 @@ services:
       DB_USERNAME: 'postgres'
       DB_PASSWORD: 'postgres'
       DB_HOSTNAME: 'postgres'
+      # Hammer.Redis-backed rate limiter. Shared across malan replicas
+      # so login / reset / email-verify / session-extend limits aren't
+      # per-pod (see SECURITY_REVIEW_02_CODEX.md).
+      HAMMER_REDIS_URL: 'redis://redis:6379/0'
       LOG_LEVEL: 'debug'
     depends_on:
       - 'postgres'
+      - 'redis'
 
 volumes:
   pgdata:
+  redisdata:
 

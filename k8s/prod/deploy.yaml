@@ -120,6 +120,7 @@ data:
   # MAILGUN_API_KEY
   # SERET_KEY_BASE
   # SENTRY_DNS
+  # HAMMER_REDIS_URL    # rediss://default:<password>@<host>:<port>/0 (DO Managed Redis)
 
 # Service annotations for Digital Ocean
 # https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/

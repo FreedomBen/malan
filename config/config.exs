@@ -201,9 +201,10 @@ config :plug, :statuses, %{
 
 # Known Plug Statuses:  https://hexdocs.pm/plug/Plug.Conn.Status.html#code/1-known-status-codes
 
-config :malan, Malan.RateLimiter,
-  clean_period: :timer.minutes(10),
-  key_older_than: :timer.hours(4)
+# Malan.RateLimiter uses Hammer.Redis. The Redis URL is provided at
+# runtime via HAMMER_REDIS_URL (see config/runtime.exs); no compile-time
+# options are needed here. Counter expiration is handled by Redis itself
+# via the EXPIREAT each window writes.
 
 # Sentry config.  DSN is runtime env var
 # This handles most exceptions and Plug events

@@ -90,6 +90,29 @@ config :malan, Malan.PromEx,
     auth_strategy: :none
   ]
 
+# Hammer/Redis rate limiter URL.
+#
+# `Malan.RateLimiter` uses Hammer's Redis backend so rate-limit counters
+# are shared across pods (replaces the per-pod ETS bucket flagged in
+# SECURITY_REVIEW_02_CODEX.md). In :prod the URL is required — refuse to
+# boot rather than silently degrade to a single-node limiter. For :dev
+# and :test we fall back to localhost so `scripts/start-redis.sh` works
+# out of the box.
+hammer_redis_url =
+  case config_env() do
+    :prod ->
+      System.get_env("HAMMER_REDIS_URL") ||
+        raise """
+        environment variable HAMMER_REDIS_URL is missing.
+        For example: redis://HOST:6379/0 (or rediss:// for TLS).
+        """
+
+    _ ->
+      System.get_env("HAMMER_REDIS_URL") || "redis://localhost:6379/0"
+  end
+
+config :malan, Malan.RateLimiter, url: hammer_redis_url
+
 # Email verification auto-send: enabled by default. Accepts "true"/"1" or "false"/"0".
 email_verification_auto_send? =
   case System.get_env("MALAN_EMAIL_VERIFICATION_AUTO_SEND") do

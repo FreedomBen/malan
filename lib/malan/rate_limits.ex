@@ -15,16 +15,39 @@ defmodule Malan.RateLimits do
   @spec clear(bucket :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
 
   def clear(bucket) do
-    deleted =
-      case :ets.whereis(Malan.RateLimiter) do
-        :undefined ->
-          0
+    # Hammer.Redis with the default :fix_window algorithm stores one Redis
+    # key per (prefix, bucket, window) triple. To wipe a bucket completely
+    # we SCAN for `prefix:bucket:*` and DEL the matches in one pipeline.
+    pattern = "#{Malan.RateLimiter.redis_prefix()}:#{bucket}:*"
+    scan_and_delete(Malan.RateLimiter, pattern)
+  end
 
-        _ ->
-          :ets.select_delete(Malan.RateLimiter, [{{{bucket, :_}, :_, :_}, [], [true]}])
-      end
+  defp scan_and_delete(conn, pattern) do
+    do_scan(conn, "0", pattern, 0)
+  end
 
-    {:ok, deleted}
+  defp do_scan(conn, cursor, pattern, deleted_acc) do
+    case Redix.command(conn, ["SCAN", cursor, "MATCH", pattern, "COUNT", "100"]) do
+      {:ok, [next_cursor, []]} ->
+        if next_cursor == "0",
+          do: {:ok, deleted_acc},
+          else: do_scan(conn, next_cursor, pattern, deleted_acc)
+
+      {:ok, [next_cursor, keys]} ->
+        case Redix.command(conn, ["DEL" | keys]) do
+          {:ok, n} when next_cursor == "0" ->
+            {:ok, deleted_acc + n}
+
+          {:ok, n} ->
+            do_scan(conn, next_cursor, pattern, deleted_acc + n)
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defmodule SessionExtension do
