@@ -11,21 +11,20 @@ config :malan,
   ecto_repos: [Malan.Repo],
   generators: [binary_id: true]
 
-# Password-length minimums are overridden at runtime in `config/runtime.exs`
-# so the k8s ConfigMap (`MIN_PASSWORD_LENGTH`,
-# `ADMIN_SET_USER_MIN_PASSWORD_LENGTH`,
-# `ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH`) is honored at boot rather than
-# baked in at compile time. The literals below are baseline defaults
-# that runtime.exs overlays.
+# Defaults for Malan.Accounts.User. Each key is also read at boot from
+# env in `config/runtime.exs`; the runtime read overrides the literal
+# below when the env var is set. Without this split, a multi-stage
+# `Dockerfile.prod` build bakes the defaults in, and the k8s ConfigMap
+# is silently ignored.
+#
+# Env vars: DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS,
+# DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS, MIN_PASSWORD_LENGTH,
+# ADMIN_SET_USER_MIN_PASSWORD_LENGTH, ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH.
 config :malan, Malan.Accounts.User,
   # 24 hours
-  default_password_reset_token_expiration_secs:
-    System.get_env("DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS") ||
-      "86400" |> String.to_integer(),
+  default_password_reset_token_expiration_secs: 86_400,
   # 30 minutes
-  default_email_verification_token_expiration_secs:
-    (System.get_env("DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS") || "1800")
-    |> String.to_integer(),
+  default_email_verification_token_expiration_secs: 1_800,
   min_password_length: 10,
   admin_set_user_min_password_length: 6,
   admin_account_min_password_length: 12
@@ -42,23 +41,18 @@ config :malan,
     ".localhost"
   ]
 
+# Rate-limit thresholds. Each key is also read at boot from env in
+# `config/runtime.exs`; the runtime read overrides the literal below
+# when the env var is set. Env vars: PASSWORD_RESET_*,
+# PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LIMIT_*,
+# EMAIL_VERIFY_*.
 config :malan, Malan.Config.RateLimits,
-  # 3 minutes (180 seconds)
-  password_reset_lower_limit_msecs:
-    System.get_env("PASSWORD_RESET_LOWER_LIMIT_MSECS") ||
-      "180000" |> String.to_integer(),
-  # 1 per period
-  password_reset_lower_limit_count:
-    System.get_env("PASSWORD_RESET_LOWER_LIMIT_COUNT") ||
-      "1" |> String.to_integer(),
-  # 24 hours (86,400 seconds)
-  password_reset_upper_limit_msecs:
-    System.get_env("PASSWORD_RESET_UPPER_LIMIT_MSECS") ||
-      "86400000" |> String.to_integer(),
-  # 1 per period
-  password_reset_upper_limit_count:
-    System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") ||
-      "3" |> String.to_integer(),
+  # 3 minutes (180 seconds), 1 per period
+  password_reset_lower_limit_msecs: 180_000,
+  password_reset_lower_limit_count: 1,
+  # 24 hours (86,400 seconds), 3 per period
+  password_reset_upper_limit_msecs: 86_400_000,
+  password_reset_upper_limit_count: 3,
   # Per-IP password-reset request limits, applied *before* user lookup
   # to prevent username/email enumeration via probing. More permissive
   # than the per-user limit because a single IP can legitimately serve
@@ -67,58 +61,44 @@ config :malan, Malan.Config.RateLimits,
   # CF-Connecting-IP in production (see MalanWeb.Plugs.CloudflareRealIp
   # and MalanWeb.RealIp), not the Cloudflare edge.
   # Lower bucket: 5 per minute (60 seconds)
-  password_reset_ip_lower_limit_msecs:
-    (System.get_env("PASSWORD_RESET_IP_LOWER_LIMIT_MSECS") || "60000") |> String.to_integer(),
-  password_reset_ip_lower_limit_count:
-    (System.get_env("PASSWORD_RESET_IP_LOWER_LIMIT_COUNT") || "5") |> String.to_integer(),
+  password_reset_ip_lower_limit_msecs: 60_000,
+  password_reset_ip_lower_limit_count: 5,
   # Upper bucket: 30 per day (86,400 seconds)
-  password_reset_ip_upper_limit_msecs:
-    (System.get_env("PASSWORD_RESET_IP_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
-  password_reset_ip_upper_limit_count:
-    (System.get_env("PASSWORD_RESET_IP_UPPER_LIMIT_COUNT") || "30") |> String.to_integer(),
-  # Session extension rate limit (non-admin). 10 requests per minute by default.
-  session_extension_limit_msecs:
-    System.get_env("SESSION_EXTENSION_LIMIT_MSECS") ||
-      "60000" |> String.to_integer(),
-  session_extension_limit_count:
-    System.get_env("SESSION_EXTENSION_LIMIT_COUNT") ||
-      "2" |> String.to_integer(),
+  password_reset_ip_upper_limit_msecs: 86_400_000,
+  password_reset_ip_upper_limit_count: 30,
+  # Session extension rate limit (non-admin). 2 per minute by default.
+  session_extension_limit_msecs: 60_000,
+  session_extension_limit_count: 2,
   # Login attempts per username. 5 attempts per 60 seconds by default.
-  login_limit_msecs:
-    System.get_env("LOGIN_LIMIT_MSECS") ||
-      "60000" |> String.to_integer(),
-  login_limit_count:
-    System.get_env("LOGIN_LIMIT_COUNT") ||
-      "5" |> String.to_integer(),
+  login_limit_msecs: 60_000,
+  login_limit_count: 5,
   # Email verification: lower bucket - 30 minutes, 1 per period
-  email_verify_lower_limit_msecs:
-    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_MSECS") || "1800000") |> String.to_integer(),
-  email_verify_lower_limit_count:
-    (System.get_env("EMAIL_VERIFY_LOWER_LIMIT_COUNT") || "1") |> String.to_integer(),
+  email_verify_lower_limit_msecs: 1_800_000,
+  email_verify_lower_limit_count: 1,
   # Email verification: upper bucket - 24 hours, 3 per period
-  email_verify_upper_limit_msecs:
-    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
-  email_verify_upper_limit_count:
-    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_COUNT") || "3") |> String.to_integer()
+  email_verify_upper_limit_msecs: 86_400_000,
+  email_verify_upper_limit_count: 3
 
+# Session token defaults. Each key is also read at boot from env in
+# `config/runtime.exs`; the runtime read overrides the literal below
+# when the env var is set. Env vars: DEFAULT_TOKEN_EXPIRATION_SECS,
+# DEFAULT_MAX_EXTENSION_TIME_SECS, DEFAULT_MAX_EXTENSION_SECS,
+# MAX_MAX_EXTENSION_SECS.
 config :malan, Malan.Accounts.Session,
   # If client doesn't specify token expiration time, use this value.
   # 604,800 seconds is 7 days (One week)
-  default_token_expiration_secs:
-    System.get_env("DEFAULT_TOKEN_EXPIRATION_SECS") || "604800" |> String.to_integer(),
-  # If client doesn't specify session extension limit, use this value.  This will be
-  # used to determine an absolute maximum datetime beyond which a session cannot be extended
+  default_token_expiration_secs: 604_800,
+  # If client doesn't specify session extension limit, use this value.
+  # This will be used to determine an absolute maximum datetime beyond
+  # which a session cannot be extended.
   # 2,419,200 seconds is 28 days
-  default_max_extension_time_secs:
-    System.get_env("DEFAULT_MAX_EXTENSION_TIME_SECS") || "2419200" |> String.to_integer(),
-  # If client doesn't specify session extension limit per extension, use this value.
+  default_max_extension_time_secs: 2_419_200,
+  # If client doesn't specify session extension limit per extension.
   # 604,800 is 7 days (one week)
-  default_max_extension_secs:
-    System.get_env("DEFAULT_MAX_EXTENSION_SECS") || "604800" |> String.to_integer(),
+  default_max_extension_secs: 604_800,
   # Most that a session can be extended, despite client settings.
   # 7,862,400 is approximately 90 days (13 weeks specifically)
-  max_max_extension_secs:
-    System.get_env("MAX_MAX_EXTENSION_SECS") || "7862400" |> String.to_integer()
+  max_max_extension_secs: 7_862_400
 
 # Cookie signing/encryption salts. These are NOT the secret — `secret_key_base`
 # is — but they're domain separators for derived keys and should not live in

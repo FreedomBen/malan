@@ -155,27 +155,67 @@ email_verification_auto_send? =
 
 config :malan, email_verification_auto_send: email_verification_auto_send?
 
-# Password-length minimums. Read at runtime so the k8s ConfigMap
-# (`MIN_PASSWORD_LENGTH`, `ADMIN_SET_USER_MIN_PASSWORD_LENGTH`,
-# `ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH`) is honored at boot. These previously
-# lived in `config/config.exs`, which captures env at compile time — under
-# the multi-stage `Dockerfile.prod` the builder stage doesn't see the prod
-# env vars, so the baked-in defaults silently won regardless of what the
-# ConfigMap said. The defaults here match the compile-time baseline in
-# `config/config.exs` so behavior is unchanged when the env vars are unset.
-min_password_length =
-  (System.get_env("MIN_PASSWORD_LENGTH") || "10") |> String.to_integer()
+# Operational tunables that previously lived in `config/config.exs` and
+# were captured at compile time. Reading them here means k8s ConfigMap
+# values (or any other runtime env source) are honored at boot, rather
+# than silently baked in by the builder stage of `Dockerfile.prod` and
+# replaced by the compile-time defaults regardless of what the ConfigMap
+# said.
+#
+# Pattern: only override when the env var is explicitly set. When unset,
+# the compile-time defaults from `config/config.exs` (and any
+# test-specific overrides in `config/test.exs`, e.g. `login_limit_count:
+# 1_000_000`) win unchanged.
+build_int_overrides = fn pairs ->
+  Enum.flat_map(pairs, fn {key, env_name} ->
+    case System.get_env(env_name) do
+      nil -> []
+      val -> [{key, String.to_integer(val)}]
+    end
+  end)
+end
 
-admin_set_user_min_password_length =
-  (System.get_env("ADMIN_SET_USER_MIN_PASSWORD_LENGTH") || "6") |> String.to_integer()
+config :malan,
+       Malan.Accounts.User,
+       build_int_overrides.([
+         {:default_password_reset_token_expiration_secs,
+          "DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS"},
+         {:default_email_verification_token_expiration_secs,
+          "DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS"},
+         {:min_password_length, "MIN_PASSWORD_LENGTH"},
+         {:admin_set_user_min_password_length, "ADMIN_SET_USER_MIN_PASSWORD_LENGTH"},
+         {:admin_account_min_password_length, "ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH"}
+       ])
 
-admin_account_min_password_length =
-  (System.get_env("ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH") || "12") |> String.to_integer()
+config :malan,
+       Malan.Config.RateLimits,
+       build_int_overrides.([
+         {:password_reset_lower_limit_msecs, "PASSWORD_RESET_LOWER_LIMIT_MSECS"},
+         {:password_reset_lower_limit_count, "PASSWORD_RESET_LOWER_LIMIT_COUNT"},
+         {:password_reset_upper_limit_msecs, "PASSWORD_RESET_UPPER_LIMIT_MSECS"},
+         {:password_reset_upper_limit_count, "PASSWORD_RESET_UPPER_LIMIT_COUNT"},
+         {:password_reset_ip_lower_limit_msecs, "PASSWORD_RESET_IP_LOWER_LIMIT_MSECS"},
+         {:password_reset_ip_lower_limit_count, "PASSWORD_RESET_IP_LOWER_LIMIT_COUNT"},
+         {:password_reset_ip_upper_limit_msecs, "PASSWORD_RESET_IP_UPPER_LIMIT_MSECS"},
+         {:password_reset_ip_upper_limit_count, "PASSWORD_RESET_IP_UPPER_LIMIT_COUNT"},
+         {:session_extension_limit_msecs, "SESSION_EXTENSION_LIMIT_MSECS"},
+         {:session_extension_limit_count, "SESSION_EXTENSION_LIMIT_COUNT"},
+         {:login_limit_msecs, "LOGIN_LIMIT_MSECS"},
+         {:login_limit_count, "LOGIN_LIMIT_COUNT"},
+         {:email_verify_lower_limit_msecs, "EMAIL_VERIFY_LOWER_LIMIT_MSECS"},
+         {:email_verify_lower_limit_count, "EMAIL_VERIFY_LOWER_LIMIT_COUNT"},
+         {:email_verify_upper_limit_msecs, "EMAIL_VERIFY_UPPER_LIMIT_MSECS"},
+         {:email_verify_upper_limit_count, "EMAIL_VERIFY_UPPER_LIMIT_COUNT"}
+       ])
 
-config :malan, Malan.Accounts.User,
-  min_password_length: min_password_length,
-  admin_set_user_min_password_length: admin_set_user_min_password_length,
-  admin_account_min_password_length: admin_account_min_password_length
+config :malan,
+       Malan.Accounts.Session,
+       build_int_overrides.([
+         {:default_token_expiration_secs, "DEFAULT_TOKEN_EXPIRATION_SECS"},
+         {:default_max_extension_time_secs, "DEFAULT_MAX_EXTENSION_TIME_SECS"},
+         {:default_max_extension_secs, "DEFAULT_MAX_EXTENSION_SECS"},
+         {:max_max_extension_secs, "MAX_MAX_EXTENSION_SECS"}
+       ])
 
 if config_env() == :prod do
   database_url =
