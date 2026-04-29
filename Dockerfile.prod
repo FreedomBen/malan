@@ -122,6 +122,7 @@ RUN mix local.hex --force \
  && mix deps.compile
 
 COPY --chown=docker:docker assets/package*.json /app/assets/
+COPY --chown=docker:docker scripts/sync-swagger-ui.sh /app/scripts/sync-swagger-ui.sh
 RUN cd assets && npm install
 
 COPY --chown=docker:docker config /app/config
