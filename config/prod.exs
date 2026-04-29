@@ -15,7 +15,14 @@ config :malan, MalanWeb.Endpoint,
   # must live in compile-time config (here) rather than config/runtime.exs —
   # otherwise Config.Provider aborts boot with a compile/runtime mismatch.
   # The values are static (no env-var inputs), so baking them in is safe.
-  force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto]],
+  #
+  # `log: false` silences Plug.SSL's per-request "redirecting GET /path to
+  # https://..." info line. Every legitimate API caller, kubelet probe, and
+  # external scraper that arrives over HTTP triggers one of these — including
+  # a misconfigured Prometheus scraper that hits :4000/metrics on a 60s loop
+  # (the real metrics endpoint is PromEx on :9568). The redirect itself and
+  # HSTS still apply; we just stop logging an identical-shape line per hit.
+  force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto], log: false],
   check_origin: [
     "https://malan.ameelio.org",
     "https://malan-prod.ameelio.org",
