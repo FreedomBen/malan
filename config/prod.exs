@@ -27,12 +27,14 @@ config :malan, MalanWeb.Endpoint,
   # being redirected to https://accounts.ameelio.org. They reach the pod
   # over plain HTTP via the cluster Service and never traverse Cloudflare
   # or the DO LB, so their requests carry none of the usual proxy
-  # headers. See `MalanWeb.Plugs.InClusterRequest` for the trust model.
+  # headers. The `{:conn, {m, f, a}}` form is the modern Plug.SSL API
+  # (>= 1.18); Plug.SSL invokes it as `apply(m, f, [conn | a])`. See
+  # `MalanWeb.Plugs.InClusterRequest` for the trust model.
   force_ssl: [
     hsts: true,
     rewrite_on: [:x_forwarded_proto],
     log: false,
-    exclude: &MalanWeb.Plugs.InClusterRequest.exclude_from_force_ssl?/1
+    exclude: [conn: {MalanWeb.Plugs.InClusterRequest, :exclude_from_force_ssl?, []}]
   ],
   check_origin: [
     "https://malan.ameelio.org",
