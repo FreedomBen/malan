@@ -28,6 +28,8 @@ metadata:
 spec:
   template:
     spec:
+      serviceAccountName: malan
+      automountServiceAccountToken: false
       restartPolicy: Never
       securityContext:
         runAsNonRoot: true

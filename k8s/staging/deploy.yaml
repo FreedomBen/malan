@@ -1,4 +1,17 @@
 ---
+# Dedicated ServiceAccount with no role bindings. The app does not
+# call the Kubernetes API, so the API-server token is never needed.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: malan
+  namespace: malan-staging
+  labels:
+    app: malan
+    env: staging
+automountServiceAccountToken: false
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +42,8 @@ spec:
         prometheus.io/path: "/metrics"
       namespace: malan-staging
     spec:
+      serviceAccountName: malan
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
