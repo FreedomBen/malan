@@ -1064,4 +1064,37 @@ defmodule Malan.UtilsTest do
       assert 443 == Utils.Number.to_int(~c"443")
     end
   end
+
+  describe "strip_url_query_params/2" do
+    test "drops named keys and preserves the rest" do
+      assert "postgres://u:p@h/db?pool=5" ==
+               Utils.strip_url_query_params(
+                 "postgres://u:p@h/db?ssl=true&sslmode=require&pool=5",
+                 ["ssl", "sslmode"]
+               )
+    end
+
+    test "removes a trailing `?` when no params remain" do
+      assert "postgres://u:p@h/db" ==
+               Utils.strip_url_query_params("postgres://u:p@h/db?ssl=true", ["ssl"])
+    end
+
+    test "returns the URL unchanged when there is no query string" do
+      assert "postgres://u:p@h/db" ==
+               Utils.strip_url_query_params("postgres://u:p@h/db", ["ssl", "sslmode"])
+    end
+
+    test "keeps unrelated keys when none of the named keys are present" do
+      assert "postgres://u:p@h/db?pool=5&timeout=30" ==
+               Utils.strip_url_query_params(
+                 "postgres://u:p@h/db?pool=5&timeout=30",
+                 ["ssl", "sslmode"]
+               )
+    end
+
+    test "handles rediss:// URLs the same way" do
+      assert "rediss://h:6379/0" ==
+               Utils.strip_url_query_params("rediss://h:6379/0?ssl=true", ["ssl"])
+    end
+  end
 end

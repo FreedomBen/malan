@@ -163,6 +163,13 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
+  # The DO-managed Postgres URL ships with `?sslmode=require` (and we
+  # have historically also appended `&ssl=true`). Postgrex warns at boot
+  # when those URL params conflict with the explicit `ssl:` keyword we
+  # pass below, since that keyword is the source of truth for TLS
+  # config. Strip them to keep the log clean.
+  database_url = Utils.strip_url_query_params(database_url, ["ssl", "sslmode"])
+
   maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
   # Postgrex deprecated the separate `ssl_opts` key — the keyword list is

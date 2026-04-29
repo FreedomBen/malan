@@ -633,6 +633,50 @@ defmodule Malan.Utils do
   defp e(13), do: ?d
   defp e(14), do: ?e
   defp e(15), do: ?f
+
+  @doc ~S"""
+  Return `url` with the given query-parameter keys removed.
+
+  Useful when a URL carries connection options (e.g. `ssl=true`,
+  `sslmode=require`) that the caller wants to drive explicitly via
+  config instead, so the underlying library does not warn about
+  conflicting values.
+
+  ## Examples
+
+      iex> Malan.Utils.strip_url_query_params(
+      ...>   "postgres://u:p@h/db?ssl=true&sslmode=require&pool=5",
+      ...>   ["ssl", "sslmode"]
+      ...> )
+      "postgres://u:p@h/db?pool=5"
+
+      iex> Malan.Utils.strip_url_query_params("postgres://u:p@h/db?ssl=true", ["ssl"])
+      "postgres://u:p@h/db"
+
+      iex> Malan.Utils.strip_url_query_params("postgres://u:p@h/db", ["ssl"])
+      "postgres://u:p@h/db"
+  """
+  @spec strip_url_query_params(String.t(), [String.t()]) :: String.t()
+  def strip_url_query_params(url, keys) when is_binary(url) and is_list(keys) do
+    uri = URI.parse(url)
+
+    case uri.query do
+      nil ->
+        url
+
+      query ->
+        new_query =
+          query
+          |> URI.decode_query()
+          |> Map.drop(keys)
+          |> case do
+            empty when empty == %{} -> nil
+            map -> URI.encode_query(map)
+          end
+
+        URI.to_string(%URI{uri | query: new_query})
+    end
+  end
 end
 
 defmodule Malan.Utils.String do
