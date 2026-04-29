@@ -1803,58 +1803,20 @@ defmodule MalanWeb.SessionControllerTest do
 
   describe "login rate limit" do
     setup do
-      original = {
-        Malan.Config.RateLimit.login_limit_msecs(),
-        Malan.Config.RateLimit.login_limit_count()
-      }
+      prev_cfg = Application.get_env(:malan, Malan.Config.RateLimits)
 
       on_exit(fn ->
-        Application.put_env(:malan, Malan.Config.RateLimits,
-          login_limit_msecs: elem(original, 0),
-          login_limit_count: elem(original, 1),
-          password_reset_lower_limit_msecs:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :password_reset_lower_limit_msecs
-            ],
-          password_reset_lower_limit_count:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :password_reset_lower_limit_count
-            ],
-          password_reset_upper_limit_msecs:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :password_reset_upper_limit_msecs
-            ],
-          password_reset_upper_limit_count:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :password_reset_upper_limit_count
-            ],
-          session_extension_limit_msecs:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :session_extension_limit_msecs
-            ],
-          session_extension_limit_count:
-            Application.get_env(:malan, Malan.Config.RateLimits)[
-              :session_extension_limit_count
-            ]
-        )
+        Application.put_env(:malan, Malan.Config.RateLimits, prev_cfg)
       end)
 
-      # Tighten login limit for test
-      Application.put_env(:malan, Malan.Config.RateLimits,
-        login_limit_msecs: 60000,
-        login_limit_count: 2,
-        password_reset_lower_limit_msecs:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_lower_limit_msecs],
-        password_reset_lower_limit_count:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_lower_limit_count],
-        password_reset_upper_limit_msecs:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_upper_limit_msecs],
-        password_reset_upper_limit_count:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:password_reset_upper_limit_count],
-        session_extension_limit_msecs:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_msecs],
-        session_extension_limit_count:
-          Application.get_env(:malan, Malan.Config.RateLimits)[:session_extension_limit_count]
+      # Tighten login limit for test, preserving all other keys (notably
+      # the password_reset_ip_* and email_verify_* limits).
+      Application.put_env(
+        :malan,
+        Malan.Config.RateLimits,
+        prev_cfg
+        |> Keyword.put(:login_limit_msecs, 60_000)
+        |> Keyword.put(:login_limit_count, 2)
       )
 
       :ok
