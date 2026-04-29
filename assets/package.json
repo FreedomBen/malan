@@ -8,8 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write .",
     "formatCheck": "prettier --check .",
-    "sync:swagger": "../scripts/sync-swagger-ui.sh",
-    "postinstall": "npm run sync:swagger"
+    "sync:swagger": "../scripts/sync-swagger-ui.sh"
   },
   "author": "Benjamin Porter",
   "license": "ISC",
