@@ -1,0 +1,118 @@
+---
+# Default-deny ingress and egress for every pod in malan-staging.
+# Subsequent NetworkPolicy resources punch the holes the workloads need.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: malan-staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# DNS resolution: kube-dns in kube-system.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dns
+  namespace: malan-staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Egress to external dependencies:
+#   * DigitalOcean managed Postgres   (TCP 25060)
+#   * DigitalOcean managed Redis      (TCP 25061, TLS — Hammer rate limiter)
+#   * Mailgun, Sentry, Cloudflare …   (TCP 443)
+# Targets are non-cluster IPs in DO's VPC / public internet.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-external
+  namespace: malan-staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 25060
+        - protocol: TCP
+          port: 25061
+
+---
+# Public ingress: Envoy Gateway (`main-gateway` in `ingress` namespace)
+# is the only thing allowed to hit the web port.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-gateway
+  namespace: malan-staging
+spec:
+  podSelector:
+    matchLabels:
+      app: malan
+      tier: web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+          podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 4000
+
+---
+# Prometheus (kube-prometheus-stack in `plg`) scrapes :9568/metrics.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-prometheus
+  namespace: malan-staging
+spec:
+  podSelector:
+    matchLabels:
+      app: malan
+      tier: web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: plg
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9568
