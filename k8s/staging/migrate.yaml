@@ -1,4 +1,20 @@
 ---
+# Dedicated ServiceAccount with no role bindings. The app does not
+# call the Kubernetes API, so the API-server token is never needed.
+# Defined here (not in deploy.yaml) because CI applies migrate.yaml
+# first; the migration Job references this SA and is rejected if it
+# does not yet exist in the namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: malan
+  namespace: malan-staging
+  labels:
+    app: malan
+    env: staging
+automountServiceAccountToken: false
+
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
