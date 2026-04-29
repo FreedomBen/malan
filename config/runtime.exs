@@ -141,8 +141,9 @@ if config_env() == :prod do
     socket_options: maybe_ipv6,
     ssl: System.get_env("DATABASE_TLS_ENABLED") |> Utils.true_or_explicitly_false?(),
     ssl_opts: [
-      # To verify provider's self-signed cert
-      cacertfile: "priv/certs/do-db-ca-cert.crt"
+      # Resolve via app_dir so this works under a mix release, where the
+      # app's priv/ lives at lib/malan-<vsn>/priv/, not at the cwd.
+      cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt")
 
       # To provide mTLS client creds
       # keyfile: "priv/client-key.pem",
