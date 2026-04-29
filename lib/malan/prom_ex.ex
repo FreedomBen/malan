@@ -16,7 +16,8 @@ defmodule Malan.PromEx do
       PromEx.Plugins.Application,
       PromEx.Plugins.Beam,
       {PromEx.Plugins.Phoenix, router: MalanWeb.Router, endpoint: MalanWeb.Endpoint},
-      {PromEx.Plugins.Ecto, repos: [Malan.Repo]}
+      {PromEx.Plugins.Ecto, repos: [Malan.Repo]},
+      PromEx.Plugins.Oban
     ]
   end
 
@@ -34,7 +35,8 @@ defmodule Malan.PromEx do
       {:prom_ex, "application.json"},
       {:prom_ex, "beam.json"},
       {:prom_ex, "phoenix.json"},
-      {:prom_ex, "ecto.json"}
+      {:prom_ex, "ecto.json"},
+      {:prom_ex, "oban.json"}
     ]
   end
 end
