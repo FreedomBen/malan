@@ -63,7 +63,7 @@ defmodule Malan.Release do
 
   defp create_storage do
     for repo <- repos() do
-      case repo.__adapter__().storage_up(repo.config) do
+      case repo.__adapter__().storage_up(repo.config()) do
         :ok -> :ok
         {:error, :already_up} -> :ok
         {:error, reason} -> raise "Could not create storage: #{inspect(reason)}"
