@@ -111,7 +111,35 @@ hammer_redis_url =
       System.get_env("HAMMER_REDIS_URL") || "redis://localhost:6379/0"
   end
 
-config :malan, Malan.RateLimiter, url: hammer_redis_url
+# When the URL is `rediss://`, supply explicit Erlang SSL options to
+# Redix (Hammer.Redis pops `:url`, then `Keyword.merge`s the rest on top
+# of the URL-derived start options, so `:socket_opts` reaches
+# `Redix.start_link/1`). DigitalOcean managed Redis presents a leaf
+# cert with the wildcard SAN `*.b.db.ondigitalocean.com`. Erlang's
+# default hostname-check function rejects multi-character single-label
+# hostnames like `db-redis-nyc3-staging-do-user-7165198-0.b.db…` against
+# that wildcard, so we install the HTTPS-style match function which
+# implements RFC 6125 wildcard matching. The CA file is the same DO
+# Project CA we use for Postgres.
+hammer_redis_extra_opts =
+  if String.starts_with?(hammer_redis_url, "rediss://") do
+    [
+      socket_opts: [
+        verify: :verify_peer,
+        cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt"),
+        depth: 3,
+        customize_hostname_check: [
+          match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+        ]
+      ]
+    ]
+  else
+    []
+  end
+
+config :malan,
+       Malan.RateLimiter,
+       [url: hammer_redis_url] ++ hammer_redis_extra_opts
 
 # Email verification auto-send: enabled by default. Accepts "true"/"1" or "false"/"0".
 email_verification_auto_send? =
