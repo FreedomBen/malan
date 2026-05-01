@@ -3,4 +3,14 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: malan-prod
+  labels:
+    # istio.io/dataplane-mode: ambient is owned by Terraform (HashiCorp K8s
+    # provider). Intentionally omitted here so kubectl apply preserves it as
+    # out-of-band rather than fighting Terraform for ownership.
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
 spec:
