@@ -6,9 +6,12 @@ defmodule Malan.Application do
   use Application
   require Logger
 
+  alias Malan.Logger.EmailScrubber
+
   @impl true
   def start(_type, _args) do
     Logger.add_backend(Sentry.LoggerBackend)
+    install_email_scrubber()
 
     children = [
       # Start the Ecto repository
@@ -41,5 +44,19 @@ defmodule Malan.Application do
   def config_change(changed, _new, removed) do
     MalanWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  # Install the email-redaction filter on the primary :logger so it applies
+  # to every handler (console, Sentry.LoggerBackend, etc). Idempotent: a
+  # repeat install (e.g. during a release reload) returns `{:error, :already_exists}`,
+  # which we treat as success.
+  defp install_email_scrubber do
+    case :logger.add_primary_filter(
+           :malan_email_scrubber,
+           {&EmailScrubber.filter/2, []}
+         ) do
+      :ok -> :ok
+      {:error, {:already_exist, _}} -> :ok
+    end
   end
 end
