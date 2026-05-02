@@ -237,6 +237,11 @@ defmodule MalanWeb.SessionController do
             |> put_view(ErrorJSON)
             |> render(:"429")
             |> halt()
+
+          {:error, _reason} ->
+            # Fail-open: a transient Redis disconnect should not block session
+            # extension. The rate limiter logs the failure.
+            :ok
         end
     end
   end

@@ -127,13 +127,19 @@ hammer_redis_url =
 #
 # Hammer.Redis pops `:url` and `Keyword.merge`s the rest on top of the
 # URL-derived start options, so `:socket_opts` reaches `Redix.start_link/1`.
+#
+# `keepalive: true` enables TCP keepalive probes so the kernel notices a
+# silently-dropped connection (DigitalOcean managed Redis idle-disconnects
+# pool members) and the pool reconnects, instead of the next pipeline call
+# raising %Redix.ConnectionError{reason: :disconnected}.
 hammer_redis_extra_opts =
   if String.starts_with?(hammer_redis_url, "rediss://") do
     [
       socket_opts: [
         customize_hostname_check: [
           match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-        ]
+        ],
+        keepalive: true
       ]
     ]
   else

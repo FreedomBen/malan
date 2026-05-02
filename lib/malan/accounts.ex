@@ -392,7 +392,11 @@ defmodule Malan.Accounts do
     if is_binary(original_email) and original_email != updated.email do
       meta = %{ip: rip}
 
-      case generate_email_verification(updated, rate_limit?: true, context: :email_change, meta: meta) do
+      case generate_email_verification(updated,
+             rate_limit?: true,
+             context: :email_change,
+             meta: meta
+           ) do
         {:ok, %User{} = user_with_token} ->
           Malan.Mailer.send_email_verification_email(user_with_token, :email_change)
           :ok
@@ -442,6 +446,11 @@ defmodule Malan.Accounts do
 
       {:deny, _limit} ->
         {:error, :too_many_requests}
+
+      {:error, _reason} ->
+        # Fail-open: a transient Redis disconnect should not lock legitimate
+        # users out of password reset. The rate limiter logs the failure.
+        generate_password_reset(user, :no_rate_limit)
     end
   end
 
@@ -775,20 +784,26 @@ defmodule Malan.Accounts do
           {:error, :too_many_requests}
   """
   def authenticate_by_username_pass(username, given_pass, remote_ip) do
-    with {:allow, _} <- Malan.RateLimits.Login.check_rate(username) do
-      case get_user_id_pass_hash_by_username(username) do
-        {user_id, password_hash, nil, approved_ips} ->
-          verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
+    rate_limit_result = Malan.RateLimits.Login.check_rate(username)
 
-        {user_id, password_hash, locked_at, _} ->
-          verify_pass_locked(user_id, given_pass, password_hash, locked_at)
-
-        nil ->
-          fake_pass_verify(:not_a_user)
-      end
-    else
+    # Fail-open on {:error, _}: a transient Redis disconnect should not block
+    # logins (the limiter logs the failure). Login still requires correct
+    # credentials, so fail-open is bounded.
+    case rate_limit_result do
       {:deny, _limit} ->
         {:error, :too_many_requests}
+
+      _allow_or_error ->
+        case get_user_id_pass_hash_by_username(username) do
+          {user_id, password_hash, nil, approved_ips} ->
+            verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
+
+          {user_id, password_hash, locked_at, _} ->
+            verify_pass_locked(user_id, given_pass, password_hash, locked_at)
+
+          nil ->
+            fake_pass_verify(:not_a_user)
+        end
     end
   end
 
@@ -1978,7 +1993,10 @@ defmodule Malan.Accounts do
 
   defp json_safe(value) when is_list(value), do: Enum.map(value, &json_safe/1)
   defp json_safe(value) when is_tuple(value), do: value |> Tuple.to_list() |> json_safe()
-  defp json_safe(value) when is_atom(value) and not is_boolean(value) and not is_nil(value), do: Atom.to_string(value)
+
+  defp json_safe(value) when is_atom(value) and not is_boolean(value) and not is_nil(value),
+    do: Atom.to_string(value)
+
   defp json_safe(value), do: value
 
   @doc """
@@ -2165,11 +2183,20 @@ defmodule Malan.Accounts do
 
     cond do
       not is_nil(user.email_verified) ->
-        record_email_verification_event(user, Map.merge(meta, %{event_type: "skipped_already_verified"}))
+        record_email_verification_event(
+          user,
+          Map.merge(meta, %{event_type: "skipped_already_verified"})
+        )
+
         {:ok, :already_verified}
 
-      not Malan.Config.User.email_verification_auto_send?() and context in [:welcome, :email_change] ->
-        record_email_verification_event(user, Map.merge(meta, %{event_type: "skipped_auto_send_disabled"}))
+      not Malan.Config.User.email_verification_auto_send?() and
+          context in [:welcome, :email_change] ->
+        record_email_verification_event(
+          user,
+          Map.merge(meta, %{event_type: "skipped_auto_send_disabled"})
+        )
+
         {:ok, :skipped_auto_send_disabled}
 
       User.skip_email_verification_send?(user.email) ->
@@ -2177,16 +2204,29 @@ defmodule Malan.Accounts do
         {:ok, :skipped_domain}
 
       rate_limit? ->
-        case Malan.RateLimits.EmailVerification.check_rate(user.id) do
-          {:allow, _count} ->
-            do_generate_email_verification(user, context, meta)
-
-          {:deny, _limit} ->
-            record_email_verification_event(user, Map.merge(meta, %{event_type: "failed_rate_limited"}))
-            {:error, :too_many_requests}
-        end
+        rate_limited_generate_email_verification(user, context, meta)
 
       true ->
+        do_generate_email_verification(user, context, meta)
+    end
+  end
+
+  defp rate_limited_generate_email_verification(%User{} = user, context, meta) do
+    case Malan.RateLimits.EmailVerification.check_rate(user.id) do
+      {:allow, _count} ->
+        do_generate_email_verification(user, context, meta)
+
+      {:deny, _limit} ->
+        record_email_verification_event(
+          user,
+          Map.merge(meta, %{event_type: "failed_rate_limited"})
+        )
+
+        {:error, :too_many_requests}
+
+      {:error, _reason} ->
+        # Fail-open: a transient Redis disconnect should not block email
+        # verification sends. The rate limiter logs the failure.
         do_generate_email_verification(user, context, meta)
     end
   end
@@ -2271,7 +2311,7 @@ defmodule Malan.Accounts do
         reason =
           cond do
             current.email_verification_token_hash == token_hash and
-                not is_nil(current.email_verification_token_expires_at) and
+              not is_nil(current.email_verification_token_expires_at) and
                 Utils.DateTime.expired?(current.email_verification_token_expires_at) ->
               :failed_expired_token
 

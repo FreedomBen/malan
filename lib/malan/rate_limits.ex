@@ -1,4 +1,6 @@
 defmodule Malan.RateLimits do
+  require Logger
+
   @spec check_rate(bucket :: String.t(), scale_ms :: integer, limit :: integer) ::
           {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
 
@@ -10,6 +12,27 @@ defmodule Malan.RateLimits do
       {:deny, _timeout} ->
         {:deny, limit}
     end
+  rescue
+    # Hammer.Redis goes through Redix.pipeline! which raises on a dropped
+    # connection (e.g. DigitalOcean managed Redis idle-disconnects an
+    # otherwise healthy pool member). Surface as {:error, _} so callers
+    # can decide their failure policy instead of crashing the request.
+    e in [Redix.ConnectionError, Redix.Error] ->
+      Logger.warning(
+        "Rate limiter unavailable, returning :error for bucket=#{bucket}: #{Exception.message(e)}"
+      )
+
+      {:error, :rate_limiter_unavailable}
+  catch
+    # If the Redix pool itself is gone or its worker dies mid-call, Redix
+    # raises an exit like {:redix_exited_during_call, _} or {:noproc, _}.
+    # Treat as the same operational failure.
+    :exit, reason ->
+      Logger.warning(
+        "Rate limiter exited mid-call, returning :error for bucket=#{bucket}: #{inspect(reason)}"
+      )
+
+      {:error, :rate_limiter_unavailable}
   end
 
   @spec clear(bucket :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
