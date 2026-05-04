@@ -150,10 +150,12 @@ metadata:
 data:
   BIND_ADDR: '0.0.0.0'
   # Pool sized for Oban logs queue (10 workers) + request handlers per
-  # pod. At 8 pods and max_connections=200 this leaves headroom for
-  # other services. Bumped from 5 to 10 to reduce contention between
-  # background log inserts and HTTP handlers.
-  POOL_SIZE: '10'
+  # pod. At max_connections=397 this leaves headroom for other services.
+  # Bumped from 10 to 20 to absorb concurrent login bursts (bcrypt + DB
+  # lookup holds a connection ~1s per POST /api/sessions) and reduce
+  # pool-checkout queueing on /api/users/me, which was driving P99 tail
+  # latency above 4s.
+  POOL_SIZE: '20'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'accounts.ameelio.org'
   PORT: '4000'
