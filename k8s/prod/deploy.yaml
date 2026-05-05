@@ -13,7 +13,7 @@ metadata:
   name: malan
   namespace: malan-prod
 spec:
-  replicas: 8
+  replicas: 10
   selector:
     matchLabels:
       app: malan
