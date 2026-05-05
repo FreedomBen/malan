@@ -89,8 +89,14 @@ spec:
           - secretRef:
               name: malan-deploy-secrets
         resources:
+          # CPU request raised from 200m to 500m so the kubelet reserves
+          # enough scheduler share for Pbkdf2 password verifies during
+          # login bursts. At 200m, an 8-login burst on one pod could be
+          # CFS-throttled while each verify burns ~1s of CPU, driving
+          # P99 above 4s on co-located /api/users/me requests. Limit at
+          # 2 cores stays — bursts can still use the full pod when free.
           requests:
-            cpu: 200m
+            cpu: 500m
             memory: 512Mi
           limits:
             cpu: "2"
