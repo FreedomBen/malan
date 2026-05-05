@@ -89,17 +89,22 @@ spec:
           - secretRef:
               name: malan-deploy-secrets
         resources:
-          # CPU request raised from 200m to 500m so the kubelet reserves
-          # enough scheduler share for Pbkdf2 password verifies during
-          # login bursts. At 200m, an 8-login burst on one pod could be
-          # CFS-throttled while each verify burns ~1s of CPU, driving
-          # P99 above 4s on co-located /api/users/me requests. Limit at
-          # 2 cores stays — bursts can still use the full pod when free.
+          # CPU sized for Pbkdf2 password verifies during login bursts.
+          # Each verify is single-threaded HMAC-SHA512 (~1s on one core);
+          # BEAM schedules N concurrent verifies across N schedulers, so
+          # the cgroup's CFS quota was throttling 8-login bursts on one
+          # pod into ~4s wall time and dragging co-located /api/users/me
+          # requests with them.
+          # - request 500m: enough kubelet-reserved share to keep BEAM
+          #   responsive under typical load (avg pod usage ~15m).
+          # - limit 4: doubles burst capacity over the prior limit of 2,
+          #   cutting the 8-verify burst floor from ~4s to ~2s. Memory
+          #   limit unchanged — OOM protection still wanted.
           requests:
             cpu: 500m
             memory: 512Mi
           limits:
-            cpu: "2"
+            cpu: "4"
             memory: 2Gi
         volumeMounts:
           - name: tmp
