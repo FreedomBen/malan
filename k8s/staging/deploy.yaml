@@ -88,11 +88,22 @@ spec:
           - secretRef:
               name: malan-deploy-secrets
         resources:
+          # Mirrors prod sizing (see k8s/prod/deploy.yaml). Pbkdf2 verify
+          # is single-threaded HMAC-SHA512 (~1s on one core) and BEAM
+          # schedules concurrent verifies one-per-scheduler, so a tight
+          # CFS quota throttles login bursts into multi-second wall time.
+          # - request 500m: enough kubelet-reserved share to keep BEAM
+          #   responsive under typical load.
+          # - limit 4: gives a single pod headroom to absorb a verify
+          #   burst at single-verify wall time. Worker-pool nodes are
+          #   4 vCPU, so a saturated pod can briefly use the whole node;
+          #   acceptable here given staging's 2-replica footprint and
+          #   anti-affinity keeps them on separate nodes.
           requests:
-            cpu: 200m
+            cpu: 500m
             memory: 512Mi
           limits:
-            cpu: "1"
+            cpu: "4"
             memory: 1Gi
         volumeMounts:
           - name: tmp
