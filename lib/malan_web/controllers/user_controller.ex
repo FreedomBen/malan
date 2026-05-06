@@ -126,23 +126,22 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      changeset = User.admin_changeset(user, user_params)
+      case Accounts.admin_update_user(user, user_params) do
+        {:ok, %User{} = updated, changeset} ->
+          record_log(
+            conn,
+            true,
+            updated.id,
+            updated.username,
+            "PUT",
+            "#UserController.admin_update/2",
+            changeset
+          )
 
-      with {:ok, %User{} = user} <- Accounts.admin_update_user(user, user_params) do
-        record_log(
-          conn,
-          true,
-          user.id,
-          user.username,
-          "PUT",
-          "#UserController.admin_update/2",
-          changeset
-        )
+          render(conn, :show, code: 200, user: updated)
 
-        render(conn, :show, code: 200, user: user)
-      else
-        {:error, err} ->
-          err_str = Utils.Ecto.Changeset.errors_to_str(err)
+        {:error, %Ecto.Changeset{} = cs} ->
+          err_str = Utils.Ecto.Changeset.errors_to_str(cs)
 
           record_log(
             conn,
@@ -151,10 +150,10 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.admin_update/2 - User update by admin failed: #{err_str}",
-            changeset
+            cs
           )
 
-          {:error, err}
+          {:error, cs}
       end
     end
   end
