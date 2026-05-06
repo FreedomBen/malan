@@ -1718,8 +1718,8 @@ defmodule MalanWeb.SessionControllerTest do
         assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(s.api_token, nil)
       end
 
-      {:ok, %Accounts.Session{revoked_at: s3_revoked_at}} = Accounts.revoke_session(s3)
-      {:ok, %Accounts.Session{revoked_at: s4_revoked_at}} = Accounts.revoke_session(s4)
+      {:ok, %Accounts.Session{revoked_at: s3_revoked_at}, _cs3} = Accounts.revoke_session(s3)
+      {:ok, %Accounts.Session{revoked_at: s4_revoked_at}, _cs4} = Accounts.revoke_session(s4)
       assert TestUtils.DateTime.within_last?(s3_revoked_at, 5, :seconds) == true
       assert TestUtils.DateTime.within_last?(s4_revoked_at, 5, :seconds) == true
 

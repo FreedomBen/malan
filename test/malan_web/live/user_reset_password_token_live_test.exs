@@ -13,7 +13,7 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
 
   test "resets password with a valid token", %{conn: conn} do
     {:ok, user} = AccountsHelpers.regular_user(%{})
-    {:ok, user} = Accounts.generate_password_reset(user)
+    {:ok, user, _cs} = Accounts.generate_password_reset(user)
 
     on_exit(fn -> PasswordReset.clear(user.id) end)
 
@@ -38,7 +38,7 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
 
   test "shows validation errors when password is too short", %{conn: conn} do
     {:ok, user} = AccountsHelpers.regular_user(%{})
-    {:ok, user} = Accounts.generate_password_reset(user)
+    {:ok, user, _cs} = Accounts.generate_password_reset(user)
 
     on_exit(fn -> PasswordReset.clear(user.id) end)
 
@@ -54,7 +54,7 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
   test "captures the LiveView peer IP in the audit log on reset_password",
        %{conn: conn} do
     {:ok, user} = AccountsHelpers.regular_user(%{})
-    {:ok, user} = Accounts.generate_password_reset(user)
+    {:ok, user, _cs} = Accounts.generate_password_reset(user)
     on_exit(fn -> PasswordReset.clear(user.id) end)
 
     conn =

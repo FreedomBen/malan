@@ -39,12 +39,7 @@ defmodule MalanWeb.SessionController do
   def admin_delete(conn, %{"id" => id}) do
     session = Accounts.get_session!(id)
 
-    log_changeset =
-      Session.revoke_changeset(session, %{
-        revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)
-      })
-
-    with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
+    with {:ok, %Session{} = session, log_changeset} <- Accounts.delete_session(session) do
       record_log(
         conn,
         true,
@@ -185,13 +180,7 @@ defmodule MalanWeb.SessionController do
         authed_session_id: conn.assigns.authed_session_id
       }
 
-      changeset =
-        Session.extend_changeset(
-          session,
-          %{expire_in_seconds: attrs["expire_in_seconds"]}
-        )
-
-      with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}} <-
+      with {:ok, {%Session{} = session, %SessionExtension{} = _session_extension}, changeset} <-
              Accounts.extend_session(session, attrs, authed_ids) do
         record_log(
           conn,
@@ -213,7 +202,7 @@ defmodule MalanWeb.SessionController do
             session.user_id,
             "PUT",
             "#SessionController.extend/2 - Session extension failed: #{err_str}",
-            changeset
+            err
           )
 
           {:error, err}
@@ -249,12 +238,7 @@ defmodule MalanWeb.SessionController do
   def delete(conn, %{"id" => id}) do
     session = Map.get(conn.assigns, :session) || Accounts.get_session!(id)
 
-    changeset =
-      Session.revoke_changeset(session, %{
-        revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)
-      })
-
-    with {:ok, %Session{} = session} <- Accounts.delete_session(session) do
+    with {:ok, %Session{} = session, changeset} <- Accounts.delete_session(session) do
       record_log(
         conn,
         true,
@@ -275,7 +259,7 @@ defmodule MalanWeb.SessionController do
           session.user_id,
           "DELETE",
           "#SessionController.delete/2 - Session deletion failed: #{err_str}",
-          changeset
+          err
         )
 
         {:error, err}

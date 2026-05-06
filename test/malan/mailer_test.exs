@@ -9,7 +9,7 @@ defmodule Malan.MailerTest do
   describe "UserNotifier" do
     test "Sends mail" do
       {:ok, user} = Helpers.Accounts.regular_user()
-      {:ok, user} = Malan.Accounts.generate_password_reset(user, :no_rate_limit)
+      {:ok, user, _cs} = Malan.Accounts.generate_password_reset(user, :no_rate_limit)
       email = MalanWeb.UserNotifier.password_reset_email(user)
       Mailer.deliver(email)
       Swoosh.TestAssertions.assert_email_sent(email)

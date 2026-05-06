@@ -266,7 +266,7 @@ defmodule Malan.Test.Helpers.Accounts do
   end
 
   def set_revoked_at(session, revoked_at) do
-    {:ok, session} = Accounts.revoke_session_at(session, revoked_at)
+    {:ok, session, _cs} = Accounts.revoke_session_at(session, revoked_at)
     session
   end
 

@@ -13,7 +13,7 @@ defmodule Malan.Workers.PasswordResetEmailTest do
   describe "perform/1" do
     test "delivers the password reset email using the encrypted token from args" do
       {:ok, user} = Helpers.Accounts.regular_user()
-      {:ok, user} = Accounts.generate_password_reset(user, :no_rate_limit)
+      {:ok, user, _cs} = Accounts.generate_password_reset(user, :no_rate_limit)
 
       assert :ok =
                perform_job(PasswordResetEmail, %{
@@ -50,7 +50,7 @@ defmodule Malan.Workers.PasswordResetEmailTest do
   describe "Mailer.send_password_reset_email/1 enqueue" do
     test "enqueues a job carrying user_id and an encrypted token" do
       {:ok, user} = Helpers.Accounts.regular_user()
-      {:ok, user} = Accounts.generate_password_reset(user, :no_rate_limit)
+      {:ok, user, _cs} = Accounts.generate_password_reset(user, :no_rate_limit)
 
       # Switch to manual mode for this assertion so the job is inspected,
       # not executed inline.

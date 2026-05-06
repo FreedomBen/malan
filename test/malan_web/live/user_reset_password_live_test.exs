@@ -92,7 +92,7 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
 
     on_exit(fn -> PasswordReset.clear(user.id) end)
 
-    assert {:ok, _} = Accounts.generate_password_reset(user)
+    assert {:ok, _, _} = Accounts.generate_password_reset(user)
 
     {:ok, view, _html} = live(conn, reset_path())
 
@@ -185,6 +185,7 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     # Lower IP bucket is 5 per minute (config/test.exs).
     Enum.each(1..5, fn i ->
       html = submit.("ip-throttle-#{i}@example.com")
+
       assert html =~ "Reset request received",
              "request #{i} should have been allowed but rendered: #{String.slice(html, 0, 200)}"
     end)

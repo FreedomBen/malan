@@ -38,7 +38,7 @@ defmodule MalanWeb.SessionExtensionControllerTest do
              } = json_response(conn, 200)
 
       # Make a first extension
-      {:ok, {s2, se2}} =
+      {:ok, {s2, se2}, _cs} =
         Accounts.extend_session(s1, %{"expire_in_seconds" => 30}, %{
           authed_user_id: s1.user_id,
           authed_session_id: s1.id
@@ -100,7 +100,7 @@ defmodule MalanWeb.SessionExtensionControllerTest do
              } = json_response(conn, 200)
 
       # Make second extension
-      {:ok, {s3, se3}} =
+      {:ok, {s3, se3}, _cs} =
         Accounts.extend_session(s2, %{"expire_in_seconds" => 60}, %{
           authed_user_id: s2.user_id,
           authed_session_id: s2.id
@@ -172,7 +172,7 @@ defmodule MalanWeb.SessionExtensionControllerTest do
              } = json_response(conn, 200)
 
       # Make third extension
-      {:ok, {_s4, se4}} =
+      {:ok, {_s4, se4}, _cs} =
         Accounts.extend_session(s3, %{"expire_in_seconds" => 90}, %{
           authed_user_id: s1.user_id,
           authed_session_id: s1.id
@@ -272,7 +272,7 @@ defmodule MalanWeb.SessionExtensionControllerTest do
       {:ok, _c2, u2, s2} = Helpers.Accounts.regular_user_session_conn(build_conn())
 
       # Create an extension for user 2's session so there is data to see
-      {:ok, {_s2_after, se2}} =
+      {:ok, {_s2_after, se2}, _cs} =
         Accounts.extend_session(s2, %{"expire_in_seconds" => 30}, %{
           authed_user_id: u2.id,
           authed_session_id: s2.id
