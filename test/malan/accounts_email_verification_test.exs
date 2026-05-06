@@ -235,7 +235,7 @@ defmodule Malan.AccountsEmailVerificationTest do
 
       ui = System.unique_integer([:positive])
 
-      {:ok, updated} =
+      {:ok, updated, _cs} =
         Accounts.admin_update_user(user, %{"email" => "newemail#{ui}@email.com"})
 
       assert updated.email == "newemail#{ui}@email.com"

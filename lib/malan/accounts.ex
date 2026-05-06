@@ -550,25 +550,25 @@ defmodule Malan.Accounts do
   end
 
   @doc ""
+  # Returns `{:ok, user, changeset}` on success so callers can reuse the
+  # same changeset (e.g. for audit logging) without rebuilding it.
+  # Rebuilding re-runs `put_pass_hash` and doubles the Pbkdf2 cost when
+  # `attrs` contains a password.
   def admin_update_user(user, attrs) do
     original_email = user.email
     admin_email_verified_toggle = extract_admin_email_verified_toggle(attrs)
+    changeset = User.admin_changeset(user, attrs)
 
-    result =
-      user
-      |> User.admin_changeset(attrs)
-      |> Repo.update()
-
-    case result do
+    case Repo.update(changeset) do
       {:ok, updated} ->
         case admin_email_verified_toggle do
           :unset ->
             maybe_send_email_change_verification(updated, original_email, dummy_ip())
-            {:ok, updated}
+            {:ok, updated, changeset}
 
           value ->
             case set_email_verified(updated, value, meta: %{}) do
-              {:ok, user_with_toggle} -> {:ok, user_with_toggle}
+              {:ok, user_with_toggle} -> {:ok, user_with_toggle, changeset}
               other -> other
             end
         end

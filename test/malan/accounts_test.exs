@@ -217,7 +217,7 @@ defmodule Malan.AccountsTest do
       assert {:ok, user_id} =
                Accounts.authenticate_by_username_pass(ru.username, ru.password, "192.168.2.200")
 
-      assert {:ok, user} = Accounts.admin_update_user(ru, %{password_reset: true})
+      assert {:ok, user, _cs} = Accounts.admin_update_user(ru, %{password_reset: true})
       assert user.password =~ ~r/[A-Za-z0-9]{10}/
 
       assert {:ok, ^user_id} =

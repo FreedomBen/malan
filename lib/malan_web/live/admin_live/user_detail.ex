@@ -54,7 +54,7 @@ defmodule MalanWeb.AdminLive.UserDetail do
     filtered = Map.take(params, @safe_fields)
 
     case Accounts.admin_update_user(socket.assigns.user, filtered) do
-      {:ok, %User{} = user} ->
+      {:ok, %User{} = user, _changeset} ->
         {:noreply,
          socket
          |> assign(
