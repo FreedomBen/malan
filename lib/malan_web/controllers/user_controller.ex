@@ -359,14 +359,7 @@ defmodule MalanWeb.UserController do
       |> put_status(200)
       |> json(%{ok: true, code: 200})
     else
-      # Note:  This is very similar to the actual changeset, but not the
-      # exact same.  Slightly different utc times, and different api_token and
-      # api_token_hash.  Might be misleadings and we should consider just
-      # setting the log changeset to nil
-
-      changeset = User.password_reset_create_changeset(user)
-
-      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user),
+      with {:ok, %User{} = user, changeset} <- Accounts.generate_password_reset(user),
            {:ok, term} <- Mailer.send_password_reset_email(user) do
         record_log(
           conn,
@@ -387,7 +380,7 @@ defmodule MalanWeb.UserController do
             conn,
             user,
             "Mail provider authentication seems to have failed: #{Utils.to_string(error)}",
-            changeset
+            nil
           )
 
           conn
@@ -400,7 +393,7 @@ defmodule MalanWeb.UserController do
             conn,
             user,
             "Rate limit exceeded for user #{user.username}",
-            changeset
+            nil
           )
 
           conn
@@ -435,15 +428,10 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      # Note:  This is very similar to the actual changeset, but not the
-      # exact same.  Slightly different utc times, and different api_token and
-      # api_token_hash.  Might be misleadings and we should consider just
-      # setting the log changeset to nil
-      changeset = User.password_reset_create_changeset(user)
-
       # As an admin endpoint we don't rate limit this specifically (although
       # there is a general rate limit)
-      with {:ok, %User{} = user} <- Accounts.generate_password_reset(user, :no_rate_limit) do
+      with {:ok, %User{} = user, changeset} <-
+             Accounts.generate_password_reset(user, :no_rate_limit) do
         record_log(
           conn,
           true,

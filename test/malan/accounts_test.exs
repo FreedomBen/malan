@@ -692,7 +692,7 @@ defmodule Malan.AccountsTest do
       assert is_nil(uf.password_reset_token)
       assert is_nil(uf.password_reset_token_hash)
       assert is_nil(uf.password_reset_token_expires_at)
-      {:ok, updated} = Accounts.generate_password_reset(user)
+      {:ok, updated, _cs} = Accounts.generate_password_reset(user)
 
       assert %{
                updated
@@ -709,6 +709,31 @@ defmodule Malan.AccountsTest do
       assert is_nil(uuser.password_reset_token)
       assert uuser.password_reset_token_hash
       assert uuser.password_reset_token_expires_at
+    end
+
+    test "generate_password_reset/1 returns the changeset whose token was actually persisted (regression)" do
+      # Each call to User.password_reset_create_changeset/1 generates a fresh
+      # random token. Before the fix, the controller built one changeset for
+      # the audit log and Accounts built another to persist — so the audit
+      # log captured a token the user was never given. This guards against
+      # that reintroduction.
+      user = user_fixture()
+
+      assert {:ok, persisted, %Ecto.Changeset{} = cs} =
+               Accounts.generate_password_reset(user)
+
+      cs_hash = Ecto.Changeset.get_change(cs, :password_reset_token_hash)
+
+      assert is_binary(cs_hash) and cs_hash != "",
+             "returned changeset should carry the persisted token hash"
+
+      assert persisted.password_reset_token_hash == cs_hash,
+             "audit log changeset diverged from persisted user — generate_password_reset built the changeset twice"
+
+      reloaded = Accounts.get_user!(persisted.id)
+
+      assert reloaded.password_reset_token_hash == cs_hash,
+             "DB-stored hash diverged from changeset hash"
     end
 
     test "validate_password_reset_token/2 logic test: returns properly with no token" do
@@ -743,13 +768,13 @@ defmodule Malan.AccountsTest do
 
     test "validate_password_reset_token/2 logic test: returns properly with valid token" do
       uf = user_fixture()
-      {:ok, user} = Accounts.generate_password_reset(uf)
+      {:ok, user, _cs} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
     end
 
     test "reset_password_with_token/4 enforces minimum length by default" do
       user = user_fixture()
-      {:ok, user} = Accounts.generate_password_reset(user)
+      {:ok, user, _cs} = Accounts.generate_password_reset(user)
       token = user.password_reset_token
 
       assert {:error, %Ecto.Changeset{} = changeset} =
@@ -761,7 +786,7 @@ defmodule Malan.AccountsTest do
 
     test "admin_reset_password_with_token/4 allows passwords down to the admin-set minimum" do
       user = user_fixture()
-      {:ok, user} = Accounts.generate_password_reset(user)
+      {:ok, user, _cs} = Accounts.generate_password_reset(user)
       token = user.password_reset_token
 
       original_config = Application.get_env(:malan, Malan.Accounts.User)
@@ -798,13 +823,13 @@ defmodule Malan.AccountsTest do
           password_reset_token_expires_at: Utils.DateTime.adjust_cur_time(-1, :minutes)
         })
 
-      {:ok, user} = Accounts.generate_password_reset(uf)
+      {:ok, user, _cs} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
     end
 
     test "clear_password_reset_token/1 clears old password reset token" do
       uf = user_fixture()
-      {:ok, user} = Accounts.generate_password_reset(uf)
+      {:ok, user, _cs} = Accounts.generate_password_reset(uf)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
       assert {:ok} = Accounts.validate_password_reset_token(user, user.password_reset_token)
       # We know token is valid, now lets clear it
@@ -1293,7 +1318,7 @@ defmodule Malan.AccountsTest do
 
     test "delete_session/1 revokes the session" do
       session = session_fixture()
-      assert {:ok, %Session{}} = Accounts.delete_session(session)
+      assert {:ok, %Session{}, _cs} = Accounts.delete_session(session)
       sesh = Accounts.get_session!(session.id)
       assert Enum.member?(0..5, DateTime.diff(DateTime.utc_now(), sesh.revoked_at, :second))
     end
@@ -1324,13 +1349,13 @@ defmodule Malan.AccountsTest do
 
     test "validate_session/2 return an error when the session is revoked" do
       session = session_fixture(%{"username" => "randomusername2"})
-      assert {:ok, %Session{}} = Accounts.delete_session(session)
+      assert {:ok, %Session{}, _cs} = Accounts.delete_session(session)
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
     test "validate_session/2 return an error when the session is revoked even when token expires infinitely" do
       session = session_fixture(%{"username" => "randomusername2"}, %{"never_expires" => false})
-      assert {:ok, %Session{}} = Accounts.delete_session(session)
+      assert {:ok, %Session{}, _cs} = Accounts.delete_session(session)
       assert {:error, :revoked} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
@@ -1806,7 +1831,7 @@ defmodule Malan.AccountsTest do
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
 
-      assert {:ok, {session_retval, _session_extension_retval}} =
+      assert {:ok, {session_retval, _session_extension_retval}, _cs} =
                Accounts.extend_session(session, %{expire_in_seconds: 3600})
 
       assert TestUtils.DateTime.datetimes_within?(
@@ -1836,7 +1861,7 @@ defmodule Malan.AccountsTest do
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
       # 2,000 seconds more than what should be allowed based on our limit set above
-      assert {:ok, {session_retval, _session_extension_retval}} =
+      assert {:ok, {session_retval, _session_extension_retval}, _cs} =
                Accounts.extend_session(session, %{expire_in_seconds: 5600})
 
       assert TestUtils.DateTime.datetimes_within?(
@@ -1864,7 +1889,7 @@ defmodule Malan.AccountsTest do
 
       expected_new_exp_time = Utils.DateTime.adjust_cur_time(1, :hours)
 
-      assert {:ok, {session_retval, _session_extension_retval}} =
+      assert {:ok, {session_retval, _session_extension_retval}, _cs} =
                Accounts.extend_session(session, %{expire_in_seconds: 3600})
 
       assert TestUtils.DateTime.plus_or_minus?(
@@ -1911,7 +1936,7 @@ defmodule Malan.AccountsTest do
       assert [] == Accounts.list_session_extensions(s1.id, 0, 10)
 
       # Extend the session by 1 minute
-      assert {:ok, {s2, se2}} =
+      assert {:ok, {s2, se2}, _cs} =
                Accounts.extend_session(s1, %{expire_in_seconds: 60}, %{
                  authed_user_id: user_id,
                  authed_session_id: session_id
@@ -1980,7 +2005,7 @@ defmodule Malan.AccountsTest do
              ] = Accounts.list_session_extensions(s2.id, 0, 10)
 
       # Extend the session a second time, by 2 minute
-      assert {:ok, {s3, se3}} =
+      assert {:ok, {s3, se3}, _cs} =
                Accounts.extend_session(s2, %{expire_in_seconds: 120}, %{
                  authed_user_id: user_id,
                  authed_session_id: session_id
@@ -2058,7 +2083,7 @@ defmodule Malan.AccountsTest do
              ] = Accounts.list_session_extensions(s3.id, 0, 10)
 
       # Extend the session a third time by 90 seconds
-      assert {:ok, {s4, se4}} =
+      assert {:ok, {s4, se4}, _cs} =
                Accounts.extend_session(s3, %{expire_in_seconds: 90}, %{
                  authed_user_id: user_id,
                  authed_session_id: session_id

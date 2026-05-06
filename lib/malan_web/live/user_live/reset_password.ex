@@ -78,15 +78,16 @@ defmodule MalanWeb.UserLive.ResetPassword do
         # TODO:  Use pattern matching so that we can remove the Accounts.get_user_by_email call above.
         # with %User{} = user <- Accounts.get_user_by_email(email),
         with user <- Accounts.get_user_by_email(email),
-             log_changeset <- User.password_reset_create_changeset(user),
-             {:ok, %User{} = user} <- Accounts.generate_password_reset(user),
+             {:ok, %User{} = user, log_changeset} <- Accounts.generate_password_reset(user),
              {:ok, _term} <- Mailer.send_password_reset_email(user) do
           record_log(
             true,
             user.id,
             remote_ip,
-            nil, # who
-            user.username, # who_username
+            # who
+            nil,
+            # who_username
+            user.username,
             "POST",
             "#MalanWeb.UserLive.ResetPassword.handle_event/3 - send_reset_email",
             log_changeset
@@ -117,10 +118,13 @@ defmodule MalanWeb.UserLive.ResetPassword do
 
             record_log(
               false,
-              nil, # user ID
+              # user ID
+              nil,
               remote_ip,
-              nil, # who
-              email, # who_username
+              # who
+              nil,
+              # who_username
+              email,
               "POST",
               "#MalanWeb.UserLive.ResetPassword.handle_event/3 - send_reset_email.  Failed to send user email.  #{err_str}",
               nil
@@ -153,10 +157,12 @@ defmodule MalanWeb.UserLive.ResetPassword do
     Accounts.record_log(
       success?,
       user_id,
-      nil, # session_id
+      # session_id
+      nil,
       who,
       who_username,
-      "users", # type
+      # type
+      "users",
       verb,
       what,
       remote_ip,

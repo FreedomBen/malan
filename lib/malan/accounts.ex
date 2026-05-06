@@ -441,8 +441,11 @@ defmodule Malan.Accounts do
 
   Requests are rate-limited based on `user.id` unless :no_rate_limit is passed
 
-  Returns {:ok, %User{}} on success or
-          {:error, changeset} on failure
+  Returns {:ok, %User{}, %Ecto.Changeset{}} on success.
+  The returned changeset is the one that produced the persisted user, so the
+  audit log can record the actual token hash that was stored.
+
+  Returns {:error, %Ecto.Changeset{}} on failure or
           {:error, :too_many_requests} on hitting rate limit
   """
   def generate_password_reset(%User{} = user) do
@@ -464,13 +467,16 @@ defmodule Malan.Accounts do
   @doc ~S"""
   Generates a password reset token that can then be used to reset the user's password.
 
-  Returns {:ok, %User{}} on success or
-          {:error, changeset} on failure
+  Returns {:ok, %User{}, %Ecto.Changeset{}} on success or
+          {:error, %Ecto.Changeset{}} on failure.
   """
   def generate_password_reset(%User{} = user, :no_rate_limit) do
-    user
-    |> User.password_reset_create_changeset()
-    |> Repo.update()
+    changeset = User.password_reset_create_changeset(user)
+
+    case Repo.update(changeset) do
+      {:ok, user} -> {:ok, user, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   @doc """
@@ -1095,7 +1101,7 @@ defmodule Malan.Accounts do
   ## Examples
 
       iex> delete_session(session)
-      {:ok, %Session{}}
+      {:ok, %Session{}, %Ecto.Changeset{}}
 
       iex> delete_session(session)
       {:error, %Ecto.Changeset{}}
@@ -1323,20 +1329,26 @@ defmodule Malan.Accounts do
   end
 
   def revoke_session_at(%Session{} = session, %DateTime{} = datetime) do
-    session
-    |> Session.revoke_changeset(%{revoked_at: datetime})
-    |> Repo.update()
+    changeset = Session.revoke_changeset(session, %{revoked_at: datetime})
+
+    case Repo.update(changeset) do
+      {:ok, session} -> {:ok, session, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   def extend_session(%Session{} = session, attrs, authed_ids \\ %{}) do
-    Repo.transaction(fn ->
-      sc = Session.extend_changeset(session, attrs)
-      sec = SessionExtension.create_changeset(sc, authed_ids)
+    changeset = Session.extend_changeset(session, attrs)
 
-      sec = Repo.insert!(sec)
-      sc = Repo.update!(sc)
-      {sc, sec}
-    end)
+    case Repo.transaction(fn ->
+           sec_cs = SessionExtension.create_changeset(changeset, authed_ids)
+           sec = Repo.insert!(sec_cs)
+           updated = Repo.update!(changeset)
+           {updated, sec}
+         end) do
+      {:ok, {session, ext}} -> {:ok, {session, ext}, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   alias Malan.Accounts.Team
