@@ -39,19 +39,18 @@ defmodule MalanWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
-    changeset = User.registration_changeset(%User{}, user_params)
+    case Accounts.register_user(user_params) do
+      {:ok, %User{id: id, username: username} = user, changeset} ->
+        maybe_auto_send_verification(user, remote_ip_s(conn))
 
-    with {:ok, %User{id: id, username: username} = user} <- Accounts.register_user(user_params) do
-      maybe_auto_send_verification(user, remote_ip_s(conn))
+        conn
+        |> record_log(true, id, username, "POST", "#UserController.create/2", changeset)
+        |> put_status(:created)
+        |> put_resp_header("location", ~p"/api/users/#{user}")
+        |> render(:create, code: 201, user: user)
 
-      conn
-      |> record_log(true, id, username, "POST", "#UserController.create/2", changeset)
-      |> put_status(:created)
-      |> put_resp_header("location", ~p"/api/users/#{user}")
-      |> render(:create, code: 201, user: user)
-    else
-      {:error, err} ->
-        err_str = Utils.Ecto.Changeset.errors_to_str(err)
+      {:error, %Ecto.Changeset{} = cs} ->
+        err_str = Utils.Ecto.Changeset.errors_to_str(cs)
 
         record_log(
           conn,
@@ -60,10 +59,10 @@ defmodule MalanWeb.UserController do
           user_params["username"],
           "POST",
           "#UserController.create/2 - User account creation failed: #{err_str}",
-          changeset
+          cs
         )
 
-        {:error, err}
+        {:error, cs}
     end
   end
 
@@ -87,23 +86,22 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      changeset = User.update_changeset(user, user_params)
+      case Accounts.update_user(user, user_params) do
+        {:ok, %User{} = updated, changeset} ->
+          record_log(
+            conn,
+            true,
+            updated.id,
+            updated.username,
+            "PUT",
+            "#UserController.update/2",
+            changeset
+          )
 
-      with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-        record_log(
-          conn,
-          true,
-          user.id,
-          user.username,
-          "PUT",
-          "#UserController.update/2",
-          changeset
-        )
+          render(conn, :show, code: 200, user: updated)
 
-        render(conn, :show, code: 200, user: user)
-      else
-        {:error, err} ->
-          err_str = Utils.Ecto.Changeset.errors_to_str(err)
+        {:error, %Ecto.Changeset{} = cs} ->
+          err_str = Utils.Ecto.Changeset.errors_to_str(cs)
 
           record_log(
             conn,
@@ -112,10 +110,10 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.update/2 - User update failed: #{err_str}",
-            changeset
+            cs
           )
 
-          {:error, err}
+          {:error, cs}
       end
     end
   end
@@ -506,18 +504,16 @@ defmodule MalanWeb.UserController do
     do: render_user(conn, nil)
 
   defp reset_password_token_p(conn, %User{} = user, token, new_password, mode) do
-    log_opts =
-      case mode do
-        :admin -> [password_set_by_admin?: true]
-        _ -> []
-      end
-
-    log_changeset =
-      User.update_changeset(
-        user,
-        %{"password" => Utils.mask_str(new_password)},
-        log_opts
-      )
+    # Audit-log payload for the reset event. We deliberately do NOT build a
+    # User.update_changeset here: it would run put_pass_hash on `new_password`
+    # purely so the audit log could record a hash, doubling the Pbkdf2 cost
+    # of every reset. The actual password change (and its real changeset)
+    # happens inside Accounts.{,admin_}reset_password_with_token below.
+    log_payload = %{
+      "action" => "password_reset_via_token",
+      "mode" => Atom.to_string(mode),
+      "user_id" => user.id
+    }
 
     reset_fun =
       case mode do
@@ -534,7 +530,7 @@ defmodule MalanWeb.UserController do
         user.username,
         "PUT",
         "#UserController.admin_reset_password_token/3",
-        log_changeset
+        log_payload
       )
 
       conn
@@ -543,13 +539,14 @@ defmodule MalanWeb.UserController do
     else
       {:error, %Ecto.Changeset{} = cs} ->
         conn
-        |> record_log_admin_reset_password_token_fail(user, cs, log_changeset)
+        |> record_log_admin_reset_password_token_fail(user, cs, log_payload)
         |> put_status(:unprocessable_entity)
         |> put_view(ErrorJSON)
         |> render(:"422", errors: MalanWeb.ChangesetJSON.translate_errors(cs))
+
       {:error, :missing_password_reset_token = err} ->
         conn
-        |> record_log_admin_reset_password_token_fail(user, err, log_changeset)
+        |> record_log_admin_reset_password_token_fail(user, err, log_payload)
         |> put_status(401)
         |> json(%{
           ok: false,
@@ -560,7 +557,7 @@ defmodule MalanWeb.UserController do
 
       {:error, :invalid_password_reset_token = err} ->
         conn
-        |> record_log_admin_reset_password_token_fail(user, err, log_changeset)
+        |> record_log_admin_reset_password_token_fail(user, err, log_payload)
         |> put_status(401)
         |> json(%{
           ok: false,
@@ -571,7 +568,7 @@ defmodule MalanWeb.UserController do
 
       {:error, :expired_password_reset_token = err} ->
         conn
-        |> record_log_admin_reset_password_token_fail(user, err, log_changeset)
+        |> record_log_admin_reset_password_token_fail(user, err, log_payload)
         |> put_status(401)
         |> json(%{
           ok: false,

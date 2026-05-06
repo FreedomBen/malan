@@ -85,7 +85,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   @doc "Returns: {:ok, user}"
   def admin_user(attrs \\ %{}) do
-    {:ok, user} =
+    {:ok, user, _cs} =
       attrs
       |> Enum.into(admin_attrs())
       |> Accounts.register_user()
@@ -95,7 +95,7 @@ defmodule Malan.Test.Helpers.Accounts do
 
   @doc "Returns: {:ok, user}"
   def moderator_user(attrs \\ %{}) do
-    {:ok, user} =
+    {:ok, user, _cs} =
       attrs
       |> Enum.into(moderator_attrs())
       |> Accounts.register_user()
@@ -141,9 +141,10 @@ defmodule Malan.Test.Helpers.Accounts do
 
   @doc "Returns: {:ok, user}"
   def regular_user(attrs \\ %{}) do
-    attrs
-    |> Enum.into(regular_attrs())
-    |> Accounts.register_user()
+    case attrs |> Enum.into(regular_attrs()) |> Accounts.register_user() do
+      {:ok, user, _cs} -> {:ok, user}
+      {:error, _} = err -> err
+    end
   end
 
   @doc "Returns: {:ok, user, session}"
