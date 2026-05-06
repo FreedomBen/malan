@@ -50,10 +50,14 @@ defmodule Malan.Workers.LogArchiverTest do
     {params, placeholders} =
       rows
       |> Enum.with_index()
-      |> Enum.reduce({[], []}, fn {{id, type_enum, verb_enum, ts, what, success, remote_ip, changeset, ins, upd}, idx}, {params, phs} ->
+      |> Enum.reduce({[], []}, fn {{id, type_enum, verb_enum, ts, what, success, remote_ip,
+                                    changeset, ins, upd}, idx},
+                                  {params, phs} ->
         base = idx * 10
         ph = "(#{Enum.map_join(1..10, ", ", &"$#{base + &1}")})"
-        {params ++ [id, type_enum, verb_enum, ts, what, success, remote_ip, changeset, ins, upd], [ph | phs]}
+
+        {params ++ [id, type_enum, verb_enum, ts, what, success, remote_ip, changeset, ins, upd],
+         [ph | phs]}
       end)
 
     values = placeholders |> Enum.reverse() |> Enum.join(", ")
@@ -106,7 +110,9 @@ defmodule Malan.Workers.LogArchiverTest do
 
     test "respects custom retention_days" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
-      date_45_days_ago = DateTime.utc_now() |> DateTime.add(-45, :day) |> DateTime.truncate(:second)
+
+      date_45_days_ago =
+        DateTime.utc_now() |> DateTime.add(-45, :day) |> DateTime.truncate(:second)
 
       initial_logs = logs_count()
       create_log(user, session, date_45_days_ago)

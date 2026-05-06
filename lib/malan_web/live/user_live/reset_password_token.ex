@@ -67,8 +67,10 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
         true,
         socket.assigns.user.id,
         remote_ip,
-        nil, # who
-        socket.assigns.user.username, # who_username
+        # who
+        nil,
+        # who_username
+        socket.assigns.user.username,
         "PUT",
         "MalanWeb.UserLive.ResetPasswordToken | handle_event 'reset_password'",
         log_changeset
@@ -108,10 +110,12 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     Accounts.record_log(
       success?,
       user_id,
-      nil, # session_id
+      # session_id
+      nil,
       who,
       who_username,
-      "users", # type
+      # type
+      "users",
       verb,
       what,
       remote_ip,
@@ -121,12 +125,14 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
 
   defp record_log_admin_reset_password_token_fail(remote_ip, user, err) do
     record_log(
-      false, # success
+      # success
+      false,
       user.id,
       remote_ip,
       user.id,
       user.username,
-      "PUT", # verb
+      # verb
+      "PUT",
       "MalanWeb.UserLive.ResetPasswordToken - Err: #{Malan.Utils.Ecto.Changeset.errors_to_str_list(err)}",
       err
     )

@@ -10,8 +10,17 @@
         </.link>
       </li>
       <li class="flex items-center">
-        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4 text-gray-300 dark:text-gray-600">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M7.22 14.78a.75.75 0 0 0 1.06 0l5.25-5.25a.75.75 0 0 0 0-1.06l-5.25-5.25a.75.75 0 1 0-1.06 1.06L11.94 9l-4.72 4.72a.75.75 0 0 0 0 1.06Z" />
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+          class="size-4 text-gray-300 dark:text-gray-600"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M7.22 14.78a.75.75 0 0 0 1.06 0l5.25-5.25a.75.75 0 0 0 0-1.06l-5.25-5.25a.75.75 0 1 0-1.06 1.06L11.94 9l-4.72 4.72a.75.75 0 0 0 0 1.06Z"
+          />
         </svg>
         <span aria-current="page" class="ml-2 font-medium text-gray-900 dark:text-white">
           {MalanWeb.AdminLive.Shell.display_name(@user)}
@@ -19,8 +28,8 @@
       </li>
     </ol>
   </nav>
-
-  <!-- Header -->
+  
+<!-- Header -->
   <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex items-center gap-4">
       <span class="flex size-14 items-center justify-center rounded-full bg-indigo-600 text-base font-semibold text-white uppercase">
@@ -31,7 +40,8 @@
           {MalanWeb.AdminLive.Shell.display_name(@user)}
         </h1>
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          <span class="font-mono">{@user.username}</span> · joined {MalanWeb.AdminLive.Shell.format_dt(@user.inserted_at)}
+          <span class="font-mono">{@user.username}</span>
+          · joined {MalanWeb.AdminLive.Shell.format_dt(@user.inserted_at)}
         </p>
       </div>
     </div>
@@ -39,8 +49,8 @@
       <MalanWeb.AdminLive.Shell.role_badge roles={@user.roles} locked_at={@user.locked_at} />
     </div>
   </div>
-
-  <!-- Summary card -->
+  
+<!-- Summary card -->
   <div class="mt-6 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
     <div class="border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
       <h2 class="text-base font-semibold text-gray-900 dark:text-white">Account summary</h2>
@@ -50,41 +60,53 @@
     </div>
     <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Username</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          Username
+        </dt>
         <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">{@user.username}</dd>
       </div>
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Email</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          Email
+        </dt>
         <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">{@user.email}</dd>
       </div>
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Roles</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          Roles
+        </dt>
         <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white">
           {Enum.join(@user.roles || [], ", ")}
         </dd>
       </div>
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Locked</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          Locked
+        </dt>
         <dd class="mt-1 text-sm text-gray-900 dark:text-white">
           {MalanWeb.AdminLive.Shell.format_dt(@user.locked_at)}
         </dd>
       </div>
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">Updated</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          Updated
+        </dt>
         <dd class="mt-1 text-sm text-gray-900 dark:text-white">
           {MalanWeb.AdminLive.Shell.format_dt(@user.updated_at)}
         </dd>
       </div>
       <div class="border-b border-gray-200 px-4 py-4 sm:px-6 dark:border-white/10">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">ToS / PP</dt>
+        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-gray-400">
+          ToS / PP
+        </dt>
         <dd class="mt-1 text-sm text-gray-900 dark:text-white">
           v{@user.latest_tos_accept_ver || "—"} / v{@user.latest_pp_accept_ver || "—"}
         </dd>
       </div>
     </dl>
   </div>
-
-  <!-- Edit form -->
+  
+<!-- Edit form -->
   <div class="mt-8 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
     <div class="border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
       <h2 class="text-base font-semibold text-gray-900 dark:text-white">Profile fields</h2>
@@ -125,8 +147,8 @@
       </div>
     </.form>
   </div>
-
-  <!-- Sessions -->
+  
+<!-- Sessions -->
   <div class="mt-8 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800/40 dark:ring-white/10">
     <div class="flex items-center justify-between border-b border-gray-200 px-4 py-5 sm:px-6 dark:border-white/10">
       <div>
@@ -140,11 +162,36 @@
       <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
         <thead>
           <tr>
-            <th scope="col" class="py-3 pr-3 pl-4 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pl-6 dark:text-gray-400">Started</th>
-            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">IP address</th>
-            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Expires</th>
-            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">State</th>
-            <th scope="col" class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">ID</th>
+            <th
+              scope="col"
+              class="py-3 pr-3 pl-4 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pl-6 dark:text-gray-400"
+            >
+              Started
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              IP address
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              Expires
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              State
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
+              ID
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-white/10">
@@ -188,7 +235,10 @@
                   </span>
                 <% end %>
               </td>
-              <td class="px-3 py-3 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400" title={session.id}>
+              <td
+                class="px-3 py-3 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400"
+                title={session.id}
+              >
                 {MalanWeb.AdminLive.Shell.short_id(session.id)}
               </td>
             </tr>

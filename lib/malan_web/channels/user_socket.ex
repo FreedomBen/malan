@@ -9,8 +9,8 @@ defmodule MalanWeb.UserSocket do
   @impl true
   def connect(%{"token" => token}, socket, connect_info) when is_binary(token) and token != "" do
     case Accounts.validate_session(token, peer_ip(connect_info)) do
-      {:ok, user_id, username, session_id, _ip_addr, _valid_ip_only, user_roles, expires_at,
-       _tos, _pp} ->
+      {:ok, user_id, username, session_id, _ip_addr, _valid_ip_only, user_roles, expires_at, _tos,
+       _pp} ->
         socket =
           socket
           |> assign(:authed_user_id, user_id)

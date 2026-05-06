@@ -11,7 +11,10 @@ defmodule MalanWeb.UserVerifyEmailControllerTest do
   alias Malan.Test.Helpers
 
   defp request_path(user_or_id), do: ~p"/api/users/#{user_or_id}/verify_email"
-  defp verify_by_id_path(user_or_id, token), do: ~p"/api/users/#{user_or_id}/verify_email/#{token}"
+
+  defp verify_by_id_path(user_or_id, token),
+    do: ~p"/api/users/#{user_or_id}/verify_email/#{token}"
+
   defp verify_by_token_path(token), do: ~p"/api/users/verify_email/#{token}"
 
   describe "POST /api/users/:id/verify_email (authenticated resend)" do
@@ -294,5 +297,4 @@ defmodule MalanWeb.UserVerifyEmailControllerTest do
     {:ok, conn, user, session} = Helpers.Accounts.admin_user_session_conn(build_conn())
     {:ok, conn, user, session}
   end
-
 end

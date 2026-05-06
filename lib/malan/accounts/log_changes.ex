@@ -42,7 +42,8 @@ defmodule Malan.Accounts.Log.Changes do
     field :data_type, :string
     field :action, :string, default: ""
     field :valid?, :boolean
-    field :outcome, :map, default: %{} # The object that results from the operation
+    # The object that results from the operation
+    field :outcome, :map, default: %{}
   end
 
   def blattrs(blacklisted_attrs \\ []) do

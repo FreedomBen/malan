@@ -22,7 +22,7 @@ case Process.whereis(Malan.Repo) do
   nil ->
     IO.puts("Repo not started — starting it for you")
     Malan.Repo.start_link()
+
   _ ->
     :ok
 end
-

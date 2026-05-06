@@ -11,10 +11,24 @@
     </div>
   </div>
 
-  <form phx-change="search" phx-submit="search" class="mt-6 flex items-center gap-x-3" role="search">
+  <form
+    phx-change="search"
+    phx-submit="search"
+    class="mt-6 flex items-center gap-x-3"
+    role="search"
+  >
     <div class="relative flex-1">
-      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="pointer-events-none absolute inset-y-0 left-4 size-5 self-center text-gray-400 my-auto">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" />
+      <svg
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-y-0 left-4 size-5 self-center text-gray-400 my-auto"
+      >
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z"
+        />
       </svg>
       <input
         type="text"
@@ -49,19 +63,34 @@
         <table class="min-w-full divide-y divide-gray-300 dark:divide-white/10">
           <thead>
             <tr>
-              <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0 dark:text-white">
+              <th
+                scope="col"
+                class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0 dark:text-white"
+              >
                 Name
               </th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+              <th
+                scope="col"
+                class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 Email
               </th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+              <th
+                scope="col"
+                class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 Status
               </th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+              <th
+                scope="col"
+                class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 Joined
               </th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+              <th
+                scope="col"
+                class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 ID
               </th>
             </tr>
@@ -111,7 +140,10 @@
                 <td class="px-3 py-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
                   {MalanWeb.AdminLive.Shell.format_dt(user.inserted_at)}
                 </td>
-                <td class="px-3 py-4 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400" title={user.id}>
+                <td
+                  class="px-3 py-4 font-mono text-xs text-gray-500 whitespace-nowrap dark:text-gray-400"
+                  title={user.id}
+                >
                   {MalanWeb.AdminLive.Shell.short_id(user.id)}
                 </td>
               </tr>

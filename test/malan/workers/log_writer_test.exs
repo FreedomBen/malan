@@ -120,11 +120,12 @@ defmodule Malan.Workers.LogWriterTest do
     test "properly serializes an Ecto changeset" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
 
-      ecto_changeset = User.registration_changeset(%User{}, %{
-        "username" => "testuser_cs",
-        "email" => "testuser_cs@example.com",
-        "password" => "supersecretpassword123"
-      })
+      ecto_changeset =
+        User.registration_changeset(%User{}, %{
+          "username" => "testuser_cs",
+          "email" => "testuser_cs@example.com",
+          "password" => "supersecretpassword123"
+        })
 
       assert {:ok, _job} =
                Accounts.record_log(
@@ -223,11 +224,14 @@ defmodule Malan.Workers.LogWriterTest do
 
       # Create a changeset that includes embedded Preference struct in its data,
       # similar to what happens during user update operations
-      user_with_prefs = %{user | preferences: %Malan.Accounts.Preference{
-        theme: "dark",
-        display_name_pref: "nick_name",
-        display_middle_initial_only: true
-      }}
+      user_with_prefs = %{
+        user
+        | preferences: %Malan.Accounts.Preference{
+            theme: "dark",
+            display_name_pref: "nick_name",
+            display_middle_initial_only: true
+          }
+      }
 
       ecto_changeset = Ecto.Changeset.change(user_with_prefs, %{nick_name: "Tester"})
 

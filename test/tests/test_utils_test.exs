@@ -42,26 +42,26 @@ defmodule Malan.TestUtilsTest do
     end
 
     test "#lists_equal_ignore_order/3 properly shows equal" do
-      assert TestUtils.lists_equal_ignore_order(l1(), l2(), &(&1))
-      assert TestUtils.lists_equal_ignore_order(l5(), l6(), &(&1))
-      assert TestUtils.lists_equal_ignore_order(l1(), l2(), &(&1.id))
-      assert TestUtils.lists_equal_ignore_order(l1(), l2(), &(&1.name))
+      assert TestUtils.lists_equal_ignore_order(l1(), l2(), & &1)
+      assert TestUtils.lists_equal_ignore_order(l5(), l6(), & &1)
+      assert TestUtils.lists_equal_ignore_order(l1(), l2(), & &1.id)
+      assert TestUtils.lists_equal_ignore_order(l1(), l2(), & &1.name)
       assert TestUtils.lists_equal_ignore_order(l1(), l2(), &("Henry Fonda" <> &1.name))
 
-      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), &(&1))
-      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), &(&1))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), &(&1))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), &(&1))
+      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), & &1)
+      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), & &1)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), & &1)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), & &1)
 
-      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), &(&1.id))
-      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), &(&1.id))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), &(&1.id))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), &(&1.id))
+      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), & &1.id)
+      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), & &1.id)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), & &1.id)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), & &1.id)
 
-      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), &(&1.name))
-      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), &(&1.name))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), &(&1.name))
-      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), &(&1.name))
+      assert not TestUtils.lists_equal_ignore_order(l1(), l3(), & &1.name)
+      assert not TestUtils.lists_equal_ignore_order(l1(), l4(), & &1.name)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l3(), & &1.name)
+      assert not TestUtils.lists_equal_ignore_order(l2(), l4(), & &1.name)
 
       assert not TestUtils.lists_equal_ignore_order(l1(), l3(), &("Henry Fonda" <> &1.name))
       assert not TestUtils.lists_equal_ignore_order(l1(), l4(), &("Henry Fonda" <> &1.name))
@@ -70,15 +70,15 @@ defmodule Malan.TestUtilsTest do
     end
 
     test "#sort_by/3 sorts in proper order" do
-      assert l1_id_asc() == TestUtils.sort_by(l1(), &(&1.id))
-      assert l1_id_asc() == TestUtils.sort_by(l1(), &(&1.id), :asc)
+      assert l1_id_asc() == TestUtils.sort_by(l1(), & &1.id)
+      assert l1_id_asc() == TestUtils.sort_by(l1(), & &1.id, :asc)
 
-      assert l1_id_desc() == TestUtils.sort_by(l1(), &(&1.id), :desc)
+      assert l1_id_desc() == TestUtils.sort_by(l1(), & &1.id, :desc)
 
-      assert l1_name_asc() == TestUtils.sort_by(l1(), &(&1.name))
-      assert l1_name_asc() == TestUtils.sort_by(l1(), &(&1.name), :asc)
+      assert l1_name_asc() == TestUtils.sort_by(l1(), & &1.name)
+      assert l1_name_asc() == TestUtils.sort_by(l1(), & &1.name, :asc)
 
-      assert l1_name_desc() == TestUtils.sort_by(l1(), &(&1.name), :desc)
+      assert l1_name_desc() == TestUtils.sort_by(l1(), & &1.name, :desc)
     end
 
     test "#sort_by_id/3 sorts in proper order by id" do

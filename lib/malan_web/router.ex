@@ -34,15 +34,20 @@ defmodule MalanWeb.Router do
 
   pipeline :authed_api_no_tos_pp do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
   end
 
   pipeline :authed_owner_api_no_tos_pp do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
-    plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
+    # Ensures user is the owner of the item or an admin
+    plug :is_owner_or_admin
     #
     # NOTE: For owner-scoped controllers, also add MalanWeb.Plugs.EnsureOwnerOrAdmin
     # on member actions so the loaded record's user_id is verified (path user_id alone
@@ -52,19 +57,28 @@ defmodule MalanWeb.Router do
 
   pipeline :authed_api do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
-    plug :has_accepted_tos  # Ensures latest ToS have been accepted
-    plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
+    # Ensures latest ToS have been accepted
+    plug :has_accepted_tos
+    # Ensures latest PP has been accepted
+    plug :has_accepted_privacy_policy
   end
 
   pipeline :owner_api do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
-    plug :is_owner_or_admin # Ensures user is the owner of the item or an admin
-    plug :has_accepted_tos  # Ensures latest ToS have been accepted
-    plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
+    # Ensures user is the owner of the item or an admin
+    plug :is_owner_or_admin
+    # Ensures latest ToS have been accepted
+    plug :has_accepted_tos
+    # Ensures latest PP has been accepted
+    plug :has_accepted_privacy_policy
     #
     # NOTE: For owner-scoped controllers, also add MalanWeb.Plugs.EnsureOwnerOrAdmin
     # on member actions so the loaded record's user_id is verified (path user_id alone
@@ -74,20 +88,28 @@ defmodule MalanWeb.Router do
 
   pipeline :moderator_api do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
-    plug :is_moderator      # Ensures user is a moderator or admin
-    plug :has_accepted_tos  # Ensures latest ToS have been accepted
-    plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
+    # Ensures user is a moderator or admin
+    plug :is_moderator
+    # Ensures latest ToS have been accepted
+    plug :has_accepted_tos
+    # Ensures latest PP has been accepted
+    plug :has_accepted_privacy_policy
   end
 
   pipeline :admin_api do
     plug :accepts, ["json"]
-    plug :validate_token    # Adds token and auth info to conn.assigns
-    plug :is_authenticated  # Ensures user is authenticated
-    plug :is_admin          # Ensures user is admin
-    #plug :has_accepted_tos  # Ensures latest ToS have been accepted
-    #plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
+    # Adds token and auth info to conn.assigns
+    plug :validate_token
+    # Ensures user is authenticated
+    plug :is_authenticated
+    # Ensures user is admin
+    plug :is_admin
+    # plug :has_accepted_tos  # Ensures latest ToS have been accepted
+    # plug :has_accepted_privacy_policy # Ensures latest PP has been accepted
   end
 
   scope "/", MalanWeb do
@@ -158,7 +180,8 @@ defmodule MalanWeb.Router do
   scope "/api", MalanWeb do
     pipe_through :authed_api_no_tos_pp
 
-    get "/users/me", UserController, :me # Deprecated in favor of /users/current
+    # Deprecated in favor of /users/current
+    get "/users/me", UserController, :me
     get "/users/current", UserController, :current
 
     # is_self_or_admin in UserController will prevent non-owners from accessing

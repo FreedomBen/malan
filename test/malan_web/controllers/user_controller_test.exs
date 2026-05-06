@@ -1330,7 +1330,10 @@ defmodule MalanWeb.UserControllerTest do
       # Verify the new password actually took effect, then re-fetch and confirm
       # the show endpoint also omits the field.
       assert {:ok, _session} =
-               Helpers.Accounts.create_session(%{user | password: "brandnewpw_for_admin_set_path"})
+               Helpers.Accounts.create_session(%{
+                 user
+                 | password: "brandnewpw_for_admin_set_path"
+               })
 
       conn = get(conn, Routes.user_path(conn, :show, id))
       assert Map.has_key?(json_response(conn, 200)["data"], "password") == false
@@ -1903,6 +1906,7 @@ defmodule MalanWeb.UserControllerTest do
 
       assert conn.status == 422
       resp = json_response(conn, 422)
+
       assert resp["errors"]["password"]
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
@@ -2736,7 +2740,10 @@ defmodule MalanWeb.UserControllerTest do
         )
 
       assert conn.status == 422
-      assert "should be at least 12 character(s)" in json_response(conn, 422)["errors"]["password"]
+
+      assert "should be at least 12 character(s)" in json_response(conn, 422)["errors"][
+               "password"
+             ]
 
       # obtain a fresh reset token after failure
       conn = post(conn, Routes.user_path(conn, :admin_reset_password, admin_user_id))

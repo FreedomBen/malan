@@ -7,7 +7,8 @@ defmodule MalanWeb.UserNotifier do
     view: MalanWeb.UserNotifierView,
     layout: {MalanWeb.LayoutView, :email}
 
-  def email_verification_email(user, context) when context in [:welcome, :resend, :email_change] do
+  def email_verification_email(user, context)
+      when context in [:welcome, :resend, :email_change] do
     Logger.debug(
       __ENV__,
       "Generating email_verification_email (context=#{context}) for user '#{user.email}'"

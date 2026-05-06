@@ -33,7 +33,8 @@ defmodule Malan.Accounts.User do
     field :email_verified, :utc_datetime
     field :password, :string, virtual: true, redact: true
     field :password_hash, :string, redact: true
-    field :roles, {:array, :string} # admin, user, or moderator
+    # admin, user, or moderator
+    field :roles, {:array, :string}
     field :username, :string
     field :first_name, :string
     field :middle_name, :string
@@ -43,17 +44,28 @@ defmodule Malan.Accounts.User do
     field :nick_name, :string
     field :display_name, :string
     field :deleted_at, :utc_datetime
-    field :latest_tos_accept_ver, :integer # nil means rejected
-    field :latest_pp_accept_ver, :integer  # nil means rejected
-    field :birthday, :date                 # nil means not specified
-    field :weight, :decimal                # nil means not specified
-    field :height, :decimal                # nil means not specified
-    field :race_enum, {:array, :integer}   # nil means not specified
-    field :ethnicity_enum, :integer        # nil means not specified
-    field :sex_enum, :integer              # nil means not specified
-    field :gender_enum, :integer           # nil means not specified
-    field :custom_attrs, :map              # Free form JSON for dependent services to use
-    field :locked_at, :utc_datetime, default: nil  # nil means not locked
+    # nil means rejected
+    field :latest_tos_accept_ver, :integer
+    # nil means rejected
+    field :latest_pp_accept_ver, :integer
+    # nil means not specified
+    field :birthday, :date
+    # nil means not specified
+    field :weight, :decimal
+    # nil means not specified
+    field :height, :decimal
+    # nil means not specified
+    field :race_enum, {:array, :integer}
+    # nil means not specified
+    field :ethnicity_enum, :integer
+    # nil means not specified
+    field :sex_enum, :integer
+    # nil means not specified
+    field :gender_enum, :integer
+    # Free form JSON for dependent services to use
+    field :custom_attrs, :map
+    # nil means not locked
+    field :locked_at, :utc_datetime, default: nil
     field :locked_by, :binary_id, default: nil
     field :password_reset_token, :string, virtual: true, redact: true
     field :password_reset_token_hash, :string, redact: true
@@ -71,9 +83,12 @@ defmodule Malan.Accounts.User do
 
     timestamps(type: :utc_datetime)
 
-    field :accept_tos, :boolean, virtual: true            # accepts current ToS version
-    field :accept_privacy_policy, :boolean, virtual: true # accepts current PP version
-    field :reset_password, :boolean, virtual: true        # triggers a password reset
+    # accepts current ToS version
+    field :accept_tos, :boolean, virtual: true
+    # accepts current PP version
+    field :accept_privacy_policy, :boolean, virtual: true
+    # triggers a password reset
+    field :reset_password, :boolean, virtual: true
     field :sex, :string, virtual: true
     field :gender, :string, virtual: true
     field :race, {:array, :string}, virtual: true
@@ -123,7 +138,8 @@ defmodule Malan.Accounts.User do
     ])
     |> put_initial_pass()
     |> put_change(:roles, ["user"])
-    |> put_initial_preferences() # required or the cast_embed will fail
+    # required or the cast_embed will fail
+    |> put_initial_preferences()
     |> cast_embed(:preferences, with: &Accounts.Preference.changeset/2)
     |> cast_assoc(:addresses, with: &Accounts.Address.create_changeset_assoc/2)
     |> cast_assoc(:phone_numbers, with: &Accounts.PhoneNumber.create_changeset_assoc/2)
@@ -359,7 +375,8 @@ defmodule Malan.Accounts.User do
     changeset
     |> validate_length(:username, min: 3, max: @max_username_length)
     |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
-    |> validate_not_format(:username, ~r/^\|/)  # Doesn't start with a pipe |
+    # Doesn't start with a pipe |
+    |> validate_not_format(:username, ~r/^\|/)
     |> unique_constraint(:username)
   end
 
@@ -370,8 +387,10 @@ defmodule Malan.Accounts.User do
       :email,
       ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/
     )
-    |> validate_not_format(:email, ~r/@.*@/)  # Doesn't have more than one @
-    |> validate_not_format(:email, ~r/^\|/)   # Doesn't start with a pipe |
+    # Doesn't have more than one @
+    |> validate_not_format(:email, ~r/@.*@/)
+    # Doesn't start with a pipe |
+    |> validate_not_format(:email, ~r/^\|/)
     |> unique_constraint(:email)
   end
 
@@ -398,7 +417,9 @@ defmodule Malan.Accounts.User do
 
     password_set_by_admin? =
       case Keyword.fetch(opts, :password_set_by_admin?) do
-        {:ok, value} -> value
+        {:ok, value} ->
+          value
+
         :error ->
           case Keyword.get(opts, :enforce_password_min_length?, true) do
             false -> true

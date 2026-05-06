@@ -19,7 +19,10 @@ defmodule MalanWeb.AdminLive.UserDetailTest do
   describe "GET /admin/users/:id" do
     test "redirects to sign-in when unauthenticated" do
       assert {:error, {:redirect, %{to: "/admin/sign-in"}}} =
-               live(Phoenix.ConnTest.build_conn(), ~p"/admin/users/00000000-0000-0000-0000-000000000000")
+               live(
+                 Phoenix.ConnTest.build_conn(),
+                 ~p"/admin/users/00000000-0000-0000-0000-000000000000"
+               )
     end
 
     test "renders username, email, and sessions section", %{conn: conn} do
