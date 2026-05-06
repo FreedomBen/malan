@@ -149,9 +149,14 @@ defmodule MalanWeb.AdminLive.UserDetail do
     now = DateTime.utc_now()
 
     cond do
-      not is_nil(session.revoked_at) -> :revoked
-      not is_nil(session.expires_at) and DateTime.compare(session.expires_at, now) == :lt -> :expired
-      true -> :active
+      not is_nil(session.revoked_at) ->
+        :revoked
+
+      not is_nil(session.expires_at) and DateTime.compare(session.expires_at, now) == :lt ->
+        :expired
+
+      true ->
+        :active
     end
   end
 end

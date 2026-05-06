@@ -321,16 +321,23 @@ defmodule Malan.Accounts do
   ## Examples
 
       iex> register_user(%{field: value})
-      {:ok, %User{}}
+      {:ok, %User{}, %Ecto.Changeset{}}
 
       iex> register_user(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
+  # Returns `{:ok, user, changeset}` on success so callers can reuse the same
+  # changeset for audit logging without rebuilding it. Rebuilding re-runs
+  # `put_pass_hash`, which doubles the Pbkdf2 cost when registration includes
+  # a password.
   def register_user(attrs \\ %{}) do
-    %User{}
-    |> User.registration_changeset(attrs)
-    |> Repo.insert()
+    changeset = User.registration_changeset(%User{}, attrs)
+
+    case Repo.insert(changeset) do
+      {:ok, user} -> {:ok, user, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   # @doc """
@@ -368,10 +375,10 @@ defmodule Malan.Accounts do
   def update_user(%User{} = user, %{"password" => _password} = attrs, rip, opts) do
     original_email = user.email
 
-    with {:ok, updated} <- update_usr(user, attrs, rip, opts),
+    with {:ok, updated, changeset} <- update_usr(user, attrs, rip, opts),
          {:ok, _num_revoked} <- revoke_active_sessions(updated, rip) do
       maybe_send_email_change_verification(updated, original_email, rip)
-      {:ok, updated}
+      {:ok, updated, changeset}
     end
   end
 
@@ -379,9 +386,9 @@ defmodule Malan.Accounts do
     original_email = user.email
 
     case update_usr(user, attrs, rip, opts) do
-      {:ok, updated} ->
+      {:ok, updated, changeset} ->
         maybe_send_email_change_verification(updated, original_email, rip)
-        {:ok, updated}
+        {:ok, updated, changeset}
 
       other ->
         other
@@ -517,7 +524,7 @@ defmodule Malan.Accounts do
   def reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user} <- update_user_password(orig_user, new_password, rip) do
+         {:ok, %User{} = user, _cs} <- update_user_password(orig_user, new_password, rip) do
       {:ok, user}
     else
       {:error, reason} -> {:error, reason}
@@ -532,7 +539,7 @@ defmodule Malan.Accounts do
   def admin_reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user} <- admin_update_password(orig_user, new_password, rip) do
+         {:ok, %User{} = user, _cs} <- admin_update_password(orig_user, new_password, rip) do
       {:ok, user}
     else
       {:error, reason} -> {:error, reason}
@@ -543,10 +550,15 @@ defmodule Malan.Accounts do
     do: admin_reset_password_with_token(get_user(id), token, new_password, rip)
 
   # "private utility for the update_user funcs.  Use a public update_user()"
+  # Returns `{:ok, user, changeset}` on success so the public update_user
+  # functions can hand the changeset back to callers without rebuilding it.
   defp update_usr(user, attrs, remote_ip, opts) do
-    user
-    |> User.update_changeset(Map.merge(attrs, %{"remote_ip" => remote_ip}), opts)
-    |> Repo.update()
+    changeset = User.update_changeset(user, Map.merge(attrs, %{"remote_ip" => remote_ip}), opts)
+
+    case Repo.update(changeset) do
+      {:ok, updated} -> {:ok, updated, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   @doc ""
@@ -873,8 +885,10 @@ defmodule Malan.Accounts do
   def user_tos(accept_tos, user_id) do
     # TODO don't retrieve the entire user.
     # Just generate update sql that replaces only the part we want to replace
-    get_user!(user_id)
-    |> update_user(%{"accept_tos" => accept_tos})
+    case get_user!(user_id) |> update_user(%{"accept_tos" => accept_tos}) do
+      {:ok, user, _cs} -> {:ok, user}
+      other -> other
+    end
   end
 
   @doc "Accepts the Terms of Service for the user.  Returns {:ok, user}"
@@ -886,8 +900,10 @@ defmodule Malan.Accounts do
   def user_set_privacy_policy(accept_privacy_policy, user_id) do
     # TODO don't retrieve the entire user.
     # Just generate update sql that replaces only the part we want to replace
-    get_user!(user_id)
-    |> update_user(%{"accept_privacy_policy" => accept_privacy_policy})
+    case get_user!(user_id) |> update_user(%{"accept_privacy_policy" => accept_privacy_policy}) do
+      {:ok, user, _cs} -> {:ok, user}
+      other -> other
+    end
   end
 
   def user_accept_privacy_policy(user_id),
