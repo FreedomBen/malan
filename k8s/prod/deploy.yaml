@@ -176,6 +176,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: malan
+    tier: web
     env: prod
     kind: configmap
     app.kubernetes.io/name: malan
