@@ -29,7 +29,6 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9568"
         prometheus.io/path: "/metrics"
-      namespace: malan-staging
     spec:
       serviceAccountName: malan
       automountServiceAccountToken: false
