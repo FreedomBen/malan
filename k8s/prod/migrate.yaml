@@ -35,7 +35,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    app: malan-migration
+    app: malan
     tier: migration
     env: prod
     kind: job
