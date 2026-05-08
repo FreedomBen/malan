@@ -21,7 +21,13 @@ die ()
   exit 10
 }
 
-notify_failure_and_die ()
+notify_migration_failure_and_die ()
+{
+  notify_migration_fail
+  die "${1}"
+}
+
+notify_deploy_failure_and_die ()
 {
   notify_deploy_fail
   die "${1}"
@@ -120,7 +126,7 @@ check_required_vars ()
     die "Missing required flag --release-ver or env var RELEASE_VERSION"
   elif [ -z "${K8S_SERVER}" ]; then
     if [ -n "${APPLY_MIGRATION}" ] || [ -n "${APPLY_DEPLOY}" ]; then
-      die "Apply operations require flag --server or env var K8S_SERVER"
+      die "Apply operations require flag --k8s-server or env var K8S_SERVER"
     fi
   elif [ -z "${K8S_TOKEN}" ]; then
     if [ -n "${APPLY_MIGRATION}" ] || [ -n "${APPLY_DEPLOY}" ]; then
@@ -216,6 +222,7 @@ get_migration_name ()
 {
   kubectl $(k8s_namespace_migration) $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(migration_manifest) \
     | grep '^job.batch' \
+    | head -1 \
     | awk '{ print $1 }'
 }
 
@@ -327,12 +334,13 @@ apply_and_wait_migration_manifest ()
     if wait_for_migration_complete; then
       log "Migration completed successfully!"
     else
+      local wait_exit=$?
       print_migration_logs
-      notify_failure_and_die "Migration did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
+      notify_migration_failure_and_die "Migration did NOT complete successfully.  exit status was '${wait_exit}'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
     fi
     print_migration_logs
   else
-    notify_failure_and_die "Apply of migration manifest FAILED!"
+    notify_migration_failure_and_die "Apply of migration manifest FAILED!"
   fi
 }
 
@@ -346,11 +354,11 @@ apply_deploy_manifest ()
   kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(deploy_manifest)"
 }
 
-get_deployment_name ()
+get_rollout_resource_name ()
 {
-  # Always use the first Deployment in the file if there are more than one
+  # Use the first rollout-capable resource (Deployment, DaemonSet, StatefulSet)
   kubectl $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(deploy_manifest) \
-    | grep '^deployment.apps' \
+    | grep -E '^(deployment|daemonset|statefulset)\.apps' \
     | head -1 \
     | awk '{ print $1 }'
 }
@@ -378,6 +386,11 @@ get_namespace ()
   #  -o jsonpath='{.items[0].metadata.namespace}'
 
   local namespaces="$(cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq)"
+
+  if [ -z "${namespaces}" ]; then
+    die "Expected 1 namespace but found 0 in manifest '${manifest}'"
+  fi
+
   local num_namespaces="$(echo "${namespaces}" | wc -l)"
 
   if (( "${num_namespaces}" != 1 )); then
@@ -389,7 +402,7 @@ get_namespace ()
 
 wait_for_deploy_complete ()
 {
-  local deploy_name="$(get_deployment_name)"
+  local deploy_name="$(get_rollout_resource_name)"
 
   if [ -z "${deploy_name}" ]; then
     error "Problem parsing deployment name from file '$(deploy_manifest)'"
@@ -416,10 +429,10 @@ apply_and_wait_deployment_manifest ()
       log "Deployment completed successfully!"
       notify_deploy_complete
     else
-      notify_failure_and_die "Deployment did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
+      notify_deploy_failure_and_die "Deployment did NOT complete successfully.  exit status was '$?'.  Be sure to check the logs above and verify the current state of the application in ${ENV}"
     fi
   else
-    notify_failure_and_die "Apply of deploy manifest FAILED!  Check logs above"
+    notify_deploy_failure_and_die "Apply of deploy manifest FAILED!  Check logs above"
   fi
 }
 
@@ -449,7 +462,7 @@ print_usage ()
     -d|--diff-all
        --diff-migration
        --diff-deploy
-    -a|--apply-all       # Applying automatically incudes diffing
+    -a|--apply-all       # Applying automatically includes diffing
        --apply-migration
        --apply-deploy
 
@@ -469,7 +482,7 @@ print_usage ()
     -e|--env <environment>             # or ENV
     -r|--release-ver <release-version> # or RELEASE_VERSION
     -k|--k8s-server <k8s-server>       # or K8S_SERVER
-    -t|--k8s-token <k8s-token>         # or K8S_TOKEN
+       --k8s-token <k8s-token>         # or K8S_TOKEN
 
   "
 }
@@ -653,7 +666,7 @@ main ()
         shift
         ;;
 
-      -t|--k8s-token)
+      --k8s-token)
         export K8S_TOKEN="$2"
         shift
         shift
@@ -727,13 +740,14 @@ main ()
     check_for_migration_manifest
     delete_old_migration_job_if_exist
     diff_migration_manifest
+    local migration_diff_exit=$?
     # Exit status of diff_migration_manifest:
     #   0 - No differences were found.
     #   1 - Differences were found.
     #  >1 - Kubectl or diff failed with an error.
     if is_enabled "${APPLY_MIGRATION}"; then
-      if [ "$?" = "0" ] || [ "$?" = "1" ] || is_force; then
-        log "Migration diff exited with success.  Exit code '${?}'"
+      if [ "${migration_diff_exit}" = "0" ] || [ "${migration_diff_exit}" = "1" ] || is_force; then
+        log "Migration diff exited with success.  Exit code '${migration_diff_exit}'"
         apply_and_wait_migration_manifest
       else
         log "Migration diff failed!  Check K8s config yaml and try again"
@@ -751,23 +765,24 @@ main ()
     check_for_deploy_manifest
     verify_namespace_is_set
     diff_deploy_manifest
+    local deploy_diff_exit=$?
     # Exit status of diff_deploy_manifest:
     #   0 - No differences were found.
     #   1 - Differences were found.
     #  >1 - Kubectl or diff failed with an error.
     if is_enabled "${APPLY_DEPLOY}"; then
-      if [ "$?" = "0" ] || [ "$?" = "1" ] || is_force; then
-        log "Deployment diff exited with success.  Exit code '${?}'"
+      if [ "${deploy_diff_exit}" = "0" ] || [ "${deploy_diff_exit}" = "1" ] || is_force; then
+        log "Deployment diff exited with success.  Exit code '${deploy_diff_exit}'"
         apply_and_wait_deployment_manifest
       else
         log "Deployment diff failed!  Check K8s config yaml and try again"
         if is_force; then
-          log "Force is set!  Applying migration anyway"
+          log "Force is set!  Applying deploy anyway"
           apply_and_wait_deployment_manifest
         fi
       fi
     else
-      log "Diff was enabled for deployment but apply was not.  Skipping Apply on migration"
+      log "Diff was enabled for deployment but apply was not.  Skipping Apply on deployment"
     fi
   fi
 }
