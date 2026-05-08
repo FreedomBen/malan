@@ -11,7 +11,9 @@ metadata:
   namespace: malan-prod
   labels:
     app: malan
+    tier: shared
     env: prod
+    kind: serviceaccount
 automountServiceAccountToken: false
 
 ---
