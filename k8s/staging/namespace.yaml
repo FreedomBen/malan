@@ -4,6 +4,9 @@ kind: Namespace
 metadata:
   name: malan-staging
   labels:
+    app: malan
+    env: staging
+    kind: namespace
     # istio.io/dataplane-mode: ambient is owned by Terraform (HashiCorp K8s
     # provider). Intentionally omitted here so kubectl apply preserves it as
     # out-of-band rather than fighting Terraform for ownership.

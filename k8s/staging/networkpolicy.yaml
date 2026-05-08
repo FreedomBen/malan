@@ -4,6 +4,10 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  labels:
+    app: malan
+    env: staging
+    kind: networkpolicy
   name: default-deny-all
   namespace: malan-staging
 spec:
@@ -17,6 +21,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  labels:
+    app: malan
+    env: staging
+    kind: networkpolicy
   name: allow-egress-dns
   namespace: malan-staging
 spec:
@@ -46,6 +54,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  labels:
+    app: malan
+    env: staging
+    kind: networkpolicy
   name: allow-egress-external
   namespace: malan-staging
 spec:
@@ -70,6 +82,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  labels:
+    app: malan
+    env: staging
+    kind: networkpolicy
   name: allow-ingress-from-gateway
   namespace: malan-staging
 spec:
@@ -96,6 +112,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  labels:
+    app: malan
+    env: staging
+    kind: networkpolicy
   name: allow-ingress-prometheus
   namespace: malan-staging
 spec:
