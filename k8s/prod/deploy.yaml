@@ -139,7 +139,13 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
+  labels:
+    app: malan
+    tier: web
+    env: prod
+    kind: poddisruptionbudget
   name: malan-pdb
+  namespace: malan-prod
 spec:
   minAvailable: 2
   selector:
