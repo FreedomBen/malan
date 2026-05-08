@@ -43,6 +43,12 @@ metadata:
   namespace: malan-staging
 spec:
   template:
+    metadata:
+      labels:
+        app: malan
+        tier: migration
+        env: staging
+        kind: pod
     spec:
       serviceAccountName: malan
       automountServiceAccountToken: false

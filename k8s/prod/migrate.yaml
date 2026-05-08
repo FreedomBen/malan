@@ -43,6 +43,12 @@ metadata:
   namespace: malan-prod
 spec:
   template:
+    metadata:
+      labels:
+        app: malan
+        tier: migration
+        env: prod
+        kind: pod
     spec:
       serviceAccountName: malan
       automountServiceAccountToken: false
