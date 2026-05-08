@@ -15,22 +15,43 @@ declare -x MIGRATION_TIMEOUT_SECS='1800'
 declare -x DEPLOY_TIMEOUT_SECS='900'
 declare -x MIGRATION_DELETE_SECS='10'
 
+# Exit codes (see print_usage and cicd/README.md for documentation):
+#   0 = success
+#   1 = usage error (bad/missing flags, unknown args, no actions, or --help)
+#   2 = missing required configuration (env vars or flags)
+#   3 = missing required file or directory
+#   4 = manifest content error (e.g. missing or multiple namespaces)
+#   5 = migration failure (apply or wait failed)
+#   6 = deployment failure (apply or rollout failed)
+declare -rx EXIT_SUCCESS='0'
+declare -rx EXIT_USAGE='1'
+declare -rx EXIT_CONFIG='2'
+declare -rx EXIT_FILE='3'
+declare -rx EXIT_MANIFEST='4'
+declare -rx EXIT_MIGRATION_FAIL='5'
+declare -rx EXIT_DEPLOY_FAIL='6'
+
 die ()
 {
-  echo -e "${color_red}[FATAL]${color_restore} ${color_cyan}$(date)${color_restore}:  ${1}"
-  exit 10
+  # Args: $1 = message, $2 = exit code (default 1)
+  # Writes to stderr so the FATAL message is not captured by callers that
+  # invoke functions inside command substitution (e.g. $(get_namespace)).
+  local message="${1}"
+  local code="${2:-1}"
+  echo -e "${color_red}[FATAL]${color_restore} ${color_cyan}$(date)${color_restore}:  ${message}" >&2
+  exit "${code}"
 }
 
 notify_migration_failure_and_die ()
 {
   notify_migration_fail
-  die "${1}"
+  die "${1}" "${EXIT_MIGRATION_FAIL}"
 }
 
 notify_deploy_failure_and_die ()
 {
   notify_deploy_fail
-  die "${1}"
+  die "${1}" "${EXIT_DEPLOY_FAIL}"
 }
 
 log ()
@@ -121,16 +142,16 @@ k8s_namespace_migration ()
 check_required_vars ()
 {
   if [ -z "${ENV}" ]; then
-    die "Missing required flag --env or env var ENV"
+    die "Missing required flag --env or env var ENV" "${EXIT_CONFIG}"
   elif [ -z "${RELEASE_VERSION}" ]; then
-    die "Missing required flag --release-ver or env var RELEASE_VERSION"
+    die "Missing required flag --release-ver or env var RELEASE_VERSION" "${EXIT_CONFIG}"
   elif [ -z "${K8S_SERVER}" ]; then
     if [ -n "${APPLY_MIGRATION}" ] || [ -n "${APPLY_DEPLOY}" ]; then
-      die "Apply operations require flag --k8s-server or env var K8S_SERVER"
+      die "Apply operations require flag --k8s-server or env var K8S_SERVER" "${EXIT_CONFIG}"
     fi
   elif [ -z "${K8S_TOKEN}" ]; then
     if [ -n "${APPLY_MIGRATION}" ] || [ -n "${APPLY_DEPLOY}" ]; then
-      die "Apply operations require flag --k8s-token or env var K8S_TOKEN"
+      die "Apply operations require flag --k8s-token or env var K8S_TOKEN" "${EXIT_CONFIG}"
     fi
   fi
 }
@@ -142,10 +163,10 @@ check_env_exists ()
     if [ -d "k8s/${ENV}" ]; then
       log "Current ENV is '${ENV}' and it's k8s config directory exists"
     else
-      die "Directory k8s/${ENV} does not exist. Verify \$ENV is set correctly and try again"
+      die "Directory k8s/${ENV} does not exist. Verify \$ENV is set correctly and try again" "${EXIT_FILE}"
     fi
   else
-    die "Env var \$ENV is not set. Please set and try again"
+    die "Env var \$ENV is not set. Please set and try again" "${EXIT_CONFIG}"
   fi
 }
 
@@ -154,7 +175,7 @@ check_file ()
   debug "Checking for existence of mandatory file '${1}'"
   if ! [ -f "${1}" ]; then
     error "Mandatory file '${1}' does not exist!"
-    die "If you are running a diff or an apply, make sure that you run --save operation first"
+    die "If you are running a diff or an apply, make sure that you run --save operation first" "${EXIT_FILE}"
   fi
 }
 
@@ -299,7 +320,7 @@ wait_for_migration_complete ()
 
   if [ -z "${migration_name}" ]; then
     error "Problem parsing deployment name from file '$(migration_manifest)'"
-    return 4
+    return "${EXIT_MANIFEST}"
   else
     debug "Parsed deployment name '${migration_name}' from '$(migration_manifest)'"
   fi
@@ -354,13 +375,14 @@ apply_deploy_manifest ()
   kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(deploy_manifest)"
 }
 
-get_rollout_resource_name ()
+get_rollout_resource_names ()
 {
-  # Use the first rollout-capable resource (Deployment, DaemonSet, StatefulSet)
-  kubectl $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(deploy_manifest) \
-    | grep -E '^(deployment|daemonset|statefulset)\.apps' \
-    | head -1 \
-    | awk '{ print $1 }'
+  # Return all rollout-capable resources (Deployment, DaemonSet, StatefulSet)
+  # -o name forces "kind.group/name" output; the default tabular output drops
+  # the kind prefix when the manifest contains a single resource type, which
+  # is the case for the DaemonSet-only primer manifest.
+  kubectl $(k8s_server) $(k8s_token) $(k8s_ca) get -f $(deploy_manifest) -o name \
+    | grep -E '^(deployment|daemonset|statefulset)\.apps/'
 }
 
 get_namespace ()
@@ -388,13 +410,13 @@ get_namespace ()
   local namespaces="$(cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq)"
 
   if [ -z "${namespaces}" ]; then
-    die "Expected 1 namespace but found 0 in manifest '${manifest}'"
+    die "Expected 1 namespace but found 0 in manifest '${manifest}'" "${EXIT_MANIFEST}"
   fi
 
   local num_namespaces="$(echo "${namespaces}" | wc -l)"
 
   if (( "${num_namespaces}" != 1 )); then
-    die "Expected 1 namespace but found ${num_namespaces}.  '$(echo ${namespaces} | xargs)'"
+    die "Expected 1 namespace but found ${num_namespaces}.  '$(echo ${namespaces} | xargs)'" "${EXIT_MANIFEST}"
   else
     cat "${manifest}" | grep -E '^\s*namespace:\s' | awk '{ print $2 }' | sort | uniq
   fi
@@ -402,21 +424,28 @@ get_namespace ()
 
 wait_for_deploy_complete ()
 {
-  local deploy_name="$(get_rollout_resource_name)"
+  local deploy_names="$(get_rollout_resource_names)"
 
-  if [ -z "${deploy_name}" ]; then
-    error "Problem parsing deployment name from file '$(deploy_manifest)'"
-    return 4
-  else
-    debug "Parsed deployment name '${deploy_name}' from '$(deploy_manifest)'"
+  if [ -z "${deploy_names}" ]; then
+    log "No rollout-capable resources (Deployment/DaemonSet/StatefulSet) in '$(deploy_manifest)'.  Nothing to wait for."
+    return 0
   fi
 
-  log "Waiting ${DEPLOY_TIMEOUT_SECS} seconds for Deployment '${deploy_name}' to complete"
+  debug "Parsed rollout resources from '$(deploy_manifest)':"
+  debug "${deploy_names}"
 
-  debug "| Running command:"
-  debug "|=> kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout=\"${DEPLOY_TIMEOUT_SECS}s\" \"${deploy_name}\""
+  local deploy_name
+  while IFS= read -r deploy_name; do
+    log "Waiting ${DEPLOY_TIMEOUT_SECS} seconds for rollout '${deploy_name}' to complete"
 
-  kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status  --watch --timeout="${DEPLOY_TIMEOUT_SECS}s" "${deploy_name}"
+    debug "| Running command:"
+    debug "|=> kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status --watch --timeout=\"${DEPLOY_TIMEOUT_SECS}s\" \"${deploy_name}\""
+
+    if ! kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) rollout status --watch --timeout="${DEPLOY_TIMEOUT_SECS}s" "${deploy_name}"; then
+      error "Rollout of '${deploy_name}' did NOT complete successfully"
+      return "${EXIT_DEPLOY_FAIL}"
+    fi
+  done <<< "${deploy_names}"
 }
 
 apply_and_wait_deployment_manifest ()
@@ -444,7 +473,7 @@ verify_namespace_is_set ()
   if [ -n "${namespace}" ]; then
     log "Namespace we're using is '${namespace}'"
   else
-    die "Unable to parse a namespace from the deploy manifest at '$(deploy_manifest)'.  Ensure one is set and try again.  Parsed was '${namespace}'"
+    die "Unable to parse a namespace from the deploy manifest at '$(deploy_manifest)'.  Ensure one is set and try again.  Parsed was '${namespace}'" "${EXIT_MANIFEST}"
   fi
 }
 
@@ -484,13 +513,23 @@ print_usage ()
     -k|--k8s-server <k8s-server>       # or K8S_SERVER
        --k8s-token <k8s-token>         # or K8S_TOKEN
 
+  Exit codes:
+
+    0 - Success
+    1 - Usage error (bad/missing flags, unknown args, no actions, or --help)
+    2 - Missing required configuration (env vars or flags)
+    3 - Missing required file or directory (manifest, CA cert, env config)
+    4 - Manifest content error (e.g. missing or multiple namespaces)
+    5 - Migration failure (apply or wait failed)
+    6 - Deployment failure (apply or rollout failed)
+
   "
 }
 
 print_usage_and_exit ()
 {
   print_usage
-  exit 1
+  exit "${EXIT_USAGE}"
 }
 
 is_enabled ()
@@ -687,7 +726,7 @@ main ()
     && [ -z "$APPLY_DEPLOY" ]
   then
     print_usage
-    die "All actions are empty!  Pass flags such as --save-all or --apply-all"
+    die "All actions are empty!  Pass flags such as --save-all or --apply-all" "${EXIT_USAGE}"
   fi
 
   if is_debug; then
@@ -787,4 +826,8 @@ main ()
   fi
 }
 
-main "$@"
+# Only run main when executed directly, so unit tests can source this file
+# to call individual helpers without invoking the full pipeline.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
