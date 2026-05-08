@@ -9,6 +9,12 @@ metadata:
     tier: web
     env: staging
     kind: deployment
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-staging
+    app.kubernetes.io/version: ${RELEASE_VERSION}
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan
   namespace: malan-staging
 spec:
@@ -25,6 +31,12 @@ spec:
         tier: web
         env: staging
         kind: pod
+        app.kubernetes.io/name: malan
+        app.kubernetes.io/instance: malan-staging
+        app.kubernetes.io/version: ${RELEASE_VERSION}
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: malan
+        app.kubernetes.io/managed-by: kubectl
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9568"
@@ -142,6 +154,11 @@ metadata:
     tier: web
     env: staging
     kind: poddisruptionbudget
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-staging
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan-pdb
   namespace: malan-staging
 spec:
@@ -160,6 +177,11 @@ metadata:
     app: malan
     env: staging
     kind: configmap
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-staging
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan-web-config
   namespace: malan-staging
 data:
@@ -230,6 +252,11 @@ metadata:
     tier: web
     env: staging
     kind: service
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-staging
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan
   namespace: malan-staging
 spec:

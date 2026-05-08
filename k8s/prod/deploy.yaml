@@ -10,6 +10,12 @@ metadata:
     tier: web
     env: prod
     kind: deployment
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-prod
+    app.kubernetes.io/version: ${RELEASE_VERSION}
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan
   namespace: malan-prod
 spec:
@@ -26,6 +32,12 @@ spec:
         tier: web
         env: prod
         kind: pod
+        app.kubernetes.io/name: malan
+        app.kubernetes.io/instance: malan-prod
+        app.kubernetes.io/version: ${RELEASE_VERSION}
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: malan
+        app.kubernetes.io/managed-by: kubectl
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9568"
@@ -143,6 +155,11 @@ metadata:
     tier: web
     env: prod
     kind: poddisruptionbudget
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan-pdb
   namespace: malan-prod
 spec:
@@ -161,6 +178,11 @@ metadata:
     app: malan
     env: prod
     kind: configmap
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan-web-config
   namespace: malan-prod
 data:
@@ -236,6 +258,11 @@ metadata:
     tier: web
     env: prod
     kind: service
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
   name: malan
   namespace: malan-prod
 spec:
