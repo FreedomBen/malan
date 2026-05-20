@@ -219,9 +219,15 @@ data:
   # Rate limits — password reset (per-IP, applied before user lookup
   # to throttle username/email enumeration)
   PASSWORD_RESET_IP_LOWER_LIMIT_MSECS: '60000'              # 1 minute
-  PASSWORD_RESET_IP_LOWER_LIMIT_COUNT: '5'
+  # TEMP: effectively disabled while we audit the IP source (CF header vs
+  # LB IP — behind CF this keys on visitor IP, but if CF is bypassed all
+  # traffic shares one bucket and trips immediately). Restore originals
+  # (commented below) once the IP source is confirmed trustworthy.
+  #PASSWORD_RESET_IP_LOWER_LIMIT_COUNT: '5'
+  PASSWORD_RESET_IP_LOWER_LIMIT_COUNT: '1000000'
   PASSWORD_RESET_IP_UPPER_LIMIT_MSECS: '86400000'           # 24 hours
-  PASSWORD_RESET_IP_UPPER_LIMIT_COUNT: '30'
+  #PASSWORD_RESET_IP_UPPER_LIMIT_COUNT: '30'
+  PASSWORD_RESET_IP_UPPER_LIMIT_COUNT: '1000000'
   # Rate limits — session extension and login
   SESSION_EXTENSION_LIMIT_MSECS: '60000'                    # 1 minute
   SESSION_EXTENSION_LIMIT_COUNT: '2'
