@@ -139,6 +139,11 @@ k8s_namespace_migration ()
   echo "--namespace=$(get_namespace "$(migration_manifest)")"
 }
 
+k8s_namespace_config ()
+{
+  echo "--namespace=$(get_namespace "$(config_manifest)")"
+}
+
 check_required_vars ()
 {
   if [ -z "${ENV}" ]; then
@@ -237,6 +242,27 @@ generate_deploy_manifest ()
     | envsubst \
     > "$(deploy_manifest)"
   log "Rendered deploy manifest into file $(deploy_manifest)"
+}
+
+config_manifest ()
+{
+  echo "${MANIFEST_DIR}/config.yaml"
+}
+
+generate_config_manifest ()
+{
+  # Config is optional; if no source file is present, silently skip so projects
+  # that don't need a pre-deploy kubectl replace are unaffected.
+  local source="k8s/${ENV}/config.yaml"
+  if [ ! -f "${source}" ]; then
+    log "No config source at '${source}'.  Skipping config render."
+    return 0
+  fi
+  debug "Rendering config manifest for release '${RELEASE_VERSION}' into file $(config_manifest)"
+  cat "${source}" \
+    | envsubst \
+    > "$(config_manifest)"
+  log "Rendered config manifest into file $(config_manifest)"
 }
 
 get_migration_name ()
@@ -375,6 +401,39 @@ apply_deploy_manifest ()
   kubectl $(k8s_namespace_deploy) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "$(deploy_manifest)"
 }
 
+apply_or_replace_config_manifest ()
+{
+  # Optional pre-deploy step.  If the rendered config manifest exists we want
+  # `kubectl replace` semantics (full object overwrite, not 3-way merge), but
+  # replace fails when the resource is not yet on the cluster — so on the
+  # first deploy we fall back to `kubectl apply` to seed it.
+  local rendered="$(config_manifest)"
+  if [ ! -f "${rendered}" ]; then
+    log "No rendered config manifest at '${rendered}'.  Skipping config update."
+    return 0
+  fi
+
+  debug "Checking whether config resources already exist on cluster '$(k8s_server)'"
+  debug "| Running command:"
+  debug "|=> kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) get -f \"${rendered}\""
+
+  if kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) get -f "${rendered}" > /dev/null 2>&1; then
+    log "Config resources exist.  Replacing config manifest file '${rendered}' on cluster '$(k8s_server)'"
+
+    debug "| Running command:"
+    debug "|=> kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) replace -f \"${rendered}\""
+
+    kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) replace -f "${rendered}"
+  else
+    log "Config resources not yet present.  Applying config manifest file '${rendered}' to cluster '$(k8s_server)'"
+
+    debug "| Running command:"
+    debug "|=> kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f \"${rendered}\""
+
+    kubectl $(k8s_namespace_config) $(k8s_server) $(k8s_token) $(k8s_ca) apply -f "${rendered}"
+  fi
+}
+
 get_rollout_resource_names ()
 {
   # Return all rollout-capable resources (Deployment, DaemonSet, StatefulSet)
@@ -450,6 +509,10 @@ wait_for_deploy_complete ()
 
 apply_and_wait_deployment_manifest ()
 {
+  if ! apply_or_replace_config_manifest; then
+    notify_deploy_failure_and_die "Apply/replace of config manifest FAILED!  Check logs above"
+  fi
+
   if apply_deploy_manifest; then
     log "Apply of deploy manifest succeeded!  Waiting ${SLEEP_SECONDS_AFTER_APPLY} seconds before checking status..."
     sleep "${SLEEP_SECONDS_AFTER_APPLY}"
@@ -773,6 +836,7 @@ main ()
 
   if is_enabled "${SAVE_DEPLOY}"; then
     generate_deploy_manifest
+    generate_config_manifest
   fi
 
   if is_enabled "${DIFF_MIGRATION}" || is_enabled "${APPLY_MIGRATION}"; then
