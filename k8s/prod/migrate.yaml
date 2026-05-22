@@ -17,22 +17,6 @@ metadata:
 automountServiceAccountToken: false
 
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    app: malan
-    tier: migration
-    env: prod
-    kind: configmap
-  name: malan-migration-config
-  namespace: malan-prod
-data:
-  BIND_ADDR: '127.0.0.1'
-  POOL_SIZE: '5'
-  DB_POOL_SIZE: '5'
-
----
 apiVersion: batch/v1
 kind: Job
 metadata:

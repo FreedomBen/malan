@@ -1,0 +1,92 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: malan
+    tier: web
+    env: prod
+    kind: configmap
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-prod
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
+  name: malan-web-config
+  namespace: malan-prod
+data:
+  BIND_ADDR: '0.0.0.0'
+  # Pool sized for Oban logs queue (10 workers) + request handlers per
+  # pod. At max_connections=397 this leaves headroom for other services.
+  # Bumped from 10 to 20 to absorb concurrent login bursts (bcrypt + DB
+  # lookup holds a connection ~1s per POST /api/sessions) and reduce
+  # pool-checkout queueing on /api/users/me, which was driving P99 tail
+  # latency above 4s.
+  POOL_SIZE: '20'
+  MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
+  HOST: 'accounts.ameelio.org'
+  PORT: '4000'
+  EXTERNAL_HOST: 'accounts.ameelio.org'
+  EXTERNAL_PORT: '443'
+  EXTERNAL_SCHEME: 'https'
+  DATABASE_TLS_ENABLED: 'true'
+  MIN_PASSWORD_LENGTH: '8'
+  ADMIN_SET_USER_MIN_PASSWORD_LENGTH: '6'
+  ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH: '12'
+  MALAN_EMAIL_VERIFICATION_AUTO_SEND: 'false'
+
+  # Operational tunables — pinned at code defaults from config/config.exs.
+  # Honored at boot via config/runtime.exs (see commits 0cfde98 + 6e3ca5b);
+  # changing a value here applies on the next pod rollout, no rebuild.
+  # Token expirations (Malan.Accounts.User + Malan.Accounts.Session)
+  DEFAULT_PASSWORD_RESET_TOKEN_EXPIRATION_SECS: '86400'     # 24 hours
+  DEFAULT_EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECS: '1800'  # 30 minutes
+  DEFAULT_TOKEN_EXPIRATION_SECS: '604800'                   # 7 days
+  DEFAULT_MAX_EXTENSION_TIME_SECS: '2419200'                # 28 days
+  DEFAULT_MAX_EXTENSION_SECS: '604800'                      # 7 days
+  MAX_MAX_EXTENSION_SECS: '7862400'                         # ~90 days
+  # Rate limits — password reset (per-user)
+  PASSWORD_RESET_LOWER_LIMIT_MSECS: '180000'                # 3 minutes
+  PASSWORD_RESET_LOWER_LIMIT_COUNT: '1'
+  PASSWORD_RESET_UPPER_LIMIT_MSECS: '86400000'              # 24 hours
+  PASSWORD_RESET_UPPER_LIMIT_COUNT: '3'
+  # Rate limits — password reset (per-IP, applied before user lookup
+  # to throttle username/email enumeration)
+  PASSWORD_RESET_IP_LOWER_LIMIT_MSECS: '60000'              # 1 minute
+  PASSWORD_RESET_IP_LOWER_LIMIT_COUNT: '100'
+  PASSWORD_RESET_IP_UPPER_LIMIT_MSECS: '86400000'           # 24 hours
+  PASSWORD_RESET_IP_UPPER_LIMIT_COUNT: '500'
+  # Rate limits — session extension and login
+  SESSION_EXTENSION_LIMIT_MSECS: '60000'                    # 1 minute
+  SESSION_EXTENSION_LIMIT_COUNT: '2'
+  LOGIN_LIMIT_MSECS: '60000'                                # 1 minute
+  LOGIN_LIMIT_COUNT: '5'
+  # Rate limits — email verification
+  EMAIL_VERIFY_LOWER_LIMIT_MSECS: '1800000'                 # 30 minutes
+  EMAIL_VERIFY_LOWER_LIMIT_COUNT: '1'
+  EMAIL_VERIFY_UPPER_LIMIT_MSECS: '86400000'                # 24 hours
+  EMAIL_VERIFY_UPPER_LIMIT_COUNT: '3'
+
+  SENTRY_ENVIRONMENT: 'prod'
+  # Vars from secrets
+  # DATABASE_URL
+  # MAILGUN_API_KEY
+  # SERET_KEY_BASE
+  # SENTRY_DNS
+  # HAMMER_REDIS_URL    # rediss://default:<password>@<host>:<port>/0 (DO Managed Redis)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: malan
+    tier: migration
+    env: prod
+    kind: configmap
+  name: malan-migration-config
+  namespace: malan-prod
+data:
+  BIND_ADDR: '127.0.0.1'
+  POOL_SIZE: '5'
+  DB_POOL_SIZE: '5'
