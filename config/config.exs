@@ -11,6 +11,13 @@ config :malan,
   ecto_repos: [Malan.Repo],
   generators: [binary_id: true]
 
+# Use unnamed prepared statements so the Repo stays safe behind a connection
+# pooler (PgBouncer) in transaction mode, where cached named statements break
+# across server-connection checkouts (`prepared statement "ecto_N" does not
+# exist`). Harmless on a direct connection. Applies to all envs and merges
+# with the per-env Repo config in dev.exs / test.exs / runtime.exs.
+config :malan, Malan.Repo, prepare: :unnamed
+
 # Defaults for Malan.Accounts.User. Each key is also read at boot from
 # env in `config/runtime.exs`; the runtime read overrides the literal
 # below when the env var is set. Without this split, a multi-stage
