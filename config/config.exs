@@ -252,7 +252,7 @@ config :malan, Malan.PromEx,
 # Oban background job processing
 config :malan, Oban,
   repo: Malan.Repo,
-  queues: [logs: 10, mailers: 5],
+  queues: [logs: 10, mailers: 5, archive: 1],
   plugins: [
     # Drop completed/discarded/cancelled jobs older than 24h so the
     # oban_jobs table does not grow unboundedly. The logs queue alone

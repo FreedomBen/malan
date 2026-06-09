@@ -9,6 +9,10 @@ defmodule Malan.Workers.LogArchiver do
   to be archived.
   """
 
+  # Runs on its own :archive queue (not the request-path :logs queue) so a long
+  # archiving run can't occupy the worker slots LogWriter needs to drain
+  # audit-log writes.
+  #
   # Uniqueness keeps at most one archiver chain in flight at a time. The
   # parent chunk is in :executing while it inserts the next chunk, so
   # :executing is intentionally excluded — the chain still self-perpetuates.
@@ -16,7 +20,7 @@ defmodule Malan.Workers.LogArchiver do
   # silently no-op. If a chain dies (state → :discarded), the next cron tick
   # starts a fresh one.
   use Oban.Worker,
-    queue: :logs,
+    queue: :archive,
     max_attempts: 3,
     unique: [
       period: :infinity,

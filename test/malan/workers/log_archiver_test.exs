@@ -113,6 +113,16 @@ defmodule Malan.Workers.LogArchiverTest do
     end
   end
 
+  describe "queue configuration" do
+    test "archiver runs on its own queue, isolated from the request-path :logs queue" do
+      assert Ecto.Changeset.get_field(LogArchiver.new(%{}), :queue) == "archive"
+
+      queues = Application.fetch_env!(:malan, Oban) |> Keyword.fetch!(:queues)
+      assert queues[:archive] >= 1, "the :archive queue must be configured to run"
+      assert Keyword.has_key?(queues, :logs), "the request-path :logs queue still exists"
+    end
+  end
+
   describe "perform/1" do
     test "archives logs older than 90 days" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
