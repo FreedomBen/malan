@@ -263,7 +263,10 @@ config :malan, Oban,
      crontab: [
        # Archive audit logs older than 60 days. Daily at 07:00 UTC (off-peak)
        # rather than hourly, to avoid a predictable top-of-hour latency spike.
-       {"0 7 * * *", Malan.Workers.LogArchiver}
+       # Smaller chunks + an inter-chunk delay spread the DB load so the batch
+       # never holds a pool connection or contends on the logs table for long.
+       {"0 7 * * *", Malan.Workers.LogArchiver,
+        args: %{"chunk_size" => 250, "delay_seconds" => 2}}
      ]}
   ]
 

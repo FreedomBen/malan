@@ -102,6 +102,15 @@ defmodule Malan.Workers.LogArchiverTest do
       assert schedule == "0 7 * * *"
       refute schedule == "0 * * * *"
     end
+
+    test "archiver cron throttles with smaller chunks and an inter-chunk delay" do
+      entry = archiver_crontab_entry()
+      assert tuple_size(entry) == 3, "expected the cron entry to carry throttle args"
+
+      args = entry |> elem(2) |> Keyword.fetch!(:args)
+      assert args["chunk_size"] == 250
+      assert args["delay_seconds"] == 2
+    end
   end
 
   describe "perform/1" do
