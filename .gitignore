@@ -35,6 +35,7 @@ malan-*.tar
 # Posgres local database
 pg_passwd
 pgdata/
+redisdata/
 
 
 # Secrets files in k8s

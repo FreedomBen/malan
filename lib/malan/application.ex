@@ -12,6 +12,7 @@ defmodule Malan.Application do
   def start(_type, _args) do
     Logger.add_backend(Sentry.LoggerBackend)
     install_email_scrubber()
+    attach_oban_logger()
 
     children = [
       # Start the Ecto repository
@@ -57,6 +58,17 @@ defmodule Malan.Application do
          ) do
       :ok -> :ok
       {:error, {:already_exist, _}} -> :ok
+    end
+  end
+
+  # Attach Oban's default structured (JSON) logger so background job
+  # successes (`job:stop`) and failures (`job:exception`) are written to the
+  # log. Idempotent: a repeat attach (e.g. release reload) returns
+  # `{:error, :already_exists}`, which we treat as success.
+  defp attach_oban_logger do
+    case Oban.Telemetry.attach_default_logger(level: :info) do
+      :ok -> :ok
+      {:error, :already_exists} -> :ok
     end
   end
 end
