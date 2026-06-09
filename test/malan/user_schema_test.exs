@@ -38,8 +38,24 @@ defmodule Malan.UserSchemaTest do
       end
     end
 
-    test "registration_changeset" do
-      assert true
+    test "registration_changeset downcases email before validating" do
+      changeset =
+        User.registration_changeset(%User{}, %{
+          username: "testuser",
+          email: "First.Last+Tag@EXAMPLE.COM"
+        })
+
+      assert changeset.changes.email == "first.last+tag@example.com"
+      refute Keyword.has_key?(changeset.errors, :email)
+    end
+
+    test "registration_changeset requires an email" do
+      changeset = User.registration_changeset(%User{}, %{username: "testuser"})
+      assert "can't be blank" in errors_on(changeset).email
+
+      # cast converts "" to nil, so the required check (not format) rejects it
+      changeset = User.registration_changeset(%User{}, %{username: "testuser", email: ""})
+      assert "can't be blank" in errors_on(changeset).email
     end
 
     test "#validate_username minimum length" do
@@ -112,48 +128,130 @@ defmodule Malan.UserSchemaTest do
              |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
     end
 
-    test "#validate_email correct emails 1" do
-      validate_email("bob@hotmail.com", true)
+    # All of these must be accepted by the email format validation.
+    @valid_emails [
+      "bob@hotmail.com",
+      "v@mx.co",
+      "a@b.co",
+      "bob.zemeckis-hello+world74@hotmail.com",
+      "bob.1!#$%^&*@hotmail.seven.four.com",
+      "gregory+clark@example.com",
+      "first.middle.last@example.com",
+      "user_name@example.com",
+      "o'connor@example.com",
+      # every RFC 5322 atext special character at once
+      "!#$%&'*+-/=?^_`{|}~@example.com",
+      "user/dept=sales@example.com",
+      "1234567890@example.com",
+      "user@123.com",
+      "user@example.co.uk",
+      "user@sub.sub2.sub3.example.com",
+      "user@hyphen-ated.com",
+      "user@example.museum",
+      # IDN (punycode) domains and TLDs
+      "user@xn--mnchen-3ya.de",
+      "user@example.xn--p1ai",
+      "user@xn----7sbb4ac0ad0be6cf.xn--p1ai",
+      # changesets downcase before validating, but the format check
+      # itself must not depend on that
+      "USER@EXAMPLE.COM",
+      "user@Beta.com",
+      # boundaries: 64-char local part, 63-char label, many labels
+      String.duplicate("a", 64) <> "@example.com",
+      "user@" <> String.duplicate("a", 63) <> ".com",
+      "user@" <> String.duplicate("a.", 30) <> "example.com"
+    ]
+
+    # All of these must be rejected with "has invalid format".
+    @invalid_emails [
+      # missing pieces / no TLD
+      "plainaddress",
+      "bob@hotmail",
+      "user@localhost",
+      "@example.com",
+      "user@",
+      "user@example.c",
+      # TLD longer than 25 chars
+      "bob@hotmail.com" <> String.duplicate("A", 25),
+      # characters outside the allowed sets
+      "bob(hello@hotmail.com",
+      "boblo@hot^mail.com",
+      # more than one @
+      "bob@hello@hotmail.com",
+      "user@@example.com",
+      # invalid chars that the old regex accepted via accidental
+      # character-class ranges (",", and ":;<=>?@/" in the domain)
+      "foo,bar@example.com",
+      "user@foo,bar.com",
+      "user@exa:mple.com",
+      "user@exa;mple.com",
+      "user@a=b.com",
+      "user@a?b.com",
+      "user@a/b.com",
+      "user@a_b.com",
+      # dots must separate non-empty local-part atoms
+      ".user@example.com",
+      "user.@example.com",
+      "us..er@example.com",
+      # domain label structure
+      "user@.example.com",
+      "user@..com",
+      "user@example..com",
+      "user@example.com.",
+      "user@-example.com",
+      "user@example-.com",
+      "user@foo.-bar.com",
+      "user@foo-.bar.com",
+      # TLDs are letters or punycode, never digits
+      "user@example.123",
+      "user@example.123abc",
+      # punycode labels can't end with a hyphen
+      "user@xn--abc-.com",
+      "user@foo.xn--abc-",
+      # length limits: local part max 64, label max 63, domain max 253
+      String.duplicate("a", 65) <> "@example.com",
+      "user@" <> String.duplicate("a", 64) <> ".com",
+      "a@" <> String.duplicate("a234567890.", 23) <> "com",
+      # whitespace anywhere, including trailing newline (the old regex's
+      # $ anchor matched before a trailing newline)
+      "user name@example.com",
+      "user@exam ple.com",
+      " user@example.com",
+      "user@example.com ",
+      "user@example.com\n",
+      "user@example.com\nattacker@evil.com",
+      "user@example.com\t",
+      # non-ASCII: IDN domains must be submitted in punycode form
+      "üser@example.com",
+      "user@münchen.de",
+      # RFC quoted local parts and domain literals are unsupported
+      ~s("quoted"@example.com),
+      ~s("user name"@example.com),
+      "user@[192.168.1.1]"
+    ]
+
+    test "#validate_email accepts valid emails" do
+      for email <- @valid_emails do
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{email: email}, [:email])
+          |> User.validate_email()
+
+        assert changeset.valid?,
+               "expected #{inspect(email)} to be valid, errors: #{inspect(changeset.errors)}"
+      end
     end
 
-    test "#validate_email correct emails 2" do
-      validate_email("v@mx.co", true)
-    end
+    test "#validate_email rejects invalid emails" do
+      for email <- @invalid_emails do
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{email: email}, [:email])
+          |> User.validate_email()
 
-    test "#validate_email correct emails 3" do
-      validate_email("bob.zemeckis-hello+world74@hotmail.com", true)
-    end
+        refute changeset.valid?, "expected #{inspect(email)} to be rejected"
 
-    test "#validate_email correct emails 4" do
-      validate_email("bob.1!#$%^&*@hotmail.seven.four.com", true)
-    end
-
-    test "#validate_email correct emails 5 (allows a +)" do
-      validate_email("gregory+clark@example.com", true)
-    end
-
-    test "#validate_email invalid emails 1" do
-      validate_email("bob@hotmail", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 2" do
-      validate_email("bob(hello@hotmail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 3" do
-      validate_email("bob@hello@hotmail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 4" do
-      validate_email("boblo@hot^mail.com", false, "has invalid format")
-    end
-
-    test "#validate_email invalid emails 5" do
-      validate_email(
-        "bob@hotmail.com#{String.duplicate("A", 25)}",
-        false,
-        "has invalid format"
-      )
+        assert Enum.any?(errors_on(changeset).email, &(&1 =~ "has invalid format")),
+               "expected format error for #{inspect(email)}, errors: #{inspect(changeset.errors)}"
+      end
     end
 
     # Our deleted_at prefix includes | so need to make sure that no emails do
@@ -162,11 +260,18 @@ defmodule Malan.UserSchemaTest do
       validate_email("|boblo@hotmail.com", false, "has invalid format")
     end
 
-    test "#validate_email max length 1" do
-      validate_property(
-        &User.validate_email/1,
-        :email,
-        "#{String.duplicate("A", 101)}@hotmail.com",
+    test "#validate_email minimum total length" do
+      validate_email("a@b.c", false, "should be at least")
+    end
+
+    test "#validate_email maximum total length" do
+      # 240 chars total while every other limit is respected (local part
+      # 64, labels <= 63, domain <= 253), so only total length rejects it
+      validate_email(
+        String.duplicate("a", 64) <>
+          "@" <>
+          String.duplicate("b", 60) <>
+          "." <> String.duplicate("c", 60) <> "." <> String.duplicate("d", 49) <> ".com",
         false,
         "should be at most"
       )

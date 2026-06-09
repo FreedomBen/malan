@@ -380,16 +380,32 @@ defmodule Malan.Accounts.User do
     |> unique_constraint(:username)
   end
 
+  # Runs after downcasing but accepts uppercase on its own. Local part is an
+  # RFC 5322 dot-atom: "atext" atoms separated by single dots (no leading,
+  # trailing, or consecutive dots). Domain is dot-separated DNS labels
+  # (alphanumeric plus interior hyphens) ending in a TLD of letters or
+  # punycode ("xn--..."). Deliberately unsupported: quoted local parts
+  # ("a b"@x.com), domain literals (user@[1.2.3.4]), and non-ASCII
+  # (IDN domains must be given in punycode form).
+  @email_regex ~r/
+    \A
+    (?=[^@]{1,64}@)                                       # local part: max 64 chars
+    [!#$%&'*+\-\/=?^_`{|}~A-Za-z0-9]+                     # local part: first atom
+    (?:\.[!#$%&'*+\-\/=?^_`{|}~A-Za-z0-9]+)*              # local part: optional dot-separated atoms
+    @
+    (?=[^@]{1,253}\z)                                     # domain: max 253 chars
+    (?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+  # labels: 1-63 chars, no edge hyphens
+    (?:[A-Za-z]{2,25}|[Xx][Nn]--[A-Za-z0-9-]{1,58}[A-Za-z0-9])  # TLD: letters, or punycode xn--
+    \z
+  /x
+
   defp_testable validate_email(changeset) do
     changeset
     |> validate_length(:email, min: 6, max: @max_email_length)
-    |> validate_format(
-      :email,
-      ~r/^[!#$%&'*+-\/=?^_`{|}~A-Za-z0-9]{1,64}@[.-A-Za-z0-9]{1,63}\.[A-Za-z]{2,25}$/
-    )
-    # Doesn't have more than one @
+    |> validate_format(:email, @email_regex)
+    # Doesn't have more than one @ (also guaranteed by @email_regex)
     |> validate_not_format(:email, ~r/@.*@/)
-    # Doesn't start with a pipe |
+    # Doesn't start with a pipe | (reserved for the deleted-user sentinel)
     |> validate_not_format(:email, ~r/^\|/)
     |> unique_constraint(:email)
   end
