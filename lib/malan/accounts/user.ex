@@ -375,8 +375,9 @@ defmodule Malan.Accounts.User do
   # address can be used as a username. Unlike emails there are no
   # structural rules: dots and "@" may appear anywhere. Anchored with
   # \A/\z so a trailing newline is rejected, and "-" is escaped to avoid
-  # the accidental "+-/" range that let commas through.
-  @username_regex ~r/\A[@!#$%&'*+\-.\/=?^_`{|}~A-Za-z0-9]{3,89}\z/
+  # the accidental "+-/" range that let commas through. Length is
+  # enforced solely by validate_length (3 to @max_username_length).
+  @username_regex ~r/\A[@!#$%&'*+\-.\/=?^_`{|}~A-Za-z0-9]+\z/
 
   defp_testable validate_username(changeset) do
     changeset

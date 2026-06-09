@@ -59,25 +59,35 @@ defmodule Malan.UserSchemaTest do
     end
 
     test "#validate_username minimum length" do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{username: "h"}, [:username])
-        |> User.validate_username()
+      for username <- ["h", "ab"] do
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{username: username}, [:username])
+          |> User.validate_username()
 
-      assert changeset.valid? == false
+        assert changeset.valid? == false
 
-      assert errors_on(changeset).username
-             |> Enum.any?(fn x -> x =~ ~r/should be at least/ end)
+        # too short is purely a length error, not a format error
+        assert errors_on(changeset).username
+               |> Enum.any?(fn x -> x =~ ~r/should be at least/ end)
+
+        refute errors_on(changeset).username
+               |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
+      end
     end
 
     test "#validate_username maximum length" do
       changeset =
-        Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 201)}, [:username])
+        Ecto.Changeset.cast(%User{}, %{username: String.duplicate("A", 189)}, [:username])
         |> User.validate_username()
 
       assert changeset.valid? == false
 
+      # too long is purely a length error, not a format error
       assert errors_on(changeset).username
              |> Enum.any?(fn x -> x =~ ~r/should be at most/ end)
+
+      refute errors_on(changeset).username
+             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
     end
 
     # All of these must be accepted by the username format validation.
@@ -97,14 +107,15 @@ defmodule Malan.UserSchemaTest do
       # every allowed special character at once
       "!#$%&'*+-./=?^_`{|}~",
       "a.b",
-      # format limit is 89 chars (validate_length allows more, format wins)
-      String.duplicate("a", 89)
+      # length is enforced by validate_length alone (3 to 188), so the
+      # old format-level 89-char cap no longer applies
+      String.duplicate("a", 89),
+      String.duplicate("a", 90),
+      String.duplicate("a", 188)
     ]
 
     # All of these must be rejected with "has invalid format".
     @invalid_usernames [
-      "ab",
-      String.duplicate("a", 90),
       # comma slipped through the old regex's accidental "+-/" range
       "bob,by",
       "abcdefg(h",
