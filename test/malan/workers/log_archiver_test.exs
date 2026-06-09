@@ -79,6 +79,31 @@ defmodule Malan.Workers.LogArchiverTest do
     Repo.query!("SELECT count(*) FROM logs").rows |> hd() |> hd()
   end
 
+  defp archiver_crontab_entry do
+    Application.fetch_env!(:malan, Oban)
+    |> Keyword.fetch!(:plugins)
+    |> Enum.find_value(fn
+      {Oban.Plugins.Cron, cron_opts} ->
+        cron_opts
+        |> Keyword.get(:crontab, [])
+        |> Enum.find(&(elem(&1, 1) == LogArchiver))
+
+      _ ->
+        nil
+    end)
+  end
+
+  describe "cron configuration" do
+    test "archiver is scheduled daily off-peak, not hourly" do
+      entry = archiver_crontab_entry()
+      assert entry, "LogArchiver must have a cron entry"
+
+      schedule = elem(entry, 0)
+      assert schedule == "0 7 * * *"
+      refute schedule == "0 * * * *"
+    end
+  end
+
   describe "perform/1" do
     test "archives logs older than 90 days" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()

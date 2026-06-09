@@ -261,8 +261,9 @@ config :malan, Oban,
     {Oban.Plugins.Pruner, max_age: 86_400},
     {Oban.Plugins.Cron,
      crontab: [
-       # Archive audit logs older than 60 days, hourly at :00
-       {"0 * * * *", Malan.Workers.LogArchiver}
+       # Archive audit logs older than 60 days. Daily at 07:00 UTC (off-peak)
+       # rather than hourly, to avoid a predictable top-of-hour latency spike.
+       {"0 7 * * *", Malan.Workers.LogArchiver}
      ]}
   ]
 
