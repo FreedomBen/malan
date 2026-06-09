@@ -371,11 +371,18 @@ defmodule Malan.Accounts.User do
     # |> validate_subset(:roles, @valid_roles)
   end
 
+  # The email local-part characters plus "@" and ".", so a full email
+  # address can be used as a username. Unlike emails there are no
+  # structural rules: dots and "@" may appear anywhere. Anchored with
+  # \A/\z so a trailing newline is rejected, and "-" is escaped to avoid
+  # the accidental "+-/" range that let commas through.
+  @username_regex ~r/\A[@!#$%&'*+\-.\/=?^_`{|}~A-Za-z0-9]{3,89}\z/
+
   defp_testable validate_username(changeset) do
     changeset
     |> validate_length(:username, min: 3, max: @max_username_length)
-    |> validate_format(:username, ~r/^[@!#$%&'\*\+-\/=?^_`{|}~A-Za-z0-9]{3,89}$/)
-    # Doesn't start with a pipe |
+    |> validate_format(:username, @username_regex)
+    # Doesn't start with a pipe | (reserved for the deleted-user sentinel)
     |> validate_not_format(:username, ~r/^\|/)
     |> unique_constraint(:username)
   end

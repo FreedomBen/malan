@@ -80,34 +80,70 @@ defmodule Malan.UserSchemaTest do
              |> Enum.any?(fn x -> x =~ ~r/should be at most/ end)
     end
 
-    test "#validate_username only valid email prefix characters 1" do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{username: "abcdefg(h"}, [:username])
-        |> User.validate_username()
+    # All of these must be accepted by the username format validation.
+    @valid_usernames [
+      "bob",
+      "bob123",
+      "BoB",
+      # full email addresses are usable as usernames
+      "user@example.com",
+      "hello-_=_+*&^world@example.com",
+      # pipe is fine anywhere except the first character
+      "bobl|o",
+      # unlike emails, usernames have no dot-structure rules
+      "first.last",
+      ".bob",
+      "bob..by",
+      # every allowed special character at once
+      "!#$%&'*+-./=?^_`{|}~",
+      "a.b",
+      # format limit is 89 chars (validate_length allows more, format wins)
+      String.duplicate("a", 89)
+    ]
 
-      assert changeset.valid? == false
+    # All of these must be rejected with "has invalid format".
+    @invalid_usernames [
+      "ab",
+      String.duplicate("a", 90),
+      # comma slipped through the old regex's accidental "+-/" range
+      "bob,by",
+      "abcdefg(h",
+      "abc)defgh",
+      "[bob]",
+      "bob;by",
+      ~s(bob"by),
+      # whitespace anywhere, including trailing newline (the old regex's
+      # $ anchor matched before a trailing newline)
+      "bob by",
+      "bobby\n",
+      "bob\nby",
+      "bob\t",
+      # non-ASCII
+      "böb"
+    ]
 
-      assert errors_on(changeset).username
-             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
+    test "#validate_username accepts valid usernames" do
+      for username <- @valid_usernames do
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{username: username}, [:username])
+          |> User.validate_username()
+
+        assert changeset.valid?,
+               "expected #{inspect(username)} to be valid, errors: #{inspect(changeset.errors)}"
+      end
     end
 
-    test "#validate_username only valid email prefix characters 2" do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{username: "abc)defgh"}, [:username])
-        |> User.validate_username()
+    test "#validate_username rejects invalid usernames" do
+      for username <- @invalid_usernames do
+        changeset =
+          Ecto.Changeset.cast(%User{}, %{username: username}, [:username])
+          |> User.validate_username()
 
-      assert changeset.valid? == false
+        refute changeset.valid?, "expected #{inspect(username)} to be rejected"
 
-      assert errors_on(changeset).username
-             |> Enum.any?(fn x -> x =~ ~r/has invalid format/ end)
-    end
-
-    test "#validate_username allows email addresses" do
-      changeset =
-        Ecto.Changeset.cast(%User{}, %{username: "hello-_=_+*&^world@example.com"}, [:username])
-        |> User.validate_username()
-
-      assert changeset.valid? == true
+        assert Enum.any?(errors_on(changeset).username, &(&1 =~ "has invalid format")),
+               "expected format error for #{inspect(username)}, errors: #{inspect(changeset.errors)}"
+      end
     end
 
     # Our deleted_at prefix includes | so need to make sure that no usernames do
