@@ -297,5 +297,42 @@ defmodule Malan.Workers.LogArchiverTest do
       assert logs_count() == initial_logs
       refute_enqueued(worker: LogArchiver)
     end
+
+    test "stops after max_chunks, leaving remaining rows for the next run" do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      old_date = DateTime.utc_now() |> DateTime.add(-91, :day) |> DateTime.truncate(:second)
+
+      # Five archivable rows; cap the run at two chunks of one row each.
+      for i <- 1..5 do
+        create_log(user, session, DateTime.add(old_date, -i, :second))
+      end
+
+      initial_archived = archived_count()
+      initial_logs = logs_count()
+
+      # Inline mode would run the chain to completion, but the cap stops it at 2.
+      assert :ok = perform_job(LogArchiver, %{"chunk_size" => 1, "max_chunks" => 2})
+
+      assert archived_count() == initial_archived + 2
+      assert logs_count() == initial_logs - 2
+    end
+
+    test "threads the chunk counter and max_chunks to the next scheduled chunk" do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+      old_date = DateTime.utc_now() |> DateTime.add(-91, :day) |> DateTime.truncate(:second)
+
+      for i <- 1..2 do
+        create_log(user, session, DateTime.add(old_date, -i, :second))
+      end
+
+      Oban.Testing.with_testing_mode(:manual, fn ->
+        assert :ok = perform_job(LogArchiver, %{"chunk_size" => 1, "max_chunks" => 10})
+
+        assert_enqueued(
+          worker: LogArchiver,
+          args: %{"chunk" => 2, "max_chunks" => 10, "chunk_size" => 1}
+        )
+      end)
+    end
   end
 end
