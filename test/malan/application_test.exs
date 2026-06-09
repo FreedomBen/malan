@@ -13,4 +13,14 @@ defmodule Malan.ApplicationTest do
       end
     end
   end
+
+  describe "Sentry Oban error reporter" do
+    test "is attached to job exception events so all job failures reach Sentry" do
+      ids = Enum.map(:telemetry.list_handlers([:oban, :job, :exception]), & &1.id)
+
+      assert Sentry.Integrations.Oban.ErrorReporter in ids,
+             "expected Sentry.Integrations.Oban.ErrorReporter attached to " <>
+               "[:oban, :job, :exception], got: #{inspect(ids)}"
+    end
+  end
 end

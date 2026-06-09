@@ -47,12 +47,10 @@ defmodule Malan.Workers.LogWriter do
       what: args["what"]
     ]
 
+    # Failures already reach Sentry via the Oban integration
+    # (config :sentry, integrations: [oban: [capture_errors: true]]); only log here.
     unless Application.get_env(:malan, :log_silence_record_log_warning, false) do
       Logger.warning(msg, opts)
-    end
-
-    if Application.get_env(:sentry, :dsn) do
-      Sentry.capture_message(msg, opts)
     end
   end
 end

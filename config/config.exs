@@ -211,6 +211,10 @@ config :sentry,
   environment_name: config_env(),
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),
+  # Capture every Oban job failure ([:oban, :job, :exception], including
+  # {:error, reason} returns) as a Sentry event. DSN-gated, so dev/test
+  # (no DSN) are unaffected.
+  integrations: [oban: [capture_errors: true]],
   tags: %{
     # set at buildtime by CI script
     version: System.get_env("RELEASE_VERSION"),
