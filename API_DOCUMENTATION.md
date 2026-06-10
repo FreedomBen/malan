@@ -29,6 +29,7 @@ Error responses:
 - 403 Forbidden (missing/invalid token, expired/revoked session)
 - 403 ForbiddenAuth (invalid username/password/location on login)
 - 404 Not Found
+- 413 Request Entity Too Large (request body exceeds the 1 MB cap)
 - 422 Unprocessable Entity (validation/pagination errors)
 - 423 Locked (locked user)
 - 429 Too Many Requests (rate limits)

@@ -83,9 +83,15 @@ defmodule MalanWeb.Endpoint do
        ["/metrics", "/health_check/liveness", "/health_check/readiness"]},
     do: Plug.RequestId
 
+  # `length:` caps request bodies at 1 MB (Plug's default is 8 MB) so a
+  # flood of large bodies bounds per-request memory and parse time.
+  # Nothing in this API legitimately approaches it — the largest
+  # realistic payload is a user update with sizable custom_attrs jsonb.
+  # Oversized bodies are rejected with 413.
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
+    length: 1_000_000,
     json_decoder: Phoenix.json_library()
 
   # In production we terminate at Cloudflare; rewrite `conn.remote_ip`
