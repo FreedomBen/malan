@@ -40,8 +40,8 @@ Error responses:
 Endpoints that list records accept `page_num` (default `0`) and `page_size` (default `10`, max `100` where enforced). User and session-extension list responses include these values; other lists return just the data array.
 
 ## Rate Limits
-- Login: 429 when the credential rate limiter is exceeded.
-- Password reset requests: 1 every 3 minutes, up to 3 per 24 hours (configurable via env vars `PASSWORD_RESET_*`).
+- Login: 429 when the credential rate limiter is exceeded. Limited per username (default 5 per minute, env vars `LOGIN_LIMIT_*`) and per source IP (defaults 60 per minute and 2000 per 24 hours, env vars `LOGIN_IP_LOWER_LIMIT_MSECS`, `LOGIN_IP_LOWER_LIMIT_COUNT`, `LOGIN_IP_UPPER_LIMIT_MSECS`, `LOGIN_IP_UPPER_LIMIT_COUNT`). The per-IP limits are deliberately generous so many users behind one NAT don't trip them.
+- Password reset requests: 1 every 3 minutes, up to 3 per 24 hours per user (configurable via env vars `PASSWORD_RESET_*`), plus per-IP limits (env vars `PASSWORD_RESET_IP_*`).
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 
 ## Public Endpoints (no token required)
@@ -153,7 +153,7 @@ Response (`201 Created`):
 }
 ```
 - `api_token` is only present in the creation response; subsequent session fetches omit it.
-- Invalid credentials return `403 ForbiddenAuth`; locked users return `423`; excessive login attempts return `429 Too Many Requests`.
+- Invalid credentials return `403 ForbiddenAuth`; locked users return `423`; excessive login attempts return `429 Too Many Requests` (limited per username and per source IP).
 - `never_expires: true` issues a non-expiring session that can still be revoked; `valid_only_for_ip` and `valid_only_for_approved_ips` further restrict token use.
 
 ### Who Am I

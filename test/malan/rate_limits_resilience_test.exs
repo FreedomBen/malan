@@ -32,6 +32,21 @@ defmodule Malan.RateLimitsResilienceTest do
 
       assert {:error, :rate_limiter_unavailable} =
                RateLimits.Login.check_rate("resilience-username")
+
+      assert {:error, :rate_limiter_unavailable} =
+               RateLimits.Login.PerIp.check_rate("203.0.113.50")
+    end
+
+    test "login fails open when the rate limiter is unavailable" do
+      # Both the per-IP and per-username login limiters return
+      # {:error, :rate_limiter_unavailable} while Redis is down; a
+      # correct-credentials login must still succeed.
+      {:ok, user} = Malan.Test.Helpers.Accounts.regular_user()
+
+      assert {:ok, %Malan.Accounts.Session{}} =
+               Malan.Accounts.create_session(user.username, user.password, "203.0.113.60", %{
+                 "ip_address" => "203.0.113.60"
+               })
     end
   end
 end

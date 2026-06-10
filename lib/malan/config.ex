@@ -193,6 +193,30 @@ defmodule Malan.Config do
       {login_limit_msecs(), login_limit_count()}
     end
 
+    def login_ip_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_ip_lower_limit_msecs]
+    end
+
+    def login_ip_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_ip_lower_limit_count]
+    end
+
+    def login_ip_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_ip_upper_limit_msecs]
+    end
+
+    def login_ip_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_ip_upper_limit_count]
+    end
+
+    def login_ip_lower_limit do
+      {login_ip_lower_limit_msecs(), login_ip_lower_limit_count()}
+    end
+
+    def login_ip_upper_limit do
+      {login_ip_upper_limit_msecs(), login_ip_upper_limit_count()}
+    end
+
     def email_verify_lower_limit_msecs do
       Application.get_env(:malan, Malan.Config.RateLimits)[:email_verify_lower_limit_msecs] ||
         1_800_000

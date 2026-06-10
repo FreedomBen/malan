@@ -812,13 +812,29 @@ defmodule Malan.Accounts do
   # return {:error, reason, user_id} so create_session/4 can log the failed
   # attempt without re-resolving username -> id with an extra SELECT.
   # {:error, :not_a_user} and {:error, :too_many_requests} carry no id.
+  #
+  # The per-IP limit is checked before the per-username limit and before
+  # any DB work: spraying random usernames gets a fresh per-username
+  # bucket on every attempt (each burning a full-cost PBKDF2 verify, even
+  # for nonexistent users), but every attempt from one source shares this
+  # bucket. remote_ip is the CloudflareRealIp/RealIp-resolved client
+  # address on all login surfaces.
+  #
+  # Both limiters fail-open on {:error, _}: a transient Redis disconnect
+  # should not block logins (the limiter logs the failure). Login still
+  # requires correct credentials, so fail-open is bounded.
   defp authenticate_by_username_pass_with_id(username, given_pass, remote_ip) do
-    rate_limit_result = Malan.RateLimits.Login.check_rate(username)
+    case Malan.RateLimits.Login.PerIp.check_rate(remote_ip) do
+      {:deny, _limit} ->
+        {:error, :too_many_requests}
 
-    # Fail-open on {:error, _}: a transient Redis disconnect should not block
-    # logins (the limiter logs the failure). Login still requires correct
-    # credentials, so fail-open is bounded.
-    case rate_limit_result do
+      _allow_or_error ->
+        check_username_rate_and_authenticate(username, given_pass, remote_ip)
+    end
+  end
+
+  defp check_username_rate_and_authenticate(username, given_pass, remote_ip) do
+    case Malan.RateLimits.Login.check_rate(username) do
       {:deny, _limit} ->
         {:error, :too_many_requests}
 

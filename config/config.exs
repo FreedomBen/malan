@@ -52,7 +52,7 @@ config :malan,
 # `config/runtime.exs`; the runtime read overrides the literal below
 # when the env var is set. Env vars: PASSWORD_RESET_*,
 # PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LIMIT_*,
-# EMAIL_VERIFY_*.
+# LOGIN_IP_*, EMAIL_VERIFY_*.
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds), 1 per period
   password_reset_lower_limit_msecs: 180_000,
@@ -79,6 +79,21 @@ config :malan, Malan.Config.RateLimits,
   # Login attempts per username. 5 attempts per 60 seconds by default.
   login_limit_msecs: 60_000,
   login_limit_count: 5,
+  # Per-IP login attempt limits, applied *before* the per-username limit
+  # and any DB work. The per-username bucket alone doesn't bound an
+  # attacker (spraying random usernames gets a fresh bucket every
+  # request, each burning a full-cost PBKDF2 verify), so this caps the
+  # hashing CPU a single source IP can consume. Deliberately generous so
+  # NAT'd offices and households never trip it (~1 login/s sustained);
+  # a single-IP flood is still capped at ~6 CPU-seconds of hashing per
+  # minute. Keyed on the CF-Connecting-IP visitor address, as with
+  # password_reset_ip_* above.
+  # Lower bucket: 60 per minute (60 seconds)
+  login_ip_lower_limit_msecs: 60_000,
+  login_ip_lower_limit_count: 60,
+  # Upper bucket: 2000 per day (86,400 seconds)
+  login_ip_upper_limit_msecs: 86_400_000,
+  login_ip_upper_limit_count: 2000,
   # Email verification: lower bucket - 30 minutes, 1 per period
   email_verify_lower_limit_msecs: 1_800_000,
   email_verify_lower_limit_count: 1,

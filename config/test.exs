@@ -45,6 +45,14 @@ config :malan, :log_silence_record_log_warning, true
 config :malan, Malan.Config.RateLimits,
   login_limit_msecs: 1,
   login_limit_count: 1_000_000,
+  # Per-IP login limits are effectively disabled in test: the whole suite
+  # logs in from the same loopback address and must not trip them. The
+  # throttle-specific tests override these values locally via
+  # Application.put_env.
+  login_ip_lower_limit_msecs: 60_000,
+  login_ip_lower_limit_count: 1_000_000,
+  login_ip_upper_limit_msecs: 86_400_000,
+  login_ip_upper_limit_count: 1_000_000,
   password_reset_lower_limit_msecs:
     (System.get_env("PASSWORD_RESET_LOWER_LIMIT_MSECS") || "180000") |> String.to_integer(),
   password_reset_lower_limit_count:
