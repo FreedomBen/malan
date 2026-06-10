@@ -689,6 +689,30 @@ defmodule MalanWeb.SessionControllerTest do
       assert timestamp_diff_count <= 2
     end
 
+    test "excludes expired and revoked sessions", %{conn: conn} do
+      {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
+
+      {:ok, expired} = Helpers.Accounts.create_session(ru)
+      {:ok, revoked} = Helpers.Accounts.create_session(ru)
+      {:ok, revoked_and_expired} = Helpers.Accounts.create_session(ru)
+
+      Helpers.Accounts.set_expired(expired)
+      Helpers.Accounts.set_revoked(revoked)
+
+      revoked_and_expired
+      |> Helpers.Accounts.set_expired()
+      |> Helpers.Accounts.set_revoked()
+
+      c1 = c2 = Helpers.Accounts.put_token(conn, s1.api_token)
+      c1 = get(c1, Routes.session_path(c1, :index_active))
+      c2 = get(c2, Routes.user_session_path(c2, :user_index_active, ru.id))
+
+      for c <- [c1, c2] do
+        %{"data" => data} = json_response(c, 200)
+        assert Enum.map(data, & &1["id"]) == [s1.id]
+      end
+    end
+
     test "Must be authenticated", %{conn: conn} do
       conn = get(conn, Routes.session_path(conn, :index_active))
 

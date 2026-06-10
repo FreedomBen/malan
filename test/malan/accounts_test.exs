@@ -1547,6 +1547,28 @@ defmodule Malan.AccountsTest do
       end)
     end
 
+    test "list_active_sessions/3 returns only unexpired, unrevoked sessions" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      {:ok, active} = Helpers.Accounts.create_session(user)
+      {:ok, expired} = Helpers.Accounts.create_session(user)
+      {:ok, revoked} = Helpers.Accounts.create_session(user)
+      {:ok, revoked_and_expired} = Helpers.Accounts.create_session(user)
+
+      Helpers.Accounts.set_expired(expired)
+      Helpers.Accounts.set_revoked(revoked)
+
+      revoked_and_expired
+      |> Helpers.Accounts.set_expired()
+      |> Helpers.Accounts.set_revoked()
+
+      # Works with both a %User{} and a raw user id
+      assert [%Session{id: active_id}] = Accounts.list_active_sessions(user, 0, 10)
+      assert active_id == active.id
+
+      assert [%Session{id: ^active_id}] = Accounts.list_active_sessions(user.id, 0, 10)
+    end
+
     test "user_add_role/2 adds the role to the user" do
       {:ok, user} = Helpers.Accounts.regular_user()
       assert {:ok, false} = Accounts.user_is_admin?(user.id)
