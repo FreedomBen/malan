@@ -61,9 +61,15 @@ defmodule MalanWeb.Endpoint do
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :malan
   end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
+  # The dashboard itself is only routed in dev/test (router.ex), so prod
+  # shouldn't pay the RequestLogger's per-request param/cookie check for
+  # a feature that cannot be reached. Compile-time conditional, same
+  # pattern the router uses.
+  if Mix.env() in [:dev, :test] do
+    plug Phoenix.LiveDashboard.RequestLogger,
+      param_key: "request_logger",
+      cookie_key: "request_logger"
+  end
 
   # The "log: false" in scope "/health_check", MalanWeb, log: false int he router
   # does not work.  Because of that, the health checks are logged everytime.

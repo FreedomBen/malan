@@ -1,7 +1,6 @@
 defmodule Malan.RateLimitsTest do
   use Malan.DataCase, async: true
 
-  alias Malan.RateLimits.Login
   alias Malan.RateLimits.PasswordReset
   alias Malan.RateLimits.PasswordReset.{UpperLimit, LowerLimit}
   alias Malan.RateLimits.PasswordReset.PerIp
