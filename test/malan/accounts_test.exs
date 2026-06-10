@@ -1316,6 +1316,65 @@ defmodule Malan.AccountsTest do
                )
     end
 
+    # The four failed-login modes log through record_create_session_*; the
+    # user_id resolved during authentication is threaded through so the log
+    # helpers don't re-resolve username -> id. These tests pin the recorded
+    # user_id / who / who_username for each mode.
+    test "create_session/4 with wrong pass logs the failure with the user's id" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      assert {:error, :unauthorized} =
+               Accounts.create_session(user.username, "nottherightpassword", "1.2.3.4", %{})
+
+      assert [log] = Accounts.list_logs_by_user_id(user.id, 0, 10)
+      assert log.success == false
+      assert log.user_id == user.id
+      assert log.who == user.id
+      assert log.who_username == user.username
+      assert log.remote_ip == "1.2.3.4"
+    end
+
+    test "create_session/4 when user is locked logs the failure with the user's id" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.lock_user(user)
+
+      assert {:error, :user_locked} =
+               Accounts.create_session(user.username, user.password, "1.2.3.4", %{})
+
+      # Locking the user also writes a session-revocation log with a nil
+      # user_id, so filter by user_id to isolate the failed-login log.
+      assert [log] = Accounts.list_logs_by_user_id(user.id, 0, 10)
+      assert log.success == false
+      assert log.user_id == user.id
+      assert log.who == user.id
+      assert log.who_username == user.username
+    end
+
+    test "create_session/4 from non-approved IP logs the failure with the user's id" do
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["1.1.1.1"]})
+
+      assert {:error, :unauthorized} =
+               Accounts.create_session(user.username, user.password, "9.9.9.9", %{})
+
+      assert [log] = Accounts.list_logs_by_user_id(user.id, 0, 10)
+      assert log.success == false
+      assert log.user_id == user.id
+      assert log.who == user.id
+      assert log.who_username == user.username
+      assert log.what =~ "IP is not on user's approved list"
+    end
+
+    test "create_session/4 with nonexistent user logs a nil user_id" do
+      assert {:error, :not_a_user} =
+               Accounts.create_session("nosuchuserhere", "somepassword", "1.2.3.4", %{})
+
+      assert [log] = Accounts.list_logs_by_who(nil, 0, 10)
+      assert log.success == false
+      assert log.user_id == nil
+      assert log.who == nil
+      assert log.who_username == "nosuchuserhere"
+    end
+
     test "delete_session/1 revokes the session" do
       session = session_fixture()
       assert {:ok, %Session{}, _cs} = Accounts.delete_session(session)

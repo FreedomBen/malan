@@ -802,6 +802,17 @@ defmodule Malan.Accounts do
           {:error, :too_many_requests}
   """
   def authenticate_by_username_pass(username, given_pass, remote_ip) do
+    case authenticate_by_username_pass_with_id(username, given_pass, remote_ip) do
+      {:error, reason, _user_id} -> {:error, reason}
+      other -> other
+    end
+  end
+
+  # Like authenticate_by_username_pass/3, but failures for a known user
+  # return {:error, reason, user_id} so create_session/4 can log the failed
+  # attempt without re-resolving username -> id with an extra SELECT.
+  # {:error, :not_a_user} and {:error, :too_many_requests} carry no id.
+  defp authenticate_by_username_pass_with_id(username, given_pass, remote_ip) do
     rate_limit_result = Malan.RateLimits.Login.check_rate(username)
 
     # Fail-open on {:error, _}: a transient Redis disconnect should not block
@@ -815,15 +826,20 @@ defmodule Malan.Accounts do
         case get_user_id_pass_hash_by_username(username) do
           {user_id, password_hash, nil, approved_ips} ->
             verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip)
+            |> attach_user_id(user_id)
 
           {user_id, password_hash, locked_at, _} ->
             verify_pass_locked(user_id, given_pass, password_hash, locked_at)
+            |> attach_user_id(user_id)
 
           nil ->
             fake_pass_verify(:not_a_user)
         end
     end
   end
+
+  defp attach_user_id({:ok, user_id}, _user_id), do: {:ok, user_id}
+  defp attach_user_id({:error, reason}, user_id), do: {:error, reason, user_id}
 
   @doc """
   Retrieves user roles from the DB for user_id.
@@ -949,13 +965,29 @@ defmodule Malan.Accounts do
       If user is not found, you'll get back {:error, :not_found}
   """
   def create_session(username, pass, remote_ip, attrs) do
-    case authenticate_by_username_pass(username, pass, remote_ip) do
-      {:ok, user_id} -> new_session(user_id, remote_ip, attrs)
-      {:error, :user_locked} -> record_create_session_locked(username, remote_ip, attrs)
-      {:error, :ip_addr} -> record_create_session_bad_ip(username, remote_ip, attrs)
-      {:error, :unauthorized} -> record_create_session_unauthorized(username, remote_ip, attrs)
-      {:error, :not_a_user} -> record_create_session_not_a_user(username, remote_ip, attrs)
-      {:error, :too_many_requests} -> {:error, :too_many_requests}
+    # Failure tuples carry the user_id resolved during authentication, so
+    # the record_create_session_* helpers are called with the id directly
+    # and skip their username_to_id/1 lookup (an extra SELECT on the
+    # unauthenticated failed-login path). :not_a_user logs a nil user_id —
+    # we already know there is no matching user.
+    case authenticate_by_username_pass_with_id(username, pass, remote_ip) do
+      {:ok, user_id} ->
+        new_session(user_id, remote_ip, attrs)
+
+      {:error, :user_locked, user_id} ->
+        record_create_session_locked(user_id, remote_ip, attrs, username)
+
+      {:error, :ip_addr, user_id} ->
+        record_create_session_bad_ip(user_id, remote_ip, attrs, username)
+
+      {:error, :unauthorized, user_id} ->
+        record_create_session_unauthorized(user_id, remote_ip, attrs, username)
+
+      {:error, :not_a_user} ->
+        record_create_session_not_a_user(nil, remote_ip, attrs, username)
+
+      {:error, :too_many_requests} ->
+        {:error, :too_many_requests}
     end
   end
 
