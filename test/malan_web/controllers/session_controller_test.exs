@@ -174,12 +174,22 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, s3} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      # inserted_at has second precision, so sessions created back-to-back
+      # share a timestamp and the (inserted_at DESC, id DESC) sort order
+      # becomes UUID-dependent. Back-date each session by a distinct number
+      # of seconds (matching creation order) so ordering is deterministic.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for {s, age_secs} <- [{s1, 60}, {s2, 50}, {s3, 40}, {s4, 30}, {s5, 20}, {s6, 10}] do
+        Malan.Repo.update_all(
+          from(sess in Session, where: sess.id == ^s.id),
+          set: [inserted_at: DateTime.add(now, -age_secs, :second)]
+        )
+      end
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.session_path(conn, :admin_index))
@@ -399,12 +409,22 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
       {:ok, s3} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
-      Process.sleep(1100)
       {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      # inserted_at has second precision, so sessions created back-to-back
+      # share a timestamp and the (inserted_at DESC, id DESC) sort order
+      # becomes UUID-dependent. Back-date each session by a distinct number
+      # of seconds (matching creation order) so ordering is deterministic.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for {s, age_secs} <- [{s1, 60}, {s2, 50}, {s3, 40}, {s4, 30}, {s5, 20}, {s6, 10}] do
+        Malan.Repo.update_all(
+          from(sess in Session, where: sess.id == ^s.id),
+          set: [inserted_at: DateTime.add(now, -age_secs, :second)]
+        )
+      end
 
       conn = Helpers.Accounts.put_token(conn, s2.api_token)
       conn = get(conn, Routes.user_session_path(conn, :index, ru.id), page_num: 0, page_size: 3)
@@ -478,14 +498,23 @@ defmodule MalanWeb.SessionControllerTest do
       {:ok, ru, s1} = Helpers.Accounts.regular_user_with_session()
       {:ok, au, s2} = Helpers.Accounts.admin_user_with_session()
 
-      # Create sessions with small delays to ensure distinct timestamps
       {:ok, s3} = Helpers.Accounts.create_session(ru)
-      :timer.sleep(1)
       {:ok, s4} = Helpers.Accounts.create_session(ru)
-      :timer.sleep(1)
       {:ok, s5} = Helpers.Accounts.create_session(ru)
-      :timer.sleep(1)
       {:ok, s6} = Helpers.Accounts.create_session(au)
+
+      # inserted_at has second precision, so sessions created back-to-back
+      # share a timestamp and the (inserted_at DESC, id DESC) sort order
+      # becomes UUID-dependent. Back-date each session by a distinct number
+      # of seconds (matching creation order) so ordering is deterministic.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for {s, age_secs} <- [{s1, 60}, {s2, 50}, {s3, 40}, {s4, 30}, {s5, 20}, {s6, 10}] do
+        Malan.Repo.update_all(
+          from(sess in Session, where: sess.id == ^s.id),
+          set: [inserted_at: DateTime.add(now, -age_secs, :second)]
+        )
+      end
 
       # page_num: 0 page_size: 3
       c1 = c2 = c3 = Helpers.Accounts.put_token(conn, s1.api_token)
