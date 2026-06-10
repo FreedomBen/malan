@@ -53,6 +53,12 @@ config :malan, Malan.Config.RateLimits,
   login_ip_lower_limit_count: 1_000_000,
   login_ip_upper_limit_msecs: 86_400_000,
   login_ip_upper_limit_count: 1_000_000,
+  # Per-IP registration limits: same reasoning as the per-IP login
+  # limits above (whole suite registers users from 127.0.0.1).
+  registration_ip_lower_limit_msecs: 60_000,
+  registration_ip_lower_limit_count: 1_000_000,
+  registration_ip_upper_limit_msecs: 86_400_000,
+  registration_ip_upper_limit_count: 1_000_000,
   password_reset_lower_limit_msecs:
     (System.get_env("PASSWORD_RESET_LOWER_LIMIT_MSECS") || "180000") |> String.to_integer(),
   password_reset_lower_limit_count:

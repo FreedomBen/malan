@@ -41,6 +41,7 @@ Endpoints that list records accept `page_num` (default `0`) and `page_size` (def
 
 ## Rate Limits
 - Login: 429 when the credential rate limiter is exceeded. Limited per username (default 5 per minute, env vars `LOGIN_LIMIT_*`) and per source IP (defaults 60 per minute and 2000 per 24 hours, env vars `LOGIN_IP_LOWER_LIMIT_MSECS`, `LOGIN_IP_LOWER_LIMIT_COUNT`, `LOGIN_IP_UPPER_LIMIT_MSECS`, `LOGIN_IP_UPPER_LIMIT_COUNT`). The per-IP limits are deliberately generous so many users behind one NAT don't trip them.
+- User registration: 429 when the per-IP limiter is exceeded (defaults 15 per minute and 250 per 24 hours, env vars `REGISTRATION_IP_*`).
 - Password reset requests: 1 every 3 minutes, up to 3 per 24 hours per user (configurable via env vars `PASSWORD_RESET_*`), plus per-IP limits (env vars `PASSWORD_RESET_IP_*`).
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 
@@ -88,6 +89,7 @@ Body:
 }
 ```
 - Required fields: `username`, `email`, `password`, `first_name`, `last_name`.
+- Rate limited per source IP (defaults 15 per minute and 250 per 24 hours, env vars `REGISTRATION_IP_LOWER_LIMIT_MSECS`, `REGISTRATION_IP_LOWER_LIMIT_COUNT`, `REGISTRATION_IP_UPPER_LIMIT_MSECS`, `REGISTRATION_IP_UPPER_LIMIT_COUNT`); exceeding it returns `429 Too Many Requests`.
 - Optional profile data: middle/suffix/prefix names, `display_name`, `nick_name`, `birthday`, `sex`, `gender` (enumerated; e.g., Cis Female, Trans Man, Non-binary), `race` (American Indian or Alaska Native, Asian, Black or African American, Native Hawaiian or Other Pacific Islander, White), `ethnicity` (Hispanic or Latinx / Not Hispanic or Latinx), `weight`, `height`.
 - Preferences enum: `theme` (`light`|`dark`), `display_name_pref` (`full_name`|`nick_name`|`custom`), `display_middle_initial_only` (bool).
 - You may inline `addresses` and `phone_numbers` during creation; address fields require `line_2` in this API.

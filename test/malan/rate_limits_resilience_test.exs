@@ -35,6 +35,9 @@ defmodule Malan.RateLimitsResilienceTest do
 
       assert {:error, :rate_limiter_unavailable} =
                RateLimits.Login.PerIp.check_rate("203.0.113.50")
+
+      assert {:error, :rate_limiter_unavailable} =
+               RateLimits.Registration.PerIp.check_rate("203.0.113.50")
     end
 
     test "login fails open when the rate limiter is unavailable" do

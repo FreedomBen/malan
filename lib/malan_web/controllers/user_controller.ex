@@ -39,6 +39,36 @@ defmodule MalanWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
+    remote_ip = remote_ip_s(conn)
+
+    case Malan.RateLimits.Registration.PerIp.check_rate(remote_ip) do
+      {:deny, _limit} ->
+        # Per-IP throttle, applied before any DB work. Registration is
+        # unauthenticated and each request runs a full-cost password
+        # hash, inserts rows, and may enqueue a verification email, so
+        # an unthrottled flood saturates CPU. Fail-open on {:error, _}
+        # (same policy as the login and password-reset limiters).
+        record_log(
+          conn,
+          false,
+          nil,
+          user_params["username"],
+          "POST",
+          "#UserController.create/2 - rate limited by IP #{remote_ip}",
+          nil
+        )
+
+        conn
+        |> put_view(ErrorJSON)
+        |> put_status(:too_many_requests)
+        |> render(:"429")
+
+      _allow_or_error ->
+        do_create(conn, user_params)
+    end
+  end
+
+  defp do_create(conn, user_params) do
     case Accounts.register_user(user_params) do
       {:ok, %User{id: id, username: username} = user, changeset} ->
         maybe_auto_send_verification(user, remote_ip_s(conn))

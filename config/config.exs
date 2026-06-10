@@ -52,7 +52,7 @@ config :malan,
 # `config/runtime.exs`; the runtime read overrides the literal below
 # when the env var is set. Env vars: PASSWORD_RESET_*,
 # PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LIMIT_*,
-# LOGIN_IP_*, EMAIL_VERIFY_*.
+# LOGIN_IP_*, REGISTRATION_IP_*, EMAIL_VERIFY_*.
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds), 1 per period
   password_reset_lower_limit_msecs: 180_000,
@@ -94,6 +94,17 @@ config :malan, Malan.Config.RateLimits,
   # Upper bucket: 2000 per day (86,400 seconds)
   login_ip_upper_limit_msecs: 86_400_000,
   login_ip_upper_limit_count: 2000,
+  # Per-IP user-registration limits. POST /api/users is unauthenticated
+  # and each request runs a full-cost PBKDF2 hash, inserts rows, and may
+  # enqueue a verification email, so it gets the same per-IP treatment as
+  # login. Generous for shared/NAT addresses while bounding scripted
+  # mass-registration. Keyed on the CF-Connecting-IP visitor address.
+  # Lower bucket: 15 per minute (60 seconds)
+  registration_ip_lower_limit_msecs: 60_000,
+  registration_ip_lower_limit_count: 15,
+  # Upper bucket: 250 per day (86,400 seconds)
+  registration_ip_upper_limit_msecs: 86_400_000,
+  registration_ip_upper_limit_count: 250,
   # Email verification: lower bucket - 30 minutes, 1 per period
   email_verify_lower_limit_msecs: 1_800_000,
   email_verify_lower_limit_count: 1,

@@ -196,6 +196,77 @@ defmodule Malan.RateLimits do
     end
   end
 
+  defmodule Registration do
+    defmodule PerIp do
+      # Rate limit user registration by client IP, applied before any DB
+      # work. POST /api/users is unauthenticated and each request runs a
+      # full-cost PBKDF2 hash, inserts rows, and (with auto-send enabled)
+      # enqueues a verification email — the same CPU-saturation exposure
+      # as login, plus DB/email amplification. There is no per-user
+      # equivalent for registration (the user doesn't exist yet), so the
+      # per-IP bucket is the only throttle.
+      #
+      # In production the IP arrives via the CF-Connecting-IP header
+      # (rewritten onto conn.remote_ip by MalanWeb.Plugs.CloudflareRealIp),
+      # so this is keyed on the visitor IP, not the Cloudflare edge.
+
+      alias Malan.RateLimits.Registration.PerIp.{LowerLimit, UpperLimit}
+
+      @spec check_rate(remote_ip :: String.t()) ::
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+      def check_rate(remote_ip) do
+        with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
+             {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
+          {:allow, c2}
+        end
+      end
+
+      @spec clear(remote_ip :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+      def clear(remote_ip) do
+        with {:ok, _c1} <- UpperLimit.clear(remote_ip),
+             {:ok, c2} <- LowerLimit.clear(remote_ip) do
+          {:ok, c2}
+        end
+      end
+
+      defmodule LowerLimit do
+        def bucket(remote_ip), do: "registration_ip_lower_limit:#{remote_ip}"
+
+        def check_rate(remote_ip) do
+          {msecs, count} = Malan.Config.RateLimit.registration_ip_lower_limit()
+
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.check_rate(msecs, count)
+        end
+
+        def clear(remote_ip) do
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.clear()
+        end
+      end
+
+      defmodule UpperLimit do
+        def bucket(remote_ip), do: "registration_ip_upper_limit:#{remote_ip}"
+
+        def check_rate(remote_ip) do
+          {msecs, count} = Malan.Config.RateLimit.registration_ip_upper_limit()
+
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.check_rate(msecs, count)
+        end
+
+        def clear(remote_ip) do
+          remote_ip
+          |> bucket()
+          |> Malan.RateLimits.clear()
+        end
+      end
+    end
+  end
+
   defmodule PasswordReset do
     alias Malan.RateLimits.PasswordReset.{UpperLimit, LowerLimit}
 

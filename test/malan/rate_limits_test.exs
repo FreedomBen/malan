@@ -190,70 +190,11 @@ defmodule Malan.RateLimitsTest do
     end
   end
 
-  describe "Malan.RateLimits.Login.PerIp" do
-    # Test config sets the per-IP login counts to 1_000_000 so unrelated
-    # tests don't trip the limit. Inside this describe we lower the
-    # lower bucket to 5 / min so we can exercise the deny path.
-    @tag :login_perip_limit_override
-    setup tags do
-      if tags[:login_perip_limit_override] do
-        prev = Application.get_env(:malan, Malan.Config.RateLimits)
-
-        Application.put_env(
-          :malan,
-          Malan.Config.RateLimits,
-          prev
-          |> Keyword.put(:login_ip_lower_limit_count, 5)
-          |> Keyword.put(:login_ip_upper_limit_count, 30)
-        )
-
-        on_exit(fn -> Application.put_env(:malan, Malan.Config.RateLimits, prev) end)
-      end
-
-      :ok
-    end
-
-    def remote_ip_login_pi, do: "203.0.113.31"
-
-    @tag :login_perip_limit_override
-    test "#check_rate/1 allows up to the lower limit then denies" do
-      assert {:ok, _} = Login.PerIp.clear(remote_ip_login_pi())
-
-      assert 5 == Malan.Config.RateLimit.login_ip_lower_limit_count()
-      assert 30 == Malan.Config.RateLimit.login_ip_upper_limit_count()
-
-      Enum.each(1..5, fn i ->
-        assert {:allow, ^i} = Login.PerIp.check_rate(remote_ip_login_pi())
-      end)
-
-      # 6th hit trips the lower-bucket deny
-      assert {:deny, 5} = Login.PerIp.check_rate(remote_ip_login_pi())
-      assert {:deny, 5} = Login.PerIp.check_rate(remote_ip_login_pi())
-
-      assert {:ok, _} = Login.PerIp.clear(remote_ip_login_pi())
-      assert {:allow, 1} = Login.PerIp.check_rate(remote_ip_login_pi())
-      assert {:ok, _} = Login.PerIp.clear(remote_ip_login_pi())
-    end
-
-    @tag :login_perip_limit_override
-    test "buckets are per-IP" do
-      ip_a = "198.51.100.30"
-      ip_b = "198.51.100.40"
-
-      assert {:ok, _} = Login.PerIp.clear(ip_a)
-      assert {:ok, _} = Login.PerIp.clear(ip_b)
-
-      # Saturate ip_a's lower bucket
-      Enum.each(1..5, fn _ -> assert {:allow, _} = Login.PerIp.check_rate(ip_a) end)
-      assert {:deny, _} = Login.PerIp.check_rate(ip_a)
-
-      # ip_b is unaffected
-      assert {:allow, 1} = Login.PerIp.check_rate(ip_b)
-
-      assert {:ok, _} = Login.PerIp.clear(ip_a)
-      assert {:ok, _} = Login.PerIp.clear(ip_b)
-    end
-  end
+  # NOTE: allow/deny behavior tests for Login.PerIp and Registration.PerIp
+  # live in test/malan/rate_limits_ip_throttle_test.exs (async: false).
+  # They lower the global per-IP limits via Application.put_env, and this
+  # file is async — nearly every concurrent test performs fixture logins
+  # from a shared IP and would trip a lowered login bucket.
 
   describe "Malan.RateLimits.Login.PerIp.LowerLimit" do
     alias Malan.RateLimits.Login.PerIp.LowerLimit, as: LoginIpLowerLimit
@@ -270,6 +211,24 @@ defmodule Malan.RateLimitsTest do
     test "#bucket/1" do
       assert "login_ip_upper_limit:203.0.113.99" ==
                LoginIpUpperLimit.bucket("203.0.113.99")
+    end
+  end
+
+  describe "Malan.RateLimits.Registration.PerIp.LowerLimit" do
+    alias Malan.RateLimits.Registration.PerIp.LowerLimit, as: RegIpLowerLimit
+
+    test "#bucket/1" do
+      assert "registration_ip_lower_limit:203.0.113.99" ==
+               RegIpLowerLimit.bucket("203.0.113.99")
+    end
+  end
+
+  describe "Malan.RateLimits.Registration.PerIp.UpperLimit" do
+    alias Malan.RateLimits.Registration.PerIp.UpperLimit, as: RegIpUpperLimit
+
+    test "#bucket/1" do
+      assert "registration_ip_upper_limit:203.0.113.99" ==
+               RegIpUpperLimit.bucket("203.0.113.99")
     end
   end
 end
