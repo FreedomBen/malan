@@ -65,8 +65,18 @@ defmodule Malan.Application do
   # successes (`job:stop`) and failures (`job:exception`) are written to the
   # log. Idempotent: a repeat attach (e.g. release reload) returns
   # `{:error, :already_exists}`, which we treat as success.
+  #
+  # Emitted at :debug deliberately. Every audit-logged request produces a
+  # job, and at :info each job adds 2+ structured log lines that pass
+  # through the EmailScrubber regexes and the Sentry logger backend —
+  # log-volume amplification with no signal. Prod (LOG_LEVEL=info)
+  # suppresses them; dev (debug) keeps them. Failures still surface via
+  # Sentry's oban integration (capture_errors: true), LogWriter's warning
+  # on final attempt, and PromEx's Oban metrics. Do not raise this to
+  # :warning — that would route every successful job into the Sentry
+  # logger backend (its capture threshold is :warning).
   defp attach_oban_logger do
-    case Oban.Telemetry.attach_default_logger(level: :info) do
+    case Oban.Telemetry.attach_default_logger(level: :debug) do
       :ok -> :ok
       {:error, :already_exists} -> :ok
     end
