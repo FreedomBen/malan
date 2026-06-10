@@ -195,6 +195,39 @@ defmodule Malan.RateLimitsTest do
   # file is async — nearly every concurrent test performs fixture logins
   # from a shared IP and would trip a lowered login bucket.
 
+  describe "per-IP private-range exemption" do
+    # Private/cluster-internal addresses bypass the per-IP buckets
+    # entirely. The {:allow, 0} count distinguishes the exemption from a
+    # counted allow (which returns >= 1) and never touches Redis, so
+    # these are deterministic and async-safe.
+    test "Login.PerIp exempts private, loopback, and IPv6-private addresses" do
+      for ip <- ["10.1.2.3", "172.16.9.9", "192.168.0.7", "127.0.0.1", "::1", "fd00::1"] do
+        for _ <- 1..3 do
+          assert {:allow, 0} = Malan.RateLimits.Login.PerIp.check_rate(ip)
+        end
+      end
+    end
+
+    test "Registration.PerIp exempts private addresses" do
+      for _ <- 1..3 do
+        assert {:allow, 0} = Malan.RateLimits.Registration.PerIp.check_rate("10.244.1.17")
+      end
+    end
+
+    test "PasswordReset.PerIp exempts private addresses" do
+      for _ <- 1..3 do
+        assert {:allow, 0} = PerIp.check_rate("10.244.1.18")
+      end
+    end
+
+    test "public addresses are still counted" do
+      # A counted allow returns the hit number (>= 1), not the exempt 0.
+      assert {:ok, _} = Malan.RateLimits.Login.PerIp.clear("198.51.100.250")
+      assert {:allow, 1} = Malan.RateLimits.Login.PerIp.check_rate("198.51.100.250")
+      assert {:ok, _} = Malan.RateLimits.Login.PerIp.clear("198.51.100.250")
+    end
+  end
+
   describe "Malan.RateLimits.Login.PerIp.LowerLimit" do
     alias Malan.RateLimits.Login.PerIp.LowerLimit, as: LoginIpLowerLimit
 

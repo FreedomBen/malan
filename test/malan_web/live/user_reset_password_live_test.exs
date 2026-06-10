@@ -268,4 +268,37 @@ defmodule MalanWeb.UserResetPasswordLiveTest do
     assert html =~ "Reset request received"
     refute html =~ "experienced an internal error"
   end
+
+  test "does not per-IP throttle private (cluster-internal) addresses",
+       %{conn: conn} do
+    # An in-cluster caller (private peer IP, no Cloudflare header) is
+    # exempt from the per-IP buckets — see
+    # Malan.RateLimits.exempt_from_per_ip_limits?/1. Lower the limit to
+    # 5 and submit well past it; every request is accepted.
+    prev_cfg = Application.get_env(:malan, Malan.Config.RateLimits)
+
+    Application.put_env(
+      :malan,
+      Malan.Config.RateLimits,
+      Keyword.put(prev_cfg, :password_reset_ip_lower_limit_count, 5)
+    )
+
+    on_exit(fn -> Application.put_env(:malan, Malan.Config.RateLimits, prev_cfg) end)
+
+    submit = fn email ->
+      conn =
+        Plug.Conn.put_private(conn, :live_view_connect_info, %{
+          peer_data: %{address: {10, 244, 7, 7}, port: 12_345, ssl_cert: nil}
+        })
+
+      {:ok, view, _html} = live(conn, reset_path())
+      render_submit(view, "send_reset_email", %{"email" => email})
+    end
+
+    Enum.each(1..8, fn i ->
+      html = submit.("private-ip-#{i}@example.com")
+      assert html =~ "Reset request received"
+      refute html =~ "Too many requests"
+    end)
+  end
 end

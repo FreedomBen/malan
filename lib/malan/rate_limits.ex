@@ -35,6 +35,26 @@ defmodule Malan.RateLimits do
       {:error, :rate_limiter_unavailable}
   end
 
+  @doc """
+  True when `remote_ip` is exempt from per-IP rate limiting.
+
+  Deployed environments are only reachable from the internet through
+  Cloudflare, which overwrites `CF-Connecting-IP` with the visitor's
+  real (public) address — so a private/loopback `remote_ip` can only
+  belong to a cluster-internal caller (an upstream service dialing the
+  malan Service directly). Those callers funnel many end users through
+  one pod IP and don't forward the original client address, so per-IP
+  buckets would throttle the whole upstream service rather than an
+  abusive individual. Per-username / per-user limiters still apply to
+  exempted traffic.
+
+  This trust signal is only as strong as the "no direct internet path
+  to the origin" guarantee; unparseable addresses are treated as
+  public (fail closed).
+  """
+  @spec exempt_from_per_ip_limits?(remote_ip :: String.t() | tuple()) :: boolean()
+  def exempt_from_per_ip_limits?(remote_ip), do: Malan.Utils.IPv4.private?(remote_ip)
+
   @spec clear(bucket :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
 
   def clear(bucket) do
@@ -144,9 +164,15 @@ defmodule Malan.RateLimits do
       @spec check_rate(remote_ip :: String.t()) ::
               {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
       def check_rate(remote_ip) do
-        with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
-             {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
-          {:allow, c2}
+        # Cluster-internal (private-range) callers bypass the per-IP
+        # buckets — see Malan.RateLimits.exempt_from_per_ip_limits?/1.
+        if Malan.RateLimits.exempt_from_per_ip_limits?(remote_ip) do
+          {:allow, 0}
+        else
+          with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
+               {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
+            {:allow, c2}
+          end
         end
       end
 
@@ -215,9 +241,15 @@ defmodule Malan.RateLimits do
       @spec check_rate(remote_ip :: String.t()) ::
               {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
       def check_rate(remote_ip) do
-        with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
-             {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
-          {:allow, c2}
+        # Cluster-internal (private-range) callers bypass the per-IP
+        # buckets — see Malan.RateLimits.exempt_from_per_ip_limits?/1.
+        if Malan.RateLimits.exempt_from_per_ip_limits?(remote_ip) do
+          {:allow, 0}
+        else
+          with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
+               {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
+            {:allow, c2}
+          end
         end
       end
 
@@ -361,9 +393,15 @@ defmodule Malan.RateLimits do
       @spec check_rate(remote_ip :: String.t()) ::
               {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
       def check_rate(remote_ip) do
-        with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
-             {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
-          {:allow, c2}
+        # Cluster-internal (private-range) callers bypass the per-IP
+        # buckets — see Malan.RateLimits.exempt_from_per_ip_limits?/1.
+        if Malan.RateLimits.exempt_from_per_ip_limits?(remote_ip) do
+          {:allow, 0}
+        else
+          with {:allow, _c1} <- UpperLimit.check_rate(remote_ip),
+               {:allow, c2} <- LowerLimit.check_rate(remote_ip) do
+            {:allow, c2}
+          end
         end
       end
 

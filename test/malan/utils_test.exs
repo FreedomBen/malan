@@ -1097,4 +1097,65 @@ defmodule Malan.UtilsTest do
                Utils.strip_url_query_params("rediss://h:6379/0?ssl=true", ["ssl"])
     end
   end
+
+  describe "IPv4.private?/1" do
+    test "RFC 1918 ranges are private" do
+      assert Utils.IPv4.private?("10.0.0.1")
+      assert Utils.IPv4.private?("10.255.255.255")
+      assert Utils.IPv4.private?("172.16.0.1")
+      assert Utils.IPv4.private?("172.31.255.255")
+      assert Utils.IPv4.private?("192.168.1.1")
+    end
+
+    test "loopback and link-local are private" do
+      assert Utils.IPv4.private?("127.0.0.1")
+      assert Utils.IPv4.private?("127.1.2.3")
+      assert Utils.IPv4.private?("169.254.10.10")
+    end
+
+    test "adjacent public ranges are not private" do
+      refute Utils.IPv4.private?("11.0.0.1")
+      refute Utils.IPv4.private?("172.15.255.255")
+      refute Utils.IPv4.private?("172.32.0.1")
+      refute Utils.IPv4.private?("192.167.1.1")
+      refute Utils.IPv4.private?("192.169.1.1")
+      refute Utils.IPv4.private?("8.8.8.8")
+      refute Utils.IPv4.private?("203.0.113.7")
+      refute Utils.IPv4.private?("0.0.0.0")
+    end
+
+    test "IPv6 loopback, unique-local, and link-local are private" do
+      assert Utils.IPv4.private?("::1")
+      assert Utils.IPv4.private?("fc00::1")
+      assert Utils.IPv4.private?("fd12:3456:789a::1")
+      assert Utils.IPv4.private?("fe80::1")
+    end
+
+    test "public IPv6 is not private" do
+      refute Utils.IPv4.private?("2606:4700::6810:84e5")
+      refute Utils.IPv4.private?("::")
+    end
+
+    test "IPv4-mapped IPv6 classifies by the embedded address" do
+      assert Utils.IPv4.private?("::ffff:10.0.0.1")
+      assert Utils.IPv4.private?("::ffff:192.168.1.1")
+      refute Utils.IPv4.private?("::ffff:8.8.8.8")
+    end
+
+    test "accepts :inet tuples" do
+      assert Utils.IPv4.private?({10, 1, 2, 3})
+      assert Utils.IPv4.private?({127, 0, 0, 1})
+      refute Utils.IPv4.private?({8, 8, 8, 8})
+      assert Utils.IPv4.private?({0, 0, 0, 0, 0, 0, 0, 1})
+      refute Utils.IPv4.private?({0x2606, 0x4700, 0, 0, 0, 0, 0, 1})
+    end
+
+    test "unparseable input fails closed (not private)" do
+      refute Utils.IPv4.private?("not-an-ip")
+      refute Utils.IPv4.private?("")
+      refute Utils.IPv4.private?("10.0.0")
+      refute Utils.IPv4.private?(nil)
+      refute Utils.IPv4.private?(:atom)
+    end
+  end
 end

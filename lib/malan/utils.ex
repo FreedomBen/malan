@@ -1023,6 +1023,8 @@ defmodule Malan.Utils.DateTime do
 end
 
 defmodule Malan.Utils.IPv4 do
+  import Bitwise
+
   def to_s(%Plug.Conn{} = conn), do: to_s(conn.remote_ip)
 
   def to_s(ip_tuple) do
@@ -1030,6 +1032,49 @@ defmodule Malan.Utils.IPv4 do
     |> :inet_parse.ntoa()
     |> Kernel.to_string()
   end
+
+  @doc """
+  True when the address is in a private / non-internet-routable range:
+  RFC 1918 (10/8, 172.16/12, 192.168/16), loopback (127/8), link-local
+  (169.254/16), and the IPv6 equivalents (::1 loopback, fc00::/7
+  unique-local, fe80::/10 link-local). IPv4-mapped IPv6 addresses are
+  classified by the embedded IPv4 address.
+
+  Accepts a string or an `:inet` tuple (either family, despite the
+  module name — `conn.remote_ip` can be v4 or v6). Unparseable values
+  are NOT private: callers use "private" as a trust signal, so unknown
+  input must fail closed.
+  """
+  def private?(ip) when is_binary(ip) do
+    # Strict parsing: classful shorthand like "10.0.0" is rejected
+    # rather than guessed at — this predicate is a trust signal.
+    case ip |> String.trim() |> String.to_charlist() |> :inet.parse_strict_address() do
+      {:ok, tuple} -> private?(tuple)
+      _ -> false
+    end
+  end
+
+  def private?({10, _, _, _}), do: true
+  def private?({172, b, _, _}) when b >= 16 and b <= 31, do: true
+  def private?({192, 168, _, _}), do: true
+  def private?({127, _, _, _}), do: true
+  def private?({169, 254, _, _}), do: true
+  def private?({_, _, _, _}), do: false
+
+  # ::1 loopback
+  def private?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
+
+  # ::ffff:a.b.c.d IPv4-mapped — classify by the embedded IPv4
+  def private?({0, 0, 0, 0, 0, 0xFFFF, hi, lo}) do
+    private?({bsr(hi, 8), band(hi, 0xFF), bsr(lo, 8), band(lo, 0xFF)})
+  end
+
+  # fc00::/7 unique-local
+  def private?({h, _, _, _, _, _, _, _}) when band(h, 0xFE00) == 0xFC00, do: true
+  # fe80::/10 link-local
+  def private?({h, _, _, _, _, _, _, _}) when band(h, 0xFFC0) == 0xFE80, do: true
+  def private?({_, _, _, _, _, _, _, _}), do: false
+  def private?(_), do: false
 end
 
 defmodule Malan.Utils.Phoenix.Controller do

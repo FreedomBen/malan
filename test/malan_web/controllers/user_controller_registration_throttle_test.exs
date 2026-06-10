@@ -66,6 +66,14 @@ defmodule MalanWeb.UserControllerRegistrationThrottleTest do
     assert json_response(register(other_ip, 4), 201)
   end
 
+  test "private (cluster-internal) client IPs are not per-IP limited" do
+    # Six registrations from one private IP — three times the lowered
+    # limit (2) — all succeed.
+    for i <- 10..15 do
+      assert json_response(register("10.244.5.22", i), 201)
+    end
+  end
+
   test "registration fails open when the rate limiter is unavailable" do
     # Take the Hammer.Redis pool offline so check_rate returns
     # {:error, :rate_limiter_unavailable}; registration must proceed.

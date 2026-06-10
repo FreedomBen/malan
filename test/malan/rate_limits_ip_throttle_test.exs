@@ -80,4 +80,16 @@ defmodule Malan.RateLimitsIpThrottleTest do
       assert {:ok, _} = Registration.PerIp.clear(ip)
     end
   end
+
+  describe "private-range exemption under lowered limits" do
+    # Even with the limits lowered to 5, private (cluster-internal)
+    # addresses never deny — they bypass the buckets entirely.
+    test "private IPs are never denied by Login.PerIp or Registration.PerIp" do
+      Enum.each(1..10, fn _ ->
+        assert {:allow, 0} = Login.PerIp.check_rate("10.244.3.7")
+        assert {:allow, 0} = Registration.PerIp.check_rate("10.244.3.7")
+        assert {:allow, 0} = Malan.RateLimits.PasswordReset.PerIp.check_rate("10.244.3.7")
+      end)
+    end
+  end
 end

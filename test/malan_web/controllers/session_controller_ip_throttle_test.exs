@@ -70,6 +70,25 @@ defmodule MalanWeb.SessionControllerIpThrottleTest do
              json_response(login(cf_ip, user.username, user.password), 201)
   end
 
+  test "private (cluster-internal) client IPs are not per-IP limited" do
+    {:ok, user} = Helpers.Accounts.regular_user()
+
+    on_exit(fn -> Login.clear(user.username) end)
+
+    # A username spray from a private source IP — each attempt uses a
+    # fresh username, the pattern only the per-IP bucket could stop —
+    # sails past the lowered limit (3) without a 429. This mirrors an
+    # upstream service inside the cluster funneling many end users
+    # through one pod IP.
+    for i <- 1..6 do
+      assert json_response(login("10.244.5.21", "sprayuser#{i}", "somepassword"), 403)
+    end
+
+    # And a real login from the same private IP still succeeds.
+    assert %{"data" => %{"api_token" => _}} =
+             json_response(login("10.244.5.21", user.username, user.password), 201)
+  end
+
   test "an exhausted IP does not affect logins from a different IP" do
     {:ok, user} = Helpers.Accounts.regular_user()
     attacker_ip = "198.51.100.202"

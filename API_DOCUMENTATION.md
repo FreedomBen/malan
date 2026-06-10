@@ -44,6 +44,7 @@ Endpoints that list records accept `page_num` (default `0`) and `page_size` (def
 - Login: 429 when the credential rate limiter is exceeded. Limited per username (default 5 per minute, env vars `LOGIN_LIMIT_*`) and per source IP (defaults 60 per minute and 2000 per 24 hours, env vars `LOGIN_IP_LOWER_LIMIT_MSECS`, `LOGIN_IP_LOWER_LIMIT_COUNT`, `LOGIN_IP_UPPER_LIMIT_MSECS`, `LOGIN_IP_UPPER_LIMIT_COUNT`). The per-IP limits are deliberately generous so many users behind one NAT don't trip them.
 - User registration: 429 when the per-IP limiter is exceeded (defaults 15 per minute and 250 per 24 hours, env vars `REGISTRATION_IP_*`).
 - Password reset requests: 1 every 3 minutes, up to 3 per 24 hours per user (configurable via env vars `PASSWORD_RESET_*`), plus per-IP limits (env vars `PASSWORD_RESET_IP_*`).
+- Per-IP limits (login, registration, password reset) do not apply to private source addresses (RFC 1918, loopback, link-local, and their IPv6 equivalents). Deployed environments are only reachable from the internet through Cloudflare — which always sets `CF-Connecting-IP` to the visitor's public address — so a private address can only belong to a cluster-internal caller (e.g., an upstream service that funnels many users through one pod IP). Per-username / per-user limits still apply to that traffic.
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 
 ## Public Endpoints (no token required)
