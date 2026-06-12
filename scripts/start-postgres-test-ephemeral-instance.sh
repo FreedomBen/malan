@@ -3,7 +3,8 @@
 DATA_DIR='pgdata_tmp'
 
 #IMG='postgres:11.7-alpine'
-IMG='postgres:12.6-alpine'
+#IMG='postgres:12.6-alpine'
+IMG='postgres:18.3-alpine'
 NAME='malan_postgres'
 
 MAX_CONNECTIONS=200
@@ -58,7 +59,7 @@ sudo podman run \
   --publish '5432:5432' \
   --user "$(id -u):$(id -g)" \
   --volume "$(pwd)/pg_passwd:/etc/passwd:ro,Z" \
-  --volume "$(pwd)/"${DATA_DIR}":/var/lib/postgresql/data:Z" \
+  --volume "$(pwd)/"${DATA_DIR}":/var/lib/postgresql:Z" \
   --env POSTGRES_USER=postgres \
   --env POSTGRES_PASSWORD=postgres \
   --name "$NAME" \

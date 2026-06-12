@@ -4,7 +4,8 @@ DATA_DIR='pgdata'
 
 #IMG='postgres:11.7-alpine'
 #IMG='postgres:12.6-alpine'
-IMG='postgres:14.6-alpine'
+#IMG='postgres:14.6-alpine'
+IMG='postgres:18.3-alpine'
 NAME='malan_postgres'
 
 MAX_CONNECTIONS=200
@@ -14,6 +15,10 @@ MAX_CONNECTIONS=200
 
 # Mounting /etc/passwd is needed for initdb:
 # See:  https://github.com/docker-library/docs/tree/aa1959a855a9b1025057d7efc9e01553ca83a257/postgres#arbitrary---user-notes
+
+# postgres:18+ images mount the volume at /var/lib/postgresql (not .../data)
+# and the cluster lives in "${DATA_DIR}/18/docker".  A data dir initialized by
+# an older major version cannot be reused -- remove or move it aside first.
 
 die () 
 {
@@ -45,7 +50,7 @@ podman run \
   --interactive \
   --tty \
   --publish '5432:5432' \
-  --volume "$(pwd)/"${DATA_DIR}":/var/lib/postgresql/data:Z" \
+  --volume "$(pwd)/"${DATA_DIR}":/var/lib/postgresql:Z" \
   --env POSTGRES_USER=postgres \
   --env POSTGRES_PASSWORD=postgres \
   --name "$NAME" \

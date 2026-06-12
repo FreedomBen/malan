@@ -26,7 +26,7 @@ docker run -d \
   --network "${NETWORK_NAME}" \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
-  postgres:12.6-alpine
+  postgres:18.3-alpine
 
 # Redis for the Hammer-backed rate limiter. Malan.RateLimiter uses
 # Hammer.Redis, so the app refuses to boot without HAMMER_REDIS_URL.

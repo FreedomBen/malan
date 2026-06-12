@@ -1,10 +1,14 @@
 version: "3"
 services:
   postgres:
-    image: 'postgres:12.6-alpine'
+    # postgres:18+ images mount the volume at /var/lib/postgresql (not
+    # .../data); the cluster lives in <volume>/18/docker.  A volume
+    # initialized by an older major version cannot be reused -- reset
+    # with `docker compose down -v`.
+    image: 'postgres:18.3-alpine'
     volumes:
-      - 'pgdata:/var/lib/postgresql/data'      # Use a docker volume for the database files
-     #- './pgdata:/var/lib/postgresql/data:Z'  # to keep the volume in your local dir
+      - 'pgdata:/var/lib/postgresql'      # Use a docker volume for the database files
+     #- './pgdata:/var/lib/postgresql:Z'  # to keep the volume in your local dir
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'

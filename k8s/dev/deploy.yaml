@@ -42,7 +42,7 @@ spec:
           value: 'postgres'
         - name: DB_HOSTNAME
           value: 'localhost'
-      - image: docker.io/postgres:12.6-alpine
+      - image: docker.io/postgres:18.3-alpine
         name: postgres
         imagePullPolicy: Always
         ports:

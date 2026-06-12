@@ -41,9 +41,12 @@ If you are adding Malan to your current application, you can make use of [the ex
 version: "3.9"
 services:
   postgres:
-    image: 'docker.io/postgres:12.6-alpine'
+    # postgres:18+ images mount the volume at /var/lib/postgresql (the
+    # cluster lives in <volume>/18/docker). A volume initialized by an
+    # older major version cannot be reused.
+    image: 'docker.io/postgres:18.3-alpine'
     volumes:
-      - 'pgdata:/var/lib/postgresql/data'  # Use a docker volume for the database files
+      - 'pgdata:/var/lib/postgresql'  # Use a docker volume for the database files
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
@@ -168,6 +171,11 @@ ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
 
 ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO malan;
+
+-- PostgreSQL 15+ no longer grants CREATE on schema public to all roles.
+-- If your migration role is not a superuser and not the database owner
+-- (managed providers usually handle this for you), grant it explicitly:
+-- GRANT CREATE, USAGE ON SCHEMA public TO doadmin;
 ```
 
 A one-time grant script is also available at `priv/repo/grant_permissions.sql`

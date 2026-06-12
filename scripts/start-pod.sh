@@ -5,7 +5,8 @@ PODMAN='sudo /usr/bin/podman'
 PODNAME='malan_pod'
 
 #PG_IMG='postgres:11.7-alpine'
-PG_IMG='postgres:12.6-alpine'
+#PG_IMG='postgres:12.6-alpine'
+PG_IMG='postgres:18.3-alpine'
 PG_NAME='malan_postgres'
 
 BODYHACK_IMG='freedomben/malan-dev'
