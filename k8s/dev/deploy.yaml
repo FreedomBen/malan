@@ -31,6 +31,9 @@ spec:
         ports:
         - containerPort: 4000
           protocol: TCP
+        - containerPort: 9568
+          protocol: TCP
+          name: metrics
         env:
         - name: DB_INIT
           value: 'Yes'
@@ -94,3 +97,28 @@ spec:
       port: 80
       targetPort: 4000
       nodePort: 30003
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    app: malan
+    kind: podmonitor
+    # Required: kube-prometheus-stack's Prometheus selects PodMonitors by this
+    # release label (podMonitorSelector). podMonitorNamespaceSelector is empty,
+    # so a PodMonitor in this namespace is in scope.
+    release: kube-prometheus-stack
+  name: malan
+  namespace: malan-dev
+spec:
+  selector:
+    matchLabels:
+      app: malan
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 10s
+      scheme: http
+  podTargetLabels:
+    - app

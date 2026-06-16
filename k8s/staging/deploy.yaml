@@ -197,3 +197,38 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 4000
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    app: malan
+    tier: web
+    env: staging
+    kind: podmonitor
+    app.kubernetes.io/name: malan
+    app.kubernetes.io/instance: malan-staging
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: malan
+    app.kubernetes.io/managed-by: kubectl
+    # Required: kube-prometheus-stack's Prometheus selects PodMonitors by this
+    # release label (podMonitorSelector). podMonitorNamespaceSelector is empty,
+    # so a PodMonitor in this namespace is in scope.
+    release: kube-prometheus-stack
+  name: malan
+  namespace: malan-staging
+spec:
+  selector:
+    matchLabels:
+      app: malan
+      tier: web
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scheme: http
+  podTargetLabels:
+    - app
+    - tier
+    - env
