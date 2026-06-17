@@ -694,11 +694,14 @@ defmodule Malan.AccountsTest do
       assert is_nil(uf.password_reset_token_expires_at)
       {:ok, updated, _cs} = Accounts.generate_password_reset(user)
 
+      # updated_at is bumped by the reset-token write; pin it so the
+      # comparison stays stable across a clock-second boundary.
       assert %{
                updated
                | password_reset_token: nil,
                  password_reset_token_hash: nil,
-                 password_reset_token_expires_at: nil
+                 password_reset_token_expires_at: nil,
+                 updated_at: user.updated_at
              } == user
 
       assert updated.password_reset_token
