@@ -47,11 +47,7 @@ spec:
       containers:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}
-        # migrate() not create_and_migrate(): CloudNativePG's bootstrap already
-        # creates malan_staging, and create_and_migrate's storage_up step opens a
-        # connection to a maintenance database (template1) to run CREATE DATABASE,
-        # which the rw pooler can't route. migrate() only touches malan_staging.
-        command: ["/app/bin/malan", "eval", "Malan.Release.migrate()"]
+        command: ["/app/bin/malan", "eval", "Malan.Release.create_and_migrate()"]
         env:
           - name: RELEASE_TMP
             value: /tmp
@@ -62,18 +58,9 @@ spec:
               name: malan-migration-config
           - secretRef:
               name: malan-migration-secrets
-          # CloudNativePG contract secret — last so its rw-pooler DATABASE_URL
-          # overrides the legacy DBaaS one, and to supply PGHOST/PGSSLROOTCERT
-          # for verify-full.
-          - secretRef:
-              name: malan-pg-secrets
         volumeMounts:
           - name: tmp
             mountPath: /tmp
-          # CloudNativePG cluster CA, read-only at the PGSSLROOTCERT path.
-          - name: malan-pg-ca
-            mountPath: /etc/cnpg/malan-pg
-            readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -83,14 +70,6 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-        # Project ONLY ca.crt from the CNPG-generated malan-pg-ca Secret (it also
-        # holds the CA private key ca.key, which items: keeps out of the pod).
-        - name: malan-pg-ca
-          secret:
-            secretName: malan-pg-ca
-            items:
-              - key: ca.crt
-                path: ca.crt
   ttlSecondsAfterFinished: 86400 # 24 hours
   parallelism: 1
   completions: 1

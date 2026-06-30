@@ -1,6 +1,5 @@
 import Config
 
-alias Malan.RepoConfig
 alias Malan.Utils
 
 # config/runtime.exs is executed for all environments, including
@@ -289,28 +288,30 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  # The DO-managed Postgres URL ships with `?sslmode=require` (and we have
-  # historically also appended `&ssl=true`); the CloudNativePG contract secret's
-  # URL additionally carries `sslrootcert` and `connect_timeout`. Postgrex warns
-  # (or errors) when these libpq-style URL params reach it, since the explicit
-  # `ssl:` keyword below is the source of truth for TLS. Strip them all — TLS is
-  # configured from the environment by Malan.RepoConfig, not from the URL.
-  database_url =
-    Utils.strip_url_query_params(database_url, [
-      "ssl",
-      "sslmode",
-      "sslrootcert",
-      "connect_timeout"
-    ])
+  # The DO-managed Postgres URL ships with `?sslmode=require` (and we
+  # have historically also appended `&ssl=true`). Postgrex warns at boot
+  # when those URL params conflict with the explicit `ssl:` keyword we
+  # pass below, since that keyword is the source of truth for TLS
+  # config. Strip them to keep the log clean.
+  database_url = Utils.strip_url_query_params(database_url, ["ssl", "sslmode"])
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
-  # TLS for Postgrex is built from the environment by Malan.RepoConfig (extracted
-  # there so it is unit-testable; runtime.exs is not loaded by the test suite).
-  # DATABASE_SSL_MODE selects verify_full (in-cluster CNPG pooler: chain +
-  # hostname against the mounted CA), verify_ca (legacy DO-managed Postgres,
-  # baked-in CA), or disable; it falls back to the DATABASE_TLS_ENABLED boolean.
-  database_ssl = RepoConfig.ssl_opts(System.get_env())
+  # Postgrex deprecated the separate `ssl_opts` key — the keyword list is
+  # now passed directly as `ssl:`. `false` disables TLS; the keyword form
+  # enables it with the DO-managed Postgres CA cert as the trust anchor.
+  # Resolve the cert via app_dir so the path works under a mix release,
+  # where the app's priv/ lives at lib/malan-<vsn>/priv/, not at the cwd.
+  database_ssl =
+    if System.get_env("DATABASE_TLS_ENABLED") |> Utils.true_or_explicitly_false?() do
+      [cacertfile: Application.app_dir(:malan, "priv/certs/do-db-ca-cert.crt")]
+
+      # To provide mTLS client creds, append:
+      # keyfile: Application.app_dir(:malan, "priv/client-key.pem"),
+      # certfile: Application.app_dir(:malan, "priv/client-cert.pem")
+    else
+      false
+    end
 
   config :malan, Malan.Repo,
     # socket_options: [:inet6],
