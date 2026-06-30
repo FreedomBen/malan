@@ -1,8 +1,9 @@
 import Config
 
 # Only in tests, remove the complexity from the password hashing algorithm.
-# pbkdf2_elixir reads :rounds (default 160_000); :log_rounds is a
-# bcrypt_elixir option and is ignored by pbkdf2.
+# config/config.exs sets :rounds to 210_000 for dev/prod; this override drops
+# it to 1 so the suite isn't slowed by full-cost hashing. (:log_rounds is a
+# bcrypt_elixir option and is ignored by pbkdf2.)
 config :pbkdf2_elixir, rounds: 1
 
 # Configure your database

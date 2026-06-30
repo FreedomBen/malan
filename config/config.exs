@@ -42,6 +42,15 @@ config :malan, Malan.Accounts.User,
   admin_set_user_min_password_length: 6,
   admin_account_min_password_length: 12
 
+# PBKDF2 password-hashing work factor for dev and prod. 210,000 iterations
+# follows current OWASP guidance for PBKDF2-HMAC-SHA512 (pbkdf2_elixir's
+# default is 160,000). The iteration count is embedded in each stored hash,
+# so raising this does not invalidate existing password_hash values — they
+# verify against their own embedded count and only re-hash at the new factor
+# when the password next changes. `config/test.exs` overrides this to 1 so
+# the suite isn't slowed by full-cost hashing.
+config :pbkdf2_elixir, rounds: 210_000
+
 config :malan,
   email_verification_auto_send: true,
   email_verification_skip_domains: [
