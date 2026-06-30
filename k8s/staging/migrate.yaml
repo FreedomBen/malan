@@ -62,11 +62,13 @@ spec:
               name: malan-migration-config
           - secretRef:
               name: malan-migration-secrets
-          # CloudNativePG contract secret — last so its rw-pooler DATABASE_URL
-          # overrides the legacy DBaaS one, and to supply PGHOST/PGSSLROOTCERT
-          # for verify-full.
+          # CloudNativePG MIGRATE contract secret — connects as the owner role
+          # (malan_owner, DDL), last so its rw-pooler DATABASE_URL overrides the
+          # legacy DBaaS one and supplies PGHOST/PGSSLROOTCERT for verify-full. The
+          # web pods use malan-pg-secrets (malan_app, DML only); migrations need
+          # DDL, so only this Job connects with the owner credentials.
           - secretRef:
-              name: malan-pg-secrets
+              name: malan-pg-migrate-secrets
         volumeMounts:
           - name: tmp
             mountPath: /tmp
