@@ -16,7 +16,13 @@ config :malan,
 # across server-connection checkouts (`prepared statement "ecto_N" does not
 # exist`). Harmless on a direct connection. Applies to all envs and merges
 # with the per-env Repo config in dev.exs / test.exs / runtime.exs.
-config :malan, Malan.Repo, prepare: :unnamed
+config :malan, Malan.Repo,
+  prepare: :unnamed,
+  # Start logger_json before migrations run so Ecto.Migrator's log lines
+  # (Malan.Release.migrate/0 -> Ecto.Migrator.with_repo/2, which does not
+  # start the full app) use the JSONL formatter when LOG_FORMAT=json. Honored
+  # by Ecto.Migrator; harmless in dev/test, where migrations stay text.
+  start_apps_before_migration: [:logger_json]
 
 # Defaults for Malan.Accounts.User. Each key is also read at boot from
 # env in `config/runtime.exs`; the runtime read overrides the literal
@@ -192,8 +198,11 @@ config :esbuild,
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
-# Configures Elixir's Logger
-config :logger, :console,
+# Configures Elixir's Logger. `:default_formatter` is the non-deprecated key
+# for the default handler (the legacy `:console` key starts warning on Elixir
+# 1.20). This human-readable format is used in dev/test; production switches
+# the default handler to structured JSONL via config/runtime.exs (LOG_FORMAT).
+config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id],
   colors: [enabled: true]

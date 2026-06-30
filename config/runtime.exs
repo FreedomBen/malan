@@ -62,6 +62,55 @@ else
         "Invalid LOG_LEVEL environment variable value: #{log_level}.  Allowed values are: #{Malan.Utils.to_string(allowed_log_levels)}"
 end
 
+### Begin LOG_FORMAT configuration
+
+# Switch stdout logging to structured JSONL (one JSON object per line) so the
+# PLG (Promtail/Loki/Grafana) stack can extract fields with LogQL `| json`.
+# Loki ingests the raw line and indexes labels from k8s metadata, so the plain
+# `Basic` formatter is the right fit — no vendor schema needed.
+#
+# Default: JSON in :prod (both staging and prod run the :prod release),
+# human-readable text in :dev/:test. Override per-environment with
+# LOG_FORMAT=json|text. Setting the formatter under `:default_handler` takes
+# precedence over the `:default_formatter` text format from config.exs.
+allowed_log_formats = ["json", "text"]
+
+default_log_format =
+  case config_env() do
+    :prod -> "json"
+    _ -> "text"
+  end
+
+log_format =
+  System.get_env("LOG_FORMAT", default_log_format)
+  |> String.trim()
+  |> String.downcase()
+
+cond do
+  log_format == "json" ->
+    Utils.Logger.info("Setting log format to JSONL (LoggerJSON.Formatters.Basic)")
+
+    # Curated, non-PII metadata allowlist: source location and request id only.
+    # The EmailScrubber primary filter scrubs `:msg`, not metadata, so we
+    # deliberately avoid `metadata: :all` here — that would emit every
+    # `Logger.metadata/1` value to stdout and widen the PII surface beyond the
+    # text logs (which carried only `:request_id`). All listed keys are set by
+    # the runtime/Logger, never from user input.
+    config :logger, :default_handler,
+      formatter:
+        LoggerJSON.Formatters.Basic.new(
+          metadata: [:request_id, :mfa, :file, :line, :pid, :domain, :crash_reason]
+        )
+
+  log_format == "text" ->
+    # Leave the human-readable `:default_formatter` from config.exs in place.
+    :ok
+
+  true ->
+    raise ArgumentError,
+          "Invalid LOG_FORMAT environment variable value: #{log_format}.  Allowed values are: #{Malan.Utils.to_string(allowed_log_formats)}"
+end
+
 ### End LOG_LEVEL configuration
 
 # If it's non-prod, and MAILGUN_API_KEY is set, and MAILGUN_DISABLE is not set

@@ -55,6 +55,7 @@ defmodule Malan.MixProject do
       {:prom_ex, "~> 1.9"},
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
+      {:logger_json, "~> 7.0"},
       {:plug_cowboy, "~> 2.7"},
       {:pbkdf2_elixir, "~> 2.0"},
       {:nimble_totp, "~> 1.0"},
