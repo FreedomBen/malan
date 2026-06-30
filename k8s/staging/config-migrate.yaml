@@ -13,3 +13,7 @@ data:
   BIND_ADDR: '127.0.0.1'
   POOL_SIZE: '3'
   DB_POOL_SIZE: '3'
+  # Migrations run through the same rw pooler and MUST use TLS — CloudNativePG's
+  # pg_hba rejects non-TLS (hostnossl all all all reject). verify-full matches
+  # the web deployment; malan-pg-secrets supplies the CA path + host.
+  DATABASE_SSL_MODE: 'verify_full'

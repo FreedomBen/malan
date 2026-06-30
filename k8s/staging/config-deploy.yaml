@@ -25,6 +25,11 @@ data:
   EXTERNAL_PORT: '443'
   EXTERNAL_SCHEME: 'https'
   DATABASE_TLS_ENABLED: 'true'
+  # verify-full against the in-cluster CloudNativePG pooler: validate the server
+  # cert chain to the mounted malan-pg-ca and the pooler hostname against the
+  # cert SANs (config/runtime.exs -> Malan.RepoConfig). The malan-pg-secrets
+  # contract secret supplies the matching DATABASE_URL/PGHOST/PGSSLROOTCERT.
+  DATABASE_SSL_MODE: 'verify_full'
   MIN_PASSWORD_LENGTH: '8'
   ADMIN_SET_USER_MIN_PASSWORD_LENGTH: '6'
   ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH: '12'
