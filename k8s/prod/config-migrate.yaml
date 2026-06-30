@@ -13,3 +13,7 @@ data:
   BIND_ADDR: '127.0.0.1'
   POOL_SIZE: '5'
   DB_POOL_SIZE: '5'
+  # Phase 4 (CNPG cutover): uncomment when malan-prod CNPG is live. Migrations
+  # must use TLS — CNPG's pg_hba rejects non-TLS (hostnossl reject). verify-full
+  # matches the web deployment.
+  #DATABASE_SSL_MODE: 'verify_full'

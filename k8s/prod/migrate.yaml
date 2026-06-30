@@ -47,7 +47,12 @@ spec:
       containers:
       - name: malan-migration
         image: docker.io/freedomben/malan:${RELEASE_VERSION}
-        command: ["/app/bin/malan", "eval", "Malan.Release.create_and_migrate()"]
+        # migrate() not create_and_migrate(): malan_prod already exists, so
+        # create_and_migrate's storage_up step is a no-op (:already_up) here —
+        # migrate() runs the same migrations against the existing DB. It also
+        # avoids the maintenance-DB connection storage_up needs, which the CNPG
+        # pooler can't route once prod cuts over (see the Phase 4 blocks below).
+        command: ["/app/bin/malan", "eval", "Malan.Release.migrate()"]
         env:
           - name: RELEASE_TMP
             value: /tmp
@@ -58,9 +63,19 @@ spec:
               name: malan-migration-config
           - secretRef:
               name: malan-migration-secrets
+          # Phase 4 (CNPG cutover): uncomment the secretRef below (delete each
+          # leading '#'). Last so its rw-pooler DATABASE_URL overrides the legacy
+          # DBaaS one; also supplies PGHOST/PGSSLROOTCERT for verify-full.
+#          - secretRef:
+#              name: malan-pg-secrets
         volumeMounts:
           - name: tmp
             mountPath: /tmp
+          # Phase 4 (CNPG cutover): uncomment (delete each leading '#') together
+          # with the volume below — CNPG cluster CA, read-only at PGSSLROOTCERT.
+#          - name: malan-pg-ca
+#            mountPath: /etc/cnpg/malan-pg
+#            readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -70,6 +85,15 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        # Phase 4 (CNPG cutover): uncomment (delete each leading '#'). Project
+        # ONLY ca.crt from the malan-pg-ca Secret — it also holds the CA private
+        # key ca.key, which items: keeps out of the pod.
+#        - name: malan-pg-ca
+#          secret:
+#            secretName: malan-pg-ca
+#            items:
+#              - key: ca.crt
+#                path: ca.crt
   ttlSecondsAfterFinished: 86400 # 24 hours
   parallelism: 1
   completions: 1
