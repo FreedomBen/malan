@@ -323,6 +323,12 @@ config :malan, Oban,
        # Smaller chunks + an inter-chunk delay spread the DB load so the batch
        # never holds a pool connection or contends on the logs table for long.
        {"0 7 * * *", Malan.Workers.LogArchiver,
+        args: %{"chunk_size" => 250, "delay_seconds" => 2}},
+       # Delete archived audit logs older than two years (the worker's default
+       # retention), same throttle profile as the archiver. Scheduled after the
+       # archiver's typical run; the single-worker :archive queue serializes
+       # the two jobs even if a long archiver run overlaps 07:45.
+       {"45 7 * * *", Malan.Workers.ArchivedLogPruner,
         args: %{"chunk_size" => 250, "delay_seconds" => 2}}
      ]}
   ]
