@@ -63,19 +63,20 @@ spec:
               name: malan-migration-config
           - secretRef:
               name: malan-migration-secrets
-          # Phase 4 (CNPG cutover): uncomment the secretRef below (delete each
-          # leading '#'). Last so its rw-pooler DATABASE_URL overrides the legacy
-          # DBaaS one; also supplies PGHOST/PGSSLROOTCERT for verify-full.
-#          - secretRef:
-#              name: malan-pg-secrets
+          # CloudNativePG MIGRATE contract secret — connects as the owner role
+          # (malan_owner, DDL), last so its rw-pooler DATABASE_URL overrides the
+          # legacy DBaaS one and supplies PGHOST/PGSSLROOTCERT for verify-full. The
+          # web pods use malan-pg-secrets (malan_app, DML only); migrations need
+          # DDL, so only this Job connects with the owner credentials.
+          - secretRef:
+              name: malan-pg-migrate-secrets
         volumeMounts:
           - name: tmp
             mountPath: /tmp
-          # Phase 4 (CNPG cutover): uncomment (delete each leading '#') together
-          # with the volume below — CNPG cluster CA, read-only at PGSSLROOTCERT.
-#          - name: malan-pg-ca
-#            mountPath: /etc/cnpg/malan-pg
-#            readOnly: true
+          # CloudNativePG cluster CA, read-only at the PGSSLROOTCERT path.
+          - name: malan-pg-ca
+            mountPath: /etc/cnpg/malan-pg
+            readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -85,15 +86,14 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-        # Phase 4 (CNPG cutover): uncomment (delete each leading '#'). Project
-        # ONLY ca.crt from the malan-pg-ca Secret — it also holds the CA private
-        # key ca.key, which items: keeps out of the pod.
-#        - name: malan-pg-ca
-#          secret:
-#            secretName: malan-pg-ca
-#            items:
-#              - key: ca.crt
-#                path: ca.crt
+        # Project ONLY ca.crt from the CNPG-generated malan-pg-ca Secret (it also
+        # holds the CA private key ca.key, which items: keeps out of the pod).
+        - name: malan-pg-ca
+          secret:
+            secretName: malan-pg-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
   ttlSecondsAfterFinished: 86400 # 24 hours
   parallelism: 1
   completions: 1
