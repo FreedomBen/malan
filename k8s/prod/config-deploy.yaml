@@ -30,11 +30,11 @@ data:
   EXTERNAL_PORT: '443'
   EXTERNAL_SCHEME: 'https'
   DATABASE_TLS_ENABLED: 'true'
-  # verify-full against the in-cluster CloudNativePG pooler: validate the server
-  # cert chain to the mounted malan-pg-ca and the pooler hostname against the
-  # cert SANs (config/runtime.exs -> Malan.RepoConfig). The malan-pg-secrets
-  # contract secret supplies the matching DATABASE_URL/PGHOST/PGSSLROOTCERT.
-  DATABASE_SSL_MODE: 'verify_full'
+  # Phase 4 (CNPG cutover): uncomment when malan-prod CNPG is live. Switches the
+  # app from DBaaS verify-ca to verify-full against the malan-pg pooler (chain to
+  # the mounted malan-pg-ca + hostname against the cert SANs). Pair with the
+  # malan-pg-secrets / malan-pg-ca wiring in deploy.yaml.
+  #DATABASE_SSL_MODE: 'verify_full'
   MIN_PASSWORD_LENGTH: '8'
   ADMIN_SET_USER_MIN_PASSWORD_LENGTH: '6'
   ADMIN_ACCOUNT_MIN_PASSWORD_LENGTH: '12'
