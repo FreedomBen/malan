@@ -155,31 +155,38 @@ CI/CD is handled by GitHub Actions in `.github/workflows/build-test-deploy.yaml`
 
 ### Configuring PostgreSQL users
 
-You should run the web application as a non-privileged user that cannot run DDL commands, and the migrations as a privileged user who can.
+The web application runs as a non-privileged role that cannot run DDL, and the
+migrations run as a privileged role that can.
+
+| Role          | Privileges           | Used by                                           |
+| ------------- | -------------------- | ---------------------|
+| `malan_owner` | DDL, owns the schema | The migrate Job only |
+| `malan_app`   | DML only             | The web pods         |
+
+`malan_app` gets its DML through membership in PostgreSQL's `pg_read_all_data` and
+`pg_write_all_data` predefined roles rather than through per-table `GRANT`s.  These
+are evaluated at query time, so **tables added by a later migration are covered
+automatically** — no follow-up grant, and no `ALTER DEFAULT PRIVILEGES` to maintain.
+`malan_app` is still refused `CREATE` on schema `public`, so it cannot run DDL.
+(Sequences work because `pg_write_all_data` confers `UPDATE`, which is what
+`nextval()` requires.)
+
+For a self-managed or local Postgres, the equivalent setup is:
 
 ```SQL
-CREATE ROLE malan WITH LOGIN PASSWORD '<somepassword>';
-GRANT CONNECT ON DATABASE malan_prod TO malan;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO malan;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO malan;
-
--- Set default privileges so tables/sequences created by the migration role
--- (doadmin on Digital Ocean, postgres on self-managed) automatically grant
--- to the runtime role.  Replace 'doadmin' with your migration role if different.
-ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
-  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO malan;
-
-ALTER DEFAULT PRIVILEGES FOR ROLE doadmin IN SCHEMA public
-  GRANT USAGE, SELECT ON SEQUENCES TO malan;
+CREATE ROLE malan_app WITH LOGIN PASSWORD '<somepassword>';
+GRANT CONNECT ON DATABASE malan_prod TO malan_app;
+GRANT pg_read_all_data, pg_write_all_data TO malan_app;
 
 -- PostgreSQL 15+ no longer grants CREATE on schema public to all roles.
--- If your migration role is not a superuser and not the database owner
--- (managed providers usually handle this for you), grant it explicitly:
--- GRANT CREATE, USAGE ON SCHEMA public TO doadmin;
+-- If your migration role is not a superuser and not the database owner,
+-- grant it explicitly:
+-- GRANT CREATE, USAGE ON SCHEMA public TO malan_owner;
 ```
 
-A one-time grant script is also available at `priv/repo/grant_permissions.sql`
-for granting permissions on all existing tables if needed.
+Note `pg_read_all_data` / `pg_write_all_data` require PostgreSQL 14+.  On older
+versions, grant DML per-table and set `ALTER DEFAULT PRIVILEGES FOR ROLE malan_owner`
+so that future tables are covered.
 
 ## Helpful links regarding Phoenix
 
