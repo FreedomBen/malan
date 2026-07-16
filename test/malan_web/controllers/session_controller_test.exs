@@ -2552,7 +2552,7 @@ defmodule MalanWeb.SessionControllerTest do
                "code" => 403,
                "detail" => "Forbidden",
                "ok" => false,
-               "token_expired" => true
+               "token_revoked" => true
              } = json_response(conn, 403)
 
       # Triple verify with admin token

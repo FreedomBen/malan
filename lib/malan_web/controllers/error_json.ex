@@ -48,8 +48,8 @@ defmodule MalanWeb.ErrorJSON do
       code: 403,
       detail: "Forbidden",
       message: "API token is expired or revoked",
-      token_expired: true,
-      errors: [%{token: ["expired"]}]
+      token_revoked: true,
+      errors: [%{token: ["revoked"]}]
     }
   end
 

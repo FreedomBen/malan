@@ -278,7 +278,7 @@ defmodule MalanWeb.AuthControllerTest do
       assert c1.halted == false
       assert c1.status == nil
 
-      session = Helpers.Accounts.set_expired(session)
+      session = Helpers.Accounts.set_revoked(session)
 
       c2 =
         validate_token(conn, session.api_token)
@@ -292,7 +292,7 @@ defmodule MalanWeb.AuthControllerTest do
                "code" => 403,
                "detail" => "Forbidden",
                "message" => "API token is expired or revoked",
-               "token_expired" => true
+               "token_revoked" => true
              } = json_response(c2, 403)
     end
   end

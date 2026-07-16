@@ -1608,6 +1608,8 @@ components:
             type: object
         token_expired:
           type: boolean
+        token_revoked:
+          type: boolean
       required:
       - ok
       - code

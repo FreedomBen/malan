@@ -151,7 +151,7 @@ defmodule MalanWeb.UserControllerTest do
                "code" => 403,
                "detail" => "Forbidden",
                "message" => "API token is expired or revoked",
-               "token_expired" => true
+               "token_revoked" => true
              } = json_response(conn, 403)
     end
   end
@@ -1694,7 +1694,7 @@ defmodule MalanWeb.UserControllerTest do
                "code" => 403,
                "detail" => "Forbidden",
                "message" => "API token is expired or revoked",
-               "token_expired" => true
+               "token_revoked" => true
              } = json_response(conn, 403)
     end
 
@@ -1716,7 +1716,7 @@ defmodule MalanWeb.UserControllerTest do
                "code" => 403,
                "detail" => "Forbidden",
                "message" => "API token is expired or revoked",
-               "token_expired" => true
+               "token_revoked" => true
              } = json_response(conn, 403)
     end
   end
