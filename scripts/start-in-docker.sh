@@ -9,7 +9,15 @@ echo "[-]   Bound to ${BIND_ADDR}"
 # Wait for Postgres to initialize
 echo "[*] Waiting for PostgreSQL to initialize..."
 
-while ! ncat -z "${DB_HOSTNAME}" 5432; do
+# Prefer the CNPG contract variables (malan-pg-secrets in k8s); DB_HOSTNAME is
+# the legacy/docker-compose fallback.
+DB_WAIT_HOST="${POSTGRES_HOST:-${DB_HOSTNAME}}"
+DB_WAIT_PORT="${POSTGRES_PORT:-5432}"
+if [[ -z "${DB_WAIT_HOST}" ]]; then
+  echo "[!] Neither POSTGRES_HOST nor DB_HOSTNAME is set; cannot wait for PostgreSQL."
+  exit 1
+fi
+while ! ncat -z "${DB_WAIT_HOST}" "${DB_WAIT_PORT}"; do
   sleep 0.1
 done
 

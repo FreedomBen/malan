@@ -101,7 +101,9 @@ spec:
           # CloudNativePG contract secret (Terraform-managed). Listed last so its
           # DATABASE_URL (the malan-pg rw pooler) overrides the legacy DBaaS one
           # in malan-deploy-secrets; it also supplies the PGHOST/PGSSLROOTCERT
-          # that Malan.RepoConfig reads for verify-full.
+          # that Malan.RepoConfig reads for verify-full, and the POSTGRES_HOST/
+          # POSTGRES_PORT the start script's DB wait gate targets (the legacy
+          # DB_HOSTNAME points at the destroyed DBaaS host).
           - secretRef:
               name: malan-pg-secrets
         resources:
