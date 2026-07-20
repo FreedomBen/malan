@@ -920,6 +920,13 @@ defmodule Malan.Utils.Crypto do
     :crypto.hash(:sha256, api_token)
     |> Base.encode64()
   end
+
+  @doc """
+  Compare two binaries in constant time to avoid timing attacks.
+
+  Delegates to `Plug.Crypto.secure_compare/2`.
+  """
+  defdelegate secure_compare(left, right), to: Plug.Crypto
 end
 
 defmodule Malan.Utils.DateTime do
