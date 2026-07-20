@@ -46,6 +46,7 @@ Endpoints that list records accept `page_num` (default `0`) and `page_size` (def
 - Password reset requests: 1 every 3 minutes, up to 3 per 24 hours per user (configurable via env vars `PASSWORD_RESET_*`), plus per-IP limits (env vars `PASSWORD_RESET_IP_*`).
 - Per-IP limits (login, registration, password reset) do not apply to private source addresses (RFC 1918, loopback, link-local, and their IPv6 equivalents). Deployed environments are only reachable from the internet through Cloudflare — which always sets `CF-Connecting-IP` to the visitor's public address — so a private address can only belong to a cluster-internal caller (e.g., an upstream service that funnels many users through one pod IP). Per-username / per-user limits still apply to that traffic.
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
+- In the `:dev` environment all of these limits are effectively disabled (`config/dev.exs` raises the counts to 1,000,000) so client test suites and local tooling can run against a dev server without tripping them. Setting the env vars above at boot restores realistic values, e.g. to exercise 429 handling.
 
 ## Public Endpoints (no token required)
 
