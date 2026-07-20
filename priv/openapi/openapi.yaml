@@ -38,6 +38,7 @@ tags:
 - name: Session Extensions
 - name: Addresses
 - name: Phone Numbers
+- name: MFA
 - name: Logs
 - name: Admin
 paths:
@@ -447,8 +448,49 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
           description: Too Many Requests (login rate limit exceeded)
         '403':
-          $ref: '#/components/responses/ForbiddenAuth'
-          description: Forbidden
+          description: 'Forbidden: invalid credentials, or MFA is enabled and no
+            code / an invalid code was supplied. Branch on the machine-readable
+            body flags: mfa_required (re-submit credentials with a totp_code) and
+            invalid_mfa_code (the code sent was rejected).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid_credentials:
+                  value:
+                    ok: false
+                    code: 403
+                    detail: Forbidden
+                    message: Username, password and/or location were invalid.  Please
+                      verify credentials and try again.
+                mfa_required:
+                  value:
+                    ok: false
+                    code: 403
+                    detail: Forbidden
+                    message: Multi-factor authentication is required.  Re-submit
+                      credentials with a valid totp_code.
+                    mfa_required: true
+                    mfa_types:
+                    - totp
+                    errors:
+                    - totp_code:
+                      - required
+                invalid_mfa_code:
+                  value:
+                    ok: false
+                    code: 403
+                    detail: Forbidden
+                    message: The multi-factor authentication code was invalid or
+                      expired.  Re-submit with a current totp_code.
+                    mfa_required: true
+                    invalid_mfa_code: true
+                    mfa_types:
+                    - totp
+                    errors:
+                    - totp_code:
+                      - invalid
         '423':
           description: User locked
           content:
@@ -456,7 +498,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       operationId: post_api_sessions
-      description: Create session (log in)
+      description: 'Create session (log in). Users with TOTP MFA enabled must also
+        supply totp_code (a 6-digit authenticator code or a 12-character backup
+        code) — see the 403 body flags mfa_required / invalid_mfa_code.'
   /api/sessions/active:
     get:
       tags:
@@ -1114,6 +1158,201 @@ paths:
           description: Unauthorized
       operationId: get_api_admin_users
       description: List users (admin only)
+  /api/users/{user_id}/totp:
+    parameters:
+    - $ref: '#/components/parameters/UserIdNested'
+    get:
+      tags:
+      - MFA
+      summary: Get TOTP MFA status
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpStatusResponse'
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized
+      operationId: get_api_users_by_user_id_totp
+      description: 'TOTP MFA status for the user: none, pending, or enabled, plus
+        the number of unused backup codes. Never returns the secret, otpauth URI,
+        or QR code — only the password-gated enrollment POST discloses those.'
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+      - MFA
+      summary: Start TOTP enrollment (requires current password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpEnrollRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpEnrollmentResponse'
+          description: Created — provisioning payload disclosed exactly once
+        '403':
+          description: Wrong password, or email address not yet verified (both use
+            the generic error shape with a specific message)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: TOTP is already enabled
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests
+      operationId: post_api_users_by_user_id_totp
+      description: 'Start TOTP enrollment. Requires the current password and a
+        verified email address. Replaces any pending (unconfirmed) enrollment; the
+        enrollment is inert until confirmed. The secret, otpauth URI, and QR SVG
+        are returned once and cannot be re-read.'
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/users/{user_id}/totp/confirm:
+    parameters:
+    - $ref: '#/components/parameters/UserIdNested'
+    put:
+      tags:
+      - MFA
+      summary: Confirm TOTP enrollment with an authenticator code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpConfirmRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpBackupCodesResponse'
+          description: OK — backup codes shown once, never retrievable again
+        '403':
+          $ref: '#/components/responses/InvalidMfaCode'
+          description: Invalid code
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: No pending enrollment
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests
+      operationId: put_api_users_by_user_id_totp_confirm
+      description: 'Confirm a pending enrollment by proving possession of the
+        authenticator. On success TOTP is enforced at login, backup codes are
+        generated (returned once), and all other sessions are revoked — the
+        session making this request stays valid.'
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/users/{user_id}/totp/disable:
+    parameters:
+    - $ref: '#/components/parameters/UserIdNested'
+    post:
+      tags:
+      - MFA
+      summary: Disable TOTP (requires password + code)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpDisableRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpStatusResponse'
+          description: OK — post-disable status (none)
+        '403':
+          description: Wrong password (generic error shape) or invalid code (body
+            carries invalid_mfa_code true)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: TOTP is not enabled
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests
+      operationId: post_api_users_by_user_id_totp_disable
+      description: 'Disable TOTP. Requires the current password and a valid TOTP
+        or backup code, so a stolen bearer token cannot silently strip MFA.
+        Deletes the enrollment and all backup codes and revokes all other
+        sessions (the current one stays valid). POST rather than DELETE because
+        the request needs a body.'
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/users/{user_id}/totp/backup_codes:
+    parameters:
+    - $ref: '#/components/parameters/UserIdNested'
+    post:
+      tags:
+      - MFA
+      summary: Regenerate backup codes (requires password + code)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpDisableRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpBackupCodesResponse'
+          description: OK — fresh set shown once; the old set is invalidated
+        '403':
+          description: Wrong password (generic error shape) or invalid code (body
+            carries invalid_mfa_code true)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: TOTP is not enabled
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: Too Many Requests
+      operationId: post_api_users_by_user_id_totp_backup_codes
+      description: 'Invalidate the entire backup-code set and mint a fresh one.
+        Requires the current password and a valid TOTP or backup code.'
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/admin/users/{id}:
     parameters:
     - $ref: '#/components/parameters/UserId'
@@ -1142,6 +1381,38 @@ paths:
           description: Unprocessable Entity
       operationId: put_api_admin_users_by_id
       description: Admin update user
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/admin/users/{id}/totp:
+    parameters:
+    - $ref: '#/components/parameters/UserId'
+    delete:
+      tags:
+      - Admin
+      - MFA
+      summary: Admin force-disable a user's TOTP (recovery path)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpStatusResponse'
+          description: OK — post-disable status (none)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: TOTP is not enabled for the user
+      operationId: delete_api_admin_users_by_id_totp
+      description: 'Recovery path for users locked out of MFA. Requires no
+        password or code (the locked-out user''s credentials are unavailable);
+        heavily audit-logged, deletes the enrollment and backup codes, and
+        revokes ALL of the target user''s active sessions.'
       parameters:
       - name: id
         in: path
@@ -1525,18 +1796,6 @@ components:
             detail: Forbidden
             message: Anonymous access to this method on this object is not allowed.  You
               must authenticate and pass a valid token.
-    ForbiddenAuth:
-      description: Invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            ok: false
-            code: 403
-            detail: Forbidden
-            message: Username, password and/or location were invalid.  Please verify
-              credentials and try again.
     NotFound:
       description: Resource not found
       content:
@@ -1548,6 +1807,36 @@ components:
             code: 404
             detail: Not Found
             message: The requested object was not found.
+    Conflict:
+      description: Conflict with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            code: 409
+            detail: Conflict
+            message: The request conflicts with the current state of the resource.
+    InvalidMfaCode:
+      description: The supplied MFA code was invalid, expired, or already used
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            code: 403
+            detail: Forbidden
+            message: The multi-factor authentication code was invalid or expired.  Re-submit
+              with a current totp_code.
+            mfa_required: true
+            invalid_mfa_code: true
+            mfa_types:
+            - totp
+            errors:
+            - totp_code:
+              - invalid
     Unprocessable:
       description: Validation failed
       content:
@@ -1610,6 +1899,14 @@ components:
           type: boolean
         token_revoked:
           type: boolean
+        mfa_required:
+          type: boolean
+        invalid_mfa_code:
+          type: boolean
+        mfa_types:
+          type: array
+          items:
+            type: string
       required:
       - ok
       - code
@@ -1676,6 +1973,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        totp_enabled:
+          type: boolean
+          description: True when TOTP multi-factor authentication is enabled (a
+            confirmed enrollment exists)
         first_name:
           type: string
         middle_name:
@@ -2266,6 +2567,12 @@ components:
               type: string
             password:
               type: string
+            totp_code:
+              type: string
+              description: 'Required when the user has MFA enabled: a 6-digit TOTP
+                code from the authenticator app, or a 12-character single-use backup
+                code (case-sensitive). Whitespace and hyphens are ignored. Ignored
+                for users without MFA.'
             location:
               type: string
             never_expires:
@@ -2285,6 +2592,104 @@ components:
           - password
       required:
       - session
+    TotpEnrollRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: The user's current password. Re-auth is required so a
+            stolen bearer token cannot enroll an attacker device.
+      required:
+      - password
+    TotpConfirmRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 6-digit code from the authenticator app. Whitespace and
+            hyphens are ignored.
+      required:
+      - code
+    TotpDisableRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: The user's current password
+        code:
+          type: string
+          description: A current 6-digit TOTP code, or a 12-character single-use
+            backup code (case-sensitive). Whitespace and hyphens are ignored.
+      required:
+      - password
+      - code
+    TotpStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - none
+          - pending
+          - enabled
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        backup_codes_remaining:
+          type: integer
+    TotpStatusResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        code:
+          type: integer
+          example: 200
+        data:
+          $ref: '#/components/schemas/TotpStatus'
+    TotpEnrollmentResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        code:
+          type: integer
+          example: 201
+        data:
+          type: object
+          properties:
+            secret_base32:
+              type: string
+              description: Base32 secret for manual authenticator entry. Shown
+                once, never retrievable again.
+            otpauth_uri:
+              type: string
+              description: otpauth:// provisioning URI (Key URI format)
+            qr_code_svg:
+              type: string
+              description: SVG rendering of the otpauth URI for scanning
+    TotpBackupCodesResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        code:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            backup_codes:
+              type: array
+              items:
+                type: string
+              description: Ten single-use 12-character codes (case-sensitive;
+                whitespace/hyphens in input are ignored). Shown once, never
+                retrievable again.
     SessionExtendRequest:
       type: object
       properties:
@@ -2520,3 +2925,5 @@ components:
               type: integer
             privacy_policy:
               type: integer
+            totp_enabled:
+              type: boolean

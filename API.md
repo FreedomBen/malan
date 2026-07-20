@@ -4,7 +4,7 @@ This is a condensed map of Malan's HTTP API. See `API_DOCUMENTATION.md` for requ
 
 ## Public (no token)
 - `POST /api/users` — create user
-- `POST /api/sessions` — login (returns `api_token`)
+- `POST /api/sessions` — login (returns `api_token`); users with MFA enabled must also send `totp_code` (TOTP or backup code) or get 403 `mfa_required`
 - `GET /api/users/whoami` — token context if provided
 - `POST /api/users/:id/reset_password` — issue reset token (id or username)
 - `PUT /api/users/:id/reset_password/:token`
@@ -48,6 +48,13 @@ Token required; ToS/Privacy acceptance may be enforced (461/462) depending on de
 - Phone numbers: `GET/POST /api/users/:user_id/phone_numbers`, `GET/PUT/DELETE /api/users/:user_id/phone_numbers/:id`
 - Addresses: `GET/POST /api/users/:user_id/addresses`, `GET/PUT/DELETE /api/users/:user_id/addresses/:id`
 
+### MFA (TOTP)
+- `GET /api/users/:user_id/totp` — status (`none`/`pending`/`enabled`, backup codes remaining)
+- `POST /api/users/:user_id/totp` — start enrollment (body `password`; requires verified email) → secret + otpauth URI + QR SVG, shown once
+- `PUT /api/users/:user_id/totp/confirm` — confirm (body `code`) → backup codes, shown once; revokes other sessions
+- `POST /api/users/:user_id/totp/disable` — disable (body `password` + `code`); revokes other sessions
+- `POST /api/users/:user_id/totp/backup_codes` — regenerate backup codes (body `password` + `code`); invalidates the old set
+
 ## Admin Routes (admin role required)
 - `GET /api/admin/users`
 - `PUT /api/admin/users/:id`
@@ -56,11 +63,13 @@ Token required; ToS/Privacy acceptance may be enforced (461/462) depending on de
 - `POST /api/admin/users/:id/reset_password`
 - `PUT /api/admin/users/:id/reset_password/:token`
 - `PUT /api/admin/users/reset_password/:token`
+- `DELETE /api/admin/users/:id/totp` — force-disable MFA (recovery path; revokes all target sessions)
 - `GET /api/admin/sessions`
 - `DELETE /api/admin/sessions/:id`
 - Logs: `GET /api/admin/logs`, `/api/admin/logs/:id`, `/api/admin/logs/users/:user_id`, `/api/admin/logs/sessions/:session_id`, `/api/admin/logs/who/:user_id`
 
 ## Handy Payloads
 - Login: `{"session":{"username":"you@example.com","password":"...","expires_in_seconds":3600}}`
+- Login with MFA: `{"session":{"username":"you@example.com","password":"...","totp_code":"123456"}}`
 - Extend current session: `{"expire_in_seconds":3600}`
 - Accept ToS/Privacy: `{"user":{"accept_tos":true,"accept_privacy_policy":true}}` (PUT `/api/users/:id`)

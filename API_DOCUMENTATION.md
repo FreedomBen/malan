@@ -44,6 +44,7 @@ Endpoints that list records accept `page_num` (default `0`) and `page_size` (def
 - Login: 429 when the credential rate limiter is exceeded. Limited per username (default 5 per minute, env vars `LOGIN_LIMIT_*`) and per source IP (defaults 60 per minute and 2000 per 24 hours, env vars `LOGIN_IP_LOWER_LIMIT_MSECS`, `LOGIN_IP_LOWER_LIMIT_COUNT`, `LOGIN_IP_UPPER_LIMIT_MSECS`, `LOGIN_IP_UPPER_LIMIT_COUNT`). The per-IP limits are deliberately generous so many users behind one NAT don't trip them.
 - User registration: 429 when the per-IP limiter is exceeded (defaults 15 per minute and 250 per 24 hours, env vars `REGISTRATION_IP_*`).
 - Password reset requests: 1 every 3 minutes, up to 3 per 24 hours per user (configurable via env vars `PASSWORD_RESET_*`), plus per-IP limits (env vars `PASSWORD_RESET_IP_*`).
+- TOTP/MFA verification: 5 attempts per 5 minutes and 20 per 24 hours per user (env vars `TOTP_VERIFY_*`). One shared budget covers every attempt to prove yourself at a TOTP endpoint — the login `totp_code` and the password or code on enroll/confirm/disable/regenerate. A successful verification clears the budget.
 - Per-IP limits (login, registration, password reset) do not apply to private source addresses (RFC 1918, loopback, link-local, and their IPv6 equivalents). Deployed environments are only reachable from the internet through Cloudflare — which always sets `CF-Connecting-IP` to the visitor's public address — so a private address can only belong to a cluster-internal caller (e.g., an upstream service that funnels many users through one pod IP). Per-username / per-user limits still apply to that traffic.
 - General request rate limiting is backed by Hammer; Redis can be used in production (`HAMMER_REDIS_URL`).
 - In the `:dev` environment all of these limits are effectively disabled (`config/dev.exs` raises the counts to 1,000,000) so client test suites and local tooling can run against a dev server without tripping them. Setting the env vars above at boot restores realistic values, e.g. to exercise 429 handling.
@@ -114,7 +115,7 @@ Response (`201 Created`):
   }
 }
 ```
-- Additional fields present on the `data` object: `email_verified` timestamp (nullable), `locked_at/locked_by` when locked, `tos_accepted` / `privacy_policy_accepted`, acceptance event histories, and any `custom_attrs` you provided.
+- Additional fields present on the `data` object: `email_verified` timestamp (nullable), `totp_enabled` boolean, `locked_at/locked_by` when locked, `tos_accepted` / `privacy_policy_accepted`, acceptance event histories, and any `custom_attrs` you provided.
 
 ### Create Session (Login)
 `POST /api/sessions`
@@ -125,6 +126,7 @@ Body:
   "session": {
     "username": "user@example.com",
     "password": "password123",
+    "totp_code": "123456",                    // required only when MFA is enabled; TOTP or backup code
     "location": "nyc-lab",                    // optional audit tag
     "never_expires": false,                   // optional, default false
     "expires_in_seconds": 3600,               // optional, default 7 days (604800)
@@ -161,6 +163,22 @@ Response (`201 Created`):
 - Invalid credentials return `403 ForbiddenAuth`; locked users return `423`; excessive login attempts return `429 Too Many Requests` (limited per username and per source IP).
 - `never_expires: true` issues a non-expiring session that can still be revoked; `valid_only_for_ip` and `valid_only_for_approved_ips` further restrict token use.
 
+**Multi-factor authentication:** when the user has TOTP MFA enabled, the correct password alone is not enough — re-submit the same request with `totp_code`. The `totp_code` param accepts **either** a 6-digit authenticator code **or** a 12-character single-use backup code (the server disambiguates on length). Backup codes are **case-sensitive**; whitespace and hyphens in either code type are ignored, so `123 456` and `aZ3k-Cz9Q-pLm2` both work. Two distinct 403 bodies tell you what happened (both carry `mfa_required: true` and `mfa_types: ["totp"]`; only the second carries `invalid_mfa_code: true`):
+
+```json
+{
+  "ok": false,
+  "code": 403,
+  "detail": "Forbidden",
+  "message": "Multi-factor authentication is required.  Re-submit credentials with a valid totp_code.",
+  "mfa_required": true,
+  "mfa_types": ["totp"],
+  "errors": [{ "totp_code": ["required"] }]
+}
+```
+
+A supplied-but-rejected code returns the same shape plus `"invalid_mfa_code": true` and `errors: [{ "totp_code": ["invalid"] }]`. Code guesses are limited per user (see Rate Limits); exceeding the budget returns `429`.
+
 ### Who Am I
 `GET /api/users/whoami`
 
@@ -178,7 +196,8 @@ Requires a bearer token even though the route is on the unauthenticated pipeline
     "user_roles": ["user"],
     "expires_at": "2025-01-01T12:00:00Z",
     "terms_of_service": 2,
-    "privacy_policy": 1
+    "privacy_policy": 1,
+    "totp_enabled": false
   }
 }
 ```
@@ -412,6 +431,84 @@ Response (`201 Created`):
 
 Address payloads require `line_2` in this API. Both addresses and phone numbers include `primary` flags and surface `verified_at` timestamps when present.
 
+### Multi-Factor Authentication (TOTP)
+Owner-or-admin scoped; `:user_id` accepts a UUID, a username, or `current`. Every state-changing endpoint requires re-auth beyond the bearer token (a stolen token must not be able to change MFA state): enrollment start requires the current `password`; disable and backup-code regeneration require `password` **plus** a valid code; confirm requires only a code (enrollment start demanded the password moments earlier). Failed password/code attempts share the per-user `TOTP_VERIFY_*` budget and return `429` when exhausted.
+
+#### Get MFA status
+`GET /api/users/:user_id/totp`
+
+Response (`200`):
+```json
+{ "ok": true, "code": 200, "data": { "status": "enabled", "confirmed_at": "2026-07-20T12:00:00Z", "backup_codes_remaining": 8 } }
+```
+- `status` is `none`, `pending` (enrollment started but unconfirmed — inert), or `enabled`.
+- Never returns the secret, `otpauth_uri`, or QR code — only the password-gated enrollment POST discloses those, exactly once.
+
+#### Start enrollment
+`POST /api/users/:user_id/totp`
+
+Body:
+```json
+{ "password": "password123" }
+```
+
+Response (`201 Created`):
+```json
+{
+  "ok": true,
+  "code": 201,
+  "data": {
+    "secret_base32": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+    "otpauth_uri": "otpauth://totp/Ameelio:someusername?secret=...&issuer=Ameelio",
+    "qr_code_svg": "<svg ...>...</svg>"
+  }
+}
+```
+- Requires a **verified email address** (`403` with an explanatory message otherwise) and the correct password (`403`).
+- `409 Conflict` when TOTP is already enabled (disable first, or use the admin recovery path).
+- Starting again while pending replaces the pending enrollment with a fresh secret.
+- The enrollment does nothing until confirmed: login is unaffected while `pending`.
+
+#### Confirm enrollment
+`PUT /api/users/:user_id/totp/confirm`
+
+Body:
+```json
+{ "code": "123456" }
+```
+
+Response (`200`):
+```json
+{ "ok": true, "code": 200, "data": { "backup_codes": ["aZ3kCz9QpLm2", "..."] } }
+```
+- Returns ten single-use backup codes — **shown once, never retrievable again**. Store them safely.
+- On success MFA is enforced at the next login, and **all other sessions are revoked** (the session making this call stays valid).
+- Wrong code → `403` with `invalid_mfa_code: true`; no pending enrollment → `404`.
+
+#### Disable
+`POST /api/users/:user_id/totp/disable` (POST, not DELETE — the request needs a body)
+
+Body:
+```json
+{ "password": "password123", "code": "123456" }
+```
+
+Response (`200`) is the post-disable status (`"status": "none"`). Deletes the enrollment and all backup codes and revokes all other sessions (the current one stays valid). Wrong password → generic `403`; wrong code → `403` with `invalid_mfa_code: true`; not enabled → `404`.
+
+#### Regenerate backup codes
+`POST /api/users/:user_id/totp/backup_codes`
+
+Body:
+```json
+{ "password": "password123", "code": "123456" }
+```
+
+Response (`200`) is a fresh `backup_codes` set (shown once). The entire previous set is invalidated, including unused codes.
+
+Notes:
+- Everywhere a `code` is accepted (including the login `totp_code`), it may be a 6-digit TOTP code **or** a 12-character backup code; backup codes are **case-sensitive**, and whitespace/hyphens in either are ignored.
+- Enabling or disabling MFA revokes every other active session as a defensive measure (password-change precedent, minus the session performing the change).
+
 ### Logs (User)
 - `GET /api/logs` — paginated logs for the authenticated user
 - `GET /api/logs/:id` — only if you own the log or are admin
@@ -489,6 +586,11 @@ Response:
 }
 ```
 
+### MFA (Admin)
+`DELETE /api/admin/users/:id/totp` — force-disable a user's TOTP (recovery path).
+
+The recovery path for users who lost both their authenticator and their backup codes. Requires no password or code (the locked-out user's credentials are unavailable to the admin); the action is heavily audit-logged, deletes the enrollment and backup codes, and revokes **all** of the target user's active sessions. Returns the post-disable status (`"status": "none"`); `404` when the user has no enabled TOTP.
+
 ### Sessions (Admin)
 - `GET /api/admin/sessions` — paginated
 - `DELETE /api/admin/sessions/:id`
@@ -511,7 +613,8 @@ curl -H "Authorization: Bearer ${admin_token}" \
 ## Field Notes
 - Path parameters `:id` for users accept either UUID or username; nested `user_id` routes also allow `current`.
 - Roles supported: `user`, `admin`, `moderator`.
-- User payloads include `email_verified`, `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired` may appear on error payloads.
+- User payloads include `email_verified`, `totp_enabled`, `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired`, `mfa_required`, and `invalid_mfa_code` may appear on error payloads.
+- MFA codes: the login `totp_code` and every TOTP endpoint `code` accept a 6-digit TOTP code or a 12-character single-use backup code. Backup codes are case-sensitive; whitespace and hyphens are stripped from either code type before verification.
 - Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.
 - Addresses require `line_2`; address/phone responses include `primary` and `verified_at` when set.
 - Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if a user has `approved_ips`, login is constrained to those addresses even when the flag is false.
