@@ -72,6 +72,16 @@ data:
   EMAIL_VERIFY_LOWER_LIMIT_COUNT: '1'
   EMAIL_VERIFY_UPPER_LIMIT_MSECS: '86400000'                # 24 hours
   EMAIL_VERIFY_UPPER_LIMIT_COUNT: '3'
+  # Rate limits — TOTP/MFA verification (per-user; shared budget across
+  # login totp_code and the password/code on enroll/confirm/disable/regenerate)
+  TOTP_VERIFY_LOWER_LIMIT_MSECS: '300000'                   # 5 minutes
+  TOTP_VERIFY_LOWER_LIMIT_COUNT: '5'
+  TOTP_VERIFY_UPPER_LIMIT_MSECS: '86400000'                 # 24 hours
+  TOTP_VERIFY_UPPER_LIMIT_COUNT: '20'
+
+  # TOTP authenticator-app issuer label — per environment so a user enrolled
+  # in staging and prod can tell the entries apart in their app.
+  TOTP_ISSUER: 'Ameelio (staging)'
 
   SENTRY_ENVIRONMENT: 'staging'
   # Vars from secrets
@@ -80,3 +90,7 @@ data:
   # SERET_KEY_BASE
   # SENTRY_DNS
   # HAMMER_REDIS_URL    # rediss://default:<password>@<host>:<port>/0 (DO Managed Redis)
+  # TOTP_ENCRYPTION_KEYS  # "<key_id>:<base64-32B-root>[,...]"; first entry encrypts,
+  #                        # all decrypt. Required at boot (config/runtime.exs raises
+  #                        # without it). Generate:
+  #                        # elixir -e 'IO.puts("1:" <> Base.encode64(:crypto.strong_rand_bytes(32)))'

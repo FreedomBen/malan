@@ -49,7 +49,6 @@ cover/
 
 # Local-only data files and dev-only scripts not used by the build.
 images.json
-priv/repo/grant_permissions.sql
 scripts/curl/
 
 # Logs.

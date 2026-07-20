@@ -17,3 +17,7 @@ data:
   # pg_hba rejects non-TLS (hostnossl all all all reject). verify-full matches
   # the web deployment; malan-pg-secrets supplies the CA path + host.
   DATABASE_SSL_MODE: 'verify_full'
+  # NOTE: like HAMMER_REDIS_URL and SECRET_KEY_BASE, TOTP_ENCRYPTION_KEYS must be
+  # present in malan-migration-secrets — config/runtime.exs evaluates on any
+  # :prod boot (including `eval "Malan.Release.migrate()"`) and refuses to
+  # boot without it.
