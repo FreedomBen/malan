@@ -15,6 +15,9 @@ defmodule Malan.Accounts do
   alias Malan.Accounts.Session
   alias Malan.Accounts.SessionExtension
   alias Malan.Accounts.EmailVerificationEvent
+  alias Malan.Accounts.TotpBackupCode
+  alias Malan.Accounts.TotpCipher
+  alias Malan.Accounts.UserTotp
   alias Malan.Utils
 
   @doc """
@@ -988,7 +991,7 @@ defmodule Malan.Accounts do
     # we already know there is no matching user.
     case authenticate_by_username_pass_with_id(username, pass, remote_ip) do
       {:ok, user_id} ->
-        new_session(user_id, remote_ip, attrs)
+        check_totp_and_create_session(user_id, username, remote_ip, attrs)
 
       {:error, :user_locked, user_id} ->
         record_create_session_locked(user_id, remote_ip, attrs, username)
@@ -1007,6 +1010,89 @@ defmodule Malan.Accounts do
     end
   end
 
+  # Runs after authenticate_by_username_pass_with_id/3 succeeds, so lock,
+  # rate-limit, and password semantics are untouched. Only a *confirmed*
+  # TOTP enrollment gates login; with none, a stray totp_code in attrs is
+  # dropped harmlessly by the Session changeset's cast.
+  defp check_totp_and_create_session(user_id, username, remote_ip, attrs) do
+    case get_confirmed_user_totp(user_id) do
+      nil ->
+        new_session(user_id, remote_ip, attrs)
+
+      %UserTotp{} = totp ->
+        verify_totp_and_create_session(totp, user_id, username, remote_ip, attrs)
+    end
+  end
+
+  defp verify_totp_and_create_session(totp, user_id, username, remote_ip, attrs) do
+    code = normalize_code(Map.get(attrs, "totp_code") || Map.get(attrs, :totp_code))
+
+    if code == "" do
+      # Correct password, no code supplied (or one that normalized away).
+      # Distinct audit event from a wrong guess, and no TotpVerify charge —
+      # nothing was guessed.
+      record_create_session_mfa_required(user_id, remote_ip, attrs, username)
+    else
+      with :ok <- check_totp_rate(user_id),
+           {:ok, _method} <- verify_totp_or_backup(user_id, username, totp, code, remote_ip) do
+        clear_totp_rate(user_id)
+        new_session(user_id, remote_ip, attrs)
+      else
+        {:error, :too_many_requests} = err ->
+          err
+
+        {:error, :invalid_mfa_code} ->
+          record_create_session_invalid_mfa_code(user_id, remote_ip, attrs, username)
+      end
+    end
+  end
+
+  @doc """
+  Record failed session creation attempt: the password was correct but the
+  user has MFA enabled and supplied no code.
+
+  Returns {:error, :mfa_required}
+  """
+  def record_create_session_mfa_required(user_id, remote_ip, attrs, username \\ nil) do
+    record_log(
+      false,
+      user_id,
+      nil,
+      user_id,
+      username,
+      "sessions",
+      "POST",
+      "#Accounts.record_create_session_mfa_required/4 - Login attempt for user '#{user_id}' from IP '#{remote_ip}' supplied a correct password but no multi-factor authentication code (MFA is required):  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
+      remote_ip,
+      %{}
+    )
+
+    {:error, :mfa_required}
+  end
+
+  @doc """
+  Record failed session creation attempt: the password was correct but the
+  supplied MFA code was rejected.
+
+  Returns {:error, :invalid_mfa_code}
+  """
+  def record_create_session_invalid_mfa_code(user_id, remote_ip, attrs, username \\ nil) do
+    record_log(
+      false,
+      user_id,
+      nil,
+      user_id,
+      username,
+      "sessions",
+      "POST",
+      "#Accounts.record_create_session_invalid_mfa_code/4 - Login attempt for user '#{user_id}' from IP '#{remote_ip}' supplied a correct password but an invalid multi-factor authentication code:  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
+      remote_ip,
+      %{}
+    )
+
+    {:error, :invalid_mfa_code}
+  end
+
   @doc """
   Record failed session creation attempt as unauthorized.
 
@@ -1023,7 +1109,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password])}",
+          "#Accounts.record_create_session_locked/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because user account is locked:  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
           remote_ip,
           %{}
         )
@@ -1057,7 +1143,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password])}",
+          "#Accounts.record_create_session_bad_ip/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}' because IP is not on user's approved list:  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
           remote_ip,
           %{}
         )
@@ -1091,7 +1177,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
+          "#Accounts.record_create_session_unauthorized/3 - Unauthorized login attempt for user '#{username_or_id}' failed from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
           remote_ip,
           %{}
         )
@@ -1125,7 +1211,7 @@ defmodule Malan.Accounts do
           username,
           "sessions",
           "POST",
-          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password])}",
+          "#Accounts.record_create_session_not_a_user/3 - Unauthorized login attempt for user with ID or username of '#{username_or_id}' (that user does not exist) from IP '#{remote_ip}':  #{Utils.map_to_string(attrs, [:password, :totp_code])}",
           remote_ip,
           %{}
         )
@@ -1364,6 +1450,45 @@ defmodule Malan.Accounts do
       "sessions",
       "DELETE",
       "#Accounts.revoke_active_sessions/1 - Revoked #{num_revoked} active sessions for user #{user_id}",
+      remote_ip,
+      %{}
+    )
+
+    {:ok, num_revoked}
+  end
+
+  @doc """
+  Like `revoke_active_sessions/2` but spares `session_id_to_keep` — used
+  when the user enables/disables MFA from a session they should stay logged
+  into (MFA_PLAN.md Decision 4). A nil `session_id_to_keep` revokes all
+  active sessions, same as `revoke_active_sessions/2`.
+  """
+  def revoke_active_sessions_except(user_or_id, remote_ip, session_id_to_keep)
+
+  def revoke_active_sessions_except(user_or_id, remote_ip, nil),
+    do: revoke_active_sessions(user_or_id, remote_ip)
+
+  def revoke_active_sessions_except(%User{id: user_id}, remote_ip, session_id_to_keep),
+    do: revoke_active_sessions_except(user_id, remote_ip, session_id_to_keep)
+
+  def revoke_active_sessions_except(user_id, remote_ip, session_id_to_keep) do
+    {num_revoked, nil} =
+      Repo.update_all(
+        from(s in Session,
+          where: s.user_id == ^user_id and is_nil(s.revoked_at) and s.id != ^session_id_to_keep
+        ),
+        set: [revoked_at: DateTime.add(DateTime.utc_now(), -1, :second)]
+      )
+
+    record_log(
+      true,
+      nil,
+      nil,
+      user_id,
+      nil,
+      "sessions",
+      "DELETE",
+      "#Accounts.revoke_active_sessions_except/3 - Revoked #{num_revoked} active sessions for user #{user_id} (spared current session #{session_id_to_keep})",
       remote_ip,
       %{}
     )
@@ -2469,5 +2594,665 @@ defmodule Malan.Accounts do
 
   defp normalize_event_attrs(attrs) when is_map(attrs) do
     Map.new(attrs, fn {k, v} -> {to_string(k), v} end)
+  end
+
+  ## TOTP multi-factor authentication
+
+  @totp_period 30
+  @totp_backup_code_count 10
+  # Exactly 12: the TOTP-vs-backup-code disambiguation is length-based
+  # (6 digits vs 12 chars), so this length is load-bearing, not cosmetic.
+  @totp_backup_code_length 12
+
+  @doc """
+  MFA/TOTP status for a user.
+
+  Returns `%{status: :none | :pending | :enabled, confirmed_at: DateTime.t() | nil,
+  backup_codes_remaining: non_neg_integer}`. Never includes the secret,
+  otpauth URI, or QR code — only the password-gated `start_totp_enrollment/3`
+  may disclose those.
+  """
+  def totp_status(%User{id: user_id}), do: totp_status(user_id)
+
+  def totp_status(user_id) when is_binary(user_id) do
+    case get_user_totp(user_id) do
+      nil ->
+        %{status: :none, confirmed_at: nil, backup_codes_remaining: 0}
+
+      %UserTotp{confirmed_at: nil} ->
+        %{status: :pending, confirmed_at: nil, backup_codes_remaining: 0}
+
+      %UserTotp{confirmed_at: confirmed_at} ->
+        %{
+          status: :enabled,
+          confirmed_at: confirmed_at,
+          backup_codes_remaining: count_unused_totp_backup_codes(user_id)
+        }
+    end
+  end
+
+  @doc "True when the user has a confirmed (enabled) TOTP enrollment."
+  def totp_enabled?(%User{id: user_id}), do: totp_enabled?(user_id)
+
+  def totp_enabled?(user_id) when is_binary(user_id) do
+    from(t in UserTotp, where: t.user_id == ^user_id and not is_nil(t.confirmed_at))
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Start TOTP enrollment for `user`, replacing any pending (unconfirmed)
+  enrollment. Requires the user's current `password` (MFA_PLAN.md Decision 3)
+  and a verified email address. The returned provisioning payload is shown
+  once; the new enrollment stays inert until `confirm_totp_enrollment/4`.
+
+  Returns:
+
+      {:ok, %{secret_base32: b32, otpauth_uri: uri, qr_code_svg: svg}}
+      {:error, :email_not_verified | :unauthorized | :totp_already_enabled | :too_many_requests}
+  """
+  def start_totp_enrollment(%User{} = user, password, remote_ip) do
+    with :ok <- check_totp_email_verified(user),
+         :ok <- check_totp_rate(user.id),
+         :ok <- check_totp_password(user, password),
+         :ok <- check_no_confirmed_totp(user.id) do
+      do_start_totp_enrollment(user, remote_ip)
+    else
+      {:error, :unauthorized} = err ->
+        record_totp_log(
+          false,
+          user,
+          nil,
+          "POST",
+          "#Accounts.start_totp_enrollment/3 - Rejected TOTP enrollment start for user '#{user.id}' from IP '#{remote_ip}': bad password",
+          remote_ip
+        )
+
+        err
+
+      {:error, _reason} = err ->
+        err
+    end
+  end
+
+  defp do_start_totp_enrollment(%User{} = user, remote_ip) do
+    secret = NimbleTOTP.secret()
+    {key_id, ciphertext} = TotpCipher.encrypt(secret)
+    issuer = Malan.Config.Totp.issuer()
+    # Label and issuer param must agree so authenticators reading either
+    # one show the same entry (Key URI spec).
+    otpauth_uri = NimbleTOTP.otpauth_uri("#{issuer}:#{user.username}", secret, issuer: issuer)
+
+    result =
+      Repo.transaction(fn ->
+        from(t in UserTotp, where: t.user_id == ^user.id and is_nil(t.confirmed_at))
+        |> Repo.delete_all()
+
+        case %UserTotp{}
+             |> UserTotp.create_changeset(%{user_id: user.id, secret: ciphertext, key_id: key_id})
+             |> Repo.insert() do
+          {:ok, _totp} ->
+            :ok
+
+          # unique_constraint(:user_id): a confirmed row appeared concurrently
+          {:error, _changeset} ->
+            Repo.rollback(:totp_already_enabled)
+        end
+      end)
+
+    case result do
+      {:ok, :ok} ->
+        clear_totp_rate(user.id)
+
+        record_totp_log(
+          true,
+          user,
+          nil,
+          "POST",
+          "#Accounts.start_totp_enrollment/3 - Started TOTP enrollment for user '#{user.id}' from IP '#{remote_ip}'",
+          remote_ip
+        )
+
+        {:ok,
+         %{
+           secret_base32: Base.encode32(secret, padding: false),
+           otpauth_uri: otpauth_uri,
+           qr_code_svg: otpauth_uri |> EQRCode.encode() |> EQRCode.svg(width: 264)
+         }}
+
+      {:error, :totp_already_enabled} = err ->
+        err
+    end
+  end
+
+  @doc """
+  Confirm a pending TOTP enrollment with a code from the authenticator.
+
+  On success: marks the enrollment confirmed, seeds the replay guard with
+  the accepted step, generates the backup-code set (plaintexts returned
+  once, never retrievable again), and revokes all other active sessions —
+  `current_session_id` is spared (Decision 4) and `remote_ip` stamps the
+  audit trail.
+
+  Takes no password: enrollment start demanded it moments earlier, and a
+  bearer-token-only attacker cannot start an enrollment, so cannot reach
+  confirm with a secret they control (Decision 8).
+
+  Returns:
+
+      {:ok, [backup_code_plaintexts]}
+      {:error, :invalid_code | :no_pending_enrollment | :too_many_requests}
+  """
+  def confirm_totp_enrollment(%User{} = user, code, remote_ip, current_session_id) do
+    code = normalize_code(code)
+
+    with {:totp, %UserTotp{confirmed_at: nil} = totp} <- {:totp, get_user_totp(user.id)},
+         :ok <- check_totp_rate(user.id),
+         {:ok, secret} <- decrypt_totp_secret(totp),
+         {:ok, accepted_ts} <- find_valid_totp_step(secret, code, totp.last_used_ts) do
+      do_confirm_totp_enrollment(user, totp, accepted_ts, remote_ip, current_session_id)
+    else
+      {:totp, _no_pending_row} ->
+        {:error, :no_pending_enrollment}
+
+      {:error, :too_many_requests} = err ->
+        err
+
+      _invalid_code ->
+        record_totp_log(
+          false,
+          user,
+          current_session_id,
+          "PUT",
+          "#Accounts.confirm_totp_enrollment/4 - Rejected TOTP enrollment confirmation for user '#{user.id}' from IP '#{remote_ip}': invalid code",
+          remote_ip
+        )
+
+        {:error, :invalid_code}
+    end
+  end
+
+  defp do_confirm_totp_enrollment(user, totp, accepted_ts, remote_ip, current_session_id) do
+    now = Utils.DateTime.utc_now_trunc()
+
+    result =
+      Repo.transaction(fn ->
+        # CAS on the pending state so exactly one confirm can win
+        {count, _} =
+          from(t in UserTotp, where: t.id == ^totp.id and is_nil(t.confirmed_at))
+          |> Repo.update_all(set: [confirmed_at: now, last_used_ts: accepted_ts, updated_at: now])
+
+        if count == 1 do
+          codes = generate_totp_backup_codes(user.id)
+          revoke_active_sessions_except(user, remote_ip, current_session_id)
+          codes
+        else
+          Repo.rollback(:no_pending_enrollment)
+        end
+      end)
+
+    case result do
+      {:ok, codes} ->
+        clear_totp_rate(user.id)
+
+        record_totp_log(
+          true,
+          user,
+          current_session_id,
+          "PUT",
+          "#Accounts.confirm_totp_enrollment/4 - TOTP enabled for user '#{user.id}' from IP '#{remote_ip}'",
+          remote_ip
+        )
+
+        {:ok, codes}
+
+      {:error, :no_pending_enrollment} = err ->
+        err
+    end
+  end
+
+  @doc """
+  Disable TOTP for `user`. Requires the current `password` **and** a valid
+  TOTP or backup code (Decision 3: a stolen bearer token must not be able
+  to silently strip MFA). Deletes the enrollment and all backup codes, then
+  revokes all other active sessions, sparing `current_session_id`.
+
+  Returns:
+
+      {:ok, :disabled}
+      {:error, :unauthorized | :invalid_mfa_code | :no_totp_enabled | :too_many_requests}
+  """
+  def disable_totp(%User{} = user, password, code_or_backup, remote_ip, current_session_id) do
+    with {:totp, %UserTotp{confirmed_at: %DateTime{}} = totp} <- {:totp, get_user_totp(user.id)},
+         :ok <- check_totp_rate(user.id),
+         :ok <- check_totp_password(user, password),
+         {:ok, _method} <- verify_totp_or_backup(user, totp, code_or_backup, remote_ip) do
+      do_disable_totp(user, remote_ip, current_session_id)
+    else
+      {:totp, _no_confirmed_row} ->
+        {:error, :no_totp_enabled}
+
+      {:error, :too_many_requests} = err ->
+        err
+
+      {:error, reason} = err when reason in [:unauthorized, :invalid_mfa_code] ->
+        record_totp_log(
+          false,
+          user,
+          current_session_id,
+          "POST",
+          "#Accounts.disable_totp/5 - Rejected TOTP disable for user '#{user.id}' from IP '#{remote_ip}': #{totp_rejection_reason(reason)}",
+          remote_ip
+        )
+
+        err
+    end
+  end
+
+  defp do_disable_totp(%User{} = user, remote_ip, current_session_id) do
+    {:ok, :ok} =
+      Repo.transaction(fn ->
+        from(t in UserTotp, where: t.user_id == ^user.id) |> Repo.delete_all()
+        from(bc in TotpBackupCode, where: bc.user_id == ^user.id) |> Repo.delete_all()
+        revoke_active_sessions_except(user, remote_ip, current_session_id)
+        :ok
+      end)
+
+    clear_totp_rate(user.id)
+
+    record_totp_log(
+      true,
+      user,
+      current_session_id,
+      "POST",
+      "#Accounts.disable_totp/5 - TOTP disabled for user '#{user.id}' from IP '#{remote_ip}'",
+      remote_ip
+    )
+
+    {:ok, :disabled}
+  end
+
+  @doc """
+  Admin recovery path: force-disable a user's TOTP without password or code
+  (the locked-out user's credentials are unavailable to the admin; heavily
+  audit-logged instead). Deletes the enrollment and backup codes and
+  revokes **all** of the target's active sessions — there is no "current
+  session" of the target to spare.
+
+  Returns `{:ok, :disabled}` or `{:error, :no_totp_enabled}` (no-op is an
+  error, not a silent success).
+  """
+  def admin_disable_totp(%User{} = admin, %User{} = user, remote_ip) do
+    case get_user_totp(user.id) do
+      %UserTotp{confirmed_at: %DateTime{}} ->
+        {:ok, :ok} =
+          Repo.transaction(fn ->
+            from(t in UserTotp, where: t.user_id == ^user.id) |> Repo.delete_all()
+            from(bc in TotpBackupCode, where: bc.user_id == ^user.id) |> Repo.delete_all()
+            revoke_active_sessions(user, remote_ip)
+            :ok
+          end)
+
+        record_log(
+          true,
+          admin.id,
+          nil,
+          user.id,
+          user.username,
+          "users",
+          "DELETE",
+          "#Accounts.admin_disable_totp/3 - TOTP force-disabled for user '#{user.id}' by admin '#{admin.id}' ('#{admin.username}') from IP '#{remote_ip}'",
+          remote_ip,
+          %{}
+        )
+
+        {:ok, :disabled}
+
+      _no_confirmed_row ->
+        {:error, :no_totp_enabled}
+    end
+  end
+
+  @doc """
+  Invalidate the user's entire backup-code set and mint a fresh one.
+  Requires the current `password` **and** a valid TOTP or backup code
+  (Decision 8: regenerating is a security-state change — it must not be
+  reachable with a bearer token alone). Plaintexts are returned once.
+
+  Returns:
+
+      {:ok, [backup_code_plaintexts]}
+      {:error, :unauthorized | :invalid_mfa_code | :no_totp_enabled | :too_many_requests}
+  """
+  def regenerate_totp_backup_codes(%User{} = user, password, code_or_backup, remote_ip) do
+    with {:totp, %UserTotp{confirmed_at: %DateTime{}} = totp} <- {:totp, get_user_totp(user.id)},
+         :ok <- check_totp_rate(user.id),
+         :ok <- check_totp_password(user, password),
+         {:ok, _method} <- verify_totp_or_backup(user, totp, code_or_backup, remote_ip) do
+      {:ok, codes} = Repo.transaction(fn -> generate_totp_backup_codes(user.id) end)
+      clear_totp_rate(user.id)
+
+      record_totp_log(
+        true,
+        user,
+        nil,
+        "POST",
+        "#Accounts.regenerate_totp_backup_codes/4 - Regenerated TOTP backup codes for user '#{user.id}' from IP '#{remote_ip}'",
+        remote_ip
+      )
+
+      {:ok, codes}
+    else
+      {:totp, _no_confirmed_row} ->
+        {:error, :no_totp_enabled}
+
+      {:error, :too_many_requests} = err ->
+        err
+
+      {:error, reason} = err when reason in [:unauthorized, :invalid_mfa_code] ->
+        record_totp_log(
+          false,
+          user,
+          nil,
+          "POST",
+          "#Accounts.regenerate_totp_backup_codes/4 - Rejected TOTP backup code regeneration for user '#{user.id}' from IP '#{remote_ip}': #{totp_rejection_reason(reason)}",
+          remote_ip
+        )
+
+        err
+    end
+  end
+
+  @doc false
+  # Public only so tests can pin the CAS semantics; not part of the context API.
+  #
+  # `accepted_ts` must be the accepted step's START (`div(t, 30) * 30`), not
+  # the raw second: the guard's `<` is then step-granular, so two requests
+  # carrying the same code at different seconds of one step cannot both win.
+  # Nil-safe so replay protection cannot silently disengage if the confirm
+  # seed were ever missed.
+  def cas_totp_last_used_ts(%UserTotp{} = totp, accepted_ts) do
+    {count, _} =
+      from(t in UserTotp,
+        where: t.id == ^totp.id and (is_nil(t.last_used_ts) or t.last_used_ts < ^accepted_ts)
+      )
+      |> Repo.update_all(
+        set: [last_used_ts: accepted_ts, updated_at: Utils.DateTime.utc_now_trunc()]
+      )
+
+    # Zero rows updated ⇒ a concurrent request already spent this step;
+    # the CAS loser must NOT be handed a session.
+    if count == 1, do: :ok, else: {:error, :invalid_mfa_code}
+  end
+
+  # Verify a client-supplied TOTP or backup code (already-confirmed
+  # enrollments only). Disambiguates on normalized length: 6 -> TOTP,
+  # 12 -> backup code, anything else is invalid without consulting either
+  # verifier. Returns {:ok, :totp | :backup_code} | {:error, :invalid_mfa_code}.
+  defp verify_totp_or_backup(%User{} = user, %UserTotp{} = totp, input, remote_ip),
+    do: verify_totp_or_backup(user.id, user.username, totp, input, remote_ip)
+
+  # Arity-5 variant for the login path, which has only the id and the
+  # client-supplied username (no %User{} loaded).
+  defp verify_totp_or_backup(user_id, username, %UserTotp{} = totp, input, remote_ip) do
+    code = normalize_code(input)
+
+    cond do
+      byte_size(code) == 6 ->
+        verify_totp_code(totp, code)
+
+      byte_size(code) == @totp_backup_code_length ->
+        spend_totp_backup_code(user_id, username, code, remote_ip)
+
+      true ->
+        {:error, :invalid_mfa_code}
+    end
+  end
+
+  defp verify_totp_code(%UserTotp{} = totp, code) do
+    with {:ok, secret} <- decrypt_totp_secret(totp),
+         {:ok, accepted_ts} <- find_valid_totp_step(secret, code, totp.last_used_ts) do
+      cas_totp_last_used_ts(totp, accepted_ts)
+      |> case do
+        :ok -> {:ok, :totp}
+        {:error, :invalid_mfa_code} = err -> err
+      end
+    else
+      _ -> {:error, :invalid_mfa_code}
+    end
+  end
+
+  # Accept the current or previous 30s step (clock-drift tolerance;
+  # NimbleTOTP.valid?/3 checks a single period, so the grace period is two
+  # calls). `since:` rejects any step at or below the stored one, which
+  # covers sequential replay including walking the drift window backwards.
+  # Returns the accepted step's START, which the CAS stores.
+  defp find_valid_totp_step(secret, code, since) do
+    now = System.os_time(:second)
+
+    [now, now - @totp_period]
+    |> Enum.find_value(fn t -> NimbleTOTP.valid?(secret, code, time: t, since: since) && t end)
+    |> case do
+      nil -> {:error, :invalid_mfa_code}
+      t -> {:ok, div(t, @totp_period) * @totp_period}
+    end
+  end
+
+  # Constant-time match of the normalized input against the user's unused
+  # backup codes, then single-use spend with the same zero-rows-means-fail
+  # shape as the TOTP CAS (two concurrent logins must not each spend the
+  # same code once).
+  defp spend_totp_backup_code(user_id, username, code, remote_ip) do
+    hash = Utils.Crypto.hash_token(code)
+    now = Utils.DateTime.utc_now_trunc()
+
+    matched =
+      from(bc in TotpBackupCode, where: bc.user_id == ^user_id and is_nil(bc.used_at))
+      |> Repo.all()
+      |> Enum.find(fn bc -> Utils.Crypto.secure_compare(bc.code_hash, hash) end)
+
+    with %TotpBackupCode{} = backup_code <- matched,
+         {1, _} <-
+           from(bc in TotpBackupCode, where: bc.id == ^backup_code.id and is_nil(bc.used_at))
+           |> Repo.update_all(set: [used_at: now, updated_at: now]) do
+      remaining = count_unused_totp_backup_codes(user_id)
+
+      record_totp_log(
+        true,
+        user_id,
+        username,
+        nil,
+        "POST",
+        "#Accounts.spend_totp_backup_code/4 - TOTP backup code consumed for user '#{user_id}' from IP '#{remote_ip}' (#{remaining} unused codes remain)",
+        remote_ip
+      )
+
+      {:ok, :backup_code}
+    else
+      # nil: no unused code matches. {0, _}: concurrent spend of this code.
+      _ -> {:error, :invalid_mfa_code}
+    end
+  end
+
+  # Delete any existing codes and mint a fresh set. Hashes the *normalized*
+  # plaintext so generation and verification cannot drift (Decision 6).
+  defp generate_totp_backup_codes(user_id) do
+    from(bc in TotpBackupCode, where: bc.user_id == ^user_id) |> Repo.delete_all()
+
+    now = Utils.DateTime.utc_now_trunc()
+
+    codes =
+      for _ <- 1..@totp_backup_code_count do
+        Utils.Crypto.strong_random_string(@totp_backup_code_length)
+      end
+
+    rows =
+      Enum.map(codes, fn code ->
+        %{
+          id: Ecto.UUID.generate(),
+          user_id: user_id,
+          code_hash: Utils.Crypto.hash_token(normalize_code(code)),
+          used_at: nil,
+          inserted_at: now,
+          updated_at: now
+        }
+      end)
+
+    {@totp_backup_code_count, _} = Repo.insert_all(TotpBackupCode, rows)
+
+    codes
+  end
+
+  defp decrypt_totp_secret(%UserTotp{} = totp) do
+    case TotpCipher.decrypt(totp.secret, totp.key_id) do
+      {:ok, secret} ->
+        {:ok, secret}
+
+      :error ->
+        # Fail closed: MFA cannot be satisfied until the keyring is fixed or
+        # the user re-enrolls. Loud because it is an operator problem
+        # (TOTP_ENCRYPTION_KEYS lost a still-referenced key), not a user one.
+        Logger.error(
+          "Cannot decrypt TOTP secret for user_totps row #{totp.id}: key_id #{totp.key_id} failed to decrypt (missing from TOTP_ENCRYPTION_KEYS?)"
+        )
+
+        {:error, :invalid_mfa_code}
+    end
+  end
+
+  # Decision 6: strip whitespace and hyphens only, before the length
+  # disambiguation — never case-fold (backup codes are mixed-case, and
+  # downcasing would shed ~10 bits of entropy). Integers are accepted
+  # because JSON clients may send `totp_code` as a number; anything else
+  # normalizes to "" and reads as absent.
+  defp normalize_code(input) when is_binary(input), do: String.replace(input, ~r/[\s-]/, "")
+
+  defp normalize_code(input) when is_integer(input),
+    do: input |> Integer.to_string() |> normalize_code()
+
+  defp normalize_code(_other), do: ""
+
+  defp get_user_totp(user_id), do: Repo.get_by(UserTotp, user_id: user_id)
+
+  defp get_confirmed_user_totp(user_id) do
+    Repo.one(from(t in UserTotp, where: t.user_id == ^user_id and not is_nil(t.confirmed_at)))
+  end
+
+  defp count_unused_totp_backup_codes(user_id) do
+    from(bc in TotpBackupCode, where: bc.user_id == ^user_id and is_nil(bc.used_at))
+    |> Repo.aggregate(:count)
+  end
+
+  defp check_totp_email_verified(%User{email_verified: %DateTime{}}), do: :ok
+  defp check_totp_email_verified(%User{}), do: {:error, :email_not_verified}
+
+  defp check_no_confirmed_totp(user_id) do
+    case get_user_totp(user_id) do
+      %UserTotp{confirmed_at: %DateTime{}} -> {:error, :totp_already_enabled}
+      _nil_or_pending -> :ok
+    end
+  end
+
+  defp check_totp_password(%User{password_hash: hash}, password)
+       when is_binary(password) and is_binary(hash) do
+    if Utils.Crypto.verify_password(password, hash) do
+      :ok
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp check_totp_password(%User{}, _password), do: fake_pass_verify(:unauthorized)
+
+  # One shared per-user budget for every attempt to prove yourself at a
+  # TOTP endpoint, password or code (see Malan.RateLimits.TotpVerify).
+  # Fail-open on limiter errors, matching the login limiters: passing
+  # still requires a correct password/code.
+  defp check_totp_rate(user_id) do
+    case Malan.RateLimits.TotpVerify.check_rate(user_id) do
+      {:deny, _limit} -> {:error, :too_many_requests}
+      _allow_or_error -> :ok
+    end
+  end
+
+  # A correct password/code should not leave the user throttled by their
+  # own earlier typos; only success clears.
+  defp clear_totp_rate(user_id) do
+    Malan.RateLimits.TotpVerify.clear(user_id)
+    :ok
+  end
+
+  defp totp_rejection_reason(:unauthorized), do: "bad password"
+  defp totp_rejection_reason(:invalid_mfa_code), do: "invalid code"
+
+  defp record_totp_log(success?, %User{} = user, session_id, verb, what, remote_ip),
+    do: record_totp_log(success?, user.id, user.username, session_id, verb, what, remote_ip)
+
+  defp record_totp_log(success?, user_id, username, session_id, verb, what, remote_ip) do
+    record_log(
+      success?,
+      user_id,
+      session_id,
+      user_id,
+      username,
+      "users",
+      verb,
+      what,
+      remote_ip,
+      %{}
+    )
+  end
+
+  @doc """
+  Re-encrypt every `user_totps.secret` stored under a non-primary
+  `TotpCipher` key onto the primary (first) `TOTP_ENCRYPTION_KEYS` entry.
+
+  Key-rotation step 3: add the new key as the first entry (keeping the
+  old), deploy, run this via `Malan.Release.reencrypt_totp_secrets/0`,
+  then remove the old key. Idempotent and resumable: rows already on the
+  primary key are never touched, and each row is re-keyed with a
+  compare-and-set on its old `key_id`, so a concurrent run cannot
+  double-write.
+
+  Returns `%{reencrypted: n, skipped: n, failed: n}`. `:skipped` rows were
+  re-keyed by another writer between read and update; `:failed` rows have a
+  `key_id` absent from the keyring (undecryptable — see MFA_PLAN.md on key
+  loss) and are left in place and logged.
+  """
+  def reencrypt_totp_secrets do
+    primary_key_id = TotpCipher.primary_key_id()
+
+    from(t in UserTotp, where: t.key_id != ^primary_key_id)
+    |> Repo.all()
+    |> Enum.reduce(%{reencrypted: 0, skipped: 0, failed: 0}, fn totp, acc ->
+      key = reencrypt_totp_row(totp)
+      Map.update!(acc, key, &(&1 + 1))
+    end)
+  end
+
+  defp reencrypt_totp_row(%UserTotp{} = totp) do
+    case TotpCipher.decrypt(totp.secret, totp.key_id) do
+      {:ok, plaintext} ->
+        {new_key_id, ciphertext} = TotpCipher.encrypt(plaintext)
+
+        {count, _} =
+          from(t in UserTotp, where: t.id == ^totp.id and t.key_id == ^totp.key_id)
+          |> Repo.update_all(
+            set: [
+              secret: ciphertext,
+              key_id: new_key_id,
+              updated_at: Utils.DateTime.utc_now_trunc()
+            ]
+          )
+
+        if count == 1, do: :reencrypted, else: :skipped
+
+      :error ->
+        Logger.warning(
+          "reencrypt_totp_secrets: user_totps row #{totp.id} has key_id #{totp.key_id} " <>
+            "which is not in TOTP_ENCRYPTION_KEYS; row left unchanged"
+        )
+
+        :failed
+    end
   end
 end

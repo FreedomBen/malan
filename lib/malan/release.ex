@@ -9,6 +9,7 @@ defmodule Malan.Release do
       bin/malan eval "Malan.Release.setup()"
       bin/malan eval "Malan.Release.seed()"
       bin/malan eval "Malan.Release.rollback(Malan.Repo, 20240101120000)"
+      bin/malan eval "Malan.Release.reencrypt_totp_secrets()"
 
   `setup/0` is the release equivalent of `mix ecto.setup`: it creates
   storage if absent, runs migrations, then evaluates
@@ -58,6 +59,24 @@ defmodule Malan.Release do
             Code.eval_file(seed_script)
           end)
       end
+    end
+  end
+
+  @doc """
+  Re-encrypt `user_totps.secret` rows onto the primary `TOTP_ENCRYPTION_KEYS`
+  entry. Key-rotation step 3 — see `Malan.Accounts.reencrypt_totp_secrets/0`
+  for the procedure and return shape.
+  """
+  def reencrypt_totp_secrets do
+    load_app()
+
+    for repo <- repos() do
+      {:ok, result, _} =
+        Ecto.Migrator.with_repo(repo, fn _repo ->
+          Malan.Accounts.reencrypt_totp_secrets()
+        end)
+
+      IO.puts("reencrypt_totp_secrets: #{inspect(result)}")
     end
   end
 

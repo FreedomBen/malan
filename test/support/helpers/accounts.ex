@@ -1,4 +1,6 @@
 defmodule Malan.Test.Helpers.Accounts do
+  import Ecto.Query, only: [from: 2]
+
   alias Malan.{Accounts, Repo, Utils}
   alias Malan.Accounts.{User, Session}
 
@@ -156,6 +158,49 @@ defmodule Malan.Test.Helpers.Accounts do
       {:error, %Ecto.Changeset{errors: errors}} -> {:error, errors}
       _ -> {:error, "error making thing"}
     end
+  end
+
+  @doc """
+  Returns: {:ok, user, totp_secret, backup_codes}
+
+  The user has a verified email and a **confirmed** TOTP enrollment; the
+  raw `totp_secret` lets tests mint codes via
+  `NimbleTOTP.verification_code/1`. The replay guard is rewound one step
+  after confirmation (see `rewind_totp_last_used/2`) so the current step's
+  code is immediately usable by the test.
+  """
+  def regular_user_with_totp(attrs \\ %{}) do
+    {:ok, user} = regular_user(attrs)
+    {:ok, verified} = Accounts.set_email_verified(user, true)
+    # Repo.update returns the struct without the virtual password; keep it
+    user = %{verified | password: user.password}
+
+    {:ok, %{secret_base32: secret_base32}} =
+      Accounts.start_totp_enrollment(user, user.password, "192.168.2.200")
+
+    secret = Base.decode32!(secret_base32, padding: false)
+
+    {:ok, backup_codes} =
+      Accounts.confirm_totp_enrollment(
+        user,
+        NimbleTOTP.verification_code(secret),
+        "192.168.2.200",
+        nil
+      )
+
+    rewind_totp_last_used(user)
+
+    {:ok, user, secret, backup_codes}
+  end
+
+  @doc """
+  Rewind the user's stored TOTP replay guard (`last_used_ts`) by `steps`
+  periods, so a test can immediately accept a code for the current step
+  instead of waiting out the 30s replay window.
+  """
+  def rewind_totp_last_used(user, steps \\ 1) do
+    from(t in Malan.Accounts.UserTotp, where: t.user_id == ^user.id)
+    |> Repo.update_all(inc: [last_used_ts: -30 * steps])
   end
 
   @doc "Returns: {:ok, user, session}"
