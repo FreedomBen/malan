@@ -880,6 +880,100 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 403)
     end
 
+    test "MFA enabled, no code supplied: 403 with the mfa_required contract body", %{conn: conn} do
+      {:ok, user, _secret, _codes} = Helpers.Accounts.regular_user_with_totp()
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      # Assert on the body, not just the status: the invalid_credentials
+      # catch-all also renders 403, so a status-only assertion would pass
+      # with the MFA contract entirely unwired.
+      body = json_response(conn, 403)
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => message,
+               "mfa_required" => true,
+               "mfa_types" => ["totp"],
+               "errors" => [%{"totp_code" => ["required"]}]
+             } = body
+
+      assert message =~ "Multi-factor authentication is required"
+      refute Map.has_key?(body, "invalid_mfa_code")
+    end
+
+    test "MFA enabled, wrong code: 403 with the invalid_mfa_code contract body", %{conn: conn} do
+      {:ok, user, secret, _codes} = Helpers.Accounts.regular_user_with_totp()
+      wrong = if NimbleTOTP.verification_code(secret) == "000000", do: "000001", else: "000000"
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, totp_code: wrong}
+        )
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => message,
+               "mfa_required" => true,
+               "invalid_mfa_code" => true,
+               "mfa_types" => ["totp"],
+               "errors" => [%{"totp_code" => ["invalid"]}]
+             } = json_response(conn, 403)
+
+      assert message =~ "code was invalid or expired"
+    end
+
+    test "MFA enabled, valid TOTP code: renders session", %{conn: conn} do
+      {:ok, user, secret, _codes} = Helpers.Accounts.regular_user_with_totp()
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            totp_code: NimbleTOTP.verification_code(secret)
+          }
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
+    test "MFA enabled, backup code: renders session and the code is single-use", %{conn: conn} do
+      {:ok, user, _secret, [backup_code | _]} = Helpers.Accounts.regular_user_with_totp()
+
+      conn1 =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, totp_code: backup_code}
+        )
+
+      assert %{"api_token" => _} = json_response(conn1, 201)["data"]
+
+      conn2 =
+        post(build_conn(), Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, totp_code: backup_code}
+        )
+
+      assert %{"invalid_mfa_code" => true} = json_response(conn2, 403)
+    end
+
+    test "no MFA enrolled: stray totp_code is ignored and login succeeds", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{username: user.username, password: user.password, totp_code: "123456"}
+        )
+
+      assert %{"api_token" => _} = json_response(conn, 201)["data"]
+    end
+
     test "can be called by admin non-owner", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)

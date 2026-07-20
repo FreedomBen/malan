@@ -11,6 +11,7 @@ defmodule MalanWeb.UserLoginLiveTest do
       assert html =~ "Log in"
       assert html =~ "Username"
       assert html =~ "Password"
+      assert html =~ "Authentication code"
       assert html =~ "Forgot your password?"
     end
   end
@@ -41,6 +42,55 @@ defmodule MalanWeb.UserLoginLiveTest do
       assert redirected_to(conn) == ~p"/users/login"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Invalid"
       refute get_session(conn, :api_token)
+    end
+  end
+
+  describe "POST /users/log_in with MFA" do
+    test "an MFA-enabled user without a code gets an MFA flash, not a bad-password one", %{
+      conn: conn
+    } do
+      {:ok, user, _secret, _codes} = AccountsHelpers.regular_user_with_totp()
+
+      conn =
+        post(conn, ~p"/users/log_in", %{
+          "username" => user.username,
+          "password" => user.password
+        })
+
+      assert redirected_to(conn) == ~p"/users/login"
+      flash = Phoenix.Flash.get(conn.assigns.flash, :error)
+      assert flash =~ "Multi-factor authentication is required"
+      refute flash =~ "Invalid username or password"
+      refute get_session(conn, :api_token)
+    end
+
+    test "a wrong code gets its own flash", %{conn: conn} do
+      {:ok, user, _secret, _codes} = AccountsHelpers.regular_user_with_totp()
+
+      conn =
+        post(conn, ~p"/users/log_in", %{
+          "username" => user.username,
+          "password" => user.password,
+          "totp_code" => "000000"
+        })
+
+      assert redirected_to(conn) == ~p"/users/login"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "invalid or expired"
+      refute get_session(conn, :api_token)
+    end
+
+    test "a valid code logs in", %{conn: conn} do
+      {:ok, user, secret, _codes} = AccountsHelpers.regular_user_with_totp()
+
+      conn =
+        post(conn, ~p"/users/log_in", %{
+          "username" => user.username,
+          "password" => user.password,
+          "totp_code" => NimbleTOTP.verification_code(secret)
+        })
+
+      assert redirected_to(conn) == ~p"/users/account"
+      assert is_binary(get_session(conn, :api_token))
     end
   end
 

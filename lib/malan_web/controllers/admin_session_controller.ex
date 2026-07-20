@@ -6,11 +6,17 @@ defmodule MalanWeb.AdminSessionController do
   alias Malan.Accounts
   alias Malan.Accounts.Session
 
-  def create(conn, %{"username" => username, "password" => password}) do
+  def create(conn, %{"username" => username, "password" => password} = params) do
     remote_ip = remote_ip_s(conn)
 
+    # totp_code is optional; a nil/blank value reads as absent. Without
+    # explicit :mfa_required / :invalid_mfa_code clauses below, an
+    # MFA-enabled admin would fall into the catch-all and be told their
+    # *password* was wrong.
+    session_attrs = %{"ip_address" => remote_ip, "totp_code" => params["totp_code"]}
+
     with {:ok, %Session{api_token: token, user_id: user_id}} <-
-           Accounts.create_session(username, password, remote_ip, %{"ip_address" => remote_ip}),
+           Accounts.create_session(username, password, remote_ip, session_attrs),
          {:ok, true} <- Accounts.user_is_admin?(user_id) do
       conn
       |> configure_session(renew: true)
@@ -30,6 +36,22 @@ defmodule MalanWeb.AdminSessionController do
       {:error, :too_many_requests} ->
         conn
         |> put_flash(:error, "Too many sign-in attempts. Please wait and try again.")
+        |> redirect(to: ~p"/admin/sign-in")
+
+      {:error, :mfa_required} ->
+        conn
+        |> put_flash(
+          :error,
+          "Multi-factor authentication is required.  Enter the code from your authenticator app (or a backup code) and sign in again."
+        )
+        |> redirect(to: ~p"/admin/sign-in")
+
+      {:error, :invalid_mfa_code} ->
+        conn
+        |> put_flash(
+          :error,
+          "That multi-factor authentication code was invalid or expired.  Try again with a current code."
+        )
         |> redirect(to: ~p"/admin/sign-in")
 
       _ ->

@@ -1,5 +1,6 @@
 defmodule MalanWeb.UserJSON do
   alias Ecto.Association.NotLoaded
+  alias Malan.Accounts
   alias Malan.Accounts.User
   alias MalanWeb.AddressJSON
   alias MalanWeb.PhoneNumberJSON
@@ -47,7 +48,8 @@ defmodule MalanWeb.UserJSON do
         user_roles: user_roles,
         expires_at: expires_at,
         tos: tos,
-        pp: pp
+        pp: pp,
+        totp_enabled: totp_enabled
       }) do
     %{
       ok: true,
@@ -60,7 +62,8 @@ defmodule MalanWeb.UserJSON do
         user_roles: user_roles,
         expires_at: expires_at,
         terms_of_service: tos,
-        privacy_policy: pp
+        privacy_policy: pp,
+        totp_enabled: totp_enabled
       }
     }
   end
@@ -94,6 +97,7 @@ defmodule MalanWeb.UserJSON do
       nick_name: user.nick_name,
       email: user.email,
       email_verified: user.email_verified,
+      totp_enabled: user_totp_enabled?(user),
       birthday: user.birthday,
       sex: User.Sex.to_s(user.sex_enum),
       gender: User.Gender.to_s(user.gender_enum),
@@ -123,6 +127,14 @@ defmodule MalanWeb.UserJSON do
       locked_by: user.locked_by,
       approved_ips: user.approved_ips
     }
+  end
+
+  # MFA state is a separate table, not a users column, so it takes a
+  # lookup. Guarded on the id being a real UUID: synthetic structs (view
+  # tests, unpersisted users) cannot own TOTP rows, so `false` is correct
+  # for them rather than a CastError.
+  defp user_totp_enabled?(%User{id: id}) do
+    if Malan.Utils.is_uuid?(id), do: Accounts.totp_enabled?(id), else: false
   end
 
   defp user_full_data(%User{} = user) do

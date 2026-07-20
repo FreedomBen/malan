@@ -137,6 +137,18 @@ defmodule MalanWeb.SessionController do
         |> put_view(ErrorJSON)
         |> render(:"429")
 
+      {:error, :mfa_required} ->
+        conn
+        |> put_status(403)
+        |> put_view(ErrorJSON)
+        |> render(:"403", mfa_required: true)
+
+      {:error, :invalid_mfa_code} ->
+        conn
+        |> put_status(403)
+        |> put_view(ErrorJSON)
+        |> render(:"403", invalid_mfa_code: true)
+
       # {:error, :not_a_user} ->
       # {:error, :unauthorized} ->
       _err ->

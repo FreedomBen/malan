@@ -63,6 +63,54 @@ defmodule MalanWeb.ErrorJSON do
     }
   end
 
+  # A code was supplied but rejected. Carries mfa_required/mfa_types as
+  # well (the full shape, not a subset) so clients can branch on one key
+  # for "needs a code" and read invalid_mfa_code only to distinguish "and
+  # the one you sent was wrong". Worded without "credentials" because the
+  # authed TOTP endpoints (confirm/disable/regenerate) reuse this body.
+  def render("403.json", %{invalid_mfa_code: true}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message:
+        "The multi-factor authentication code was invalid or expired.  Re-submit with a current totp_code.",
+      mfa_required: true,
+      invalid_mfa_code: true,
+      mfa_types: ["totp"],
+      errors: [%{totp_code: ["invalid"]}]
+    }
+  end
+
+  # MFA is enabled for the user and no code was supplied. `totp_code`
+  # accepts a 6-digit TOTP code or a 12-char backup code; `mfa_types`
+  # names the enrolled method (room to add methods without breaking
+  # clients). Follows the token_expired precedent: flag repeated in the
+  # body plus an errors list.
+  def render("403.json", %{mfa_required: true}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message:
+        "Multi-factor authentication is required.  Re-submit credentials with a valid totp_code.",
+      mfa_required: true,
+      mfa_types: ["totp"],
+      errors: [%{totp_code: ["required"]}]
+    }
+  end
+
+  # Generic 403 with a caller-supplied message (e.g. the TOTP endpoints'
+  # email-not-verified and bad-password re-auth responses)
+  def render("403.json", %{message: message}) do
+    %{
+      ok: false,
+      code: 403,
+      detail: "Forbidden",
+      message: message
+    }
+  end
+
   def render("403.json", _assigns) do
     %{
       ok: false,
@@ -79,6 +127,17 @@ defmodule MalanWeb.ErrorJSON do
       code: 404,
       detail: "Not Found",
       message: "The requested object was not found."
+    }
+  end
+
+  # A real clause, not template_not_found/2 — that fallback hardcodes
+  # code: 404 in the body, which would contradict a 409 response status.
+  def render("409.json", _assigns) do
+    %{
+      ok: false,
+      code: 409,
+      detail: "Conflict",
+      message: "The request conflicts with the current state of the resource."
     }
   end
 

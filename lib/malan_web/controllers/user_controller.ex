@@ -670,7 +670,10 @@ defmodule MalanWeb.UserController do
       valid_only_for_ip: valid_only_ip,
       expires_at: expires_at,
       tos: tos,
-      pp: pp
+      pp: pp,
+      # whoami never receives a %User{} — only session assigns — so the
+      # MFA state is looked up here and passed through
+      totp_enabled: Accounts.totp_enabled?(user_id)
     )
   end
 

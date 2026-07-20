@@ -10,6 +10,81 @@ defmodule MalanWeb.AdminLive.SignInTest do
       {:ok, _view, html} = live(conn, ~p"/admin/sign-in")
       assert html =~ "Sign in to the admin console"
       assert html =~ "admin role"
+      assert html =~ "Authentication code"
+    end
+  end
+
+  describe "POST /admin/sign_in with MFA" do
+    defp admin_with_totp do
+      {:ok, user, secret, codes} = AccountsHelpers.regular_user_with_totp()
+      {:ok, _} = AccountsHelpers.make_user_admin(user)
+      {user, secret, codes}
+    end
+
+    test "an MFA-enabled admin without a code gets an MFA flash, not a bad-password one", %{
+      conn: conn
+    } do
+      {admin, _secret, _codes} = admin_with_totp()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> post(~p"/admin/sign_in", %{"username" => admin.username, "password" => admin.password})
+
+      assert redirected_to(conn) == ~p"/admin/sign-in"
+      flash = Phoenix.Flash.get(conn.assigns.flash, :error)
+      assert flash =~ "Multi-factor authentication is required"
+      refute flash =~ "Invalid username or password"
+      refute Plug.Conn.get_session(conn, :admin_api_token)
+    end
+
+    test "a wrong code gets its own flash", %{conn: conn} do
+      {admin, _secret, _codes} = admin_with_totp()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> post(~p"/admin/sign_in", %{
+          "username" => admin.username,
+          "password" => admin.password,
+          "totp_code" => "000000"
+        })
+
+      assert redirected_to(conn) == ~p"/admin/sign-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "invalid or expired"
+      refute Plug.Conn.get_session(conn, :admin_api_token)
+    end
+
+    test "a valid code signs in", %{conn: conn} do
+      {admin, secret, _codes} = admin_with_totp()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> post(~p"/admin/sign_in", %{
+          "username" => admin.username,
+          "password" => admin.password,
+          "totp_code" => NimbleTOTP.verification_code(secret)
+        })
+
+      assert redirected_to(conn) == ~p"/admin/users"
+      assert Plug.Conn.get_session(conn, :admin_api_token)
+    end
+
+    test "a backup code also satisfies MFA", %{conn: conn} do
+      {admin, _secret, [backup_code | _]} = admin_with_totp()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{})
+        |> post(~p"/admin/sign_in", %{
+          "username" => admin.username,
+          "password" => admin.password,
+          "totp_code" => backup_code
+        })
+
+      assert redirected_to(conn) == ~p"/admin/users"
+      assert Plug.Conn.get_session(conn, :admin_api_token)
     end
   end
 

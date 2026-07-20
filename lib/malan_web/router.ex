@@ -219,6 +219,17 @@ defmodule MalanWeb.Router do
 
       resources "/addresses", AddressController, only: [:index, :show, :create, :update, :delete]
 
+      # TOTP MFA — a per-user singleton addressed only by the path's
+      # user_id, so is_owner_or_admin suffices without EnsureOwnerOrAdmin
+      # (see the note in MalanWeb.TotpController). Owner disable is a POST
+      # (needs a body: password + code); only the bodyless admin
+      # force-disable uses DELETE.
+      get "/totp", TotpController, :show
+      post "/totp", TotpController, :create
+      put "/totp/confirm", TotpController, :confirm
+      post "/totp/disable", TotpController, :disable
+      post "/totp/backup_codes", TotpController, :regenerate_backup_codes
+
       get "/logs", LogController, :user_index
     end
   end
@@ -265,6 +276,10 @@ defmodule MalanWeb.Router do
 
     put "/users/:id/lock", UserController, :lock
     put "/users/:id/unlock", UserController, :unlock
+
+    # Recovery path for users locked out of MFA (no password/code required;
+    # heavily audit-logged and revokes all of the target's sessions)
+    delete "/users/:id/totp", TotpController, :admin_delete
 
     # Logs can only be retreived (not created, updated, or deleted)
     # they are created as side effects of user/session operations and are immutable

@@ -64,6 +64,29 @@
       </div>
 
       <div>
+        <label
+          for="admin-totp-code"
+          class="block text-sm/6 font-medium text-gray-900 dark:text-white"
+        >
+          Authentication code
+          <span class="font-normal text-gray-500 dark:text-gray-400">
+            (only if MFA is enabled)
+          </span>
+        </label>
+        <div class="mt-2">
+          <input
+            id="admin-totp-code"
+            name="totp_code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="Authenticator or backup code"
+            class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500"
+          />
+        </div>
+      </div>
+
+      <div>
         <button
           type="submit"
           class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400"
