@@ -266,6 +266,42 @@ defmodule Malan.Config do
     def email_verify_upper_limit do
       {email_verify_upper_limit_msecs(), email_verify_upper_limit_count()}
     end
+
+    def totp_verify_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:totp_verify_lower_limit_msecs]
+    end
+
+    def totp_verify_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:totp_verify_lower_limit_count]
+    end
+
+    def totp_verify_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:totp_verify_upper_limit_msecs]
+    end
+
+    def totp_verify_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:totp_verify_upper_limit_count]
+    end
+
+    def totp_verify_lower_limit do
+      {totp_verify_lower_limit_msecs(), totp_verify_lower_limit_count()}
+    end
+
+    def totp_verify_upper_limit do
+      {totp_verify_upper_limit_msecs(), totp_verify_upper_limit_count()}
+    end
+  end
+
+  defmodule Totp do
+    @doc """
+    Issuer label embedded in `otpauth://` URIs and QR codes at TOTP
+    enrollment. Set per environment via `TOTP_ISSUER` (e.g.
+    "Ameelio (staging)") so entries in authenticator apps stay
+    distinguishable across environments.
+    """
+    def issuer do
+      Application.get_env(:malan, Malan.Config.Totp)[:issuer]
+    end
   end
 
   defmodule Sentry do

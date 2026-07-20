@@ -200,6 +200,48 @@ config :malan,
        Malan.RateLimiter,
        [url: hammer_redis_url] ++ hammer_redis_extra_opts
 
+# TOTP secret encryption keyring.
+#
+# `Malan.Accounts.TotpCipher` encrypts `user_totps.secret` at rest under a
+# dedicated keyring — deliberately NOT derived from `secret_key_base`, so
+# rotating cookie secrets cannot brick MFA logins. Format:
+# "<key_id>:<base64>[,<key_id>:<base64>,...]" — the first entry encrypts,
+# all entries decrypt (old + new coexist during a rotation window; see
+# `Malan.Release.reencrypt_totp_secrets/0`). Each root must be ≥ 32 bytes
+# before base64. `parse_keyring!/1` validates the whole ring and raises on a
+# malformed entry, duplicate/non-integer key_id, or short root — refusing to
+# boot rather than running weak or ambiguous, like HAMMER_REDIS_URL above.
+# In :prod the var is required; :dev/:test fall back to the compiled sentinel
+# in config/config.exs unless the var is explicitly set.
+totp_enc_keys =
+  case config_env() do
+    :prod ->
+      System.get_env("TOTP_ENCRYPTION_KEYS") ||
+        raise """
+        environment variable TOTP_ENCRYPTION_KEYS is missing.
+        Format: "<key_id>:<base64-root>[,<key_id>:<base64-root>,...]"
+        The first entry encrypts; all entries decrypt. Each root must be
+        at least 32 bytes before base64 encoding. Generate one with:
+        elixir -e 'IO.puts("1:" <> Base.encode64(:crypto.strong_rand_bytes(32)))'
+        """
+
+    _ ->
+      System.get_env("TOTP_ENCRYPTION_KEYS")
+  end
+
+if totp_enc_keys do
+  config :malan, Malan.Accounts.TotpCipher,
+    keys: Malan.Accounts.TotpCipher.parse_keyring!(totp_enc_keys)
+end
+
+# Issuer label for TOTP otpauth:// URIs. Set per environment (e.g.
+# "Ameelio (staging)") so a user enrolled in more than one environment can
+# tell the entries apart in their authenticator app. Not boot-critical —
+# the compiled default from config/config.exs applies when unset.
+if totp_issuer = System.get_env("TOTP_ISSUER") do
+  config :malan, Malan.Config.Totp, issuer: totp_issuer
+end
+
 # Email verification auto-send: enabled by default. Accepts "true"/"1" or "false"/"0".
 email_verification_auto_send? =
   case System.get_env("MALAN_EMAIL_VERIFICATION_AUTO_SEND") do
@@ -269,7 +311,11 @@ config :malan,
          {:email_verify_lower_limit_msecs, "EMAIL_VERIFY_LOWER_LIMIT_MSECS"},
          {:email_verify_lower_limit_count, "EMAIL_VERIFY_LOWER_LIMIT_COUNT"},
          {:email_verify_upper_limit_msecs, "EMAIL_VERIFY_UPPER_LIMIT_MSECS"},
-         {:email_verify_upper_limit_count, "EMAIL_VERIFY_UPPER_LIMIT_COUNT"}
+         {:email_verify_upper_limit_count, "EMAIL_VERIFY_UPPER_LIMIT_COUNT"},
+         {:totp_verify_lower_limit_msecs, "TOTP_VERIFY_LOWER_LIMIT_MSECS"},
+         {:totp_verify_lower_limit_count, "TOTP_VERIFY_LOWER_LIMIT_COUNT"},
+         {:totp_verify_upper_limit_msecs, "TOTP_VERIFY_UPPER_LIMIT_MSECS"},
+         {:totp_verify_upper_limit_count, "TOTP_VERIFY_UPPER_LIMIT_COUNT"}
        ])
 
 config :malan,

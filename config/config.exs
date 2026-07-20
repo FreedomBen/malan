@@ -67,7 +67,7 @@ config :malan,
 # `config/runtime.exs`; the runtime read overrides the literal below
 # when the env var is set. Env vars: PASSWORD_RESET_*,
 # PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LIMIT_*,
-# LOGIN_IP_*, REGISTRATION_IP_*, EMAIL_VERIFY_*.
+# LOGIN_IP_*, REGISTRATION_IP_*, EMAIL_VERIFY_*, TOTP_VERIFY_*.
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds), 1 per period
   password_reset_lower_limit_msecs: 180_000,
@@ -125,7 +125,20 @@ config :malan, Malan.Config.RateLimits,
   email_verify_lower_limit_count: 1,
   # Email verification: upper bucket - 24 hours, 3 per period
   email_verify_upper_limit_msecs: 86_400_000,
-  email_verify_upper_limit_count: 3
+  email_verify_upper_limit_count: 3,
+  # TOTP/MFA verification attempts, per user. One shared budget for every
+  # attempt to prove yourself at a TOTP endpoint — login totp_code, and the
+  # password or code on enroll/confirm/disable/regenerate — so a stolen
+  # bearer token cannot brute-force the 6-digit space and fat-fingered
+  # attempts on authed TOTP forms cannot lock the user out of login
+  # (deliberately NOT the per-username Login bucket). Successful
+  # verification clears both buckets.
+  # Lower bucket: 5 per 5 minutes (300 seconds)
+  totp_verify_lower_limit_msecs: 300_000,
+  totp_verify_lower_limit_count: 5,
+  # Upper bucket: 20 per day (86,400 seconds)
+  totp_verify_upper_limit_msecs: 86_400_000,
+  totp_verify_upper_limit_count: 20
 
 # Session token defaults. Each key is also read at boot from env in
 # `config/runtime.exs`; the runtime read overrides the literal below
@@ -147,6 +160,20 @@ config :malan, Malan.Accounts.Session,
   # Most that a session can be extended, despite client settings.
   # 7,862,400 is approximately 90 days (13 weeks specifically)
   max_max_extension_secs: 7_862_400
+
+# Issuer label for TOTP otpauth:// URIs / QR codes. Overridden per
+# environment at boot via TOTP_ISSUER in `config/runtime.exs` (staging uses
+# a distinct label so authenticator-app entries stay distinguishable).
+config :malan, Malan.Config.Totp, issuer: "Ameelio"
+
+# TOTP secret encryption keyring (parsed form: ordered {key_id, root} list;
+# first entry encrypts, all entries decrypt). The literal below is an
+# obviously-fake dev/test sentinel. In prod, `config/runtime.exs` requires
+# TOTP_ENCRYPTION_KEYS ("<key_id>:<base64>,..." with ≥32-byte roots) and overrides
+# this at boot, raising if missing. Deliberately independent of
+# `secret_key_base` so cookie-secret rotation cannot brick MFA decryption.
+config :malan, Malan.Accounts.TotpCipher,
+  keys: [{1, String.duplicate("dev-test-only-totp-enc-root!", 2)}]
 
 # Cookie signing/encryption salts. These are NOT the secret — `secret_key_base`
 # is — but they're domain separators for derived keys and should not live in
@@ -218,6 +245,16 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Redact sensitive params from Phoenix request logs. Phoenix's default
+# only covers "password"; MFA adds code/secret-bearing params. Keys match
+# as *substrings*, so "code" already subsumes "totp_code"/"backup_code"
+# (both kept for documentation value). Checked for over-redaction: no
+# current param key contains "code" incidentally (addresses use `postal`),
+# but note any future `*_code` param will be redacted here too.
+config :phoenix,
+       :filter_parameters,
+       {:discard, ["password", "totp_code", "code", "backup_code", "secret"]}
 
 # Configure MIME types
 config :mime, :types, %{

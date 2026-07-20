@@ -51,10 +51,12 @@ defmodule Malan.Pagination.NotPaginated do
   defexception [:message]
 
   def exception(opts) do
+    # Defensive mask: nothing MFA- or credential-shaped lands in assigns
+    # today, but anything that ever does must not reach exception reports
     assigns_str =
       Keyword.get(opts, :conn, nil)
       |> Map.get(:assigns, %{})
-      |> Utils.map_to_string()
+      |> Utils.map_to_string([:password, :totp_code, :code, :backup_code, :secret])
 
     msg = "conn was not paginated.  Assigns: #{assigns_str}"
 

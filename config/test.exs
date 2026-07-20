@@ -88,7 +88,15 @@ config :malan, Malan.Config.RateLimits,
   email_verify_upper_limit_msecs:
     (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_MSECS") || "86400000") |> String.to_integer(),
   email_verify_upper_limit_count:
-    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_COUNT") || "3") |> String.to_integer()
+    (System.get_env("EMAIL_VERIFY_UPPER_LIMIT_COUNT") || "3") |> String.to_integer(),
+  # TOTP verify limits are effectively disabled in test (same idea as the
+  # per-IP login limits above): MFA tests hammer code verification without
+  # tripping the limiter. The throttle-specific tests override these values
+  # locally via Application.put_env.
+  totp_verify_lower_limit_msecs: 300_000,
+  totp_verify_lower_limit_count: 1_000_000,
+  totp_verify_upper_limit_msecs: 86_400_000,
+  totp_verify_upper_limit_count: 1_000_000
 
 # config :malan, Malan.Accounts.User,
 #   # Basically no rate limiting in test

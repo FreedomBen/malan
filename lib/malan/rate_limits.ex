@@ -507,4 +507,93 @@ defmodule Malan.RateLimits do
       end
     end
   end
+
+  defmodule TotpVerify do
+    @moduledoc """
+    Per-user budget for TOTP/MFA verification attempts.
+
+    One shared pair of buckets covers every attempt to prove yourself at a
+    TOTP endpoint — the login `totp_code`, and the password or code on
+    enroll/confirm/disable/regenerate — so a stolen bearer token cannot
+    brute-force the 6-digit code space and repeated failures on authed TOTP
+    forms cannot lock the user out of login (deliberately not the
+    per-username `Login` bucket). A successful verification clears both
+    buckets via `clear/1`.
+    """
+
+    alias Malan.RateLimits.TotpVerify.{UpperLimit, LowerLimit}
+
+    @doc ~S"""
+    Check if a TOTP/MFA verification attempt should be allowed or rate limited
+
+    If approved, returns {:allow, count}
+    If unapproved, returns {:deny, limit}
+    """
+    @spec check_rate(user_id :: String.t()) ::
+            {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
+    def check_rate(user_id) do
+      # check upper limit rate first, then lower limit rate
+      # For example, check daily limit first, then per five minute limit
+      with {:allow, _c1} <- UpperLimit.check_rate(user_id),
+           {:allow, c2} <- LowerLimit.check_rate(user_id) do
+        {:allow, c2}
+      end
+    end
+
+    @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+
+    def clear(user_id) do
+      with {:ok, _c1} <- UpperLimit.clear(user_id),
+           {:ok, c2} <- LowerLimit.clear(user_id) do
+        {:ok, c2}
+      end
+    end
+
+    defmodule LowerLimit do
+      def bucket(user_id), do: "totp_verify_lower_limit:#{user_id}"
+
+      @spec check_rate(user_id :: String.t()) ::
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
+      def check_rate(user_id) do
+        {msecs, count} = Malan.Config.RateLimit.totp_verify_lower_limit()
+
+        user_id
+        |> bucket()
+        |> Malan.RateLimits.check_rate(msecs, count)
+      end
+
+      @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+
+      def clear(user_id) do
+        user_id
+        |> bucket()
+        |> Malan.RateLimits.clear()
+      end
+    end
+
+    defmodule UpperLimit do
+      def bucket(user_id), do: "totp_verify_upper_limit:#{user_id}"
+
+      @spec check_rate(user_id :: String.t()) ::
+              {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
+
+      def check_rate(user_id) do
+        {msecs, count} = Malan.Config.RateLimit.totp_verify_upper_limit()
+
+        user_id
+        |> bucket()
+        |> Malan.RateLimits.check_rate(msecs, count)
+      end
+
+      @spec clear(user_id :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
+
+      def clear(user_id) do
+        user_id
+        |> bucket()
+        |> Malan.RateLimits.clear()
+      end
+    end
+  end
 end
