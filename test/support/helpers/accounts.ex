@@ -163,17 +163,14 @@ defmodule Malan.Test.Helpers.Accounts do
   @doc """
   Returns: {:ok, user, totp_secret, backup_codes}
 
-  The user has a verified email and a **confirmed** TOTP enrollment; the
-  raw `totp_secret` lets tests mint codes via
-  `NimbleTOTP.verification_code/1`. The replay guard is rewound one step
+  The user has a **confirmed** TOTP enrollment (email deliberately left
+  unverified — enrollment does not require it); the raw `totp_secret` lets
+  tests mint codes via `NimbleTOTP.verification_code/1`. The replay guard is rewound one step
   after confirmation (see `rewind_totp_last_used/2`) so the current step's
   code is immediately usable by the test.
   """
   def regular_user_with_totp(attrs \\ %{}) do
     {:ok, user} = regular_user(attrs)
-    {:ok, verified} = Accounts.set_email_verified(user, true)
-    # Repo.update returns the struct without the virtual password; keep it
-    user = %{verified | password: user.password}
 
     {:ok, %{secret_base32: secret_base32}} =
       Accounts.start_totp_enrollment(user, user.password, "192.168.2.200")

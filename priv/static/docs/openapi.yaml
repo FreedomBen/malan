@@ -1203,8 +1203,7 @@ paths:
                 $ref: '#/components/schemas/TotpEnrollmentResponse'
           description: Created — provisioning payload disclosed exactly once
         '403':
-          description: Wrong password, or email address not yet verified (both use
-            the generic error shape with a specific message)
+          description: Wrong password (generic error shape with a specific message)
           content:
             application/json:
               schema:
@@ -1216,10 +1215,10 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
           description: Too Many Requests
       operationId: post_api_users_by_user_id_totp
-      description: 'Start TOTP enrollment. Requires the current password and a
-        verified email address. Replaces any pending (unconfirmed) enrollment; the
-        enrollment is inert until confirmed. The secret, otpauth URI, and QR SVG
-        are returned once and cannot be re-read.'
+      description: 'Start TOTP enrollment. Requires the current password. Replaces
+        any pending (unconfirmed) enrollment; the enrollment is inert until
+        confirmed. The secret, otpauth URI, and QR SVG are returned once and
+        cannot be re-read.'
       parameters:
       - name: user_id
         in: path

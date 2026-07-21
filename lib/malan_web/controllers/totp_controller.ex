@@ -142,13 +142,6 @@ defmodule MalanWeb.TotpController do
 
   defp totp_error(conn, :too_many_requests), do: render_error(conn, 429, :"429", [])
 
-  defp totp_error(conn, :email_not_verified) do
-    render_error(conn, 403, :"403",
-      message:
-        "Your email address must be verified before multi-factor authentication can be enabled."
-    )
-  end
-
   # Bad password re-auth: generic 403 (distinct from the invalid_mfa_code
   # body so a legitimate client knows which field to fix; both guess types
   # are bounded by the shared TotpVerify budget)

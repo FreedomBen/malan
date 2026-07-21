@@ -2655,18 +2655,17 @@ defmodule Malan.Accounts do
 
   @doc """
   Start TOTP enrollment for `user`, replacing any pending (unconfirmed)
-  enrollment. Requires the user's current `password` (MFA_PLAN.md Decision 3)
-  and a verified email address. The returned provisioning payload is shown
-  once; the new enrollment stays inert until `confirm_totp_enrollment/4`.
+  enrollment. Requires the user's current `password` (MFA_PLAN.md Decision 3).
+  The returned provisioning payload is shown once; the new enrollment stays
+  inert until `confirm_totp_enrollment/4`.
 
   Returns:
 
       {:ok, %{secret_base32: b32, otpauth_uri: uri, qr_code_svg: svg}}
-      {:error, :email_not_verified | :unauthorized | :totp_already_enabled | :too_many_requests}
+      {:error, :unauthorized | :totp_already_enabled | :too_many_requests}
   """
   def start_totp_enrollment(%User{} = user, password, remote_ip) do
-    with :ok <- check_totp_email_verified(user),
-         :ok <- check_totp_rate(user.id),
+    with :ok <- check_totp_rate(user.id),
          :ok <- check_totp_password(user, password),
          :ok <- check_no_confirmed_totp(user.id) do
       do_start_totp_enrollment(user, remote_ip)
@@ -3155,9 +3154,6 @@ defmodule Malan.Accounts do
     from(bc in TotpBackupCode, where: bc.user_id == ^user_id and is_nil(bc.used_at))
     |> Repo.aggregate(:count)
   end
-
-  defp check_totp_email_verified(%User{email_verified: %DateTime{}}), do: :ok
-  defp check_totp_email_verified(%User{}), do: {:error, :email_not_verified}
 
   defp check_no_confirmed_totp(user_id) do
     case get_user_totp(user_id) do

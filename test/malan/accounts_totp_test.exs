@@ -27,11 +27,11 @@ defmodule Malan.AccountsTotpTest do
   defp get_totp_row(user), do: Repo.get_by(UserTotp, user_id: user.id)
 
   describe "start_totp_enrollment/3" do
-    test "requires a verified email" do
+    test "does not require a verified email" do
       {:ok, user} = Helpers.Accounts.regular_user()
       assert is_nil(user.email_verified)
 
-      assert {:error, :email_not_verified} =
+      assert {:ok, %{secret_base32: _}} =
                Accounts.start_totp_enrollment(user, user.password, @ip)
     end
 

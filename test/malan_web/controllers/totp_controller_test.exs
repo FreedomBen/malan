@@ -1,7 +1,6 @@
 defmodule MalanWeb.TotpControllerTest do
   use MalanWeb.ConnCase, async: true
 
-  alias Malan.Accounts
   alias Malan.Test.Helpers
 
   setup %{conn: conn} do
@@ -23,11 +22,10 @@ defmodule MalanWeb.TotpControllerTest do
     {Helpers.Accounts.put_token(conn, session.api_token), user, secret, backup_codes, session}
   end
 
-  # Authed conn for a verified-email user with no TOTP yet
-  defp verified_user_conn(conn) do
+  # Authed conn for a user with no TOTP yet (email left unverified —
+  # enrollment does not require it)
+  defp user_conn(conn) do
     {:ok, user} = Helpers.Accounts.regular_user()
-    {:ok, verified} = Accounts.set_email_verified(user, true)
-    user = %{verified | password: user.password}
     {:ok, session} = Helpers.Accounts.create_session(user)
     {Helpers.Accounts.put_token(conn, session.api_token), user, session}
   end
@@ -36,7 +34,7 @@ defmodule MalanWeb.TotpControllerTest do
 
   describe "show (GET /api/users/:user_id/totp)" do
     test "walks none -> pending -> enabled and never discloses secret material", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       resp = get(conn, Routes.user_totp_path(conn, :show, user.id)) |> json_response(200)
       assert %{"ok" => true, "data" => %{"status" => "none"}} = resp
@@ -99,7 +97,7 @@ defmodule MalanWeb.TotpControllerTest do
 
   describe "create (POST /api/users/:user_id/totp)" do
     test "starts enrollment with the correct password", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       resp =
         post(conn, Routes.user_totp_path(conn, :create, user.id), password: user.password)
@@ -119,7 +117,7 @@ defmodule MalanWeb.TotpControllerTest do
     end
 
     test "requires the password (Decision 3): missing or wrong -> generic 403", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       no_pass = post(conn, Routes.user_totp_path(conn, :create, user.id))
       body = json_response(no_pass, 403)
@@ -138,14 +136,14 @@ defmodule MalanWeb.TotpControllerTest do
              |> get_in(["data", "status"]) == "none"
     end
 
-    test "requires a verified email", %{conn: conn} do
+    test "does not require a verified email", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, session} = Helpers.Accounts.create_session(user)
       conn = Helpers.Accounts.put_token(conn, session.api_token)
 
       resp = post(conn, Routes.user_totp_path(conn, :create, user.id), password: user.password)
 
-      assert json_response(resp, 403)["message"] =~ "verified"
+      assert %{"secret_base32" => _} = json_response(resp, 201)["data"]
     end
 
     test "returns 409 (a real 409 body) when TOTP is already enabled", %{conn: conn} do
@@ -161,7 +159,7 @@ defmodule MalanWeb.TotpControllerTest do
 
   describe "confirm (PUT /api/users/:user_id/totp/confirm)" do
     test "full flow: enroll -> confirm -> backup codes -> MFA-gated login", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       %{"data" => %{"secret_base32" => b32}} =
         post(conn, Routes.user_totp_path(conn, :create, user.id), password: user.password)
@@ -210,7 +208,7 @@ defmodule MalanWeb.TotpControllerTest do
     end
 
     test "an invalid code gets the invalid_mfa_code body", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
       post(conn, Routes.user_totp_path(conn, :create, user.id), password: user.password)
 
       resp = put(conn, Routes.user_totp_path(conn, :confirm, user.id), code: "000000")
@@ -224,7 +222,7 @@ defmodule MalanWeb.TotpControllerTest do
     end
 
     test "404 when there is no pending enrollment", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       resp = put(conn, Routes.user_totp_path(conn, :confirm, user.id), code: "123456")
       assert %{"ok" => false, "code" => 404} = json_response(resp, 404)
@@ -283,7 +281,7 @@ defmodule MalanWeb.TotpControllerTest do
     end
 
     test "404 when TOTP is not enabled", %{conn: conn} do
-      {conn, user, _session} = verified_user_conn(conn)
+      {conn, user, _session} = user_conn(conn)
 
       resp =
         post(conn, Routes.user_totp_path(conn, :disable, user.id),

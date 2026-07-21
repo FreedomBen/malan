@@ -468,7 +468,7 @@ Response (`201 Created`):
   }
 }
 ```
-- Requires a **verified email address** (`403` with an explanatory message otherwise) and the correct password (`403`).
+- Requires the correct password (`403` on mismatch). A verified email address is **not** required.
 - `409 Conflict` when TOTP is already enabled (disable first, or use the admin recovery path).
 - Starting again while pending replaces the pending enrollment with a fresh secret.
 - The enrollment does nothing until confirmed: login is unaffected while `pending`.
