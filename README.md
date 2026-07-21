@@ -142,7 +142,7 @@ Use `iex -S mix phx.server` for an interactive shell or `mix phx.server --no-hal
 
 The Malan API is a REST interface; see [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) for full payloads and [`API.md`](./API.md) for a quick map of routes. Some deployments enforce Terms of Service and Privacy Policy acceptance (HTTP 461/462 if missing); you can opt in by setting `accept_tos` / `accept_privacy_policy` on the user record.
 
-Malan supports TOTP-based (RFC 6238) multi-factor authentication. Users with a verified email can enroll under `/api/users/:user_id/totp` (enroll → confirm with an authenticator code → receive ten single-use backup codes), after which `POST /api/sessions` requires a `totp_code` — either a current authenticator code or a backup code — and returns a machine-readable 403 (`mfa_required` / `invalid_mfa_code` body flags) otherwise. Every state-changing MFA endpoint re-requires the account password so a stolen bearer token cannot change MFA state, code guessing is rate limited per user (`TOTP_VERIFY_*`), and admins have a recovery path (`DELETE /api/admin/users/:id/totp`) for users who lose both their authenticator and backup codes. TOTP secrets are encrypted at rest under a dedicated rotatable keyring supplied via `TOTP_ENCRYPTION_KEYS` (required in prod; see `config/runtime.exs`), and the authenticator-app issuer label is set per environment with `TOTP_ISSUER`.
+Malan supports TOTP-based (RFC 6238) multi-factor authentication. Users with a verified email can enroll under `/api/users/:user_id/totp` (enroll → confirm with an authenticator code → receive ten single-use backup codes), after which `POST /api/sessions` requires a `totp_code` — either a current authenticator code or a backup code — and returns a machine-readable 403 (`mfa_required` / `invalid_mfa_code` body flags) otherwise. Every state-changing MFA endpoint re-requires the account password so a stolen bearer token cannot change MFA state, code guessing is rate limited per user (`TOTP_VERIFY_*`), and admins have a recovery path (`DELETE /api/admin/users/:id/totp`) for users who lose both their authenticator and backup codes. TOTP secrets are encrypted at rest under a dedicated rotatable keyring supplied via `TOTP_ENCRYPTION_KEYS` (required in prod; see [TOTP encryption keys](#totp-encryption-keys)), and the authenticator-app issuer label is set per environment with `TOTP_ISSUER`.
 
 If your client will be in TypeScript, you can also consider using [libmalan](https://github.com/FreedomBen/libmalan), a simple utility package that provides TypeScript methods.
 
@@ -153,7 +153,31 @@ CI/CD is handled by GitHub Actions in `.github/workflows/build-test-deploy.yaml`
 - Staging: every push/merge to `main` builds, tests, publishes, and deploys to staging automatically.
 - Production: push a tag (e.g., `prod-$(date '+%Y-%m-%d-%H-%M-%S')`) to trigger a production deploy.
 - Build/publish/deploy logic lives in `scripts/build-release.sh`, `scripts/push-release.sh`, and `scripts/deploy-release.sh`.
-- The production image (built from `Dockerfile.prod`) is a multi-stage `mix release` — the runtime stage carries no `mix`, no compilers, and no source. Run release tasks with `/app/bin/malan eval "Malan.Release.migrate()"` (or `Malan.Release.create_and_migrate()`, `Malan.Release.setup()`), and connect a remote IEx with `/app/bin/malan remote`. The dev image (`Dockerfile`) still runs `mix phx.server` directly.
+- The production image (built from `Dockerfile.prod`) is a multi-stage `mix release` — the runtime stage carries no `mix`, no compilers, and no source. Run release tasks with `/app/bin/malan eval "Malan.Release.migrate()"` (or `Malan.Release.create_and_migrate()`, `Malan.Release.setup()`, `Malan.Release.reencrypt_totp_secrets()`), and connect a remote IEx with `/app/bin/malan remote`. The dev image (`Dockerfile`) still runs `mix phx.server` directly.
+
+### TOTP encryption keys
+
+TOTP secrets are encrypted at rest under a keyring supplied via the
+`TOTP_ENCRYPTION_KEYS` environment variable, formatted as
+`<key_id>:<base64-32-byte-key>[,<key_id>:<base64-32-byte-key>,...]`. The
+**first** entry encrypts new secrets; every entry can decrypt (each database row
+records the `key_id` that encrypted it). In prod it is required at boot for both
+the web pods (`malan-deploy-secrets`) and the migrate Job
+(`malan-migration-secrets`) — `config/runtime.exs` refuses to start without it.
+Generate an entry with:
+
+```sh
+# Key ID here is '1'.  It must be unique so best practice is to always increment
+# the ID when adding a new entry
+elixir -e 'IO.puts("1:" <> Base.encode64(:crypto.strong_rand_bytes(32)))'
+```
+
+To rotate: prepend a new entry using the next unused `key_id` (keep the old
+entry in the list), deploy, run
+`/app/bin/malan eval "Malan.Release.reencrypt_totp_secrets()"`, and remove the
+old entry only after it reports `failed: 0`. Never reuse a retired `key_id` with
+different key material. The full procedure is documented on
+`Malan.Accounts.reencrypt_totp_secrets/0`.
 
 ### Configuring PostgreSQL users
 
