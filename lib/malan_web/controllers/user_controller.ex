@@ -673,7 +673,8 @@ defmodule MalanWeb.UserController do
       pp: pp,
       # whoami never receives a %User{} — only session assigns — so the
       # MFA state is looked up here and passed through
-      totp_enabled: Accounts.totp_enabled?(user_id)
+      totp_enabled: Accounts.totp_enabled?(user_id),
+      authenticated_by: Accounts.session_authenticated_by(session_id)
     )
   end
 

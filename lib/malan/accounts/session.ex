@@ -7,11 +7,18 @@ defmodule Malan.Accounts.Session do
   alias Malan.Accounts.User
   alias Malan.Utils
 
+  # Server-set record of how the session was authenticated. Never cast from
+  # client attrs — it flows in as an explicit argument to create_changeset/3.
+  @authenticated_by_values ["password", "password+totp", "password+backup_code"]
+
+  def authenticated_by_values, do: @authenticated_by_values
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "sessions" do
     field :api_token_hash, :string
     field :authenticated_at, :utc_datetime
+    field :authenticated_by, :string
     field :expires_at, :utc_datetime
     field :ip_address, :string
     field :location, :string
@@ -62,7 +69,7 @@ defmodule Malan.Accounts.Session do
   end
 
   @doc "User login session"
-  def create_changeset(session, attrs) do
+  def create_changeset(session, attrs, authenticated_by \\ "password") do
     session
     |> cast(attrs, [
       :user_id,
@@ -80,12 +87,15 @@ defmodule Malan.Accounts.Session do
     |> set_max_extension_time()
     |> validate_max_extension_secs()
     |> put_authenticated_at()
+    |> put_change(:authenticated_by, authenticated_by)
+    |> validate_inclusion(:authenticated_by, @authenticated_by_values)
     |> validate_required([
       :api_token_hash,
       :expires_at,
       :extendable_until,
       :max_extension_secs,
       :authenticated_at,
+      :authenticated_by,
       :ip_address
     ])
 

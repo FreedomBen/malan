@@ -178,6 +178,12 @@
               scope="col"
               class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
             >
+              Auth
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+            >
               Expires
             </th>
             <th
@@ -197,7 +203,7 @@
         <tbody class="divide-y divide-gray-200 dark:divide-white/10">
           <%= if @sessions == [] do %>
             <tr>
-              <td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              <td colspan="6" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                 No sessions recorded for this user.
               </td>
             </tr>
@@ -210,6 +216,9 @@
               </td>
               <td class="px-3 py-3 font-mono text-sm text-gray-700 whitespace-nowrap dark:text-gray-300">
                 {session.ip_address || "—"}
+              </td>
+              <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap dark:text-gray-300">
+                {session.authenticated_by || "—"}
               </td>
               <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap dark:text-gray-300">
                 {MalanWeb.AdminLive.Shell.format_dt(session.expires_at)}

@@ -779,6 +779,7 @@ defmodule MalanWeb.SessionControllerTest do
                "id" => ^session_id,
                "user_id" => ^user_id,
                "authenticated_at" => authenticated_at,
+               "authenticated_by" => "password",
                "expires_at" => expires_at,
                # "ip_address" => "192.168.2.200",
                "location" => nil,
@@ -800,6 +801,22 @@ defmodule MalanWeb.SessionControllerTest do
   end
 
   describe "create session" do
+    test "authenticated_by is server-set and cannot be injected by the client", %{conn: conn} do
+      {:ok, user} = Helpers.Accounts.regular_user()
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password,
+            authenticated_by: "password+totp"
+          }
+        )
+
+      assert %{"authenticated_by" => "password"} = json_response(conn, 201)["data"]
+    end
+
     test "renders session when data is valid", %{conn: conn} do
       {:ok, user} = Helpers.Accounts.regular_user()
       {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)

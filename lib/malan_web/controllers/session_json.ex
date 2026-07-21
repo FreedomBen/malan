@@ -35,6 +35,7 @@ defmodule MalanWeb.SessionJSON do
       api_token: session.api_token,
       expires_at: session.expires_at,
       authenticated_at: session.authenticated_at,
+      authenticated_by: session.authenticated_by,
       revoked_at: session.revoked_at,
       ip_address: session.ip_address,
       valid_only_for_ip: session.valid_only_for_ip,

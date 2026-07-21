@@ -1647,7 +1647,9 @@ defmodule MalanWeb.UserControllerTest do
                "user_roles" => ["user"],
                "expires_at" => _expires_at,
                "privacy_policy" => nil,
-               "terms_of_service" => nil
+               "terms_of_service" => nil,
+               "totp_enabled" => false,
+               "authenticated_by" => "password"
              } = json_response(conn, 200)["data"]
     end
 

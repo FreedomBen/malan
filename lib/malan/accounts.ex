@@ -953,17 +953,17 @@ defmodule Malan.Accounts do
   def user_reject_privacy_policy(user_id),
     do: user_set_privacy_policy(false, user_id)
 
-  def new_session(attrs) do
+  def new_session(attrs, authenticated_by \\ "password") do
     %Session{}
-    |> Session.create_changeset(attrs)
+    |> Session.create_changeset(attrs, authenticated_by)
     |> Repo.insert()
   end
 
-  def new_session(user_id, remote_ip, attrs) do
+  def new_session(user_id, remote_ip, attrs, authenticated_by \\ "password") do
     attrs
     |> Map.put("user_id", user_id)
     |> Map.put("remote_ip", remote_ip)
-    |> new_session()
+    |> new_session(authenticated_by)
   end
 
   defp username_to_id(username) do
@@ -1034,9 +1034,9 @@ defmodule Malan.Accounts do
       record_create_session_mfa_required(user_id, remote_ip, attrs, username)
     else
       with :ok <- check_totp_rate(user_id),
-           {:ok, _method} <- verify_totp_or_backup(user_id, username, totp, code, remote_ip) do
+           {:ok, method} <- verify_totp_or_backup(user_id, username, totp, code, remote_ip) do
         clear_totp_rate(user_id)
-        new_session(user_id, remote_ip, attrs)
+        new_session(user_id, remote_ip, attrs, mfa_method_authenticated_by(method))
       else
         {:error, :too_many_requests} = err ->
           err
@@ -1046,6 +1046,10 @@ defmodule Malan.Accounts do
       end
     end
   end
+
+  # Session.authenticated_by value for a passed MFA verification method
+  defp mfa_method_authenticated_by(:totp), do: "password+totp"
+  defp mfa_method_authenticated_by(:backup_code), do: "password+backup_code"
 
   @doc """
   Record failed session creation attempt: the password was correct but the
@@ -1427,6 +1431,16 @@ defmodule Malan.Accounts do
     |> Utils.Crypto.hash_token()
     |> get_session_expires_revoked_by_token()
     |> session_valid?(remote_ip)
+  end
+
+  @doc """
+  Get how the given session was authenticated.
+
+  Returns "password", "password+totp", or "password+backup_code";
+  nil if the session doesn't exist.
+  """
+  def session_authenticated_by(session_id) do
+    Repo.one(from s in Session, where: s.id == ^session_id, select: s.authenticated_by)
   end
 
   def revoke_active_sessions(user, remote_ip \\ dummy_ip())

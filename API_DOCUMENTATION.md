@@ -148,6 +148,7 @@ Response (`201 Created`):
     "user_id": "c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1",
     "api_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "authenticated_at": "2024-12-16T12:00:00Z",
+    "authenticated_by": "password",
     "ip_address": "203.0.113.10",
     "location": null,
     "expires_at": "2025-01-01T12:00:00Z",
@@ -160,6 +161,7 @@ Response (`201 Created`):
 }
 ```
 - `api_token` is only present in the creation response; subsequent session fetches omit it.
+- `authenticated_by` records how the session was authenticated — `"password"`, `"password+totp"`, or `"password+backup_code"`. It is server-set (any client-supplied value is ignored); the latter two mean the login passed MFA. Sessions created before this field existed read as `"password"`, which was the only method at the time.
 - Invalid credentials return `403 ForbiddenAuth`; locked users return `423`; excessive login attempts return `429 Too Many Requests` (limited per username and per source IP).
 - `never_expires: true` issues a non-expiring session that can still be revoked; `valid_only_for_ip` and `valid_only_for_approved_ips` further restrict token use.
 
@@ -197,10 +199,12 @@ Requires a bearer token even though the route is on the unauthenticated pipeline
     "expires_at": "2025-01-01T12:00:00Z",
     "terms_of_service": 2,
     "privacy_policy": 1,
-    "totp_enabled": false
+    "totp_enabled": false,
+    "authenticated_by": "password"
   }
 }
 ```
+- `authenticated_by` reports how the *current* session was authenticated (`"password"`, `"password+totp"`, or `"password+backup_code"`).
 
 ### Password Reset
 - `POST /api/users/:id/reset_password` (id or username) — issues a reset token and emails it.
@@ -614,6 +618,7 @@ curl -H "Authorization: Bearer ${admin_token}" \
 - Path parameters `:id` for users accept either UUID or username; nested `user_id` routes also allow `current`.
 - Roles supported: `user`, `admin`, `moderator`.
 - User payloads include `email_verified`, `totp_enabled`, `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired`, `mfa_required`, and `invalid_mfa_code` may appear on error payloads.
+- Session payloads (and whoami) include `authenticated_by` — `"password"`, `"password+totp"`, or `"password+backup_code"` — recording whether the login passed MFA.
 - MFA codes: the login `totp_code` and every TOTP endpoint `code` accept a 6-digit TOTP code or a 12-character single-use backup code. Backup codes are case-sensitive; whitespace and hyphens are stripped from either code type before verification.
 - Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.
 - Addresses require `line_2`; address/phone responses include `primary` and `verified_at` when set.

@@ -196,7 +196,17 @@ defmodule MalanWeb.TotpControllerTest do
           }
         )
 
-      assert %{"api_token" => _} = json_response(with_code, 201)["data"]
+      assert %{"api_token" => mfa_token, "authenticated_by" => "password+totp"} =
+               json_response(with_code, 201)["data"]
+
+      # …and whoami on the MFA session reports how it was authenticated
+      whoami =
+        build_conn()
+        |> Helpers.Accounts.put_token(mfa_token)
+        |> get(Routes.user_path(conn, :whoami))
+
+      assert %{"totp_enabled" => true, "authenticated_by" => "password+totp"} =
+               json_response(whoami, 200)["data"]
     end
 
     test "an invalid code gets the invalid_mfa_code body", %{conn: conn} do

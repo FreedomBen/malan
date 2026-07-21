@@ -2537,6 +2537,13 @@ components:
         authenticated_at:
           type: string
           format: date-time
+        authenticated_by:
+          type: string
+          enum: [password, password+totp, password+backup_code]
+          description: >-
+            How the session was authenticated. Server-set at login;
+            "password+totp" and "password+backup_code" indicate the login
+            passed multi-factor authentication.
         revoked_at:
           type: string
           format: date-time
@@ -2927,3 +2934,7 @@ components:
               type: integer
             totp_enabled:
               type: boolean
+            authenticated_by:
+              type: string
+              enum: [password, password+totp, password+backup_code]
+              description: How the current session was authenticated

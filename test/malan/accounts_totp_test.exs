@@ -523,6 +523,16 @@ defmodule Malan.AccountsTotpTest do
                Helpers.Accounts.create_session(user, %{"totp_code" => "123456"})
 
       assert is_binary(session.api_token)
+      assert session.authenticated_by == "password"
+    end
+
+    test "client attrs cannot inject authenticated_by" do
+      {:ok, user} = Helpers.Accounts.regular_user()
+
+      assert {:ok, session} =
+               Helpers.Accounts.create_session(user, %{"authenticated_by" => "password+totp"})
+
+      assert session.authenticated_by == "password"
     end
 
     test "a pending enrollment does not gate login" do
@@ -565,7 +575,9 @@ defmodule Malan.AccountsTotpTest do
       {:ok, user, secret, _codes} = Helpers.Accounts.regular_user_with_totp()
       code = current_code(secret)
 
-      assert {:ok, _session} = Helpers.Accounts.create_session(user, %{"totp_code" => code})
+      assert {:ok, session} = Helpers.Accounts.create_session(user, %{"totp_code" => code})
+      assert session.authenticated_by == "password+totp"
+      assert Accounts.session_authenticated_by(session.id) == "password+totp"
 
       assert {:error, :invalid_mfa_code} =
                Helpers.Accounts.create_session(user, %{"totp_code" => code})
@@ -582,7 +594,8 @@ defmodule Malan.AccountsTotpTest do
     test "a backup code logs in, is single-use, and decrements the remaining count" do
       {:ok, user, _secret, [code | _]} = Helpers.Accounts.regular_user_with_totp()
 
-      assert {:ok, _session} = Helpers.Accounts.create_session(user, %{"totp_code" => code})
+      assert {:ok, session} = Helpers.Accounts.create_session(user, %{"totp_code" => code})
+      assert session.authenticated_by == "password+backup_code"
       assert %{backup_codes_remaining: 9} = Accounts.totp_status(user)
 
       assert {:error, :invalid_mfa_code} =

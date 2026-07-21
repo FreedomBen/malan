@@ -49,7 +49,8 @@ defmodule MalanWeb.UserJSON do
         expires_at: expires_at,
         tos: tos,
         pp: pp,
-        totp_enabled: totp_enabled
+        totp_enabled: totp_enabled,
+        authenticated_by: authenticated_by
       }) do
     %{
       ok: true,
@@ -63,7 +64,8 @@ defmodule MalanWeb.UserJSON do
         expires_at: expires_at,
         terms_of_service: tos,
         privacy_policy: pp,
-        totp_enabled: totp_enabled
+        totp_enabled: totp_enabled,
+        authenticated_by: authenticated_by
       }
     }
   end
