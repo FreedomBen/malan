@@ -23,6 +23,12 @@ data:
   # pool-checkout queueing on /api/users/me, which was driving P99 tail
   # latency above 4s.
   POOL_SIZE: '20'
+  # Cap the BEAM port table. ERTS otherwise sizes it from `ulimit -n`, and
+  # newer DOKS node images hand containers a ~1e9 fd limit — the resulting
+  # ~2 GiB boot preallocation OOMKilled pods before Phoenix started
+  # (2026-07-28 staging outage; prod nodes were still sane, capped ahead
+  # of their next upgrade).
+  ERL_MAX_PORTS: '65536'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'accounts.ameelio.org'
   PORT: '4000'

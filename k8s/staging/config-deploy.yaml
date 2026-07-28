@@ -18,6 +18,11 @@ data:
   LOG_LEVEL: 'info'
   BIND_ADDR: '0.0.0.0'
   POOL_SIZE: '20'
+  # Cap the BEAM port table. ERTS otherwise sizes it from `ulimit -n`, and
+  # newer DOKS node images hand containers a ~1e9 fd limit — the resulting
+  # ~2 GiB boot preallocation OOMKilled pods before Phoenix started
+  # (2026-07-28 staging outage).
+  ERL_MAX_PORTS: '65536'
   MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
   HOST: 'accounts.ameelio.xyz'
   PORT: '4000'
