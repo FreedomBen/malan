@@ -2168,10 +2168,17 @@ defmodule Malan.Accounts do
         remote_ip,
         log_changeset
       ) do
+    # Log.create_changeset/2 casts this field via cast_embed, which requires a
+    # map (or nil). Anything else (e.g. a bare error atom like
+    # :too_many_requests passed by mistake instead of nil) fails Ecto's cast
+    # with "changeset: is invalid" and permanently fails the async
+    # LogWriter job after exhausting retries. Coerce to nil instead of
+    # letting a non-map value reach the embed. See MALAN-ED.
     serializable_changeset =
       case log_changeset do
         %Ecto.Changeset{} -> Log.Changes.map_from_changeset(log_changeset)
-        other -> other
+        other when is_map(other) -> other
+        _other -> nil
       end
 
     %{
