@@ -75,6 +75,7 @@ defmodule Malan.Accounts.Log do
       :remote_ip
     ])
     |> cast_embed(:changeset, with: &Log.Changes.changeset/2)
+    |> truncate_long_fields()
     |> put_default_when()
     |> validate_required([:success, :type, :verb, :when, :what, :remote_ip])
     |> validate_type()
@@ -85,6 +86,28 @@ defmodule Malan.Accounts.Log do
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:session_id)
     |> foreign_key_constraint(:who)
+  end
+
+  # `:what` and `:who_username` are varchar(255) with no length validation,
+  # so a caller building `:what` from `Utils.Ecto.Changeset.errors_to_str/1`
+  # (which joins every error on a changeset into one string) can produce a
+  # value long enough that Postgres itself rejects the raw INSERT with
+  # `Postgrex.Error` 22001 ("string data right truncation") - a hard crash
+  # instead of a normal validation failure, permanently failing the async
+  # LogWriter job after exhausting retries. Truncate defensively rather than
+  # reject: losing the tail of a human-readable description is preferable to
+  # losing the entire audit row. See MALAN-EG.
+  defp_testable truncate_long_fields(changeset) do
+    changeset
+    |> truncate_field(:what)
+    |> truncate_field(:who_username)
+  end
+
+  defp_testable truncate_field(changeset, field) do
+    case get_change(changeset, field) do
+      str when is_binary(str) -> put_change(changeset, field, Utils.trunc_str(str, 255))
+      _ -> changeset
+    end
   end
 
   defp_testable put_default_when(changeset) do
