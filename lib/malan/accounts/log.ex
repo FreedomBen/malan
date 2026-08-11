@@ -105,7 +105,9 @@ defmodule Malan.Accounts.Log do
 
   defp_testable truncate_field(changeset, field) do
     case get_change(changeset, field) do
-      str when is_binary(str) -> put_change(changeset, field, Utils.trunc_str(str, 255))
+      str when is_binary(str) ->
+        truncated = str |> String.codepoints() |> Enum.take(255) |> Enum.join()
+        put_change(changeset, field, truncated)
       _ -> changeset
     end
   end
