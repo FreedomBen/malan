@@ -351,6 +351,15 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
+  # `keepalive: true` enables TCP keepalive probes so the kernel notices a
+  # silently-dropped connection (mirrors the Hammer.Redis fix in this same
+  # file) instead of the connection sitting half-open until DBConnection's
+  # periodic idle-check read times out, surfacing as `Postgrex.Protocol
+  # disconnected: ** (DBConnection.ConnectionError) ssl recv (idle):
+  # timeout`. Applies to both the legacy DO-managed Postgres and the
+  # in-cluster CNPG pooler.
+  socket_options = maybe_ipv6 ++ [keepalive: true]
+
   # TLS for Postgrex is built from the environment by Malan.RepoConfig (extracted
   # there so it is unit-testable; runtime.exs is not loaded by the test suite).
   # DATABASE_SSL_MODE selects verify_full (in-cluster CNPG pooler: chain +
@@ -359,10 +368,9 @@ if config_env() == :prod do
   database_ssl = RepoConfig.ssl_opts(System.get_env())
 
   config :malan, Malan.Repo,
-    # socket_options: [:inet6],
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6,
+    socket_options: socket_options,
     ssl: database_ssl
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
