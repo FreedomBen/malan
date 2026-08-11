@@ -108,7 +108,9 @@ defmodule Malan.Accounts.Log do
       str when is_binary(str) ->
         truncated = str |> String.codepoints() |> Enum.take(255) |> Enum.join()
         put_change(changeset, field, truncated)
-      _ -> changeset
+
+      _ ->
+        changeset
     end
   end
 
