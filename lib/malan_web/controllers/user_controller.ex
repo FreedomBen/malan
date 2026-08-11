@@ -417,8 +417,11 @@ defmodule MalanWeb.UserController do
           |> put_view(ErrorJSON)
           |> render(:"500")
 
-          {:error, :too_many_requests}
-
+        {:error, :too_many_requests} ->
+          # log_changeset is nil here (not the :too_many_requests atom) because
+          # Log.create_changeset/2 casts this field via cast_embed, which requires
+          # a map (or nil) - passing a bare atom fails Ecto's cast with "is invalid"
+          # and permanently fails the async LogWriter job. See MALAN-ED.
           record_log_password_reset_email_fail(
             conn,
             user,
@@ -428,6 +431,7 @@ defmodule MalanWeb.UserController do
 
           conn
           |> put_view(ErrorJSON)
+          |> put_status(:too_many_requests)
           |> render(:"429")
 
         {:error, err_cs} ->
