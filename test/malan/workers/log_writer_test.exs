@@ -172,6 +172,37 @@ defmodule Malan.Workers.LogWriterTest do
       assert log.type_enum == Log.Type.to_i("sessions")
     end
 
+    test "coerces a non-map changeset like :too_many_requests to nil instead of failing the job" do
+      {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
+
+      # Regression: without the non-map safety net in record_log/10, a bare
+      # error atom here serializes to a string, fails cast_embed in the
+      # LogWriter job, and the audit row is lost entirely.
+      assert {:ok, job} =
+               Accounts.record_log(
+                 false,
+                 user.id,
+                 session.id,
+                 user.id,
+                 user.username,
+                 "users",
+                 "POST",
+                 "non-map changeset safety net test",
+                 "10.0.0.1",
+                 :too_many_requests
+               )
+
+      assert job.args["changeset"] == nil
+
+      log = Accounts.get_log_by!(who: user.id)
+      assert log.what == "non-map changeset safety net test"
+      assert log.success == false
+
+      # The changeset column is `null: false, default: %{}`, so "no embedded
+      # changeset" loads as an all-defaults Changes struct rather than nil
+      assert log.changeset == %Log.Changes{}
+    end
+
     test "captures the when timestamp at enqueue time" do
       {:ok, user, session} = Helpers.Accounts.regular_user_with_session()
       before = DateTime.utc_now() |> DateTime.truncate(:second)
