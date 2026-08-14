@@ -1541,6 +1541,15 @@ defmodule MalanWeb.UserControllerTest do
              } = del_log
 
       assert true == TestUtils.DateTime.within_last?(when_utc, 5, :seconds)
+
+      # The embedded changeset is the exact one that was persisted: its
+      # deleted_at (and sentinel email/username) match the stored row
+      persisted = Malan.Repo.get(User, id)
+      changes = del_log.changeset.changes
+      assert changes["deleted_at"] == DateTime.to_iso8601(persisted.deleted_at)
+      assert changes["email"] == persisted.email
+      assert changes["username"] == persisted.username
+
       assert [del_log] == Accounts.list_logs_by_user_id(id, 0, 10)
       assert [del_log] == Accounts.list_logs_by_session_id(session_id, 0, 10)
 
@@ -1708,7 +1717,7 @@ defmodule MalanWeb.UserControllerTest do
       assert is_nil(session.revoked_at)
       # session = Helpers.Accounts.set_revoked(session)
       # assert not is_nil(session.revoked_at)
-      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(user)
 
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = get(conn, Routes.user_path(conn, :whoami))
@@ -3618,6 +3627,32 @@ defmodule MalanWeb.UserControllerTest do
       conn = Helpers.Accounts.put_token(conn, session.api_token)
       conn = put(conn, Routes.user_path(conn, :lock, id))
       assert conn.status == 401
+    end
+
+    test "Creates a Log embedding the exact persisted changeset", %{
+      conn: _conn,
+      user: %User{id: id}
+    } do
+      {:ok, conn, %User{id: admin_id}, _as} =
+        Helpers.Accounts.admin_user_session_conn(build_conn())
+
+      conn = put(conn, Routes.user_path(conn, :lock, id))
+
+      assert %{"id" => ^id, "locked_at" => locked_at} = json_response(conn, 200)["data"]
+
+      log =
+        Accounts.list_logs_by_who(id, 0, 10)
+        |> Enum.find(fn l -> l.what == "#UserController.lock/2" end)
+
+      assert %Log{success: true} = log
+
+      # The embedded changeset is the exact one that was persisted: its
+      # locked_at matches the stored (and rendered) value to the second —
+      # a rebuilt changeset would stamp its own locked_at
+      changes = log.changeset.changes
+      assert log.changeset.data_type == "users"
+      assert changes["locked_at"] == locked_at
+      assert changes["locked_by"] == admin_id
     end
 
     test "Revokes all outstanding tokens", %{

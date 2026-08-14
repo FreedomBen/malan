@@ -536,7 +536,7 @@ defmodule Malan.AccountsTest do
       user = user_fixture()
       assert %{user | password: nil, custom_attrs: %{}} == Accounts.get_user(user.id)
       assert %{user | password: nil, custom_attrs: %{}} == Accounts.get_user!(user.id)
-      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(user)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
       assert is_nil(Accounts.get_user(user.id))
     end
@@ -544,11 +544,17 @@ defmodule Malan.AccountsTest do
     test "delete_user/1 changes username and email, sets deleted_at" do
       get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
       user = user_fixture()
-      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert {:ok, %User{}, %Ecto.Changeset{} = cs} = Accounts.delete_user(user)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
       retval = get_u.(user.id)
       assert String.ends_with?(retval.email, "|#{user.email}")
       assert String.ends_with?(retval.username, "|#{user.username}")
+
+      # The returned changeset is the exact one that was persisted (a
+      # rebuilt changeset would stamp its own deleted_at)
+      assert Ecto.Changeset.get_change(cs, :deleted_at) == retval.deleted_at
+      assert Ecto.Changeset.get_change(cs, :email) == retval.email
+      assert Ecto.Changeset.get_change(cs, :username) == retval.username
     end
 
     test "delete_user/1 can be called multiple times" do
@@ -556,7 +562,7 @@ defmodule Malan.AccountsTest do
       get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
 
       u1 = user_fixture()
-      assert {:ok, %User{}} = Accounts.delete_user(u1)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(u1)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(u1.id) end
       retval = get_u.(u1.id)
       assert String.ends_with?(retval.email, "|#{u1.email}")
@@ -564,7 +570,7 @@ defmodule Malan.AccountsTest do
 
       # Recreate the user and delete it again
       u2 = user_fixture(%{"email" => u1.email, "username" => u1.username})
-      assert {:ok, %User{}} = Accounts.delete_user(u2)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(u2)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(u2.id) end
       retval = get_u.(u2.id)
       assert String.ends_with?(retval.email, "|#{u2.email}")
@@ -574,7 +580,7 @@ defmodule Malan.AccountsTest do
     test "delete_user/1 cannot be called on an already deleted user" do
       get_u = fn id -> Repo.one(from(u in User, where: u.id == ^id)) end
       user = user_fixture()
-      assert {:ok, %User{}} = Accounts.delete_user(user)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(user)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(user.id) end
       retval = get_u.(user.id)
       assert String.ends_with?(retval.email, "|#{user.email}")
@@ -787,6 +793,31 @@ defmodule Malan.AccountsTest do
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
 
+    test "reset_password_with_token/4 returns the exact changeset that was persisted" do
+      user = user_fixture()
+      {:ok, user, _cs} = Accounts.generate_password_reset(user)
+
+      assert {:ok, %User{} = updated, %Ecto.Changeset{} = cs} =
+               Accounts.reset_password_with_token(
+                 user,
+                 user.password_reset_token,
+                 "brandnewpassword123"
+               )
+
+      # The changeset carries the password hash that actually landed in the
+      # DB — a rebuilt changeset would re-run put_pass_hash and produce a
+      # different (differently-salted) hash
+      persisted = Repo.one(from(u in User, where: u.id == ^updated.id))
+      assert Ecto.Changeset.get_change(cs, :password_hash) == persisted.password_hash
+
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(
+                 updated.username,
+                 "brandnewpassword123",
+                 "1.2.3.4"
+               )
+    end
+
     test "admin_reset_password_with_token/4 allows passwords down to the admin-set minimum" do
       user = user_fixture()
       {:ok, user, _cs} = Accounts.generate_password_reset(user)
@@ -803,7 +834,7 @@ defmodule Malan.AccountsTest do
         |> Keyword.put(:admin_account_min_password_length, 12)
       )
 
-      assert {:ok, %User{} = updated} =
+      assert {:ok, %User{} = updated, _cs} =
                Accounts.admin_reset_password_with_token(
                  user,
                  token,
@@ -876,7 +907,7 @@ defmodule Malan.AccountsTest do
     test "get_user_by/1 does not include deleted users" do
       uf = user_fixture()
 
-      assert {:ok, %User{}} = Accounts.delete_user(uf)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(uf)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(uf.id) end
       assert is_nil(Accounts.get_user(uf.id))
 
@@ -914,7 +945,7 @@ defmodule Malan.AccountsTest do
     test "get_user_by!/1 does not include deleted users" do
       uf = user_fixture()
 
-      assert {:ok, %User{}} = Accounts.delete_user(uf)
+      assert {:ok, %User{}, %Ecto.Changeset{}} = Accounts.delete_user(uf)
       assert_raise Ecto.NoResultsError, fn -> Accounts.get_user!(uf.id) end
       assert is_nil(Accounts.get_user(uf.id))
 
@@ -1073,18 +1104,23 @@ defmodule Malan.AccountsTest do
       assert is_nil(u1.locked_at)
       assert is_nil(u1.locked_by)
 
-      {:ok, u2} = Accounts.lock_user(u1, u1.id)
+      {:ok, u2, cs} = Accounts.lock_user(u1, u1.id)
       assert TestUtils.DateTime.within_last?(u2.locked_at, 5, :seconds)
       assert u1.id == u2.locked_by
 
       u3 = Accounts.get_user(u1.id)
       assert TestUtils.DateTime.within_last?(u3.locked_at, 5, :seconds)
       assert u1.id == u3.locked_by
+
+      # The returned changeset is the exact one that was persisted (a
+      # rebuilt changeset would stamp its own locked_at)
+      assert Ecto.Changeset.get_change(cs, :locked_at) == u3.locked_at
+      assert Ecto.Changeset.get_change(cs, :locked_by) == u3.locked_by
     end
 
     test "unlock/1" do
       u1 = user_fixture()
-      {:ok, u1} = Accounts.lock_user(u1, u1.id)
+      {:ok, u1, _cs} = Accounts.lock_user(u1, u1.id)
       assert TestUtils.DateTime.within_last?(u1.locked_at, 5, :seconds)
       assert u1.id == u1.locked_by
 
@@ -1092,9 +1128,12 @@ defmodule Malan.AccountsTest do
       assert TestUtils.DateTime.within_last?(u1.locked_at, 5, :seconds)
       assert u1.id == u1.locked_by
 
-      {:ok, u2} = Accounts.unlock_user(u1)
+      {:ok, u2, cs} = Accounts.unlock_user(u1)
       assert is_nil(u2.locked_by)
       assert is_nil(u2.locked_at)
+
+      # The returned changeset is the exact one that was persisted
+      assert %{locked_at: nil, locked_by: nil} = cs.changes
     end
   end
 
@@ -1104,7 +1143,7 @@ defmodule Malan.AccountsTest do
     def session_fixture(user_attrs \\ %{}, session_attrs \\ %{}) do
       user = user_fixture(user_attrs)
 
-      {:ok, session} =
+      {:ok, session, _cs} =
         Accounts.create_session(
           user.username,
           user.password,
@@ -1167,7 +1206,7 @@ defmodule Malan.AccountsTest do
     test "create_session/3 with valid data creates a session" do
       user = user_fixture()
 
-      assert {:ok, %Session{} = session} =
+      assert {:ok, %Session{} = session, _cs} =
                Accounts.create_session(user.username, user.password, "192.168.2.200", %{
                  "ip_address" => "192.168.2.200"
                })
@@ -1197,7 +1236,7 @@ defmodule Malan.AccountsTest do
     test "create_session/3 with expires_never at true expires over 200 years from now" do
       user = user_fixture()
 
-      assert {:ok, %Session{} = session} =
+      assert {:ok, %Session{} = session, _cs} =
                Accounts.create_session(
                  user.username,
                  user.password,
@@ -1215,7 +1254,7 @@ defmodule Malan.AccountsTest do
     test "create_session/3 with expires_in_seconds expires at specified time" do
       user = user_fixture()
 
-      assert {:ok, %Session{} = session} =
+      assert {:ok, %Session{} = session, _cs} =
                Accounts.create_session(
                  user.username,
                  user.password,
@@ -1234,7 +1273,7 @@ defmodule Malan.AccountsTest do
     test "create_session/1 never_expire set to 'false' doesn't affect stuff" do
       user = user_fixture()
 
-      assert {:ok, %Session{} = session} =
+      assert {:ok, %Session{} = session, _cs} =
                Accounts.create_session(
                  user.username,
                  user.password,
@@ -1255,7 +1294,7 @@ defmodule Malan.AccountsTest do
       user1 = user_fixture(%{"username" => "username1"})
       user2 = user_fixture(%{"username" => "username2", "email" => "username2@example.com"})
 
-      assert {:ok, session} =
+      assert {:ok, session, _cs} =
                Accounts.create_session(
                  user1.username,
                  user1.password,
@@ -1292,7 +1331,7 @@ defmodule Malan.AccountsTest do
 
       assert user_id == user.id
 
-      {:ok, user} = Accounts.lock_user(user, nil)
+      {:ok, user, _cs} = Accounts.lock_user(user, nil)
 
       assert {^user_id, ^password_hash, locked_at, []} =
                Accounts.get_user_id_pass_hash_by_username(user.username)
@@ -1462,7 +1501,7 @@ defmodule Malan.AccountsTest do
     test "validate_session/2 honors valid_only_for_approved_ips against the user's current approved_ips" do
       user = user_fixture(%{"approved_ips" => ["1.1.1.1", "2.2.2.2"]})
 
-      {:ok, session} =
+      {:ok, session, _cs} =
         Accounts.create_session(user.username, user.password, "1.1.1.1", %{
           "ip_address" => "1.1.1.1",
           "valid_only_for_approved_ips" => true
@@ -1477,7 +1516,7 @@ defmodule Malan.AccountsTest do
     test "validate_session/2 rejects an approved-IP session after the user removes the IP from approved_ips" do
       user = user_fixture(%{"approved_ips" => ["1.1.1.1"]})
 
-      {:ok, session} =
+      {:ok, session, _cs} =
         Accounts.create_session(user.username, user.password, "1.1.1.1", %{
           "ip_address" => "1.1.1.1",
           "valid_only_for_approved_ips" => true
@@ -2748,7 +2787,7 @@ defmodule Malan.AccountsTest do
     end
 
     test "excludes soft-deleted users", %{alice: alice} do
-      {:ok, _} = Accounts.delete_user(alice)
+      {:ok, _, _cs} = Accounts.delete_user(alice)
       {rows, _} = Accounts.admin_list_users(0, 50, search: "alice_sm")
       refute alice.id in MapSet.new(rows, & &1.id)
     end

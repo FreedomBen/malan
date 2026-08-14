@@ -46,7 +46,7 @@ defmodule Malan.RateLimitsResilienceTest do
       # correct-credentials login must still succeed.
       {:ok, user} = Malan.Test.Helpers.Accounts.regular_user()
 
-      assert {:ok, %Malan.Accounts.Session{}} =
+      assert {:ok, %Malan.Accounts.Session{}, _cs} =
                Malan.Accounts.create_session(user.username, user.password, "203.0.113.60", %{
                  "ip_address" => "203.0.113.60"
                })

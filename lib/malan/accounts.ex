@@ -524,17 +524,21 @@ defmodule Malan.Accounts do
   @doc """
     Returns:
 
-      {:ok, %User{}}
+      {:ok, %User{}, %Ecto.Changeset{}}
       {:error, :missing_password_reset_token}
       {:error, :invalid_password_reset_token}
+
+    The returned changeset is the one that was persisted, so callers can
+    log the exact change for auditing without rebuilding it (rebuilding
+    would also re-run `put_pass_hash` and double the Pbkdf2 cost).
   """
   def reset_password_with_token(user, token, new_password, remote_ip \\ dummy_ip())
 
   def reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user, _cs} <- update_user_password(orig_user, new_password, rip) do
-      {:ok, user}
+         {:ok, %User{} = user, cs} <- update_user_password(orig_user, new_password, rip) do
+      {:ok, user, cs}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -548,8 +552,8 @@ defmodule Malan.Accounts do
   def admin_reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
          {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user, _cs} <- admin_update_password(orig_user, new_password, rip) do
-      {:ok, user}
+         {:ok, %User{} = user, cs} <- admin_update_password(orig_user, new_password, rip) do
+      {:ok, user, cs}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -612,38 +616,51 @@ defmodule Malan.Accounts do
   @doc """
   Deletes a user.
 
+  Returns `{:ok, user, changeset}` on success — the changeset is the one
+  that was persisted, so callers can log the exact change for auditing
+  without rebuilding it.
+
   ## Examples
 
       iex> delete_user(user)
-      {:ok, %User{}}
+      {:ok, %User{}, %Ecto.Changeset{}}
 
       iex> delete_user(user)
       {:error, %Ecto.Changeset{}}
 
   """
   def delete_user(%User{} = user, remote_ip \\ dummy_ip()) do
-    with {:ok, _num_revoked} <- revoke_active_sessions(user, remote_ip) do
-      user
-      |> User.delete_changeset()
-      |> Repo.update()
+    changeset = User.delete_changeset(user)
+
+    with {:ok, _num_revoked} <- revoke_active_sessions(user, remote_ip),
+         {:ok, %User{} = deleted} <- Repo.update(changeset) do
+      {:ok, deleted, changeset}
     end
   end
 
+  # Returns `{:ok, user, changeset}` on success so callers can log the
+  # exact persisted changeset (locked_at is stamped at changeset build
+  # time, so a rebuilt copy would carry a different timestamp).
   def lock_user(%User{} = user, locked_by_id, remote_ip \\ dummy_ip()) do
-    with cs <- User.lock_changeset(user, locked_by_id),
-         {:ok, user} <- Repo.update(cs),
+    changeset = User.lock_changeset(user, locked_by_id)
+
+    with {:ok, user} <- Repo.update(changeset),
          {:ok, _num_revoked} <- revoke_active_sessions(user, remote_ip) do
-      {:ok, user}
+      {:ok, user, changeset}
     else
       {:error, changeset} -> {:error, changeset}
       err -> {:error, err}
     end
   end
 
+  # Returns `{:ok, user, changeset}` on success; see lock_user/3.
   def unlock_user(%User{} = user) do
-    user
-    |> User.unlock_changeset()
-    |> Repo.update()
+    changeset = User.unlock_changeset(user)
+
+    case Repo.update(changeset) do
+      {:ok, unlocked} -> {:ok, unlocked, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   alias Malan.Accounts.Session
@@ -953,10 +970,17 @@ defmodule Malan.Accounts do
   def user_reject_privacy_policy(user_id),
     do: user_set_privacy_policy(false, user_id)
 
+  # Returns `{:ok, session, changeset}` on success so the login audit log
+  # can record the exact changeset that was persisted. The credential
+  # fields it carries (api_token, api_token_hash) are masked by
+  # `Malan.Accounts.Log.Changes` before the log row is written.
   def new_session(attrs, authenticated_by \\ "password") do
-    %Session{}
-    |> Session.create_changeset(attrs, authenticated_by)
-    |> Repo.insert()
+    changeset = Session.create_changeset(%Session{}, attrs, authenticated_by)
+
+    case Repo.insert(changeset) do
+      {:ok, session} -> {:ok, session, changeset}
+      {:error, _} = err -> err
+    end
   end
 
   def new_session(user_id, remote_ip, attrs, authenticated_by \\ "password") do
@@ -978,7 +1002,9 @@ defmodule Malan.Accounts do
 
   `ip_addr` will be recorded in the DB
 
-  Returns {:ok, %Session{}} on success
+  Returns {:ok, %Session{}, %Ecto.Changeset{}} on success — the changeset
+      is the one that was persisted, so callers can log the exact change
+      for auditing without rebuilding it.
       If user account is loked, you'll get back {:error, :user_locked}
       If unauthorized you'll get back {:error, :unauthorized}
       If user is not found, you'll get back {:error, :not_found}

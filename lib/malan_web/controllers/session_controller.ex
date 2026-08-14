@@ -101,7 +101,7 @@ defmodule MalanWeb.SessionController do
   def create(conn, %{
         "session" => %{"username" => username, "password" => password} = session_opts
       }) do
-    with {:ok, %Session{} = session} <-
+    with {:ok, %Session{} = session, changeset} <-
            Accounts.create_session(
              username,
              password,
@@ -116,7 +116,7 @@ defmodule MalanWeb.SessionController do
         session.user_id,
         "POST",
         "#SessionController.create/2",
-        nil
+        changeset
       )
 
       conn

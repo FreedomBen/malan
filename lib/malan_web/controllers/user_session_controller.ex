@@ -16,7 +16,7 @@ defmodule MalanWeb.UserSessionController do
     session_attrs = %{"ip_address" => remote_ip, "totp_code" => params["totp_code"]}
 
     case Accounts.create_session(username, password, remote_ip, session_attrs) do
-      {:ok, %Session{api_token: token}} ->
+      {:ok, %Session{api_token: token}, _changeset} ->
         conn
         |> configure_session(renew: true)
         |> put_session(:api_token, token)

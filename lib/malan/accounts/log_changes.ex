@@ -20,7 +20,8 @@ defmodule Malan.Accounts.Log.Changes do
   # hashes go in here — a leaked log row with `password_hash` would let an
   # attacker run an offline crack, and the reset/verification token hashes
   # are correlateable across rows even though they aren't directly usable
-  # as a credential.
+  # as a credential. `api_token_hash` matters since login logs carry the
+  # exact Session changeset, whose changes include both token fields.
   @blacklisted_attrs [
     :password,
     :password_hash,
@@ -28,7 +29,8 @@ defmodule Malan.Accounts.Log.Changes do
     :password_reset_token_hash,
     :email_verification_token,
     :email_verification_token_hash,
-    :api_token
+    :api_token,
+    :api_token_hash
   ]
 
   defguard valid_data_type(data_type) when data_type in @valid_data_types

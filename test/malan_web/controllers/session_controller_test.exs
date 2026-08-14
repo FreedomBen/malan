@@ -1209,6 +1209,19 @@ defmodule MalanWeb.SessionControllerTest do
       assert [log] == Accounts.list_logs_by_user_id(user_id, 0, 10)
       assert [log] == Accounts.list_logs_by_session_id(id, 0, 10)
       assert [log] == Accounts.list_logs_by_who(user_id, 0, 10)
+
+      # The log embeds the exact changeset that created the session...
+      session = Accounts.get_session(id)
+      changes = log.changeset.changes
+      assert log.changeset.data_type == "sessions"
+      assert changes["user_id"] == user_id
+      assert changes["authenticated_by"] == "password"
+      assert changes["expires_at"] == DateTime.to_iso8601(session.expires_at)
+
+      # ...with the api_token and its hash masked, never stored in the log
+      assert changes["api_token"] =~ ~r/\A\*+\z/
+      assert changes["api_token_hash"] =~ ~r/\A\*+\z/
+      refute changes["api_token_hash"] == session.api_token_hash
     end
 
     test "Create session fails when user is locked; creates Log", %{conn: conn} do

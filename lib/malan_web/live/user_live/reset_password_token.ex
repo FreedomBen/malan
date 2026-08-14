@@ -43,21 +43,22 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     # password validation failure.  This doesn't remove the server-side validation
     # that happens.  It still goes through the other validation, but if we can
     # catch it early then the user doesn't have to request a new token for every
-    # attempt they want to make. Secondarily it slso give us a changset
-    # to use for logging the log
-    log_changeset = User.update_changeset(socket.assigns.user, %{"password" => password})
+    # attempt they want to make.  The successful reset is logged with the exact
+    # changeset returned by reset_password_with_token/3; this precheck changeset
+    # is only logged when validation fails here (and so nothing was persisted).
+    precheck_changeset = User.update_changeset(socket.assigns.user, %{"password" => password})
 
     socket =
-      case log_changeset.valid? do
-        true -> handle_reset_password(reset_token, password, socket, remote_ip, log_changeset)
-        _ -> handle_reset_password_fail(log_changeset, socket, remote_ip)
+      case precheck_changeset.valid? do
+        true -> handle_reset_password(reset_token, password, socket, remote_ip)
+        _ -> handle_reset_password_fail(precheck_changeset, socket, remote_ip)
       end
 
     {:noreply, socket}
   end
 
-  defp handle_reset_password(reset_token, new_password, socket, remote_ip, log_changeset) do
-    with {:ok, %User{} = _user} <-
+  defp handle_reset_password(reset_token, new_password, socket, remote_ip) do
+    with {:ok, %User{} = _user, changeset} <-
            Accounts.reset_password_with_token(
              socket.assigns.user,
              reset_token,
@@ -73,7 +74,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
         socket.assigns.user.username,
         "PUT",
         "MalanWeb.UserLive.ResetPasswordToken | handle_event 'reset_password'",
-        log_changeset
+        changeset
       )
 
       socket

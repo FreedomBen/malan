@@ -42,7 +42,12 @@ defmodule Malan.LogChangesSchemaTest do
       tc = Log.Changes.map_from_changeset(changeset)
 
       assert tc.action == changeset.action
-      assert tc.changes == Map.update!(changeset.changes, :api_token, &Utils.mask_str/1)
+
+      assert tc.changes ==
+               changeset.changes
+               |> Map.update!(:api_token, &Utils.mask_str/1)
+               |> Map.update!(:api_token_hash, &Utils.mask_str/1)
+
       assert tc.data == changeset.data |> Utils.struct_to_map() |> Map.delete(:user)
       assert tc.data_type == changeset.data.__meta__.source
       assert tc.errors == changeset.errors
@@ -109,6 +114,24 @@ defmodule Malan.LogChangesSchemaTest do
 
       refute Enum.any?(Map.values(tc.changes), &(&1 == "new_verify_hash_value"))
       refute Enum.any?(Map.values(tc.data), &(&1 == "old_verify_hash_value"))
+    end
+
+    test "masks api_token and api_token_hash in changes and data" do
+      # Login logs now embed the exact Session changeset, whose changes
+      # carry the raw api_token (virtual) and its stored hash — neither may
+      # survive into the audit log.
+      cs = session_changeset_fixture(%{api_token_hash: "old_api_hash_value"})
+      raw_token = cs.changes.api_token
+      raw_hash = cs.changes.api_token_hash
+
+      tc = Log.Changes.map_from_changeset(cs)
+
+      assert tc.changes[:api_token] == Utils.mask_str(raw_token)
+      assert tc.changes[:api_token_hash] == Utils.mask_str(raw_hash)
+      assert tc.data[:api_token_hash] == Utils.mask_str("old_api_hash_value")
+      refute Enum.any?(Map.values(tc.changes), &(&1 == raw_token))
+      refute Enum.any?(Map.values(tc.changes), &(&1 == raw_hash))
+      refute Enum.any?(Map.values(tc.data), &(&1 == "old_api_hash_value"))
     end
 
     test "masks raw password_reset_token and email_verification_token virtual fields in changes" do

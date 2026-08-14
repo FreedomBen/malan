@@ -192,9 +192,8 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      changeset = User.lock_changeset(user, conn.assigns.authed_user_id)
-
-      with {:ok, %User{} = user} <- Accounts.lock_user(user, conn.assigns.authed_user_id) do
+      with {:ok, %User{} = user, changeset} <-
+             Accounts.lock_user(user, conn.assigns.authed_user_id) do
         record_log(
           conn,
           true,
@@ -217,7 +216,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.lock/2 - User lock failed: #{err_str}",
-            changeset
+            cs
           )
 
           {:error, cs}
@@ -230,7 +229,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.lock/2 - User lock failed: #{Kernel.inspect(err)}",
-            changeset
+            nil
           )
 
           {:error, err}
@@ -244,9 +243,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      changeset = User.unlock_changeset(user)
-
-      with {:ok, %User{} = user} <- Accounts.unlock_user(user) do
+      with {:ok, %User{} = user, changeset} <- Accounts.unlock_user(user) do
         record_log(
           conn,
           true,
@@ -269,7 +266,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "PUT",
             "#UserController.unlock/2 - User unlock failed: #{err_str}",
-            changeset
+            err
           )
 
           {:error, err}
@@ -283,9 +280,7 @@ defmodule MalanWeb.UserController do
     if is_nil(user) do
       render_user(conn, user)
     else
-      changeset = User.delete_changeset(user)
-
-      with {:ok, %User{}} <- Accounts.delete_user(user) do
+      with {:ok, %User{}, changeset} <- Accounts.delete_user(user) do
         record_log(
           conn,
           true,
@@ -308,7 +303,7 @@ defmodule MalanWeb.UserController do
             user.username,
             "DELETE",
             "#UserController.delete/2 - User delete failed: #{err_str}",
-            changeset
+            err
           )
 
           {:error, err}
@@ -526,11 +521,12 @@ defmodule MalanWeb.UserController do
     do: render_user(conn, nil)
 
   defp reset_password_token_p(conn, %User{} = user, token, new_password, mode) do
-    # Audit-log payload for the reset event. We deliberately do NOT build a
-    # User.update_changeset here: it would run put_pass_hash on `new_password`
-    # purely so the audit log could record a hash, doubling the Pbkdf2 cost
-    # of every reset. The actual password change (and its real changeset)
-    # happens inside Accounts.{,admin_}reset_password_with_token below.
+    # Audit-log payload for failure events, where no changeset was applied.
+    # We deliberately do NOT build a User.update_changeset here: it would run
+    # put_pass_hash on `new_password` purely so the audit log could record a
+    # hash, doubling the Pbkdf2 cost of every reset. On success the exact
+    # changeset applied inside Accounts.{,admin_}reset_password_with_token
+    # is returned and logged instead.
     log_payload = %{
       "action" => "password_reset_via_token",
       "mode" => Atom.to_string(mode),
@@ -543,7 +539,7 @@ defmodule MalanWeb.UserController do
         _ -> &Accounts.reset_password_with_token/4
       end
 
-    with {:ok, %User{} = _user} <-
+    with {:ok, %User{} = _user, %Ecto.Changeset{} = changeset} <-
            reset_fun.(user, token, new_password, remote_ip_s(conn)) do
       record_log(
         conn,
@@ -552,7 +548,7 @@ defmodule MalanWeb.UserController do
         user.username,
         "PUT",
         "#UserController.admin_reset_password_token/3",
-        log_payload
+        changeset
       )
 
       conn

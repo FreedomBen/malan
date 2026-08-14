@@ -77,12 +77,18 @@ defmodule Malan.Test.Helpers.Accounts do
 
   @doc "Returns: {:ok, user}"
   def lock_user(user, locked_by \\ nil) do
-    Accounts.lock_user(user, locked_by)
+    case Accounts.lock_user(user, locked_by) do
+      {:ok, user, _cs} -> {:ok, user}
+      err -> err
+    end
   end
 
   @doc "Returns: {:ok, user}"
   def unlock_user(user) do
-    Accounts.unlock_user(user)
+    case Accounts.unlock_user(user) do
+      {:ok, user, _cs} -> {:ok, user}
+      err -> err
+    end
   end
 
   @doc "Returns: {:ok, user}"
@@ -107,15 +113,18 @@ defmodule Malan.Test.Helpers.Accounts do
 
   @doc "Returns: {:ok, session}"
   def create_session(user, session_attrs \\ %{}, remote_ip \\ "192.168.2.200") do
-    Accounts.create_session(
-      user.username,
-      user.password,
-      remote_ip,
-      Map.merge(
-        %{"ip_address" => remote_ip},
-        session_attrs
-      )
-    )
+    case Accounts.create_session(
+           user.username,
+           user.password,
+           remote_ip,
+           Map.merge(
+             %{"ip_address" => remote_ip},
+             session_attrs
+           )
+         ) do
+      {:ok, session, _cs} -> {:ok, session}
+      err -> err
+    end
   end
 
   @doc """

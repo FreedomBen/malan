@@ -37,12 +37,13 @@ defmodule Malan.Accounts.Log do
     # Remote IP of user who did this thing
     field :remote_ip, :string
 
-    # Important Note:  This is often not the exact changeset that was involved,
-    # particularly in the case of a successful change.  It will take some
-    # refactoring to make that happen.  When successful, the changesets
-    # here are often very similar (same field values except for ttimetampes) 
-    # but not identical.  With error changesets most of them are identical
-    # If applicable, the changeset involved
+    # If applicable, the changeset involved.  For single-record operations
+    # (success and failure) this is the exact changeset that was applied:
+    # context functions return `{:ok, result, changeset}` so callers log the
+    # persisted changeset rather than rebuilding a lookalike.  Bulk
+    # operations (update_all / delete_all, e.g. revoking all sessions) have
+    # no changeset and log an empty map.  Compound operations that apply
+    # several changesets log the primary one.
     embeds_one :changeset, Log.Changes, on_replace: :update
 
     field :type, :string, virtual: true

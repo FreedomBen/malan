@@ -15,7 +15,7 @@ defmodule MalanWeb.AdminSessionController do
     # *password* was wrong.
     session_attrs = %{"ip_address" => remote_ip, "totp_code" => params["totp_code"]}
 
-    with {:ok, %Session{api_token: token, user_id: user_id}} <-
+    with {:ok, %Session{api_token: token, user_id: user_id}, _changeset} <-
            Accounts.create_session(username, password, remote_ip, session_attrs),
          {:ok, true} <- Accounts.user_is_admin?(user_id) do
       conn
