@@ -161,39 +161,65 @@ hammer_redis_url =
       System.get_env("HAMMER_REDIS_URL") || "redis://localhost:6379/0"
   end
 
-# When the URL is `rediss://`, override Erlang's default hostname-check
-# function. Redix already supplies sensible TLS defaults — `verify:
-# :verify_peer`, `depth: 3`, and `:cacerts` from `:public_key.cacerts_get/0`
-# (OTP 25+) or castore — and DO Redis chains to a publicly-trusted CA, so
-# we deliberately do *not* set `:cacertfile`/`:cacerts` here (doing so
-# disables Redix's defaults, per its docs).
+# TLS options for a `rediss://` URL, in two flavors keyed off REDIS_TLS_CA:
 #
-# What we *do* need to override is hostname matching. DO presents a leaf
-# cert with the wildcard SAN `*.b.db.ondigitalocean.com`; Erlang's
-# default match function rejects long single-label hostnames like
+# **In-cluster Valkey** (REDIS_TLS_CA set — the Terraform contract secret
+# `malan-valkey-secrets` provides it as the path where the Deployment
+# mounts the malan-valkey CA): pin trust to exactly that private CA via
+# `:cacertfile`. Supplying a CA option replaces Redix's default trust
+# store, so the rest of the TLS posture is restated explicitly rather
+# than assumed (`verify: :verify_peer`, `depth`). The server cert's SANs
+# carry the exact `malan-valkey-rw.…svc.cluster.local` service names, so
+# the RFC 6125 match function is kept for consistency, not necessity.
+#
+# **DO managed Redis** (REDIS_TLS_CA unset — prod until its own valkey
+# cutover): Redix's defaults — `verify: :verify_peer`, `depth: 3`, and
+# `:cacerts` from `:public_key.cacerts_get/0` (OTP 25+) or castore —
+# already chain DO's publicly-trusted cert, so we deliberately do *not*
+# set `:cacertfile`/`:cacerts` (doing so disables those defaults, per the
+# Redix docs). What DO *does* need overridden is hostname matching: the
+# leaf cert's wildcard SAN `*.b.db.ondigitalocean.com` rejects long
+# single-label hostnames like
 # `db-redis-nyc3-staging-do-user-7165198-0.b.db.ondigitalocean.com`
-# against that wildcard. Installing the HTTPS-style match function
-# applies RFC 6125 wildcard semantics and accepts the match.
+# under Erlang's default match function; the HTTPS-style match function
+# applies RFC 6125 wildcard semantics and accepts it.
 #
 # Hammer.Redis pops `:url` and `Keyword.merge`s the rest on top of the
 # URL-derived start options, so `:socket_opts` reaches `Redix.start_link/1`.
 #
-# `keepalive: true` enables TCP keepalive probes so the kernel notices a
-# silently-dropped connection (DigitalOcean managed Redis idle-disconnects
-# pool members) and the pool reconnects, instead of the next pipeline call
-# raising %Redix.ConnectionError{reason: :disconnected}.
+# `keepalive: true` (both flavors) enables TCP keepalive probes so the
+# kernel notices a silently-dropped connection and the pool reconnects,
+# instead of the next pipeline call raising
+# %Redix.ConnectionError{reason: :disconnected}.
+redis_tls_ca = System.get_env("REDIS_TLS_CA")
+
 hammer_redis_extra_opts =
-  if String.starts_with?(hammer_redis_url, "rediss://") do
-    [
-      socket_opts: [
-        customize_hostname_check: [
-          match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-        ],
-        keepalive: true
+  cond do
+    not String.starts_with?(hammer_redis_url, "rediss://") ->
+      []
+
+    is_binary(redis_tls_ca) and redis_tls_ca != "" ->
+      [
+        socket_opts: [
+          verify: :verify_peer,
+          cacertfile: redis_tls_ca,
+          depth: 3,
+          customize_hostname_check: [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ],
+          keepalive: true
+        ]
       ]
-    ]
-  else
-    []
+
+    true ->
+      [
+        socket_opts: [
+          customize_hostname_check: [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ],
+          keepalive: true
+        ]
+      ]
   end
 
 config :malan,

@@ -93,6 +93,25 @@ spec:
             value: /tmp
           - name: ERL_CRASH_DUMP
             value: /tmp/erl_crash.dump
+          # In-cluster Valkey contract (Terraform-managed malan-valkey-secrets;
+          # infra repo docs/implementation-plans/valkey/). Explicit env entries
+          # take precedence over envFrom, so this overrides the legacy DBaaS
+          # HAMMER_REDIS_URL still present in malan-deploy-secrets — rollback
+          # is deleting these two entries and redeploying (keys rebuild on
+          # demand, no data migration either way).
+          - name: HAMMER_REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: malan-valkey-secrets
+                key: REDIS_URL
+          # Path where the Valkey CA is mounted below (the contract secret
+          # carries the path, not the cert). When set, runtime.exs pins
+          # Redix's TLS trust to exactly this private CA.
+          - name: REDIS_TLS_CA
+            valueFrom:
+              secretKeyRef:
+                name: malan-valkey-secrets
+                key: REDIS_TLS_CA
         envFrom:
           - configMapRef:
               name: malan-web-config
@@ -133,6 +152,11 @@ spec:
           - name: malan-pg-ca
             mountPath: /etc/cnpg/malan-pg
             readOnly: true
+          # In-cluster Valkey CA, read-only at the REDIS_TLS_CA path the
+          # contract secret points at.
+          - name: malan-valkey-ca
+            mountPath: /etc/valkey/malan-valkey
+            readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -151,6 +175,12 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        # Terraform mirrors ONLY ca.crt into malan-valkey-ca (never key
+        # material — the CA keypair stays in malan-db-staging), so unlike
+        # malan-pg-ca there is nothing to filter with items:.
+        - name: malan-valkey-ca
+          secret:
+            secretName: malan-valkey-ca
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
