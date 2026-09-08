@@ -362,4 +362,29 @@ defmodule Malan.Workers.ArchivedLogPrunerTest do
       assert remaining == 1
     end
   end
+
+  describe "logs_archived autovacuum reloptions" do
+    test "fixed autovacuum thresholds are set so vacuum fires despite table size" do
+      # Migration 20260908154500: with the default 20% scale factor a ~13M
+      # row table needs millions of recorded dead tuples before autovacuum
+      # runs, so the pruner's chunk scans degrade until they hit the query
+      # timeout. Fixed thresholds keep the table on a regular vacuum cadence.
+      %{rows: [[reloptions]]} =
+        Repo.query!("SELECT reloptions FROM pg_class WHERE relname = 'logs_archived'")
+
+      assert is_list(reloptions)
+
+      for opt <- [
+            "autovacuum_vacuum_scale_factor=0",
+            "autovacuum_vacuum_threshold=100000",
+            "autovacuum_vacuum_insert_scale_factor=0",
+            "autovacuum_vacuum_insert_threshold=100000",
+            "autovacuum_analyze_scale_factor=0",
+            "autovacuum_analyze_threshold=100000"
+          ] do
+        assert opt in reloptions,
+               "expected #{opt} in logs_archived reloptions, got: #{inspect(reloptions)}"
+      end
+    end
+  end
 end
