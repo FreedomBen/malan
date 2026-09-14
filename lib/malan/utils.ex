@@ -1093,6 +1093,11 @@ defmodule Malan.Utils.CIDR do
   Everything fails closed: an unparseable entry never matches, an
   unparseable remote address never matches, addresses never match across
   families, and an empty list matches nothing.
+
+  IPv4-mapped IPv6 entries ("::ffff:a.b.c.d", or any block inside
+  ::ffff:0:0/96) are rejected at validation: remote addresses in mapped
+  form are matched as the embedded IPv4 address, so such an entry could
+  never match anything — the plain IPv4 form is the entry that works.
   """
 
   import Bitwise
@@ -1107,8 +1112,9 @@ defmodule Malan.Utils.CIDR do
   Parse an allowlist entry (bare IP or CIDR block) into an `InetCidr`
   `{start, end, prefix_length}` tuple, enforcing the accepted prefix
   ranges. Stricter than `InetCidr.parse_cidr/2`: address shorthand
-  ("10.0.0/8"), leading-zero octets, host bits set below the prefix, and
-  non-canonical prefix lengths ("/08", "/8x") are all rejected.
+  ("10.0.0/8"), leading-zero octets, host bits set below the prefix,
+  non-canonical prefix lengths ("/08", "/8x"), and IPv4-mapped IPv6
+  forms (dead entries under `unmap/1`) are all rejected.
   """
   def parse(entry) when is_binary(entry) do
     case entry |> String.trim() |> String.split("/", parts: 2) do
@@ -1158,6 +1164,7 @@ defmodule Malan.Utils.CIDR do
 
   defp parse_cidr(addr_s, len_s) do
     with {:ok, addr} <- strict_parse_address(addr_s),
+         false <- mapped?(addr),
          {:ok, len} <- strict_parse_len(len_s),
          true <- len in prefix_range(addr),
          {:ok, cidr} <- InetCidr.parse_cidr("#{ntoa(addr)}/#{len}") do
@@ -1168,11 +1175,21 @@ defmodule Malan.Utils.CIDR do
   end
 
   defp parse_bare(addr_s) do
-    case strict_parse_address(addr_s) do
-      {:ok, addr} -> {:ok, {addr, addr, InetCidr.bit_count(addr)}}
-      :error -> :error
+    with {:ok, addr} <- strict_parse_address(addr_s),
+         false <- mapped?(addr) do
+      {:ok, {addr, addr, InetCidr.bit_count(addr)}}
+    else
+      _ -> :error
     end
   end
+
+  # An entry in the IPv4-mapped range can never match: remotes in mapped
+  # form are unmapped to IPv4 before matching. Alignment already forces a
+  # block with this start to /96 or longer, so start-address inspection
+  # suffices; blocks that merely contain the mapped range (e.g. "::/32")
+  # also cover real IPv6 space and stay valid.
+  defp mapped?({0, 0, 0, 0, 0, 0xFFFF, _, _}), do: true
+  defp mapped?(_), do: false
 
   # `:inet.parse_address/1` (what InetCidr parses with) accepts classful
   # shorthand like "10.0.0"; allowlist entries must be exact.

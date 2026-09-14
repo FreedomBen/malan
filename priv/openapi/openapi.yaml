@@ -2132,7 +2132,9 @@ components:
             description: IPv4/IPv6 address or CIDR block (e.g. "1.2.3.4" or
               "10.0.0.0/8"). Accepted prefix lengths are /8-/32 for IPv4 and
               /32-/128 for IPv6; /0 is rejected. Bare addresses match exactly;
-              blocks match by containment. Entries are stored canonicalized.
+              blocks match by containment. IPv4-mapped IPv6 forms
+              ("::ffff:a.b.c.d") are rejected; use the plain IPv4 address.
+              Entries are stored canonicalized.
       required:
       - id
       - username
@@ -2199,7 +2201,7 @@ components:
                 type: string
                 description: IPv4/IPv6 address or CIDR block. Accepted prefix
                   lengths are /8-/32 for IPv4 and /32-/128 for IPv6; /0 is
-                  rejected.
+                  rejected, as are IPv4-mapped IPv6 forms ("::ffff:a.b.c.d").
             preferences:
               $ref: '#/components/schemas/Preference'
             addresses:
@@ -2258,7 +2260,7 @@ components:
                 type: string
                 description: IPv4/IPv6 address or CIDR block. Accepted prefix
                   lengths are /8-/32 for IPv4 and /32-/128 for IPv6; /0 is
-                  rejected.
+                  rejected, as are IPv4-mapped IPv6 forms ("::ffff:a.b.c.d").
             preferences:
               $ref: '#/components/schemas/Preference'
             addresses:
@@ -2335,7 +2337,7 @@ components:
                 type: string
                 description: IPv4/IPv6 address or CIDR block. Accepted prefix
                   lengths are /8-/32 for IPv4 and /32-/128 for IPv6; /0 is
-                  rejected.
+                  rejected, as are IPv4-mapped IPv6 forms ("::ffff:a.b.c.d").
             preferences:
               $ref: '#/components/schemas/Preference'
             addresses:

@@ -621,7 +621,8 @@ defmodule Malan.Accounts.User do
           changeset,
           :approved_ips,
           "approved_ips contains an invalid selection.  Should be a valid IPv4/IPv6 address " <>
-            "or CIDR block (accepted prefix lengths: /8-/32 for IPv4, /32-/128 for IPv6)"
+            "or CIDR block (accepted prefix lengths: /8-/32 for IPv4, /32-/128 for IPv6).  " <>
+            "IPv4-mapped IPv6 entries (::ffff:a.b.c.d) are not accepted; use the plain IPv4 form"
         )
     end
   end

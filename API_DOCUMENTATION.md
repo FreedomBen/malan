@@ -623,7 +623,7 @@ curl -H "Authorization: Bearer ${admin_token}" \
 - Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.
 - Addresses require `line_2`; address/phone responses include `primary` and `verified_at` when set.
 - Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if a user has `approved_ips`, login is constrained to those entries even when the flag is false.
-- `approved_ips` entries are IPv4/IPv6 addresses or CIDR blocks (e.g. `10.0.0.0/8`), matched by containment. Accepted prefix lengths are /8–/32 for IPv4 and /32–/128 for IPv6; /0 is rejected, as are blocks with host bits set (use `10.0.0.0/8`, not `10.0.0.5/8`). Entries are stored canonicalized. `valid_only_for_ip` remains an exact-address pin, unaffected by CIDRs.
+- `approved_ips` entries are IPv4/IPv6 addresses or CIDR blocks (e.g. `10.0.0.0/8`), matched by containment. Accepted prefix lengths are /8–/32 for IPv4 and /32–/128 for IPv6; /0 is rejected, as are blocks with host bits set (use `10.0.0.0/8`, not `10.0.0.5/8`). IPv4-mapped IPv6 entries (`::ffff:a.b.c.d`, or any block inside `::ffff:0:0/96`) are rejected — clients arriving in mapped form are matched as the embedded IPv4 address, so list the plain IPv4 form instead. Entries are stored canonicalized. `valid_only_for_ip` remains an exact-address pin, unaffected by CIDRs.
 - Session defaults: expires in 7 days, extendable window 28 days, max single extension 7 days. An absolute cap is configurable; lists of session extensions are ordered newest first.
 - Minimum password length defaults to 6 characters (`MIN_PASSWORD_LENGTH`).
 

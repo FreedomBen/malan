@@ -1033,6 +1033,16 @@ defmodule Malan.UtilsTest do
       assert :error == Utils.CIDR.parse(nil)
     end
 
+    test "#parse/1 rejects IPv4-mapped IPv6 entries (dead under remote unmapping)" do
+      assert :error == Utils.CIDR.parse("::ffff:10.1.2.3")
+      assert :error == Utils.CIDR.parse("::ffff:0:0/96")
+      assert :error == Utils.CIDR.parse("::ffff:10.0.0.0/104")
+      assert :error == Utils.CIDR.canonicalize("::ffff:1.2.3.4")
+      # blocks that merely contain the mapped range also cover real IPv6
+      # space and stay valid
+      assert {:ok, _} = Utils.CIDR.parse("::/32")
+    end
+
     test "#canonicalize/1 returns canonical strings; bare addresses stay bare" do
       assert {:ok, "10.0.0.0/8"} == Utils.CIDR.canonicalize("10.0.0.0/8")
       assert {:ok, "1.2.3.4"} == Utils.CIDR.canonicalize("1.2.3.4")

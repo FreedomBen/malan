@@ -1612,6 +1612,9 @@ defmodule Malan.AccountsTest do
             # address shorthand
             ["10.0.0/8"],
             ["banana"],
+            # IPv4-mapped IPv6 forms are dead entries; the plain IPv4 works
+            ["::ffff:1.2.3.4"],
+            ["::ffff:0:0/96"],
             # one bad entry poisons the whole list
             ["1.2.3.4", "10.0.0.5/8"]
           ] do
