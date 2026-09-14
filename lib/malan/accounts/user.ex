@@ -621,7 +621,7 @@ defmodule Malan.Accounts.User do
         Ecto.Changeset.add_error(
           changeset,
           :approved_ips,
-          "approved_ips contains an invalid selection.  Should be valid IPv4 or IPv6 address"
+          "approved_ips contains an invalid selection.  Should be valid IPv4 address"
         )
     end
   end

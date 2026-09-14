@@ -2129,7 +2129,7 @@ components:
           type: array
           items:
             type: string
-            description: IPv4 or IPv6
+            description: IPv4
       required:
       - id
       - username

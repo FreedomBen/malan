@@ -981,7 +981,7 @@ defmodule Malan.UtilsTest do
         Ecto.Changeset.change({ts, types}, %{three: ""})
         |> Utils.Ecto.Changeset.validate_ip_addr(:three)
 
-      assert errors_on(cs).three == ["three must be a valid IPv4 or IPv6 address"]
+      assert errors_on(cs).three == ["three must be a valid IPv4 address"]
     end
   end
 

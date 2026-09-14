@@ -1199,7 +1199,7 @@ defmodule Malan.Utils.Ecto.Changeset do
         Ecto.Changeset.add_error(
           changeset,
           property,
-          "#{property} must be a valid IPv4 or IPv6 address"
+          "#{property} must be a valid IPv4 address"
         )
     end
   end
