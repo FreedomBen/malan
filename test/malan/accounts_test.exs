@@ -1530,6 +1530,98 @@ defmodule Malan.AccountsTest do
       assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "1.1.1.1")
     end
 
+    test "create_session/4 allows login from an IP inside an approved CIDR block" do
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["1.1.0.0/16"]})
+
+      assert {:ok, _session, _cs} =
+               Accounts.create_session(user.username, user.password, "1.1.2.3", %{
+                 "ip_address" => "1.1.2.3"
+               })
+    end
+
+    test "create_session/4 rejects login from an IP outside every approved CIDR block" do
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["1.1.0.0/16"]})
+
+      assert {:error, :unauthorized} =
+               Accounts.create_session(user.username, user.password, "1.2.0.0", %{})
+
+      assert [log] = Accounts.list_logs_by_user_id(user.id, 0, 10)
+      assert log.success == false
+      assert log.what =~ "IP is not on user's approved list"
+    end
+
+    test "validate_session/2 honors valid_only_for_approved_ips with CIDR entries at exact boundaries" do
+      user = user_fixture(%{"approved_ips" => ["1.1.1.1", "10.20.0.0/16"]})
+
+      {:ok, session, _cs} =
+        Accounts.create_session(user.username, user.password, "1.1.1.1", %{
+          "ip_address" => "1.1.1.1",
+          "valid_only_for_approved_ips" => true
+        })
+
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.validate_session(session.api_token, "10.20.0.0")
+
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.validate_session(session.api_token, "10.20.255.255")
+
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "10.21.0.0")
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "10.19.255.255")
+    end
+
+    test "validate_session/2 rejects an approved-IP session after the covering CIDR is removed" do
+      user = user_fixture(%{"approved_ips" => ["10.0.0.0/8"]})
+
+      {:ok, session, _cs} =
+        Accounts.create_session(user.username, user.password, "10.1.2.3", %{
+          "ip_address" => "10.1.2.3",
+          "valid_only_for_approved_ips" => true
+        })
+
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.validate_session(session.api_token, "10.1.2.3")
+
+      {:ok, _user, _cs} = Accounts.update_user(user, %{"approved_ips" => ["192.168.0.0/16"]})
+
+      assert {:error, :ip_addr} = Accounts.validate_session(session.api_token, "10.1.2.3")
+    end
+
+    test "update_user/2 accepts CIDR entries in approved_ips and canonicalizes them" do
+      user = user_fixture()
+
+      assert {:ok, %Accounts.User{} = updated, _cs} =
+               Accounts.update_user(user, %{
+                 "approved_ips" => ["1.2.3.4", "10.0.0.0/8", "2001:DB8::/32"]
+               })
+
+      assert updated.approved_ips == ["1.2.3.4", "10.0.0.0/8", "2001:db8::/32"]
+    end
+
+    test "update_user/2 rejects invalid approved_ips entries" do
+      user = user_fixture()
+
+      for bad <- [
+            # host bits set below the prefix
+            ["10.0.0.5/8"],
+            # /0 would disable the restriction
+            ["0.0.0.0/0"],
+            ["::/0"],
+            # below the accepted prefix ranges
+            ["16.0.0.0/4"],
+            ["2001::/16"],
+            # address shorthand
+            ["10.0.0/8"],
+            ["banana"],
+            # one bad entry poisons the whole list
+            ["1.2.3.4", "10.0.0.5/8"]
+          ] do
+        assert {:error, changeset} = Accounts.update_user(user, %{"approved_ips" => bad})
+
+        assert errors_on(changeset).approved_ips
+               |> Enum.any?(fn e -> e =~ "CIDR" end)
+      end
+    end
+
     test "update_user/2 can be used to update user preferences" do
       user = user_fixture()
 

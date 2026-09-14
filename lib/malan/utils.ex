@@ -1084,6 +1084,140 @@ defmodule Malan.Utils.IPv4 do
   def private?(_), do: false
 end
 
+defmodule Malan.Utils.CIDR do
+  @moduledoc """
+  Parsing and containment matching for IP allowlist entries
+  (`users.approved_ips`): each entry is a bare IPv4/IPv6 address or a CIDR
+  block, where a bare address is equivalent to a /32 (or /128) block.
+
+  Everything fails closed: an unparseable entry never matches, an
+  unparseable remote address never matches, addresses never match across
+  families, and an empty list matches nothing.
+  """
+
+  import Bitwise
+
+  # Accepted prefix ranges are part of the API contract (documented in the
+  # OpenAPI spec), so changing them is a spec change, not a tuning knob.
+  # /0 is always rejected: it would disable the restriction entirely.
+  @prefix_range_v4 8..32
+  @prefix_range_v6 32..128
+
+  @doc """
+  Parse an allowlist entry (bare IP or CIDR block) into an `InetCidr`
+  `{start, end, prefix_length}` tuple, enforcing the accepted prefix
+  ranges. Stricter than `InetCidr.parse_cidr/2`: address shorthand
+  ("10.0.0/8"), leading-zero octets, host bits set below the prefix, and
+  non-canonical prefix lengths ("/08", "/8x") are all rejected.
+  """
+  def parse(entry) when is_binary(entry) do
+    case entry |> String.trim() |> String.split("/", parts: 2) do
+      [addr_s, len_s] -> parse_cidr(addr_s, len_s)
+      [addr_s] -> parse_bare(addr_s)
+    end
+  end
+
+  def parse(_), do: :error
+
+  @doc """
+  Canonical string form of a valid entry ("2001:DB8::/32" becomes
+  "2001:db8::/32"); bare addresses stay bare. `:error` for invalid entries.
+  """
+  def canonicalize(entry) when is_binary(entry) do
+    case entry |> String.trim() |> String.split("/", parts: 2) do
+      [_addr_s, _len_s] ->
+        with {:ok, cidr} <- parse(entry), do: {:ok, InetCidr.to_string(cidr)}
+
+      [addr_s] ->
+        with {:ok, {addr, _, _}} <- parse_bare(addr_s), do: {:ok, ntoa(addr)}
+    end
+  end
+
+  def canonicalize(_), do: :error
+
+  @doc """
+  True when `remote_ip` (string or `:inet` tuple) falls within any entry.
+  IPv4-mapped IPv6 remote addresses (`::ffff:a.b.c.d`) are matched as the
+  embedded IPv4 address, mirroring `Malan.Utils.IPv4.private?/1`.
+  """
+  def allowed?(remote_ip, entries) when is_list(entries) do
+    case parse_remote(remote_ip) do
+      {:ok, addr} -> Enum.any?(entries, &entry_contains?(&1, addr))
+      :error -> false
+    end
+  end
+
+  def allowed?(_remote_ip, _entries), do: false
+
+  defp entry_contains?(entry, addr) do
+    case parse(entry) do
+      {:ok, cidr} -> InetCidr.contains?(cidr, addr)
+      :error -> false
+    end
+  end
+
+  defp parse_cidr(addr_s, len_s) do
+    with {:ok, addr} <- strict_parse_address(addr_s),
+         {:ok, len} <- strict_parse_len(len_s),
+         true <- len in prefix_range(addr),
+         {:ok, cidr} <- InetCidr.parse_cidr("#{ntoa(addr)}/#{len}") do
+      {:ok, cidr}
+    else
+      _ -> :error
+    end
+  end
+
+  defp parse_bare(addr_s) do
+    case strict_parse_address(addr_s) do
+      {:ok, addr} -> {:ok, {addr, addr, InetCidr.bit_count(addr)}}
+      :error -> :error
+    end
+  end
+
+  # `:inet.parse_address/1` (what InetCidr parses with) accepts classful
+  # shorthand like "10.0.0"; allowlist entries must be exact.
+  defp strict_parse_address(addr_s) do
+    case :inet.parse_strict_address(String.to_charlist(addr_s)) do
+      {:ok, addr} -> {:ok, addr}
+      _ -> :error
+    end
+  end
+
+  # InetCidr uses bare Integer.parse/1, which accepts "08" and "8abc".
+  defp strict_parse_len(len_s) do
+    case Integer.parse(len_s) do
+      {len, ""} -> if Integer.to_string(len) == len_s, do: {:ok, len}, else: :error
+      _ -> :error
+    end
+  end
+
+  defp prefix_range({_, _, _, _}), do: @prefix_range_v4
+  defp prefix_range({_, _, _, _, _, _, _, _}), do: @prefix_range_v6
+
+  defp parse_remote(ip) when is_binary(ip) do
+    case strict_parse_address(String.trim(ip)) do
+      {:ok, addr} -> {:ok, unmap(addr)}
+      :error -> :error
+    end
+  end
+
+  defp parse_remote(ip) when is_tuple(ip) do
+    cond do
+      InetCidr.v4?(ip) or InetCidr.v6?(ip) -> {:ok, unmap(ip)}
+      true -> :error
+    end
+  end
+
+  defp parse_remote(_), do: :error
+
+  defp unmap({0, 0, 0, 0, 0, 0xFFFF, hi, lo}),
+    do: {bsr(hi, 8), band(hi, 0xFF), bsr(lo, 8), band(lo, 0xFF)}
+
+  defp unmap(addr), do: addr
+
+  defp ntoa(addr), do: addr |> :inet.ntoa() |> Kernel.to_string()
+end
+
 defmodule Malan.Utils.Phoenix.Controller do
   import Plug.Conn, only: [halt: 1, put_status: 2]
 

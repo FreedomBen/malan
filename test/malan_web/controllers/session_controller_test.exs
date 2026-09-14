@@ -1468,6 +1468,44 @@ defmodule MalanWeb.SessionControllerTest do
              } = json_response(conn, 403)
     end
 
+    test "Create session succeeds when client IP is inside an approved CIDR block", %{conn: conn} do
+      # Test conns arrive from 127.0.0.1
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["127.0.0.0/8"]})
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password
+          }
+        )
+
+      assert %{"api_token" => _} = json_response(conn, 201)["data"]
+    end
+
+    test "Create session fails when client IP is outside every approved CIDR block", %{
+      conn: conn
+    } do
+      {:ok, user} = Helpers.Accounts.regular_user(%{approved_ips: ["10.0.0.0/8"]})
+      {:ok, user} = Helpers.Accounts.accept_user_tos_and_pp(user, true)
+
+      conn =
+        post(conn, Routes.session_path(conn, :create),
+          session: %{
+            username: user.username,
+            password: user.password
+          }
+        )
+
+      assert %{
+               "ok" => false,
+               "code" => 403,
+               "detail" => "Forbidden",
+               "message" => _
+             } = json_response(conn, 403)
+    end
+
     test "Can specify maximum incremental session extension seconds and absolute limit", %{
       conn: conn
     } do

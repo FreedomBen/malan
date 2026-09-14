@@ -74,7 +74,7 @@ Body:
       "display_middle_initial_only": false
     },
     "custom_attrs": { "source": "signup-form" },
-    "approved_ips": ["1.2.3.4"],
+    "approved_ips": ["1.2.3.4", "10.0.0.0/8"],
     "addresses": [{
       "name": "Home",
       "line_1": "123 Main St",
@@ -111,7 +111,7 @@ Response (`201 Created`):
     "latest_tos_accept_ver": null,
     "latest_pp_accept_ver": null,
     "preferences": { ... },
-    "approved_ips": ["1.2.3.4"]
+    "approved_ips": ["1.2.3.4", "10.0.0.0/8"]
   }
 }
 ```
@@ -254,7 +254,7 @@ Body may include profile fields and flags:
     "password": "newpassword123",
     "accept_tos": true,
     "accept_privacy_policy": true,
-    "approved_ips": ["1.2.3.4"],
+    "approved_ips": ["1.2.3.4", "10.0.0.0/8"],
     "preferences": {
       "theme": "dark",
       "display_name_pref": "full_name",
@@ -564,7 +564,7 @@ Examples:
   curl -X PUT \
     -H "Authorization: Bearer ${admin_token}" \
     -H "Content-Type: application/json" \
-    -d '{"user":{"roles":["admin","moderator"],"reset_password":true,"approved_ips":["1.2.3.4"]}}' \
+    -d '{"user":{"roles":["admin","moderator"],"reset_password":true,"approved_ips":["1.2.3.4","10.0.0.0/8"]}}' \
     http://localhost:4000/api/admin/users/c0c7d53e-7a76-4f4f-9f1e-e5a0f6e9c8b1
   ```
 
@@ -622,7 +622,8 @@ curl -H "Authorization: Bearer ${admin_token}" \
 - MFA codes: the login `totp_code` and every TOTP endpoint `code` accept a 6-digit TOTP code or a 12-character single-use backup code. Backup codes are case-sensitive; whitespace and hyphens are stripped from either code type before verification.
 - Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.
 - Addresses require `line_2`; address/phone responses include `primary` and `verified_at` when set.
-- Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if a user has `approved_ips`, login is constrained to those addresses even when the flag is false.
+- Session creation honors `valid_only_for_ip` and `valid_only_for_approved_ips`; if a user has `approved_ips`, login is constrained to those entries even when the flag is false.
+- `approved_ips` entries are IPv4/IPv6 addresses or CIDR blocks (e.g. `10.0.0.0/8`), matched by containment. Accepted prefix lengths are /8–/32 for IPv4 and /32–/128 for IPv6; /0 is rejected, as are blocks with host bits set (use `10.0.0.0/8`, not `10.0.0.5/8`). Entries are stored canonicalized. `valid_only_for_ip` remains an exact-address pin, unaffected by CIDRs.
 - Session defaults: expires in 7 days, extendable window 28 days, max single extension 7 days. An absolute cap is configurable; lists of session extensions are ordered newest first.
 - Minimum password length defaults to 6 characters (`MIN_PASSWORD_LENGTH`).
 

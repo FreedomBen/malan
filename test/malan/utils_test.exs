@@ -992,6 +992,110 @@ defmodule Malan.UtilsTest do
     end
   end
 
+  describe "CIDR" do
+    test "#parse/1 accepts bare addresses and CIDR blocks" do
+      assert {:ok, {{10, 0, 0, 0}, {10, 255, 255, 255}, 8}} = Utils.CIDR.parse("10.0.0.0/8")
+
+      assert {:ok, {{192, 168, 1, 0}, {192, 168, 1, 255}, 24}} =
+               Utils.CIDR.parse("192.168.1.0/24")
+
+      assert {:ok, {{1, 2, 3, 4}, {1, 2, 3, 4}, 32}} = Utils.CIDR.parse("1.2.3.4/32")
+      assert {:ok, {{1, 2, 3, 4}, {1, 2, 3, 4}, 32}} = Utils.CIDR.parse("1.2.3.4")
+      assert {:ok, {{0x2001, 0xDB8, 0, 0, 0, 0, 0, 0}, _, 32}} = Utils.CIDR.parse("2001:db8::/32")
+
+      assert {:ok, {{0, 0, 0, 0, 0, 0, 0, 1}, {0, 0, 0, 0, 0, 0, 0, 1}, 128}} =
+               Utils.CIDR.parse("::1")
+
+      assert {:ok, _} = Utils.CIDR.parse("  10.0.0.0/8  ")
+    end
+
+    test "#parse/1 rejects invalid, misaligned, and out-of-policy entries" do
+      # host bits set below the prefix
+      assert :error == Utils.CIDR.parse("10.0.0.5/8")
+      # /0 would disable the restriction
+      assert :error == Utils.CIDR.parse("0.0.0.0/0")
+      assert :error == Utils.CIDR.parse("::/0")
+      # below-minimum prefixes (aligned, so specifically the guardrail)
+      assert :error == Utils.CIDR.parse("16.0.0.0/4")
+      assert :error == Utils.CIDR.parse("2001::/16")
+      # out-of-range prefixes
+      assert :error == Utils.CIDR.parse("1.2.3.4/33")
+      assert :error == Utils.CIDR.parse("2001:db8::/129")
+      # shorthand and non-canonical forms InetCidr alone would accept
+      assert :error == Utils.CIDR.parse("10.0.0/8")
+      assert :error == Utils.CIDR.parse("10.0.0.0/08")
+      assert :error == Utils.CIDR.parse("10.0.0.0/8abc")
+      # leading-zero octets
+      assert :error == Utils.CIDR.parse("010.1.2.3")
+      # garbage
+      assert :error == Utils.CIDR.parse("banana")
+      assert :error == Utils.CIDR.parse("")
+      assert :error == Utils.CIDR.parse(nil)
+    end
+
+    test "#canonicalize/1 returns canonical strings; bare addresses stay bare" do
+      assert {:ok, "10.0.0.0/8"} == Utils.CIDR.canonicalize("10.0.0.0/8")
+      assert {:ok, "1.2.3.4"} == Utils.CIDR.canonicalize("1.2.3.4")
+      assert {:ok, "1.2.3.4/32"} == Utils.CIDR.canonicalize("1.2.3.4/32")
+      assert {:ok, "2001:db8::/32"} == Utils.CIDR.canonicalize("2001:DB8::/32")
+      assert {:ok, "2001:db8::1"} == Utils.CIDR.canonicalize("2001:DB8:0:0:0:0:0:1")
+      assert {:ok, "10.0.0.0/8"} == Utils.CIDR.canonicalize(" 10.0.0.0/8 ")
+      assert :error == Utils.CIDR.canonicalize("10.0.0.5/8")
+      assert :error == Utils.CIDR.canonicalize(nil)
+    end
+
+    test "#allowed?/2 matches by containment with exact boundaries" do
+      entries = ["10.1.2.0/24"]
+      assert Utils.CIDR.allowed?("10.1.2.0", entries)
+      assert Utils.CIDR.allowed?("10.1.2.255", entries)
+      refute Utils.CIDR.allowed?("10.1.1.255", entries)
+      refute Utils.CIDR.allowed?("10.1.3.0", entries)
+
+      # bare entries match exactly
+      assert Utils.CIDR.allowed?("1.1.1.1", ["1.1.1.1"])
+      refute Utils.CIDR.allowed?("1.1.1.2", ["1.1.1.1"])
+    end
+
+    test "#allowed?/2 IPv6 containment boundaries" do
+      entries = ["2001:db8::/32"]
+      assert Utils.CIDR.allowed?("2001:db8::", entries)
+      assert Utils.CIDR.allowed?("2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", entries)
+      refute Utils.CIDR.allowed?("2001:db7:ffff:ffff:ffff:ffff:ffff:ffff", entries)
+      refute Utils.CIDR.allowed?("2001:db9::", entries)
+
+      entries64 = ["2001:db8:1:2::/64"]
+      assert Utils.CIDR.allowed?("2001:db8:1:2::1", entries64)
+      refute Utils.CIDR.allowed?("2001:db8:1:3::1", entries64)
+    end
+
+    test "#allowed?/2 never matches across address families" do
+      refute Utils.CIDR.allowed?("10.1.2.3", ["2001:db8::/32"])
+      refute Utils.CIDR.allowed?("2001:db8::1", ["10.0.0.0/8"])
+    end
+
+    test "#allowed?/2 matches IPv4-mapped IPv6 remotes as IPv4" do
+      assert Utils.CIDR.allowed?("::ffff:10.1.2.3", ["10.1.2.0/24"])
+      assert Utils.CIDR.allowed?({0, 0, 0, 0, 0, 0xFFFF, 0x0A01, 0x0203}, ["10.1.2.0/24"])
+      refute Utils.CIDR.allowed?("::ffff:10.1.3.1", ["10.1.2.0/24"])
+    end
+
+    test "#allowed?/2 accepts :inet tuples for the remote address" do
+      assert Utils.CIDR.allowed?({10, 1, 2, 3}, ["10.1.2.0/24"])
+      refute Utils.CIDR.allowed?({10, 1, 3, 1}, ["10.1.2.0/24"])
+    end
+
+    test "#allowed?/2 fails closed" do
+      # empty list matches nothing
+      refute Utils.CIDR.allowed?("10.1.2.3", [])
+      # unparseable remote never matches
+      refute Utils.CIDR.allowed?("banana", ["10.0.0.0/8"])
+      refute Utils.CIDR.allowed?(nil, ["10.0.0.0/8"])
+      # bad entries are skipped; later good entries still match
+      refute Utils.CIDR.allowed?("10.1.2.3", ["banana"])
+      assert Utils.CIDR.allowed?("10.1.2.3", ["banana", "10.0.0.0/8"])
+    end
+  end
+
   describe "Number" do
     test "#get_int_opts/1 properly merges opts" do
       # Note:  Keyword Lists do not guarantee order, but currently they are

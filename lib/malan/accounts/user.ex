@@ -606,22 +606,22 @@ defmodule Malan.Accounts.User do
     end
   end
 
-  defp_testable all_ips_valid?(changeset) do
-    changeset
-    |> get_change(:approved_ips)
-    |> Enum.all?(fn ip -> Iptools.is_ipv4?(ip) end)
-  end
-
   defp_testable validate_and_put_approved_ips(changeset) do
+    canonical =
+      changeset
+      |> get_change(:approved_ips)
+      |> Enum.map(&Utils.CIDR.canonicalize/1)
+
     cond do
-      all_ips_valid?(changeset) ->
-        changeset
+      Enum.all?(canonical, &match?({:ok, _}, &1)) ->
+        put_change(changeset, :approved_ips, Enum.map(canonical, fn {:ok, entry} -> entry end))
 
       true ->
         Ecto.Changeset.add_error(
           changeset,
           :approved_ips,
-          "approved_ips contains an invalid selection.  Should be valid IPv4 address"
+          "approved_ips contains an invalid selection.  Should be a valid IPv4/IPv6 address " <>
+            "or CIDR block (accepted prefix lengths: /8-/32 for IPv4, /32-/128 for IPv6)"
         )
     end
   end

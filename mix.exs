@@ -64,6 +64,7 @@ defmodule Malan.MixProject do
       {:hackney, "~> 1.17"},
       # {:iptools, "~> 0.0.4"},
       {:iptools_fb, "~> 0.0.7"},
+      {:inet_cidr, "~> 1.0"},
       {:hammer, "~> 7.0"},
       {:hammer_backend_redis, "~> 7.0"},
       {:oban, "~> 2.18"},

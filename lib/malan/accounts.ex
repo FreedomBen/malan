@@ -773,6 +773,11 @@ defmodule Malan.Accounts do
   @doc """
   Checks that the given_pass is correct for user with id user_id.
 
+  The 5-arity variant also requires remote_ip to fall within one of the
+  user's approved_ips entries (bare IPs or CIDR blocks, containment
+  matching) unless the list is empty, returning {:error, :ip_addr} when
+  it doesn't.
+
   Returns {:ok, user_id} if given_pass is correct.  Otherwise {:error, :unauthorized}
   """
   def verify_pass(user_id, given_pass, password_hash, [] = _approved_ips, _remote_ip) do
@@ -781,8 +786,11 @@ defmodule Malan.Accounts do
 
   def verify_pass(user_id, given_pass, password_hash, approved_ips, remote_ip) do
     cond do
-      remote_ip in approved_ips -> verify_pass(user_id, given_pass, password_hash)
-      true -> {:error, :ip_addr}
+      Utils.CIDR.allowed?(remote_ip, approved_ips) ->
+        verify_pass(user_id, given_pass, password_hash)
+
+      true ->
+        {:error, :ip_addr}
     end
   end
 
@@ -1396,10 +1404,11 @@ defmodule Malan.Accounts do
         {:error, :ip_addr}
 
       # Fail-closed when the session opted into approved-IP restriction:
-      # an empty `approved_ips` list rejects every request (`x not in []`
-      # is always true), which mirrors the contradictory request the
-      # client made (opt-in to a list while the list is empty).
-      valid_only_for_approved_ips && remote_ip not in (approved_ips || []) ->
+      # an empty `approved_ips` list rejects every request (`allowed?/2`
+      # matches nothing against an empty list), which mirrors the
+      # contradictory request the client made (opt-in to a list while the
+      # list is empty). Entries are bare IPs or CIDR blocks (containment).
+      valid_only_for_approved_ips && not Utils.CIDR.allowed?(remote_ip, approved_ips || []) ->
         Logger.info(
           "[session_valid?]: A token marked valid_only_for_approved_ips was used from a non-approved IP. remote_ip: '#{remote_ip}', approved_ips: #{inspect(approved_ips)}"
         )
