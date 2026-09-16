@@ -217,6 +217,7 @@ Body for token exchange:
 ```
 
 Success: `{"ok": true, "code": 200}`. Invalid/missing/expired tokens return 401 with an error message.
+The new password is validated: it must meet the configured minimum length and **must not equal the current password**. A rejected password returns 422 with the errors under `errors.password` (e.g. `"cannot be the same as the current password"`); note the reset token is single-use and is consumed even on a rejected attempt, so a retry needs a freshly issued token.
 Notes: Reset email requests return 404 when the user is unknown and 429 when rate limited.
 
 ### Health Checks

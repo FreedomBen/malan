@@ -2,6 +2,7 @@ defmodule Malan.UserSchemaTest do
   use Malan.DataCase, async: true
 
   alias Malan.Accounts.User
+  alias Malan.Utils.Crypto
 
   describe "users" do
     def validate_property(validation_func, key, value, valid, err_msg_regex \\ "") do
@@ -491,6 +492,52 @@ defmodule Malan.UserSchemaTest do
 
       # Restore original config
       Application.put_env(:malan, Malan.Accounts.User, original_config)
+    end
+
+    test "#validate_password rejects reusing the current password" do
+      current_password = "currentpassword1"
+      user = %User{password_hash: Crypto.hash_password(current_password)}
+
+      reused =
+        user
+        |> Ecto.Changeset.cast(%{password: current_password}, [:password])
+        |> User.validate_password([])
+
+      assert reused.valid? == false
+      assert "cannot be the same as the current password" in errors_on(reused)[:password]
+      # Rejected before put_pass_hash, so no new hash was computed
+      refute Map.has_key?(reused.changes, :password_hash)
+
+      changed =
+        user
+        |> Ecto.Changeset.cast(%{password: "differentpassword1"}, [:password])
+        |> User.validate_password([])
+
+      assert changed.valid? == true
+      assert changed.changes.password_hash != nil
+    end
+
+    test "#validate_password reuse check applies when the password is set by an admin" do
+      current_password = "currentpassword1"
+      user = %User{password_hash: Crypto.hash_password(current_password)}
+
+      reused =
+        user
+        |> Ecto.Changeset.cast(%{password: current_password}, [:password])
+        |> User.validate_password(password_set_by_admin?: true)
+
+      assert reused.valid? == false
+      assert "cannot be the same as the current password" in errors_on(reused)[:password]
+    end
+
+    test "#validate_password skips the reuse check when the user has no password yet" do
+      changeset =
+        %User{password_hash: nil}
+        |> Ecto.Changeset.cast(%{password: "brandnewpassword1"}, [:password])
+        |> User.validate_password([])
+
+      assert changeset.valid? == true
+      assert changeset.changes.password_hash != nil
     end
 
     test "accept/reject ToS can be accepted/rejected" do

@@ -427,11 +427,26 @@ defmodule Malan.Accounts.User do
     changeset
     |> validate_required([:password])
     |> validate_length(:password, min: min_length, max: 100)
+    |> validate_password_not_reused()
     |> put_pass_hash()
   end
 
   defp_testable validate_password(changeset, _opts) do
     changeset
+  end
+
+  # Rejects setting the password to the user's current password. Only runs on
+  # changesets that are still valid (like put_pass_hash) so the Pbkdf2
+  # verification isn't spent on already-rejected passwords. New users have no
+  # password_hash and skip the check.
+  defp_testable validate_password_not_reused(changeset) do
+    with %Ecto.Changeset{valid?: true, changes: %{password: password}} <- changeset,
+         hash when is_binary(hash) <- changeset.data.password_hash,
+         true <- Utils.Crypto.verify_password(password, hash) do
+      add_error(changeset, :password, "cannot be the same as the current password")
+    else
+      _ -> changeset
+    end
   end
 
   defp password_min_length(%Ecto.Changeset{} = changeset, opts) do

@@ -277,6 +277,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Unauthorized
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+          description: Unprocessable Entity
       operationId: put_api_users_by_id_reset_password_by_token
       description: Complete password reset with token (id + token variant)
       parameters:
@@ -314,6 +317,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Unauthorized
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+          description: Unprocessable Entity
       operationId: put_api_users_reset_password_by_token
       description: Complete password reset with token (no id)
       parameters:
@@ -1464,6 +1470,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/OkResponse'
           description: OK
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+          description: Unprocessable Entity
       operationId: put_api_admin_users_by_id_reset_password_by_token
       description: Admin complete password reset for user
       parameters:
@@ -1497,6 +1506,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/OkResponse'
           description: OK
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+          description: Unprocessable Entity
       operationId: put_api_admin_users_reset_password_by_token
       description: Admin complete password reset (token without id)
       parameters:

@@ -793,6 +793,64 @@ defmodule Malan.AccountsTest do
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
 
+    test "reset_password_with_token/4 rejects reusing the current password" do
+      user = user_fixture()
+      current_password = user.password
+      {:ok, gen_user, _cs} = Accounts.generate_password_reset(user)
+      token = gen_user.password_reset_token
+
+      # Pass the id (not the struct) so the reset reloads the user from the DB,
+      # matching the controller/LiveView flow. A struct fresh from the DB has
+      # its virtual :password field cleared, so submitting the current password
+      # registers as a change and the reuse check runs.
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.reset_password_with_token(user.id, token, current_password)
+
+      assert "cannot be the same as the current password" in errors_on(changeset).password
+
+      # The current password is untouched and still works
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
+
+      # Like any other validation failure in this flow, the attempt burns the
+      # reset token (it is cleared before the password update runs), so a
+      # retry needs a freshly issued token
+      assert {:error, :missing_password_reset_token} =
+               Accounts.reset_password_with_token(user.id, token, "brandnewpassword123")
+    end
+
+    test "admin_reset_password_with_token/4 rejects reusing the current password" do
+      user = user_fixture()
+      current_password = user.password
+      {:ok, gen_user, _cs} = Accounts.generate_password_reset(user)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.admin_reset_password_with_token(
+                 user.id,
+                 gen_user.password_reset_token,
+                 current_password,
+                 "127.0.0.1"
+               )
+
+      assert "cannot be the same as the current password" in errors_on(changeset).password
+    end
+
+    test "update_user_password/3 rejects reusing the current password" do
+      user = user_fixture()
+      current_password = user.password
+
+      # Pass the id so the user is reloaded from the DB (virtual :password
+      # cleared), as the real callers do.
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Accounts.update_user_password(user.id, current_password, "1.2.3.4")
+
+      assert "cannot be the same as the current password" in errors_on(changeset).password
+
+      # A different password is accepted
+      assert {:ok, %User{}, _cs} =
+               Accounts.update_user_password(user.id, "brandnewpassword123", "1.2.3.4")
+    end
+
     test "reset_password_with_token/4 returns the exact changeset that was persisted" do
       user = user_fixture()
       {:ok, user, _cs} = Accounts.generate_password_reset(user)

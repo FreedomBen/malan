@@ -1922,6 +1922,38 @@ defmodule MalanWeb.UserControllerTest do
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
 
+    test "rejects reusing the current password", %{
+      conn: conn,
+      user: %User{id: user_id} = user
+    } do
+      # trigger reset to emit email + token
+      conn = post(conn, Routes.user_path(conn, :reset_password, user_id))
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      %Swoosh.Email{assigns: %{user: %{password_reset_token: password_reset_token}}} =
+        assert_and_receive_email(user, "Your requested password reset token")
+
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :reset_password_token_user, user_id, password_reset_token),
+          new_password: user.password
+        )
+
+      assert conn.status == 422
+      resp = json_response(conn, 422)
+
+      assert "cannot be the same as the current password" in resp["errors"]["password"]
+
+      # The existing password is untouched and still works for login
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+    end
+
     test "Rejects when no password reset token is issued", %{
       conn: conn,
       user: %User{id: user_id}

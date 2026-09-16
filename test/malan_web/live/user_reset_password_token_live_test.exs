@@ -51,6 +51,25 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
     assert html =~ "at least #{min_length} character(s)"
   end
 
+  test "shows an error when reusing the current password", %{conn: conn} do
+    {:ok, user} = AccountsHelpers.regular_user(%{})
+    current_password = user.password
+    {:ok, user, _cs} = Accounts.generate_password_reset(user)
+
+    on_exit(fn -> PasswordReset.clear(user.id) end)
+
+    {:ok, view, _html} = live(conn, reset_token_path(user.password_reset_token))
+
+    html = render_submit(view, "reset_password", %{"password" => current_password})
+
+    assert html =~ "Encountered an error"
+    assert html =~ "cannot be the same as the current password"
+
+    # The current password still authenticates
+    assert {:ok, _} =
+             Accounts.authenticate_by_username_pass(user.username, current_password, "127.0.0.1")
+  end
+
   test "captures the LiveView peer IP in the audit log on reset_password",
        %{conn: conn} do
     {:ok, user} = AccountsHelpers.regular_user(%{})
