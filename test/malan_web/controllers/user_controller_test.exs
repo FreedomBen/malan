@@ -865,6 +865,30 @@ defmodule MalanWeb.UserControllerTest do
       check_response.(conn)
     end
 
+    test "accepts setting the same password as a no-op and keeps the session", %{
+      conn: conn,
+      user: %User{id: id} = user,
+      session: session
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+
+      conn = put(conn, Routes.user_path(conn, :update, id), user: %{password: user.password})
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+
+      # The password was not actually changed, so unlike a real password
+      # change the current session is NOT revoked...
+      conn = get(conn, Routes.user_path(conn, :show, id))
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+
+      # ...and the password still works for a fresh login
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => _, "api_token" => _} = json_response(conn, 201)["data"]
+    end
+
     test "allows using username instead of user ID", %{
       conn: conn,
       user: %User{id: id, email: email, username: username},
@@ -1922,7 +1946,7 @@ defmodule MalanWeb.UserControllerTest do
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
 
-    test "rejects reusing the current password", %{
+    test "accepts reusing the current password as a no-op", %{
       conn: conn,
       user: %User{id: user_id} = user
     } do
@@ -1940,12 +1964,11 @@ defmodule MalanWeb.UserControllerTest do
           new_password: user.password
         )
 
-      assert conn.status == 422
-      resp = json_response(conn, 422)
+      # Accepted as a no-op: a normal 200, but nothing about the stored
+      # password (hash or age) was touched
+      assert %{"ok" => true} = json_response(conn, 200)
 
-      assert "cannot be the same as the current password" in resp["errors"]["password"]
-
-      # The existing password is untouched and still works for login
+      # The existing password still works for login
       conn =
         post(conn, Routes.session_path(build_conn(), :create),
           session: %{username: user.username, password: user.password}
@@ -1953,8 +1976,8 @@ defmodule MalanWeb.UserControllerTest do
 
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
 
-      # The rejected attempt must not consume the token: retrying the SAME
-      # token with a valid new password succeeds.
+      # The no-op is a successful reset, so it consumed the single-use
+      # token like any other success
       conn =
         put(
           conn,
@@ -1962,14 +1985,8 @@ defmodule MalanWeb.UserControllerTest do
           new_password: "bensonwinifredpayne"
         )
 
-      assert %{"ok" => true} = json_response(conn, 200)
-
-      conn =
-        post(conn, Routes.session_path(build_conn(), :create),
-          session: %{username: user.username, password: "bensonwinifredpayne"}
-        )
-
-      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+      assert %{"ok" => false, "err" => "missing_password_reset_token", "msg" => _} =
+               json_response(conn, 401)
     end
 
     test "Rejects when no password reset token is issued", %{

@@ -217,7 +217,7 @@ Body for token exchange:
 ```
 
 Success: `{"ok": true, "code": 200}`. Invalid/missing/expired tokens return 401 with an error message.
-The new password is validated: it must meet the configured minimum length and **must not equal the current password**. A rejected password returns 422 with the errors under `errors.password` (e.g. `"cannot be the same as the current password"`). A rejected attempt does **not** consume the single-use token — the same token can be retried with a valid password. The token is cleared only once the password actually changes.
+The new password is validated: it must meet the configured minimum length. A rejected password returns 422 with the errors under `errors.password`. A rejected attempt does **not** consume the single-use token — the same token can be retried with a valid password; the token is cleared only once the reset succeeds. Submitting the user's **current** password is accepted as a no-op: the response is a normal 200 success, but the password is left untouched (its age is preserved) and existing sessions are **not** revoked. The no-op still consumes the token like any other successful reset.
 Notes: Reset email requests return 404 when the user is unknown and 429 when rate limited.
 
 ### Health Checks
@@ -281,6 +281,7 @@ Body may include profile fields and flags:
 ```
 - `user` is required; any fields not supplied remain unchanged. Gender uses an enumerated list (Cis/Cisgender, Trans*, Non-binary, Two-spirit, etc.); race and ethnicity are enumerated as above.
 - `user_id` in the path may be the UUID, username, or `current` (for nested routes). Addresses and phone numbers use the same shapes as their dedicated endpoints.
+- Supplying `password` changes the password and immediately revokes the user's active sessions (including the one making the request). Supplying the user's **current** password is accepted as a no-op: the update succeeds, but the password is left untouched (its age is preserved) and no sessions are revoked.
 
 Example:
 ```bash
@@ -574,7 +575,7 @@ Examples:
 - `PUT /api/admin/users/:id/reset_password/:token`
 - `PUT /api/admin/users/reset_password/:token`
 
-Unlike the user-facing reset, admin-set passwords (these endpoints and `PUT /api/admin/users/:id`) may equal the user's current password — the "must not equal the current password" rule applies only to user-initiated changes and resets. The admin-set minimum length is still enforced (422 on violation).
+Unlike the user-facing reset, admin-set passwords (these endpoints and `PUT /api/admin/users/:id`) that equal the user's current password are applied as a normal password change (the stored hash is replaced) — the "same password is a no-op" behavior applies only to user-initiated changes and resets. The admin-set minimum length is still enforced (422 on violation).
 
 Issue token example:
 ```bash

@@ -364,6 +364,11 @@ defmodule Malan.Accounts do
   Updates a user's password.  If password is being changed, all non-permanent
   session tokens are revoked immediately
 
+  Submitting the user's current password is accepted as a no-op rather than
+  an error: the stored hash — and with it the password's age — is untouched,
+  sessions are left alone, and the returned user and changeset carry
+  `password_unchanged: true`.
+
   ## Examples
 
       iex> update_user(user, %{field: new_value})
@@ -379,7 +384,7 @@ defmodule Malan.Accounts do
     original_email = user.email
 
     with {:ok, updated, changeset} <- update_usr(user, attrs, rip, opts),
-         {:ok, _num_revoked} <- revoke_active_sessions(updated, rip) do
+         {:ok, _num_revoked} <- maybe_revoke_active_sessions(updated, changeset, rip) do
       maybe_send_email_change_verification(updated, original_email, rip)
       {:ok, updated, changeset}
     end
@@ -395,6 +400,17 @@ defmodule Malan.Accounts do
 
       other ->
         other
+    end
+  end
+
+  # A password "change" matching the current password is dropped as a no-op
+  # (see User.noop_reused_password/2) — nothing changed, so existing
+  # sessions are left alone.
+  defp maybe_revoke_active_sessions(updated, changeset, rip) do
+    if Ecto.Changeset.get_change(changeset, :password_unchanged, false) do
+      {:ok, 0}
+    else
+      revoke_active_sessions(updated, rip)
     end
   end
 
@@ -535,9 +551,15 @@ defmodule Malan.Accounts do
     would also re-run `put_pass_hash` and double the Pbkdf2 cost).
 
     The new password is applied *before* the reset token is cleared, so a
-    rejected password (too short, reused, ...) returns `{:error, changeset}`
-    and leaves the token intact for a retry — the single-use token is only
-    consumed once the password has actually changed.
+    rejected password (e.g. too short) returns `{:error, changeset}` and
+    leaves the token intact for a retry — the single-use token is only
+    consumed once the reset has succeeded.
+
+    Submitting the user's current password is accepted as a no-op rather
+    than rejected: the stored hash — and with it the password's age — is
+    untouched, sessions are not revoked, and the returned user and
+    changeset carry `password_unchanged: true`. The no-op is still a
+    successful reset, so it consumes the token like any other success.
   """
   def reset_password_with_token(user, token, new_password, remote_ip \\ dummy_ip())
 

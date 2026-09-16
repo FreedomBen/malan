@@ -79,6 +79,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
 
       socket
       |> assign(:success, true)
+      |> assign(:password_unchanged, password_unchanged?(changeset))
       |> assign(:error, nil)
     else
       {:error, err} ->
@@ -95,8 +96,14 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
 
     socket
     |> assign(:success, false)
+    |> assign(:password_unchanged, false)
     |> assign(:error, err)
   end
+
+  # True when the submitted password matched the current one and the reset
+  # was accepted without changing it (see User.noop_reused_password/2)
+  defp password_unchanged?(%Ecto.Changeset{} = changeset),
+    do: Ecto.Changeset.get_change(changeset, :password_unchanged, false)
 
   defp record_log(
          success?,

@@ -51,7 +51,7 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
     assert html =~ "at least #{min_length} character(s)"
   end
 
-  test "shows an error when reusing the current password", %{conn: conn} do
+  test "accepts reusing the current password and says it was not changed", %{conn: conn} do
     {:ok, user} = AccountsHelpers.regular_user(%{})
     current_password = user.password
     {:ok, user, _cs} = Accounts.generate_password_reset(user)
@@ -62,12 +62,18 @@ defmodule MalanWeb.UserResetPasswordTokenLiveTest do
 
     html = render_submit(view, "reset_password", %{"password" => current_password})
 
-    assert html =~ "Encountered an error"
-    assert html =~ "cannot be the same as the current password"
+    refute html =~ "Encountered an error"
+    refute html =~ "The password was successfully changed."
 
-    # The current password still authenticates
+    assert html =~
+             "The new password is the same as the old password, so the password was not changed."
+
+    # The current password is untouched and still authenticates
     assert {:ok, _} =
              Accounts.authenticate_by_username_pass(user.username, current_password, "127.0.0.1")
+
+    # The no-op reset still consumed the single-use token
+    assert is_nil(Accounts.get_user!(user.id).password_reset_token_hash)
   end
 
   test "captures the LiveView peer IP in the audit log on reset_password",

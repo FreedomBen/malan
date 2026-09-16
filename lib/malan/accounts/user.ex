@@ -89,6 +89,9 @@ defmodule Malan.Accounts.User do
     field :accept_privacy_policy, :boolean, virtual: true
     # triggers a password reset
     field :reset_password, :boolean, virtual: true
+    # true when the submitted password matched the current one and the
+    # change was accepted as a no-op (see noop_reused_password/2)
+    field :password_unchanged, :boolean, virtual: true
     field :sex, :string, virtual: true
     field :gender, :string, virtual: true
     field :race, {:array, :string}, virtual: true
@@ -427,7 +430,7 @@ defmodule Malan.Accounts.User do
     changeset
     |> validate_required([:password])
     |> validate_length(:password, min: min_length, max: 100)
-    |> validate_password_not_reused(opts)
+    |> noop_reused_password(opts)
     |> put_pass_hash()
   end
 
@@ -435,24 +438,30 @@ defmodule Malan.Accounts.User do
     changeset
   end
 
-  # Rejects setting the password to the user's current password. Skipped when
-  # an admin sets the password — an admin may deliberately re-set the same
-  # one. Only runs on changesets that are still valid (like put_pass_hash) so
-  # the Pbkdf2 verification isn't spent on already-rejected passwords. New
-  # users have no password_hash and skip the check.
-  defp_testable validate_password_not_reused(changeset, opts) do
+  # Setting the password to the user's current password is accepted as a
+  # no-op instead of an error: the :password change is dropped so the stored
+  # hash — and with it the password's age — is untouched, and the virtual
+  # :password_unchanged flag is set so callers can tell the user nothing
+  # changed. Skipped when an admin sets the password — an admin deliberately
+  # re-setting the same one gets a normal change (re-hash). Only runs on
+  # changesets that are still valid (like put_pass_hash) so the Pbkdf2
+  # verification isn't spent on already-rejected passwords. New users have
+  # no password_hash and skip the check.
+  defp_testable noop_reused_password(changeset, opts) do
     if password_set_by_admin?(opts) do
       changeset
     else
-      validate_password_not_reused(changeset)
+      noop_reused_password(changeset)
     end
   end
 
-  defp_testable validate_password_not_reused(changeset) do
+  defp_testable noop_reused_password(changeset) do
     with %Ecto.Changeset{valid?: true, changes: %{password: password}} <- changeset,
          hash when is_binary(hash) <- changeset.data.password_hash,
          true <- Utils.Crypto.verify_password(password, hash) do
-      add_error(changeset, :password, "cannot be the same as the current password")
+      changeset
+      |> delete_change(:password)
+      |> put_change(:password_unchanged, true)
     else
       _ -> changeset
     end

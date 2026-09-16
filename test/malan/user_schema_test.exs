@@ -494,7 +494,7 @@ defmodule Malan.UserSchemaTest do
       Application.put_env(:malan, Malan.Accounts.User, original_config)
     end
 
-    test "#validate_password rejects reusing the current password" do
+    test "#validate_password accepts reusing the current password as a no-op" do
       current_password = "currentpassword1"
       user = %User{password_hash: Crypto.hash_password(current_password)}
 
@@ -503,10 +503,13 @@ defmodule Malan.UserSchemaTest do
         |> Ecto.Changeset.cast(%{password: current_password}, [:password])
         |> User.validate_password([])
 
-      assert reused.valid? == false
-      assert "cannot be the same as the current password" in errors_on(reused)[:password]
-      # Rejected before put_pass_hash, so no new hash was computed
+      assert reused.valid? == true
+      # The reused password is dropped rather than rejected: no new hash is
+      # computed, so the stored hash (and the password's age) is untouched,
+      # and the no-op is flagged for callers
+      refute Map.has_key?(reused.changes, :password)
       refute Map.has_key?(reused.changes, :password_hash)
+      assert reused.changes.password_unchanged == true
 
       changed =
         user
@@ -515,12 +518,15 @@ defmodule Malan.UserSchemaTest do
 
       assert changed.valid? == true
       assert changed.changes.password_hash != nil
+      refute Map.has_key?(changed.changes, :password_unchanged)
     end
 
-    test "#validate_password skips the reuse check when the password is set by an admin" do
+    test "#validate_password skips the reuse no-op when the password is set by an admin" do
       current_password = "currentpassword1"
       user = %User{password_hash: Crypto.hash_password(current_password)}
 
+      # An admin deliberately re-setting the same password gets a normal
+      # change (re-hash), not a no-op
       changeset =
         user
         |> Ecto.Changeset.cast(%{password: current_password}, [:password])
@@ -528,6 +534,7 @@ defmodule Malan.UserSchemaTest do
 
       assert changeset.valid? == true
       assert changeset.changes.password_hash != nil
+      refute Map.has_key?(changeset.changes, :password_unchanged)
       refute Map.has_key?(errors_on(changeset), :password)
     end
 

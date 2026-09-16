@@ -813,36 +813,43 @@ defmodule Malan.AccountsTest do
                Accounts.reset_password_with_token(user.id, token, "anotherpassword123")
     end
 
-    test "reset_password_with_token/4 rejects reusing the current password" do
+    test "reset_password_with_token/4 accepts reusing the current password as a no-op" do
       user = user_fixture()
       current_password = user.password
       {:ok, gen_user, _cs} = Accounts.generate_password_reset(user)
       token = gen_user.password_reset_token
 
+      hash_before = Accounts.get_user(user.id).password_hash
+      {:ok, session} = Helpers.Accounts.create_session(user)
+
       # Pass the id (not the struct) so the reset reloads the user from the DB,
       # matching the controller/LiveView flow. A struct fresh from the DB has
       # its virtual :password field cleared, so submitting the current password
-      # registers as a change and the reuse check runs.
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      # registers as a change and the reuse handling runs.
+      assert {:ok, %User{} = updated, %Ecto.Changeset{} = changeset} =
                Accounts.reset_password_with_token(user.id, token, current_password)
 
-      assert "cannot be the same as the current password" in errors_on(changeset).password
+      # The no-op is flagged for callers (e.g. the LiveView notice)
+      assert updated.password_unchanged == true
+      assert Ecto.Changeset.get_change(changeset, :password_unchanged) == true
 
-      # The current password is untouched and still works
+      # The stored hash is untouched — not even re-hashed — so the password's
+      # age is preserved, and the current password still authenticates
+      assert Accounts.get_user(user.id).password_hash == hash_before
+
       assert {:ok, _} =
                Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
 
-      # A rejected password must NOT consume the single-use token: the same
-      # token can be retried with a valid new password and succeeds.
-      assert {:ok, %User{}, _cs} =
-               Accounts.reset_password_with_token(user.id, token, "brandnewpassword123")
+      # Nothing changed, so active sessions are NOT revoked
+      assert {:ok, _, _, _, _, _, _, _, _, _} =
+               Accounts.validate_session(session.api_token, nil)
 
-      assert {:ok, _} =
-               Accounts.authenticate_by_username_pass(
-                 user.username,
-                 "brandnewpassword123",
-                 "1.2.3.4"
-               )
+      # The accepted no-op is a successful reset, so it consumes the
+      # single-use token
+      assert is_nil(Accounts.get_user(user.id).password_reset_token_hash)
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.reset_password_with_token(user.id, token, "brandnewpassword123")
     end
 
     test "admin_reset_password_with_token/4 allows reusing the current password" do
@@ -900,20 +907,32 @@ defmodule Malan.AccountsTest do
                Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
     end
 
-    test "update_user_password/3 rejects reusing the current password" do
+    test "update_user_password/3 accepts reusing the current password as a no-op" do
       user = user_fixture()
       current_password = user.password
+      hash_before = Accounts.get_user(user.id).password_hash
+      {:ok, session} = Helpers.Accounts.create_session(user)
 
       # Pass the id so the user is reloaded from the DB (virtual :password
       # cleared), as the real callers do.
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:ok, %User{} = updated, %Ecto.Changeset{} = changeset} =
                Accounts.update_user_password(user.id, current_password, "1.2.3.4")
 
-      assert "cannot be the same as the current password" in errors_on(changeset).password
+      assert updated.password_unchanged == true
+      assert Ecto.Changeset.get_change(changeset, :password_unchanged) == true
 
-      # A different password is accepted
-      assert {:ok, %User{}, _cs} =
+      # The hash (and with it the password's age) is untouched, and existing
+      # sessions are left alone
+      assert Accounts.get_user(user.id).password_hash == hash_before
+      assert {:ok, _, _, _, _, _, _, _, _, _} = Accounts.validate_session(session.api_token, nil)
+
+      # A different password is a real change: new hash, sessions revoked
+      assert {:ok, %User{} = updated2, _cs} =
                Accounts.update_user_password(user.id, "brandnewpassword123", "1.2.3.4")
+
+      refute updated2.password_unchanged
+      assert Accounts.get_user(user.id).password_hash != hash_before
+      assert {:error, :revoked} = Accounts.validate_session(session.api_token, nil)
     end
 
     test "reset_password_with_token/4 returns the exact changeset that was persisted" do
