@@ -39,13 +39,13 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
         _ -> socket.assigns.reset_token
       end
 
-    # This is used to try to avoid burning the reset token on a server-side
-    # password validation failure.  This doesn't remove the server-side validation
-    # that happens.  It still goes through the other validation, but if we can
-    # catch it early then the user doesn't have to request a new token for every
-    # attempt they want to make.  The successful reset is logged with the exact
-    # changeset returned by reset_password_with_token/3; this precheck changeset
-    # is only logged when validation fails here (and so nothing was persisted).
+    # Early client-facing validation of the new password. Accounts.reset_password_with_token/4
+    # already preserves the reset token on a password-validation failure (it applies
+    # the password before clearing the token), so this precheck is not what protects
+    # the token — it just surfaces a plain changeset of errors without also running the
+    # token validation and password update. The successful reset is logged with the exact
+    # changeset returned by reset_password_with_token/4; this precheck changeset is only
+    # logged when validation fails here (and so nothing was persisted).
     precheck_changeset = User.update_changeset(socket.assigns.user, %{"password" => password})
 
     socket =

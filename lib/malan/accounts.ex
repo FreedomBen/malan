@@ -527,17 +527,24 @@ defmodule Malan.Accounts do
       {:ok, %User{}, %Ecto.Changeset{}}
       {:error, :missing_password_reset_token}
       {:error, :invalid_password_reset_token}
+      {:error, :expired_password_reset_token}
+      {:error, %Ecto.Changeset{}}
 
     The returned changeset is the one that was persisted, so callers can
     log the exact change for auditing without rebuilding it (rebuilding
     would also re-run `put_pass_hash` and double the Pbkdf2 cost).
+
+    The new password is applied *before* the reset token is cleared, so a
+    rejected password (too short, reused, ...) returns `{:error, changeset}`
+    and leaves the token intact for a retry — the single-use token is only
+    consumed once the password has actually changed.
   """
   def reset_password_with_token(user, token, new_password, remote_ip \\ dummy_ip())
 
   def reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
-         {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user, cs} <- update_user_password(orig_user, new_password, rip) do
+         {:ok, %User{} = user, cs} <- update_user_password(orig_user, new_password, rip),
+         {:ok, %User{}} <- clear_password_reset_token(user) do
       {:ok, user, cs}
     else
       {:error, reason} -> {:error, reason}
@@ -551,8 +558,8 @@ defmodule Malan.Accounts do
 
   def admin_reset_password_with_token(%User{} = orig_user, token, new_password, rip) do
     with {:ok} <- validate_password_reset_token(orig_user, token),
-         {:ok, %User{}} <- clear_password_reset_token(orig_user),
-         {:ok, %User{} = user, cs} <- admin_update_password(orig_user, new_password, rip) do
+         {:ok, %User{} = user, cs} <- admin_update_password(orig_user, new_password, rip),
+         {:ok, %User{}} <- clear_password_reset_token(user) do
       {:ok, user, cs}
     else
       {:error, reason} -> {:error, reason}

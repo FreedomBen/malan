@@ -1952,6 +1952,24 @@ defmodule MalanWeb.UserControllerTest do
         )
 
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
+
+      # The rejected attempt must not consume the token: retrying the SAME
+      # token with a valid new password succeeds.
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :reset_password_token_user, user_id, password_reset_token),
+          new_password: "bensonwinifredpayne"
+        )
+
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      conn =
+        post(conn, Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: "bensonwinifredpayne"}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
     test "Rejects when no password reset token is issued", %{

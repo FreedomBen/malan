@@ -793,6 +793,26 @@ defmodule Malan.AccountsTest do
              |> Enum.any?(fn msg -> String.contains?(msg, "at least") end)
     end
 
+    test "reset_password_with_token/4 does not consume the token when the password is rejected" do
+      user = user_fixture()
+      {:ok, gen_user, _cs} = Accounts.generate_password_reset(user)
+      token = gen_user.password_reset_token
+
+      # A rejected password (too short here) leaves the reset token usable
+      assert {:error, %Ecto.Changeset{}} =
+               Accounts.reset_password_with_token(user.id, token, "123")
+
+      # Same token, valid password -> succeeds
+      assert {:ok, %User{} = updated, _cs} =
+               Accounts.reset_password_with_token(user.id, token, "brandnewpassword123")
+
+      # Once the password actually changes, the token is consumed
+      assert is_nil(Accounts.get_user(updated.id).password_reset_token_hash)
+
+      assert {:error, :missing_password_reset_token} =
+               Accounts.reset_password_with_token(user.id, token, "anotherpassword123")
+    end
+
     test "reset_password_with_token/4 rejects reusing the current password" do
       user = user_fixture()
       current_password = user.password
@@ -812,11 +832,17 @@ defmodule Malan.AccountsTest do
       assert {:ok, _} =
                Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
 
-      # Like any other validation failure in this flow, the attempt burns the
-      # reset token (it is cleared before the password update runs), so a
-      # retry needs a freshly issued token
-      assert {:error, :missing_password_reset_token} =
+      # A rejected password must NOT consume the single-use token: the same
+      # token can be retried with a valid new password and succeeds.
+      assert {:ok, %User{}, _cs} =
                Accounts.reset_password_with_token(user.id, token, "brandnewpassword123")
+
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(
+                 user.username,
+                 "brandnewpassword123",
+                 "1.2.3.4"
+               )
     end
 
     test "admin_reset_password_with_token/4 rejects reusing the current password" do
