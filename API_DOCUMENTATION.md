@@ -574,6 +574,8 @@ Examples:
 - `PUT /api/admin/users/:id/reset_password/:token`
 - `PUT /api/admin/users/reset_password/:token`
 
+Unlike the user-facing reset, admin-set passwords (these endpoints and `PUT /api/admin/users/:id`) may equal the user's current password — the "must not equal the current password" rule applies only to user-initiated changes and resets. The admin-set minimum length is still enforced (422 on violation).
+
 Issue token example:
 ```bash
 curl -X POST -H "Authorization: Bearer ${admin_token}" \

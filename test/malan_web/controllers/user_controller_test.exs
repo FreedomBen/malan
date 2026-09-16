@@ -2711,6 +2711,43 @@ defmodule MalanWeb.UserControllerTest do
       assert %{"id" => _id, "api_token" => _api_token} = json_response(conn, 201)["data"]
     end
 
+    test "allows reusing the current password", %{
+      conn: conn,
+      user: %User{id: user_id} = user,
+      session: _session
+    } do
+      {:ok, conn, _au, as} = Helpers.Accounts.admin_user_session_conn(conn)
+
+      # obtain reset token
+      conn = post(conn, Routes.user_path(conn, :admin_reset_password, user_id))
+
+      assert %{
+               "password_reset_token" => password_reset_token
+             } = json_response(conn, 200)["data"]
+
+      conn = Helpers.Accounts.put_token(build_conn(), as.api_token)
+
+      # Admin sets the password to the user's current password — unlike the
+      # user-facing reset, this is allowed
+      conn =
+        put(
+          conn,
+          Routes.user_path(conn, :admin_reset_password_token_user, user_id, password_reset_token),
+          new_password: user.password
+        )
+
+      assert conn.status == 200
+      assert %{"ok" => true} = json_response(conn, 200)
+
+      # The password still works for login
+      login_conn =
+        post(build_conn(), Routes.session_path(build_conn(), :create),
+          session: %{username: user.username, password: user.password}
+        )
+
+      assert %{"id" => _id, "api_token" => _api_token} = json_response(login_conn, 201)["data"]
+    end
+
     test "allows passwords shorter than configured minimum", %{
       conn: conn,
       user: %User{id: user_id} = user,

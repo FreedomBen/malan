@@ -845,12 +845,14 @@ defmodule Malan.AccountsTest do
                )
     end
 
-    test "admin_reset_password_with_token/4 rejects reusing the current password" do
+    test "admin_reset_password_with_token/4 allows reusing the current password" do
       user = user_fixture()
       current_password = user.password
       {:ok, gen_user, _cs} = Accounts.generate_password_reset(user)
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      # The reuse check applies only to user-initiated changes; an admin may
+      # deliberately re-set the same password.
+      assert {:ok, %User{}, %Ecto.Changeset{}} =
                Accounts.admin_reset_password_with_token(
                  user.id,
                  gen_user.password_reset_token,
@@ -858,7 +860,44 @@ defmodule Malan.AccountsTest do
                  "127.0.0.1"
                )
 
-      assert "cannot be the same as the current password" in errors_on(changeset).password
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
+
+      # The reset token was consumed by the successful reset
+      assert {:error, :missing_password_reset_token} =
+               Accounts.admin_reset_password_with_token(
+                 user.id,
+                 gen_user.password_reset_token,
+                 "brandnewpassword123",
+                 "127.0.0.1"
+               )
+    end
+
+    test "admin_update_password/3 allows reusing the current password" do
+      user = user_fixture()
+      current_password = user.password
+
+      # Pass the id so the user is reloaded from the DB (virtual :password
+      # cleared), as the real callers do.
+      assert {:ok, %User{}, %Ecto.Changeset{}} =
+               Accounts.admin_update_password(user.id, current_password, "1.2.3.4")
+
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
+    end
+
+    test "admin_update_user/2 allows setting the same password" do
+      user = user_fixture()
+      current_password = user.password
+
+      assert {:ok, %User{}, %Ecto.Changeset{}} =
+               Accounts.admin_update_user(
+                 Accounts.get_user!(user.id),
+                 %{"password" => current_password}
+               )
+
+      assert {:ok, _} =
+               Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
     end
 
     test "update_user_password/3 rejects reusing the current password" do

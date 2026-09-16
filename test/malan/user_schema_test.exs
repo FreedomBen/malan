@@ -517,17 +517,18 @@ defmodule Malan.UserSchemaTest do
       assert changed.changes.password_hash != nil
     end
 
-    test "#validate_password reuse check applies when the password is set by an admin" do
+    test "#validate_password skips the reuse check when the password is set by an admin" do
       current_password = "currentpassword1"
       user = %User{password_hash: Crypto.hash_password(current_password)}
 
-      reused =
+      changeset =
         user
         |> Ecto.Changeset.cast(%{password: current_password}, [:password])
         |> User.validate_password(password_set_by_admin?: true)
 
-      assert reused.valid? == false
-      assert "cannot be the same as the current password" in errors_on(reused)[:password]
+      assert changeset.valid? == true
+      assert changeset.changes.password_hash != nil
+      refute Map.has_key?(errors_on(changeset), :password)
     end
 
     test "#validate_password skips the reuse check when the user has no password yet" do
