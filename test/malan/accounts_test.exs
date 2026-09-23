@@ -907,6 +907,68 @@ defmodule Malan.AccountsTest do
                Accounts.authenticate_by_username_pass(user.username, current_password, "1.2.3.4")
     end
 
+    test "password_changed_at is stamped at creation, bumped on changes, preserved on no-ops" do
+      user = user_fixture()
+      current_password = user.password
+
+      # Stamped when the password is first set (registration)
+      assert %DateTime{} = Accounts.get_user(user.id).password_changed_at
+
+      # Backdate the stamp so a bump landing within the same second is still
+      # distinguishable from a preserved value
+      backdated = ~U[2020-01-01 00:00:00Z]
+
+      backdate = fn ->
+        Repo.update_all(from(u in User, where: u.id == ^user.id),
+          set: [password_changed_at: backdated]
+        )
+      end
+
+      backdate.()
+
+      # A same-password no-op change preserves the stamp (the password's age)
+      assert {:ok, %User{}, _cs} =
+               Accounts.update_user(Accounts.get_user!(user.id), %{
+                 "password" => current_password
+               })
+
+      assert DateTime.compare(Accounts.get_user(user.id).password_changed_at, backdated) == :eq
+
+      # An unrelated profile update leaves it alone
+      assert {:ok, %User{}, _cs} =
+               Accounts.update_user(Accounts.get_user!(user.id), %{"nick_name" => "pw age"})
+
+      assert DateTime.compare(Accounts.get_user(user.id).password_changed_at, backdated) == :eq
+
+      # A same-password no-op reset preserves it too
+      {:ok, gen_user, _cs} = Accounts.generate_password_reset(Accounts.get_user!(user.id))
+
+      assert {:ok, %User{}, _cs} =
+               Accounts.reset_password_with_token(
+                 user.id,
+                 gen_user.password_reset_token,
+                 current_password
+               )
+
+      assert DateTime.compare(Accounts.get_user(user.id).password_changed_at, backdated) == :eq
+
+      # A real password change bumps it
+      assert {:ok, %User{}, _cs} =
+               Accounts.update_user(Accounts.get_user!(user.id), %{
+                 "password" => "brandnewpassword123"
+               })
+
+      assert DateTime.compare(Accounts.get_user(user.id).password_changed_at, backdated) == :gt
+
+      # An admin re-setting the same password is a real change and bumps it
+      backdate.()
+
+      assert {:ok, %User{}, _cs} =
+               Accounts.admin_update_password(user.id, "brandnewpassword123", "1.2.3.4")
+
+      assert DateTime.compare(Accounts.get_user(user.id).password_changed_at, backdated) == :gt
+    end
+
     test "update_user_password/3 accepts reusing the current password as a no-op" do
       user = user_fixture()
       current_password = user.password

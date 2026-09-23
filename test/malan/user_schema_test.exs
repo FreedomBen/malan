@@ -538,6 +538,37 @@ defmodule Malan.UserSchemaTest do
       refute Map.has_key?(errors_on(changeset), :password)
     end
 
+    test "#validate_password stamps password_changed_at only on a real change" do
+      current_password = "currentpassword1"
+      user = %User{password_hash: Crypto.hash_password(current_password)}
+
+      changed =
+        user
+        |> Ecto.Changeset.cast(%{password: "differentpassword1"}, [:password])
+        |> User.validate_password([])
+
+      assert changed.valid? == true
+      assert %DateTime{} = changed.changes.password_changed_at
+
+      # The same-password no-op drops the change before put_pass_hash, so
+      # the stamp (the password's age) is untouched
+      reused =
+        user
+        |> Ecto.Changeset.cast(%{password: current_password}, [:password])
+        |> User.validate_password([])
+
+      assert reused.valid? == true
+      refute Map.has_key?(reused.changes, :password_changed_at)
+
+      invalid =
+        user
+        |> Ecto.Changeset.cast(%{password: "2short"}, [:password])
+        |> User.validate_password([])
+
+      refute invalid.valid?
+      refute Map.has_key?(invalid.changes, :password_changed_at)
+    end
+
     test "#validate_password skips the reuse check when the user has no password yet" do
       changeset =
         %User{password_hash: nil}

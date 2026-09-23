@@ -33,6 +33,9 @@ defmodule Malan.Accounts.User do
     field :email_verified, :utc_datetime
     field :password, :string, virtual: true, redact: true
     field :password_hash, :string, redact: true
+    # Set only by put_pass_hash/1 (never castable). nil means the password
+    # predates tracking.
+    field :password_changed_at, :utc_datetime
     # admin, user, or moderator
     field :roles, {:array, :string}
     field :username, :string
@@ -741,7 +744,9 @@ defmodule Malan.Accounts.User do
   defp_testable put_pass_hash(changeset) do
     case changeset do
       %Ecto.Changeset{valid?: true, changes: %{password: pass}} ->
-        put_change(changeset, :password_hash, Utils.Crypto.hash_password(pass))
+        changeset
+        |> put_change(:password_hash, Utils.Crypto.hash_password(pass))
+        |> put_change(:password_changed_at, Utils.DateTime.utc_now_trunc())
 
       _ ->
         changeset

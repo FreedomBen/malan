@@ -125,6 +125,7 @@ defmodule MalanWeb.UserJSON do
       roles: user.roles,
       preferences: preference_data(user.preferences),
       custom_attrs: user.custom_attrs,
+      password_changed_at: user.password_changed_at,
       locked_at: user.locked_at,
       locked_by: user.locked_by,
       approved_ips: user.approved_ips

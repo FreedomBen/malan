@@ -154,6 +154,30 @@ defmodule MalanWeb.UserControllerTest do
                "token_revoked" => true
              } = json_response(conn, 403)
     end
+
+    test "exposes password_changed_at, null when the password predates tracking", %{
+      conn: conn,
+      user: %User{id: id} = _user,
+      session: %Session{} = session
+    } do
+      conn = Helpers.Accounts.put_token(conn, session.api_token)
+      conn = get(conn, Routes.user_path(conn, :show, id))
+
+      assert %{"password_changed_at" => password_changed_at} = json_response(conn, 200)["data"]
+      assert {:ok, %DateTime{}, 0} = DateTime.from_iso8601(password_changed_at)
+
+      # Accounts whose password predates tracking have no stamp
+      Repo.get!(User, id)
+      |> Ecto.Changeset.change(password_changed_at: nil)
+      |> Repo.update!()
+
+      conn =
+        Phoenix.ConnTest.build_conn()
+        |> Helpers.Accounts.put_token(session.api_token)
+        |> get(Routes.user_path(conn, :show, id))
+
+      assert %{"password_changed_at" => nil} = json_response(conn, 200)["data"]
+    end
   end
 
   describe "index" do
@@ -344,6 +368,7 @@ defmodule MalanWeb.UserControllerTest do
                    "privacy_policy_accepted" => false,
                    "username" => "someusername",
                    "nick_name" => "",
+                   "password_changed_at" => password_changed_at,
                    "locked_at" => nil,
                    "locked_by" => nil,
                    "custom_attrs" => %{
@@ -356,6 +381,9 @@ defmodule MalanWeb.UserControllerTest do
 
       # password should not be included in get response
       assert Map.has_key?(user, "password") == false
+
+      # The registration stamped the password's age
+      assert {:ok, %DateTime{}, 0} = DateTime.from_iso8601(password_changed_at)
 
       # Should not have phone numbers present because not set and not requested
       assert Map.has_key?(user, "phone_numbers") == false

@@ -115,7 +115,7 @@ Response (`201 Created`):
   }
 }
 ```
-- Additional fields present on the `data` object: `email_verified` timestamp (nullable), `totp_enabled` boolean, `locked_at/locked_by` when locked, `tos_accepted` / `privacy_policy_accepted`, acceptance event histories, and any `custom_attrs` you provided.
+- Additional fields present on the `data` object: `email_verified` timestamp (nullable), `totp_enabled` boolean, `password_changed_at` timestamp (nullable; `null` means the password predates tracking, and a same-password no-op change/reset does not bump it), `locked_at/locked_by` when locked, `tos_accepted` / `privacy_policy_accepted`, acceptance event histories, and any `custom_attrs` you provided.
 
 ### Create Session (Login)
 `POST /api/sessions`
@@ -621,7 +621,7 @@ curl -H "Authorization: Bearer ${admin_token}" \
 ## Field Notes
 - Path parameters `:id` for users accept either UUID or username; nested `user_id` routes also allow `current`.
 - Roles supported: `user`, `admin`, `moderator`.
-- User payloads include `email_verified`, `totp_enabled`, `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired`, `mfa_required`, and `invalid_mfa_code` may appear on error payloads.
+- User payloads include `email_verified`, `totp_enabled`, `password_changed_at` (nullable; `null` means the password predates tracking, and same-password no-op changes/resets do not bump it), `locked_at/locked_by`, `tos_accepted` / `privacy_policy_accepted`, and acceptance event arrays; `token_expired`, `mfa_required`, and `invalid_mfa_code` may appear on error payloads.
 - Session payloads (and whoami) include `authenticated_by` — `"password"`, `"password+totp"`, or `"password+backup_code"` — recording whether the login passed MFA.
 - MFA codes: the login `totp_code` and every TOTP endpoint `code` accept a 6-digit TOTP code or a 12-character single-use backup code. Backup codes are case-sensitive; whitespace and hyphens are stripped from either code type before verification.
 - Gender is validated against the enumerated list in the OpenAPI spec (covers cis/trans/non-binary variants). Race is one of the five US census values; ethnicity is Hispanic/Not Hispanic.

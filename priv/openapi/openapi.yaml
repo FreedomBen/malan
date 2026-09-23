@@ -2129,6 +2129,13 @@ components:
         custom_attrs:
           type: object
           additionalProperties: true
+        password_changed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the password was last changed. null means the
+            password predates tracking. Not bumped when a password change or
+            reset is accepted as a same-password no-op.
         locked_at:
           type: string
           format: date-time
