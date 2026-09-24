@@ -2030,8 +2030,8 @@ defmodule MalanWeb.SessionControllerTest do
         :malan,
         Malan.Config.RateLimits,
         prev_cfg
-        |> Keyword.put(:login_limit_msecs, 60_000)
-        |> Keyword.put(:login_limit_count, 2)
+        |> Keyword.put(:login_lower_limit_msecs, 60_000)
+        |> Keyword.put(:login_lower_limit_count, 2)
       )
 
       :ok
@@ -2066,6 +2066,97 @@ defmodule MalanWeb.SessionControllerTest do
       conn =
         post(build_conn(), Routes.session_path(conn, :create), %{
           session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 429} = json_response(conn, 429)
+    end
+  end
+
+  describe "login upper rate limit" do
+    setup do
+      prev_cfg = Application.get_env(:malan, Malan.Config.RateLimits)
+
+      on_exit(fn ->
+        Application.put_env(:malan, Malan.Config.RateLimits, prev_cfg)
+      end)
+
+      # Tighten only the 24-hour upper login limit. The per-minute lower
+      # limit keeps its test default (1 ms window), so a deny here is
+      # attributable to the upper bucket.
+      Application.put_env(
+        :malan,
+        Malan.Config.RateLimits,
+        prev_cfg
+        |> Keyword.put(:login_upper_limit_msecs, 86_400_000)
+        |> Keyword.put(:login_upper_limit_count, 2)
+      )
+
+      :ok
+    end
+
+    test "username is limited across the 24-hour window even when the lower bucket allows",
+         %{conn: conn} do
+      username = "user_login_upper_rl"
+      password = "GoodPass123!"
+
+      {:ok, _user} =
+        Helpers.Accounts.regular_user(%{username: username, password: password})
+
+      # clear both username buckets
+      {:ok, _} = Malan.RateLimits.Login.clear(username)
+
+      # First two wrong attempts -> 403
+      conn =
+        post(conn, Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 403} = json_response(conn, 403)
+
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 403} = json_response(conn, 403)
+
+      # Third attempt (still wrong) -> 429 from the upper bucket
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: "wrong"}
+        })
+
+      assert %{"ok" => false, "code" => 429} = json_response(conn, 429)
+    end
+
+    test "successful logins count toward the upper bucket", %{conn: conn} do
+      username = "user_login_upper_rl_ok"
+      password = "GoodPass123!"
+
+      {:ok, _user} =
+        Helpers.Accounts.regular_user(%{username: username, password: password})
+
+      {:ok, _} = Malan.RateLimits.Login.clear(username)
+
+      # Two successful logins -> 201
+      conn =
+        post(conn, Routes.session_path(conn, :create), %{
+          session: %{username: username, password: password}
+        })
+
+      assert %{"api_token" => _} = json_response(conn, 201)["data"]
+
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: password}
+        })
+
+      assert %{"api_token" => _} = json_response(conn, 201)["data"]
+
+      # Third attempt is denied even with correct credentials
+      conn =
+        post(build_conn(), Routes.session_path(conn, :create), %{
+          session: %{username: username, password: password}
         })
 
       assert %{"ok" => false, "code" => 429} = json_response(conn, 429)

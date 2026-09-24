@@ -288,7 +288,7 @@ config :malan, email_verification_auto_send: email_verification_auto_send?
 #
 # Pattern: only override when the env var is explicitly set. When unset,
 # the compile-time defaults from `config/config.exs` (and any
-# test-specific overrides in `config/test.exs`, e.g. `login_limit_count:
+# test-specific overrides in `config/test.exs`, e.g. `login_lower_limit_count:
 # 1_000_000`) win unchanged.
 build_int_overrides = fn pairs ->
   Enum.flat_map(pairs, fn {key, env_name} ->
@@ -324,8 +324,10 @@ config :malan,
          {:password_reset_ip_upper_limit_count, "PASSWORD_RESET_IP_UPPER_LIMIT_COUNT"},
          {:session_extension_limit_msecs, "SESSION_EXTENSION_LIMIT_MSECS"},
          {:session_extension_limit_count, "SESSION_EXTENSION_LIMIT_COUNT"},
-         {:login_limit_msecs, "LOGIN_LIMIT_MSECS"},
-         {:login_limit_count, "LOGIN_LIMIT_COUNT"},
+         {:login_lower_limit_msecs, "LOGIN_LOWER_LIMIT_MSECS"},
+         {:login_lower_limit_count, "LOGIN_LOWER_LIMIT_COUNT"},
+         {:login_upper_limit_msecs, "LOGIN_UPPER_LIMIT_MSECS"},
+         {:login_upper_limit_count, "LOGIN_UPPER_LIMIT_COUNT"},
          {:login_ip_lower_limit_msecs, "LOGIN_IP_LOWER_LIMIT_MSECS"},
          {:login_ip_lower_limit_count, "LOGIN_IP_LOWER_LIMIT_COUNT"},
          {:login_ip_upper_limit_msecs, "LOGIN_IP_UPPER_LIMIT_MSECS"},

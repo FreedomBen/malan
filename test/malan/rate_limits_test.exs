@@ -228,6 +228,22 @@ defmodule Malan.RateLimitsTest do
     end
   end
 
+  describe "Malan.RateLimits.Login.LowerLimit" do
+    alias Malan.RateLimits.Login.LowerLimit, as: LoginLowerLimit
+
+    test "#bucket/1" do
+      assert "login_lower_limit:someusername" == LoginLowerLimit.bucket("someusername")
+    end
+  end
+
+  describe "Malan.RateLimits.Login.UpperLimit" do
+    alias Malan.RateLimits.Login.UpperLimit, as: LoginUpperLimit
+
+    test "#bucket/1" do
+      assert "login_upper_limit:someusername" == LoginUpperLimit.bucket("someusername")
+    end
+  end
+
   describe "Malan.RateLimits.Login.PerIp.LowerLimit" do
     alias Malan.RateLimits.Login.PerIp.LowerLimit, as: LoginIpLowerLimit
 

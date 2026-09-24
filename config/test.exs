@@ -44,8 +44,10 @@ config :malan, :log_silence_record_log_warning, true
 
 # So normal tests don't trip login/session extension limits; individual tests can override.
 config :malan, Malan.Config.RateLimits,
-  login_limit_msecs: 1,
-  login_limit_count: 1_000_000,
+  login_lower_limit_msecs: 1,
+  login_lower_limit_count: 1_000_000,
+  login_upper_limit_msecs: 1,
+  login_upper_limit_count: 1_000_000,
   # Per-IP login limits are effectively disabled in test: the whole suite
   # logs in from the same loopback address and must not trip them. The
   # throttle-specific tests override these values locally via
@@ -69,7 +71,7 @@ config :malan, Malan.Config.RateLimits,
   password_reset_upper_limit_count:
     (System.get_env("PASSWORD_RESET_UPPER_LIMIT_COUNT") || "3") |> String.to_integer(),
   # Per-IP password-reset limits are effectively disabled in test (same
-  # idea as login_limit_count above): unrelated tests fire many reset
+  # idea as login_lower_limit_count above): unrelated tests fire many reset
   # POSTs from the same loopback address, and we don't want them to trip
   # this limiter. The throttle-specific tests override these values
   # locally via Application.put_env.

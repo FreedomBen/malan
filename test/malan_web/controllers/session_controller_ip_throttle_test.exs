@@ -20,8 +20,8 @@ defmodule MalanWeb.SessionControllerIpThrottleTest do
       Malan.Config.RateLimits,
       prev
       |> Keyword.put(:login_ip_lower_limit_count, 3)
-      |> Keyword.put(:login_limit_msecs, 60_000)
-      |> Keyword.put(:login_limit_count, 4)
+      |> Keyword.put(:login_lower_limit_msecs, 60_000)
+      |> Keyword.put(:login_lower_limit_count, 4)
     )
 
     on_exit(fn -> Application.put_env(:malan, Malan.Config.RateLimits, prev) end)

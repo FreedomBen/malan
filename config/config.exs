@@ -66,7 +66,7 @@ config :malan,
 # Rate-limit thresholds. Each key is also read at boot from env in
 # `config/runtime.exs`; the runtime read overrides the literal below
 # when the env var is set. Env vars: PASSWORD_RESET_*,
-# PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LIMIT_*,
+# PASSWORD_RESET_IP_*, SESSION_EXTENSION_LIMIT_*, LOGIN_LOWER_LIMIT_*,
 # LOGIN_IP_*, REGISTRATION_IP_*, EMAIL_VERIFY_*, TOTP_VERIFY_*.
 config :malan, Malan.Config.RateLimits,
   # 3 minutes (180 seconds), 1 per period
@@ -91,9 +91,16 @@ config :malan, Malan.Config.RateLimits,
   # Session extension rate limit (non-admin). 2 per minute by default.
   session_extension_limit_msecs: 60_000,
   session_extension_limit_count: 2,
-  # Login attempts per username. 5 attempts per 60 seconds by default.
-  login_limit_msecs: 60_000,
-  login_limit_count: 5,
+  # Login attempts per username, applied even when the username doesn't
+  # exist. Both buckets count every attempt, successful logins included.
+  # Lower bucket: 5 per minute (60 seconds)
+  login_lower_limit_msecs: 60_000,
+  login_lower_limit_count: 5,
+  # Upper bucket: 15 per day (86,400 seconds). Bounds sustained guessing
+  # against one username — the per-minute bucket alone refreshes every
+  # 60 seconds and would allow ~7,200 attempts/day.
+  login_upper_limit_msecs: 86_400_000,
+  login_upper_limit_count: 15,
   # Per-IP login attempt limits, applied *before* the per-username limit
   # and any DB work. The per-username bucket alone doesn't bound an
   # attacker (spraying random usernames gets a fresh bucket every

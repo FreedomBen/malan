@@ -154,8 +154,8 @@ defmodule MalanWeb.AdminLive.SignInTest do
         :malan,
         Malan.Config.RateLimits,
         Keyword.merge(original || [],
-          login_limit_msecs: 60_000,
-          login_limit_count: 1
+          login_lower_limit_msecs: 60_000,
+          login_lower_limit_count: 1
         )
       )
 

@@ -120,29 +120,71 @@ defmodule Malan.RateLimits do
   end
 
   defmodule Login do
+    alias Malan.RateLimits.Login.{LowerLimit, UpperLimit}
+
     @doc """
     Rate limit login attempts by username (applies even if the username is unknown).
+
+    Two buckets, like `PerIp`: a 24-hour upper bucket that bounds sustained
+    guessing against a single username (the per-minute lower bucket alone
+    refreshes every window, so distributed attackers get a fresh budget each
+    minute), checked before the per-minute lower bucket. Both count every
+    attempt, successful logins included.
 
     Returns {:allow, count} or {:deny, limit}.
     """
     @spec check_rate(username :: String.t()) ::
             {:allow, count :: integer()} | {:deny, limit :: integer()} | {:error, reason :: any}
     def check_rate(username) do
-      {msecs, count} = Malan.Config.RateLimit.login_limit()
-
-      username
-      |> bucket()
-      |> Malan.RateLimits.check_rate(msecs, count)
+      with {:allow, _c1} <- UpperLimit.check_rate(username),
+           {:allow, c2} <- LowerLimit.check_rate(username) do
+        {:allow, c2}
+      end
     end
 
     @spec clear(username :: String.t()) :: {:ok, count :: integer} | {:error, reason :: any}
     def clear(username) do
-      username
-      |> bucket()
-      |> Malan.RateLimits.clear()
+      with {:ok, _c1} <- UpperLimit.clear(username),
+           {:ok, c2} <- LowerLimit.clear(username) do
+        {:ok, c2}
+      end
     end
 
-    def bucket(username), do: "login_limit:#{username}"
+    defmodule LowerLimit do
+      def bucket(username), do: "login_lower_limit:#{username}"
+
+      def check_rate(username) do
+        {msecs, count} = Malan.Config.RateLimit.login_lower_limit()
+
+        username
+        |> bucket()
+        |> Malan.RateLimits.check_rate(msecs, count)
+      end
+
+      def clear(username) do
+        username
+        |> bucket()
+        |> Malan.RateLimits.clear()
+      end
+    end
+
+    defmodule UpperLimit do
+      def bucket(username), do: "login_upper_limit:#{username}"
+
+      def check_rate(username) do
+        {msecs, count} = Malan.Config.RateLimit.login_upper_limit()
+
+        username
+        |> bucket()
+        |> Malan.RateLimits.check_rate(msecs, count)
+      end
+
+      def clear(username) do
+        username
+        |> bucket()
+        |> Malan.RateLimits.clear()
+      end
+    end
 
     defmodule PerIp do
       # Rate limit login attempts by client IP, applied *before* the

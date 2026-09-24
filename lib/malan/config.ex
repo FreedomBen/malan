@@ -181,16 +181,28 @@ defmodule Malan.Config do
       {session_extension_limit_msecs(), session_extension_limit_count()}
     end
 
-    def login_limit_msecs do
-      Application.get_env(:malan, Malan.Config.RateLimits)[:login_limit_msecs]
+    def login_lower_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_lower_limit_msecs]
     end
 
-    def login_limit_count do
-      Application.get_env(:malan, Malan.Config.RateLimits)[:login_limit_count]
+    def login_lower_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_lower_limit_count]
     end
 
-    def login_limit do
-      {login_limit_msecs(), login_limit_count()}
+    def login_lower_limit do
+      {login_lower_limit_msecs(), login_lower_limit_count()}
+    end
+
+    def login_upper_limit_msecs do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_upper_limit_msecs]
+    end
+
+    def login_upper_limit_count do
+      Application.get_env(:malan, Malan.Config.RateLimits)[:login_upper_limit_count]
+    end
+
+    def login_upper_limit do
+      {login_upper_limit_msecs(), login_upper_limit_count()}
     end
 
     def login_ip_lower_limit_msecs do

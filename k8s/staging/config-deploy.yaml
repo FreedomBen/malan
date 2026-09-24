@@ -70,8 +70,10 @@ data:
   # Rate limits — session extension and login
   SESSION_EXTENSION_LIMIT_MSECS: '60000'                    # 1 minute
   SESSION_EXTENSION_LIMIT_COUNT: '2'
-  LOGIN_LIMIT_MSECS: '60000'                                # 1 minute
-  LOGIN_LIMIT_COUNT: '5'
+  LOGIN_LOWER_LIMIT_MSECS: '60000'                          # 1 minute
+  LOGIN_LOWER_LIMIT_COUNT: '5'
+  LOGIN_UPPER_LIMIT_MSECS: '86400000'                       # 24 hours
+  LOGIN_UPPER_LIMIT_COUNT: '15'
   # Rate limits — email verification
   EMAIL_VERIFY_LOWER_LIMIT_MSECS: '1800000'                 # 30 minutes
   EMAIL_VERIFY_LOWER_LIMIT_COUNT: '1'

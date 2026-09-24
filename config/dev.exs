@@ -98,7 +98,7 @@ config :malan, :sentry, enabled: false
 # Rate limits are effectively disabled in dev (windows keep their prod
 # defaults; counts are raised out of reach) so client-library test suites
 # and local tooling can hammer the dev server freely. The env vars read at
-# boot in `config/runtime.exs` (LOGIN_LIMIT_*, REGISTRATION_IP_*, ...)
+# boot in `config/runtime.exs` (LOGIN_LOWER_LIMIT_*, REGISTRATION_IP_*, ...)
 # still override these, restoring realistic limits when you want to
 # exercise 429 handling locally. The per-IP buckets are listed for
 # completeness/non-loopback access; private and loopback source addresses
@@ -114,8 +114,10 @@ config :malan, Malan.Config.RateLimits,
   password_reset_ip_upper_limit_count: 1_000_000,
   session_extension_limit_msecs: 60_000,
   session_extension_limit_count: 1_000_000,
-  login_limit_msecs: 60_000,
-  login_limit_count: 1_000_000,
+  login_lower_limit_msecs: 60_000,
+  login_lower_limit_count: 1_000_000,
+  login_upper_limit_msecs: 86_400_000,
+  login_upper_limit_count: 1_000_000,
   login_ip_lower_limit_msecs: 60_000,
   login_ip_lower_limit_count: 1_000_000,
   login_ip_upper_limit_msecs: 86_400_000,
