@@ -73,7 +73,7 @@ data:
   LOGIN_LOWER_LIMIT_MSECS: '60000'                          # 1 minute
   LOGIN_LOWER_LIMIT_COUNT: '5'
   LOGIN_UPPER_LIMIT_MSECS: '86400000'                       # 24 hours
-  LOGIN_UPPER_LIMIT_COUNT: '15'
+  LOGIN_UPPER_LIMIT_COUNT: '25'
   # Rate limits — email verification
   EMAIL_VERIFY_LOWER_LIMIT_MSECS: '1800000'                 # 30 minutes
   EMAIL_VERIFY_LOWER_LIMIT_COUNT: '1'
