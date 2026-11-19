@@ -61,7 +61,9 @@ defmodule Malan.MixProject do
       {:nimble_totp, "~> 1.0"},
       {:eqrcode, "~> 0.2"},
       {:tesla, "~> 1.4"},
-      {:hackney, "~> 1.17"},
+      # Override: phoenix_swoosh 1.2.1 still declares a stale optional
+      # hackney ~> 1.10 it never calls; the real consumer (swoosh) allows < 5.0.
+      {:hackney, "~> 4.12", override: true},
       # {:iptools, "~> 0.0.4"},
       {:iptools_fb, "~> 0.0.7"},
       {:inet_cidr, "~> 1.0"},
