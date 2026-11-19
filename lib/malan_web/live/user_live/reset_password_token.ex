@@ -173,7 +173,7 @@ defmodule MalanWeb.UserLive.ResetPasswordToken do
     ~H"""
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
       <div class="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
-        <form class="space-y-6" phx-change="" phx-submit="reset_password">
+        <form id="reset-password-form" class="space-y-6" phx-submit="reset_password">
           <div>
             <label for="reset_token" class="block text-sm font-medium text-gray-700">
               Password Reset Token (from email):
