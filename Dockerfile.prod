@@ -131,6 +131,7 @@ COPY --chown=docker:docker lib /app/lib
 COPY --chown=docker:docker assets /app/assets
 
 RUN mix compile \
+ && mix sentry.package_source_code \
  && mix assets.deploy \
  && mix release
 

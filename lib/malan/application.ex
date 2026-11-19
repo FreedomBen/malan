@@ -4,13 +4,12 @@ defmodule Malan.Application do
   @moduledoc false
 
   use Application
-  require Logger
 
   alias Malan.Logger.EmailScrubber
 
   @impl true
   def start(_type, _args) do
-    Logger.add_backend(Sentry.LoggerBackend)
+    install_sentry_logger_handler()
     install_email_scrubber()
     attach_oban_logger()
 
@@ -47,8 +46,20 @@ defmodule Malan.Application do
     :ok
   end
 
+  # Attach the Sentry :logger handler so process crashes are reported as
+  # Sentry events (defaults: capture_level :error, plain log messages not
+  # captured) — the modern replacement for the removed Sentry.LoggerBackend
+  # setup. Idempotent: a repeat attach returns `{:error, {:already_exist, _}}`,
+  # which we treat as success.
+  defp install_sentry_logger_handler do
+    case :logger.add_handler(:sentry_handler, Sentry.LoggerHandler, %{}) do
+      :ok -> :ok
+      {:error, {:already_exist, _}} -> :ok
+    end
+  end
+
   # Install the email-redaction filter on the primary :logger so it applies
-  # to every handler (console, Sentry.LoggerBackend, etc). Idempotent: a
+  # to every handler (console, Sentry.LoggerHandler, etc). Idempotent: a
   # repeat install (e.g. during a release reload) returns `{:error, :already_exists}`,
   # which we treat as success.
   defp install_email_scrubber do
@@ -68,13 +79,13 @@ defmodule Malan.Application do
   #
   # Emitted at :debug deliberately. Every audit-logged request produces a
   # job, and at :info each job adds 2+ structured log lines that pass
-  # through the EmailScrubber regexes and the Sentry logger backend —
+  # through the EmailScrubber regexes and the Sentry logger handler —
   # log-volume amplification with no signal. Prod (LOG_LEVEL=info)
   # suppresses them; dev (debug) keeps them. Failures still surface via
   # Sentry's oban integration (capture_errors: true), LogWriter's warning
   # on final attempt, and PromEx's Oban metrics. Do not raise this to
-  # :warning — that would route every successful job into the Sentry
-  # logger backend (its capture threshold is :warning).
+  # :warning — that would push every successful job through those log
+  # paths for no added signal.
   defp attach_oban_logger do
     case Oban.Telemetry.attach_default_logger(level: :debug) do
       :ok -> :ok

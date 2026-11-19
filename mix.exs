@@ -68,7 +68,7 @@ defmodule Malan.MixProject do
       {:hammer, "~> 7.0"},
       {:hammer_backend_redis, "~> 7.0"},
       {:oban, "~> 2.18"},
-      {:sentry, "~> 11.0"},
+      {:sentry, "~> 14.0"},
       {:unplug, "~> 1.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:number, "~> 1.0.3"},
@@ -94,8 +94,7 @@ defmodule Malan.MixProject do
         "esbuild default --minify",
         "openapi.copy",
         "phx.digest"
-      ],
-      sentry_recompile: ["compile", "deps.compile sentry --force"]
+      ]
     ]
   end
 

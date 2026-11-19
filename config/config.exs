@@ -305,7 +305,7 @@ config :sentry,
   before_send: {Malan.Sentry, :before_send},
   environment_name: config_env(),
   enable_source_code_context: true,
-  root_source_code_path: File.cwd!(),
+  root_source_code_paths: [File.cwd!()],
   # Capture every Oban job failure ([:oban, :job, :exception], including
   # {:error, reason} returns) as a Sentry event. DSN-gated, so dev/test
   # (no DSN) are unaffected.

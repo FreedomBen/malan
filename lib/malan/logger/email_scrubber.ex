@@ -10,7 +10,7 @@ defmodule Malan.Logger.EmailScrubber do
   verbatim. This filter rewrites them in place to `#{inspect("[REDACTED_EMAIL]")}`.
 
   Installed as a primary filter from `Malan.Application.start/2`, so it applies
-  to every handler (console, `Sentry.LoggerBackend`, etc.). The same `scrub/1`
+  to every handler (console, `Sentry.LoggerHandler`, etc.). The same `scrub/1`
   helper is also called from `Malan.Sentry.before_send/1` to cover Sentry
   events that bypass the Logger.
 
